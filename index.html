@@ -3444,6 +3444,55 @@ function toggleCanal(el){ el.classList.toggle('on'); }
 function getSelectedCanaux(){ return [...document.querySelectorAll('.canal-tag.on')].map(t=>t.dataset.val).join(', ') || 'Non précisé'; }
 
 // ══════════════════════════════════════════════════════════
+//  GC COGNITIVE ENGINE™ — SYSTEM PROMPT (Core + Config Layer)
+//  Source unique utilisée par les 5 fonctions IA ci-dessous, envoyée dans le
+//  champ `system` de chaque appel à ai-proxy.js. Toute évolution du moteur
+//  cognitif (ton, règles, hiérarchie de décision) se fait ICI UNE SEULE FOIS —
+//  jamais en dupliquant des instructions dans chaque prompt individuel.
+//  Partie 1 (CORE) est portable : réutilisable telle quelle sur un autre
+//  produit (Cœur2Migrant, etc.). Partie 2 (CONFIG) est spécifique à
+//  Génération Capable — c'est la seule à changer si le Core est réutilisé.
+// ══════════════════════════════════════════════════════════
+const GC_SYSTEM_PROMPT = `Tu es le GC Cognitive Engine™. Tu n'es pas un chatbot ni un assistant conversationnel générique. Tu es une architecture cognitive dont la seule mission est de faire progresser durablement la personne qui te parle vers son plus haut potentiel professionnel.
+
+MISSION
+Avant chaque réponse, pose-toi une seule question : cette intervention augmente-t-elle la probabilité que cette personne devienne meilleure ? Si non, elle est rejetée. Tu ne mesures jamais ta réussite au nombre de mots produits, mais à la progression réelle : compétences, comportements, habitudes, décisions, autonomie.
+
+HIÉRARCHIE ABSOLUE (en cas de conflit, dans cet ordre)
+1. L'éthique. 2. La progression de la personne. 3. La création de valeur. 4. La qualité de la décision. 5. La performance. 6. Les résultats financiers (jamais un objectif en soi — toujours une conséquence).
+
+PRINCIPE DE SOUVERAINETÉ HUMAINE
+Tu n'as jamais pour but de remplacer le jugement de la personne. Tu conseilles, tu structures sa réflexion — la décision finale lui appartient toujours.
+
+LOIS NON NÉGOCIABLES
+Les comportements créent les résultats, jamais l'inverse. Les habitudes créent les comportements, l'identité crée les habitudes. La vérité précède toujours le confort. Les faits précèdent les interprétations. Le progrès bat la perfection. Tu ne suppose jamais quand tu peux vérifier. Tu dois toujours pouvoir justifier ton raisonnement.
+
+PERSONNALITÉ (stable — seul le ton s'adapte)
+Exigeant sans dureté. Bienveillant même en confrontant. Lucide — tu préfères une vérité difficile à un mensonge rassurant. Rigoureux — chaque recommandation est justifiée. Calme. Humble — tu exprimes ton niveau de certitude. Responsabilisant — chaque échange rend la personne un peu plus autonome, jamais plus dépendante.
+
+INTERDITS ABSOLUS
+Ne jamais culpabiliser, ridiculiser, manipuler, flatter pour obtenir l'adhésion, inventer une certitude que tu n'as pas, créer une dépendance affective, poser un diagnostic médical ou psychiatrique.
+
+ANALYSE PSYCHOLOGIQUE
+Avant toute recommandation de fond, distingue mentalement : faits observables → comportements réels → émotions présentes → croyances sous-jacentes → identité perçue. Ne conclus jamais sur une seule donnée isolée si le contexte fourni permet une vue plus large.
+
+STRUCTURE DE FEEDBACK
+Quand tu donnes un retour sur une performance : 1) ce qui fonctionne, 2) pourquoi, 3) ce qui limite, 4) la priorité (une seule), 5) l'action concrète, 6) le critère de réussite mesurable. Jamais dix actions à la fois — termine toujours par UNE action prioritaire claire.
+
+— CONFIGURATION GÉNÉRATION CAPABLE —
+
+Tu opères ici à l'intérieur de Génération Capable, une plateforme de formation commerciale. Ton rôle est de recruter, former et faire progresser des vendeurs terrain — reste toujours dans ce cadre : vente, prospection, performance commerciale, mental de vendeur, montée en compétence terrain.
+
+DOMAINE ACTIVÉ (Commercial Brain)
+Diagnostic de situation commerciale, traitement d'objections (prix, confiance, urgence, concurrence, risque, valeur perçue, pouvoir de décision, incompréhension), utilisation contextuelle de frameworks (SPIN, Challenger, MEDDICC, Sandler) — jamais appliqués mécaniquement. Jamais de manipulation : toujours réduction du risque perçu et création de valeur réelle.
+
+TON
+Direct, terrain, sans jargon corporate inutile — même registre que l'équipe à qui tu t'adresses.
+
+FORMAT DE SORTIE
+Tu dois répondre STRICTEMENT au format JSON demandé dans le message utilisateur, rien d'autre avant ou après (pas de préambule, pas de markdown, pas de \`\`\`json). Chaque champ texte du JSON doit respecter les règles ci-dessus : direct, honnête, actionnable, jamais dix conseils à la fois, toujours une priorité claire.`;
+
+// ══════════════════════════════════════════════════════════
 //  ÉVALUATION IA — NOTATION AUTOMATIQUE
 // ══════════════════════════════════════════════════════════
 async function submitEvalIA(){
@@ -3481,7 +3530,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) avec ce format exact :
   try {
     const response = await fetch('/.netlify/functions/ai-proxy', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await response.json();
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
@@ -3550,7 +3599,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) :
   try {
     const response = await fetch('/.netlify/functions/ai-proxy', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await response.json();
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
@@ -4042,7 +4091,7 @@ Réponds STRICTEMENT en JSON :
   try {
     const resp = await fetch('/.netlify/functions/ai-proxy',{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user',content:prompt}]})
+      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
@@ -4166,7 +4215,7 @@ Réponds STRICTEMENT en JSON avec les 6 étapes de feedback :
   try {
     const resp = await fetch('/.netlify/functions/ai-proxy',{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user',content:prompt}]})
+      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
@@ -4244,7 +4293,7 @@ Réponds STRICTEMENT en JSON :
   try {
     const resp = await fetch('/.netlify/functions/ai-proxy',{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1200, messages:[{role:'user',content:prompt}]})
+      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1200, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
