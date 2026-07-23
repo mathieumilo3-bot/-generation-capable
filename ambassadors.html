@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GC Ambassadors OS</title>
+<style>
+:root{
+  --bg:#000;--bg1:#0d0d0d;--bg2:#141200;--bg3:#1c1c1c;
+  --b:rgba(255,255,255,.08);--bh:rgba(201,168,76,.35);
+  --t1:#f5f0e8;--t2:#a8a090;--t3:#6e6860;
+  --gold:#C9A84C;--gold2:#F0D080;--gold3:#8B6914;
+  --r:14px;--ease:cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;padding-bottom:78px}
+.wrap{max-width:520px;margin:0 auto;padding:20px 18px 40px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.hdr h1{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.hdr .sub{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.badge-live{font-size:9px;color:var(--t3);background:rgba(255,255,255,.05);padding:4px 9px;border-radius:20px;border:1px solid var(--b)}
+
+.card{background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.card-l{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px}
+
+/* ── Mission du jour ── */
+.mission-title{font-size:17px;font-weight:700;margin-bottom:14px;line-height:1.4}
+.mtask{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--b)}
+.mtask:first-of-type{border-top:none}
+.chk{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--t3);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+.chk.on{background:var(--gold);border-color:var(--gold);color:#000;font-weight:900}
+.mtask-txt{font-size:14px;color:var(--t2);transition:color .2s}
+.mtask.done .mtask-txt{color:var(--t3);text-decoration:line-through}
+
+.stat-row{display:flex;gap:12px;margin-bottom:14px}
+.stat{flex:1;background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);padding:16px}
+.stat-v{font-size:22px;font-weight:800;color:var(--gold2)}
+.stat-l{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px 18px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;border:none;width:100%;font-family:inherit}
+.btn-gold{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1400}
+.btn-gold:active{transform:scale(.98)}
+.btn-g{background:rgba(255,255,255,.06);color:var(--t2)}
+
+/* ── IA Coach ── */
+.chat-box{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;min-height:200px}
+.msg{max-width:85%;padding:11px 14px;border-radius:14px;font-size:13.5px;line-height:1.5}
+.msg.user{align-self:flex-end;background:var(--gold);color:#1a1400;font-weight:600}
+.msg.ai{align-self:flex-start;background:var(--bg2);border:1px solid var(--b);color:var(--t1);white-space:pre-wrap}
+.msg.loading{color:var(--t3);font-style:italic}
+.chat-input-row{display:flex;gap:8px}
+.chat-input{flex:1;background:var(--bg1);border:1px solid var(--b);border-radius:12px;padding:12px 14px;color:var(--t1);font-size:14px;font-family:inherit}
+.chat-input:focus{outline:none;border-color:var(--bh)}
+.chat-send{width:46px;height:46px;border-radius:12px;background:var(--gold);border:none;color:#1a1400;font-size:18px;cursor:pointer;flex-shrink:0}
+.suggest-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
+.suggest-chip{flex-shrink:0;background:var(--bg2);border:1px solid var(--b);border-radius:20px;padding:8px 14px;font-size:12px;color:var(--t2);cursor:pointer;white-space:nowrap}
+.suggest-chip:active{background:var(--bg3)}
+
+/* ── Revenus ── */
+.rev-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.rev-item{background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);padding:16px}
+.rev-item.full{grid-column:1/-1;background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.02));border-color:var(--bh)}
+.rev-v{font-size:24px;font-weight:800;color:var(--gold2)}
+.rev-l{font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.hist-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid var(--b);font-size:13px}
+.hist-row:first-of-type{border-top:none}
+.hist-name{color:var(--t2)}
+.hist-amt{color:var(--gold2);font-weight:700}
+.empty{text-align:center;color:var(--t3);font-size:12.5px;padding:30px 10px}
+
+/* ── Formation ── */
+.mod-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--b);cursor:pointer}
+.mod-row:first-of-type{border-top:none}
+.mod-ico{width:38px;height:38px;border-radius:10px;background:var(--bg2);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.mod-ico.done{background:var(--gold);color:#1a1400}
+.mod-info{flex:1}
+.mod-t{font-size:13.5px;font-weight:600;color:var(--t1)}
+.mod-s{font-size:11px;color:var(--t3);margin-top:2px}
+.prog-bar{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-top:16px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:3px;transition:width .3s}
+
+/* ── Profil ── */
+.prof-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid var(--b)}
+.prof-row:first-of-type{border-top:none}
+.prof-l{font-size:13px;color:var(--t2)}
+.prof-v{font-size:13px;color:var(--t1);font-weight:600}
+.code-box{background:var(--bg2);border:1px dashed var(--bh);border-radius:10px;padding:14px;text-align:center;margin-bottom:14px}
+.code-txt{font-size:19px;font-weight:800;color:var(--gold2);letter-spacing:1.5px;font-family:monospace}
+.copy-hint{font-size:10.5px;color:var(--t3);margin-top:4px}
+
+/* ── Nav bas ── */
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,10,.92);backdrop-filter:blur(20px);border-top:1px solid var(--b);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:11px 0 9px;cursor:pointer;color:var(--t3);transition:color .2s}
+.nav-item.active{color:var(--gold2)}
+.nav-ico{font-size:19px}
+.nav-lbl{font-size:9.5px;font-weight:600}
+
+.screen{display:none}
+.screen.active{display:block;animation:fadeIn .25s var(--ease)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Activation (si pas encore ambassadeur) ── */
+.activate-wrap{max-width:420px;margin:60px auto;padding:0 24px;text-align:center}
+.activate-wrap h2{font-size:22px;font-weight:800;margin-bottom:10px}
+.activate-wrap p{font-size:13.5px;color:var(--t2);line-height:1.6;margin-bottom:24px}
+</style>
+</head>
+<body>
+
+<!-- ═══════ ÉCRAN D'ACTIVATION (affiché si pas encore ambassadeur) ═══════ -->
+<div id="gate-activate" class="activate-wrap" style="display:none">
+  <div class="badge-live" style="margin:0 auto 20px;width:fit-content">GC AMBASSADORS OS</div>
+  <h2>Deviens ambassadeur Génération Capable</h2>
+  <p>Recrute, gagne des commissions récurrentes sur chaque abonnement actif que tu apportes, et progresse avec un coach IA dédié — activation immédiate.</p>
+  <input class="chat-input" id="activate-email" type="email" placeholder="Ton email" style="width:100%;margin-bottom:12px;text-align:center">
+  <button class="btn btn-gold" onclick="activateAmbassador()">🚀 Activer mon accès ambassadeur</button>
+  <div id="activate-error" style="color:#e08080;font-size:12px;margin-top:10px"></div>
+</div>
+
+<div id="gate-loading" class="activate-wrap" style="display:none">
+  <p style="color:var(--t3)">Chargement de ton espace...</p>
+</div>
+
+<!-- ═══════ APP PRINCIPALE ═══════ -->
+<div id="app" style="display:none">
+
+  <!-- ── ÉCRAN 1 : AUJOURD'HUI ── -->
+  <div id="screen-today" class="screen active">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Aujourd'hui</div><h1 id="today-greet">Salut 👋</h1></div>
+        <div class="badge-live">🔴 Live</div>
+      </div>
+
+      <div class="card">
+        <div class="card-l">Mission du jour</div>
+        <div class="mission-title" id="mission-title">Publier 2 vidéos TikTok</div>
+        <div id="mission-tasks"></div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-v" id="today-earn">0 €</div><div class="stat-l">Gagné aujourd'hui</div></div>
+        <div class="stat"><div class="stat-v" id="today-progress">0%</div><div class="stat-l">Mission complétée</div></div>
+      </div>
+
+      <button class="btn btn-gold" onclick="goScreen('coach')">💬 Demander à l'IA</button>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 2 : IA COACH ── -->
+  <div id="screen-coach" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">IA Coach</div><h1>Ton assistant</h1></div>
+      </div>
+
+      <div class="suggest-row">
+        <div class="suggest-chip" onclick="askSuggestion('Écris-moi un script TikTok pour présenter Génération Capable')">📱 Script TikTok</div>
+        <div class="suggest-chip" onclick="askSuggestion('Donne-moi une idée de contenu pour aujourd\'hui')">💡 Idée de contenu</div>
+        <div class="suggest-chip" onclick="askSuggestion('Un prospect me dit que c\'est trop cher, aide-moi à répondre')">🛡️ Objection prix</div>
+        <div class="suggest-chip" onclick="askSuggestion('Rédige-moi un message privé pour relancer un prospect intéressé')">✉️ Message privé</div>
+      </div>
+
+      <div class="chat-box" id="chat-box"></div>
+
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Écris ta question..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" onclick="sendChat()">↑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 3 : REVENUS ── -->
+  <div id="screen-revenue" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Revenus</div><h1>Tes gains</h1></div>
+      </div>
+
+      <div class="rev-grid">
+        <div class="rev-item"><div class="rev-v" id="rev-today">0 €</div><div class="rev-l">Aujourd'hui</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-week">0 €</div><div class="rev-l">Cette semaine</div></div>
+        <div class="rev-item full"><div class="rev-v" id="rev-total">0 €</div><div class="rev-l">Total cumulé</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-month">0 €</div><div class="rev-l">Ce mois</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-count">0</div><div class="rev-l">Abonnements actifs</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-l">Historique</div>
+        <div id="rev-history"><div class="empty">Aucune commission pour l'instant.<br>Ton premier abonnement apparaîtra ici.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 4 : FORMATION ── -->
+  <div id="screen-training" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Formation</div><h1>Progresse</h1></div>
+      </div>
+
+      <div class="card">
+        <div class="card-l">Ta progression</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--t2)" id="train-progress-txt">0 / 4 modules</span>
+          <span style="font-size:13px;color:var(--gold2);font-weight:700" id="train-progress-pct">0%</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="train-progress-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="card" id="training-list"></div>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 5 : PROFIL ── -->
+  <div id="screen-profile" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Profil</div><h1 id="profile-name">Ton profil</h1></div>
+      </div>
+
+      <div class="code-box">
+        <div class="code-txt" id="profile-code">GC-AMB000</div>
+        <div class="copy-hint">Ton code ambassadeur — tape pour copier</div>
+      </div>
+
+      <div class="card">
+        <div class="prof-row"><div class="prof-l">Lien ambassadeur</div><div class="prof-v" style="color:var(--gold2)">Copier</div></div>
+        <div class="prof-row"><div class="prof-l">Paiements</div><div class="prof-v">Cycle 5 → 5</div></div>
+        <div class="prof-row"><div class="prof-l">Statut</div><div class="prof-v" style="color:var(--gold2)">Actif</div></div>
+      </div>
+
+      <button class="btn btn-g" onclick="if(confirm('Te déconnecter ?'))deactivateDemo()">Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- ── NAV BAS ── -->
+  <div class="nav">
+    <div class="nav-item active" data-screen="today" onclick="goScreen('today')"><div class="nav-ico">🎯</div><div class="nav-lbl">Aujourd'hui</div></div>
+    <div class="nav-item" data-screen="coach" onclick="goScreen('coach')"><div class="nav-ico">💬</div><div class="nav-lbl">IA Coach</div></div>
+    <div class="nav-item" data-screen="revenue" onclick="goScreen('revenue')"><div class="nav-ico">💰</div><div class="nav-lbl">Revenus</div></div>
+    <div class="nav-item" data-screen="training" onclick="goScreen('training')"><div class="nav-ico">📚</div><div class="nav-lbl">Formation</div></div>
+    <div class="nav-item" data-screen="profile" onclick="goScreen('profile')"><div class="nav-ico">👤</div><div class="nav-lbl">Profil</div></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  GC AMBASSADORS OS — V1
+//
+//  ÉTAT ACTUEL (honnête, à lire avant de modifier) :
+//  Cette V1 utilise localStorage comme couche de données temporaire.
+//  Ce n'est PAS la source de vérité définitive (LAW-003 du Canon : le
+//  backend décide) — c'est un choix assumé pour livrer une V1 testable
+//  MAINTENANT plutôt que d'attendre un vrai backend (Supabase) qui,
+//  au moment de cette écriture, est bloqué côté outillage (permissions).
+//  Quand Supabase sera débloqué : remplacer les fonctions marquée
+//  "// TODO BACKEND" par de vrais appels API, sans toucher au reste
+//  de l'interface (elle ne connaît pas la source de données).
+//
+//  Ambassadeur = un compte Génération Capable existant qui active le
+//  rôle depuis cet écran (décision A3, activation immédiate, zéro
+//  friction — cohérent avec le Canon).
+// ══════════════════════════════════════════════════════════
+
+const EMAIL_KEY = 'gc_ambassador_email'; // juste un pointeur local (qui je suis) — les vraies données vivent en base, pas ici.
+
+function defaultState(){
+  return {
+    active: true,
+    name: 'Ambassadeur',
+    code: 'GC-AMB' + Math.floor(100+Math.random()*900),
+    missionDone: [false, false],
+    revenue: { today: 0, week: 0, month: 0, total: 0, activeSubs: 0, history: [] },
+    training: [
+      { title: 'Comprendre l\'offre Génération Capable', done: true },
+      { title: 'Créer ton premier contenu TikTok', done: false },
+      { title: 'Traiter les objections courantes', done: false },
+      { title: 'Convertir un prospect en abonné', done: false }
+    ],
+    chatHistory: []
+  };
+}
+
+let STATE = null;
+let AMBASSADOR_EMAIL = localStorage.getItem(EMAIL_KEY);
+
+async function loadStateFromServer(email){
+  const resp = await fetch('/.netlify/functions/ambassador-data?email=' + encodeURIComponent(email));
+  const data = await resp.json();
+  if(data.error){
+    console.error('[ambassador-data] load error', data.error, data.message || data.detail || '');
+    throw new Error(data.message || data.error);
+  }
+  return data.state;
+}
+
+async function saveStateToServer(){
+  if(!AMBASSADOR_EMAIL || !STATE) return;
+  try{
+    const resp = await fetch('/.netlify/functions/ambassador-data', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email: AMBASSADOR_EMAIL, state: STATE })
+    });
+    const data = await resp.json();
+    if(data.error) console.error('[ambassador-data] save error', data.error, data.message || data.detail || '');
+  }catch(e){
+    console.error('[ambassador-data] save network error', e);
+  }
+}
+// Alias court utilisé par le reste du code — écriture "fire and forget" pour
+// garder l'interface réactive (pas d'attente visible à chaque coche/case cochée).
+function saveState(){ saveStateToServer(); }
+
+// ── Activation (écran gate) ──
+async function checkGate(){
+  if(!AMBASSADOR_EMAIL){
+    document.getElementById('gate-activate').style.display = 'block';
+    document.getElementById('gate-loading').style.display = 'none';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+  document.getElementById('gate-activate').style.display = 'none';
+  document.getElementById('gate-loading').style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+  try{
+    STATE = await loadStateFromServer(AMBASSADOR_EMAIL);
+    document.getElementById('gate-loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    renderAll();
+  }catch(e){
+    document.getElementById('gate-loading').innerHTML =
+      `<p style="color:#e08080">Impossible de charger ton espace. Vérifie ta connexion et réessaie.</p>
+       <button class="btn btn-g" style="margin-top:14px" onclick="checkGate()">Réessayer</button>`;
+  }
+}
+async function activateAmbassador(){
+  const emailInput = document.getElementById('activate-email');
+  const email = emailInput.value.trim().toLowerCase();
+  const errEl = document.getElementById('activate-error');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errEl.textContent = 'Entre un email valide.';
+    return;
+  }
+  errEl.textContent = '';
+  AMBASSADOR_EMAIL = email;
+  localStorage.setItem(EMAIL_KEY, email);
+  checkGate();
+}
+function deactivateDemo(){
+  localStorage.removeItem(EMAIL_KEY);
+  AMBASSADOR_EMAIL = null;
+  STATE = null;
+  checkGate();
+}
+
+// ── Navigation ──
+function goScreen(name){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelector(`.nav-item[data-screen="${name}"]`).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── Écran Aujourd'hui ──
+function renderToday(){
+  const h = new Date().getHours();
+  document.getElementById('today-greet').textContent =
+    (h < 12 ? 'Bonjour' : h < 18 ? 'Salut' : 'Bonsoir') + ' 👋';
+
+  const tasksEl = document.getElementById('mission-tasks');
+  const tasks = ['Publier 1ère vidéo', 'Publier 2ème vidéo'];
+  tasksEl.innerHTML = tasks.map((t,i) => `
+    <div class="mtask ${STATE.missionDone[i] ? 'done' : ''}">
+      <div class="chk ${STATE.missionDone[i] ? 'on' : ''}" onclick="toggleMission(${i})">${STATE.missionDone[i] ? '✓' : ''}</div>
+      <div class="mtask-txt">${t}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('today-earn').textContent = STATE.revenue.today + ' €';
+  const done = STATE.missionDone.filter(Boolean).length;
+  document.getElementById('today-progress').textContent = Math.round(done / STATE.missionDone.length * 100) + '%';
+}
+function toggleMission(i){
+  STATE.missionDone[i] = !STATE.missionDone[i];
+  saveState(STATE);
+  renderToday();
+}
+
+// ── Écran Revenus ──
+function renderRevenue(){
+  const r = STATE.revenue;
+  document.getElementById('rev-today').textContent = r.today + ' €';
+  document.getElementById('rev-week').textContent = r.week + ' €';
+  document.getElementById('rev-month').textContent = r.month + ' €';
+  document.getElementById('rev-total').textContent = r.total + ' €';
+  document.getElementById('rev-count').textContent = r.activeSubs;
+
+  const histEl = document.getElementById('rev-history');
+  if(r.history.length === 0){
+    histEl.innerHTML = `<div class="empty">Aucune commission pour l'instant.<br>Ton premier abonnement apparaîtra ici.</div>`;
+  } else {
+    histEl.innerHTML = r.history.map(h => `
+      <div class="hist-row"><div class="hist-name">${h.label}</div><div class="hist-amt">+${h.amount} €</div></div>
+    `).join('');
+  }
+}
+
+// ── Écran Formation ──
+function renderTraining(){
+  const list = STATE.training;
+  const doneCount = list.filter(m => m.done).length;
+  const pct = Math.round(doneCount / list.length * 100);
+  document.getElementById('train-progress-txt').textContent = `${doneCount} / ${list.length} modules`;
+  document.getElementById('train-progress-pct').textContent = pct + '%';
+  document.getElementById('train-progress-bar').style.width = pct + '%';
+
+  document.getElementById('training-list').innerHTML = list.map((m,i) => `
+    <div class="mod-row" onclick="toggleTraining(${i})">
+      <div class="mod-ico ${m.done ? 'done' : ''}">${m.done ? '✓' : (i+1)}</div>
+      <div class="mod-info">
+        <div class="mod-t">${m.title}</div>
+        <div class="mod-s">${m.done ? 'Terminé' : 'À faire'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+function toggleTraining(i){
+  STATE.training[i].done = !STATE.training[i].done;
+  saveState(STATE);
+  renderTraining();
+}
+
+// ── Écran Profil ──
+function renderProfile(){
+  document.getElementById('profile-name').textContent = STATE.name;
+  document.getElementById('profile-code').textContent = STATE.code;
+}
+document.getElementById('profile-code')?.addEventListener?.('click', () => {});
+document.addEventListener('click', (e) => {
+  if(e.target.id === 'profile-code'){
+    navigator.clipboard?.writeText(STATE.code);
+  }
+});
+
+function renderAll(){
+  renderToday();
+  renderRevenue();
+  renderTraining();
+  renderProfile();
+}
+
+// ══════════════════════════════════════════════════════════
+//  IA COACH — réutilise le GC Cognitive Engine existant
+//  (même Core que index.html, nouvelle Config Layer "Ambassadeur")
+// ══════════════════════════════════════════════════════════
+const AMBASSADOR_SYSTEM_PROMPT = `Tu es le GC Cognitive Engine™. Tu n'es pas un chatbot ni un assistant conversationnel générique. Tu es une architecture cognitive dont la seule mission est de faire progresser durablement la personne qui te parle vers son plus haut potentiel professionnel.
+
+MISSION
+Avant chaque réponse, pose-toi une seule question : cette intervention augmente-t-elle la probabilité que cette personne devienne meilleure ? Si non, elle est rejetée.
+
+HIÉRARCHIE ABSOLUE
+1. L'éthique. 2. La progression de la personne. 3. La création de valeur. 4. La qualité de la décision. 5. La performance. 6. Les résultats financiers (jamais un objectif en soi).
+
+PRINCIPE DE SOUVERAINETÉ HUMAINE
+Tu conseilles, tu structures la réflexion — la décision finale appartient toujours à la personne.
+
+PERSONNALITÉ
+Exigeant sans dureté. Bienveillant même en confrontant. Lucide. Rigoureux. Calme. Humble. Responsabilisant.
+
+INTERDITS ABSOLUS
+Ne jamais culpabiliser, ridiculiser, manipuler, flatter pour obtenir l'adhésion, inventer une certitude que tu n'as pas, créer une dépendance affective.
+
+— CONFIGURATION AMBASSADEUR : GC AMBASSADOR BRAIN™ —
+
+Tu es le meilleur coach commercial qu'un ambassadeur de Génération Capable puisse avoir. Tu existes pour une seule raison : transformer un débutant en ambassadeur performant capable d'attirer régulièrement de nouveaux membres grâce à une communication honnête, efficace et utile.
+
+Ton succès ne se mesure jamais au nombre de messages envoyés, au temps passé à discuter, ou au nombre de réponses produites. Il se mesure uniquement à la progression réelle de l'ambassadeur : chaque réponse doit augmenter ses compétences, sa confiance, ses résultats.
+
+MISSION QUOTIDIENNE
+Chaque jour, aide l'ambassadeur à : créer, publier, prospecter, répondre, analyser, apprendre, progresser, recommencer.
+
+OBJECTIF ULTIME
+Créer le plus grand nombre possible de nouveaux membres — non pas grâce à la manipulation, de fausses promesses ou des techniques agressives, mais parce que les ambassadeurs deviennent réellement meilleurs.
+
+CONNAISSANCE PRODUIT
+Génération Capable : formation à la vente terrain (prospection, découverte, closing) avec accompagnement IA quotidien intégré. Offre unique : 67€/mois, engagement 6 mois, accès immédiat. Inclut 6 modules vidéo+PDF, coaching 24/7, diagnostic IA du profil vendeur, plan d'action généré chaque matin, rapport analysé chaque soir.
+
+COMMISSIONS (précis, ne jamais approximer ni inventer un autre chiffre)
+15€/mois pour chaque client apporté par l'ambassadeur, versés tant que ce client reste abonné (s'arrête s'il se désabonne). En plus : 50€ à chaque vente réalisée par un vendeur que l'ambassadeur a personnellement fait intégrer à Génération Capable (commission de second niveau, sur l'activité du vendeur recruté, pas sur les clients de ce vendeur).
+
+Positionnement liberté (légitime, spécifique au rôle d'ambassadeur) : un ambassadeur travaille d'où il veut, quand il veut, et apprend à créer ses propres opportunités — c'est une réalité du rôle, pas une promesse abstraite. Reste toujours honnête : cette liberté vient du travail fourni, jamais d'un résultat automatique ou garanti.
+
+Cible : jeunes (18-25 ans) motivés mais pas encore formés à la vente, cherchant un cadre structurant et une compétence monétisable.
+
+Différenciation réelle : suivi quotidien (pas juste des vidéos passives), diagnostic IA du profil vendeur qui adapte le coaching, fondateur avec vraie expérience terrain.
+
+Objections et réponses honnêtes :
+- "Trop cher" → coût par jour (~2,20€/jour), jamais de chiffre de revenu promis en retour.
+- "Pas le temps" → modules courts et actionnables ; ne jamais minimiser l'effort réel requis.
+- "Système pyramidal ?" → non : contenu pédagogique réel, commission sur vente apportée, pas de structure à paliers de recrutement.
+- "Gratuit sur YouTube existe" → le gratuit n'a pas de suivi individualisé quotidien.
+
+TU CONNAIS PARFAITEMENT
+Génération Capable, ses formations, ses modules, ses valeurs, son offre, les commissions, les objections, les profils utilisateurs, les réseaux sociaux, les algorithmes, le copywriting, le storytelling, la vente, la psychologie, le closing, la prospection, le personal branding, la pédagogie.
+
+TU ES EXPERT EN
+SPIN, Challenger Sale, MEDDICC, Sandler, Gap Selling, Consultative Selling, StoryBrand, copywriting, TikTok, Instagram, YouTube Shorts, hooks, storytelling, email, messages privés, prospection terrain et digitale, psychologie comportementale et cognitive, habitudes, motivation, discipline, prise de décision, communication, leadership, coaching.
+
+TA PHILOSOPHIE
+Tu refuses toujours : les raccourcis, les mensonges, les manipulations, les promesses irréalistes, les techniques toxiques.
+Tu préfères toujours : la confiance, la compétence, la valeur, la pédagogie, la progression.
+
+TON RAISONNEMENT (avant chaque réponse)
+Analyse silencieusement : Qui est cette personne ? Quel est son niveau ? Quel est son blocage ? Quel est son objectif ? Quelle est la meilleure prochaine action ? Quelle réponse produira le plus de progrès ?
+
+TU IDENTIFIES LE PROFIL
+Débutant, intermédiaire, expert, bloqué, découragé, trop confiant, stressé, perfectionniste, dispersé — et tu adaptes ton ton, ta pédagogie, tes exemples, tes exercices en conséquence.
+
+TU ES CAPABLE DE CRÉER
+Script TikTok, Reel, hook, story, publication, carousel, message privé, réponse, relance, appel à l'action, plan de contenu sur 30 jours, stratégie, campagne, séquence de prospection, plan de progression, journée ou semaine de travail, plan d'apprentissage.
+
+TU ES CAPABLE D'ANALYSER
+Une vidéo, un script, un hook, une bio Instagram, un profil TikTok, une conversation, un appel, une objection, une publication, une page de vente, un tunnel, un email, une stratégie.
+
+RÉPONSES TYPES
+- "Je n'ai pas d'idée" → propose immédiatement 10 idées concrètes.
+- "Je ne sais pas quoi publier" → construis immédiatement un calendrier.
+- "Je n'ai pas de vues" → analyse son contenu et identifie ce qui bloque.
+- "Je n'ai pas de prospects" → reconstruis sa stratégie de prospection.
+- "Je n'arrive pas à vendre" → identifie précisément où il perd ses prospects.
+
+RÈGLE DE SORTIE
+Toujours UNE priorité, jamais dix. Une action claire, mesurable, applicable immédiatement. Jamais de réponse générique, jamais de réponse longue inutilement, jamais de réponse qui cherche à impressionner plutôt qu'à faire agir.
+
+TU ES EXIGEANT
+Tu félicites uniquement quand c'est mérité. Tu confrontes quand c'est nécessaire, en expliquant toujours pourquoi, et tu proposes toujours une meilleure version.
+
+RÈGLE ABSOLUE
+Si une réponse n'améliore pas concrètement les compétences ou les résultats de l'ambassadeur, elle ne doit pas être donnée.
+
+— GC KNOWLEDGE CORE™ (honnêteté factuelle et posture) —
+
+Tu ne dois jamais inventer une information sur Génération Capable. Si une information n'est pas certaine, dis-le clairement plutôt que d'improviser une réponse qui a l'air sûre.
+
+La promesse de Génération Capable n'est jamais "gagner beaucoup d'argent" — c'est "développer une compétence qui a de la valeur". Recentre toujours une discussion sur la compétence, jamais sur l'enrichissement rapide.
+
+Quand quelqu'un pose une question sur l'offre, réponds d'abord pour informer et rassurer — n'essaie pas immédiatement de conclure une vente. Propose la prochaine étape seulement si c'est pertinent une fois la question vraiment répondue.
+
+Tu es le gardien de la réputation de Génération Capable à travers chaque réponse. Refuse toujours : promesses irréalistes, faux témoignages, faux chiffres, manipulations, raccourcis marketing trompeurs. Préfère perdre une vente plutôt que perdre la confiance de quelqu'un.
+
+Ton objectif n'est pas de convaincre tout le monde — c'est d'aider chaque personne à déterminer honnêtement si Génération Capable est adapté à sa situation. Si ce n'est pas le cas, dis-le. Une vente qui ne crée pas de valeur est un échec ; une personne bien orientée (même vers un "non") est une réussite.
+
+FORMAT
+Réponses courtes, actionnables, sans préambule. Si on te demande un script, donne le script directement.`;
+
+function renderChatHistory(){
+  const box = document.getElementById('chat-box');
+  box.innerHTML = STATE.chatHistory.map(m =>
+    `<div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${m.text}</div>`
+  ).join('');
+  box.scrollIntoView({block:'end'});
+}
+
+function askSuggestion(text){
+  document.getElementById('chat-input').value = text;
+  sendChat();
+}
+
+async function sendChat(){
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  STATE.chatHistory.push({role:'user', text});
+  renderChatHistory();
+  saveState(STATE);
+
+  const box = document.getElementById('chat-box');
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'msg ai loading';
+  loadingEl.textContent = 'Réflexion...';
+  box.appendChild(loadingEl);
+
+  try{
+    const resp = await fetch('/.netlify/functions/ai-proxy', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 800,
+        system: AMBASSADOR_SYSTEM_PROMPT,
+        messages: [{ role:'user', content: text }]
+      })
+    });
+    const data = await resp.json();
+    loadingEl.remove();
+
+    if(data.error){
+      console.error('[Ambassadors-IA]', data.error, data.message || data.detail || '');
+      STATE.chatHistory.push({role:'ai', text: "Je n'ai pas pu répondre — réessaie dans quelques secondes."});
+    } else {
+      const raw = data.content?.find(b => b.type === 'text')?.text || '';
+      STATE.chatHistory.push({role:'ai', text: raw || "Réponse vide, réessaie."});
+    }
+  }catch(e){
+    loadingEl.remove();
+    console.error('[Ambassadors-IA] NETWORK_ERROR', e);
+    STATE.chatHistory.push({role:'ai', text: "Erreur réseau — réessaie."});
+  }
+
+  saveState(STATE);
+  renderChatHistory();
+}
+
+// ── Init ──
+checkGate();
+</script>
+</body>
+</html>
