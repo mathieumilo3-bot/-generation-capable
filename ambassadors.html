@@ -104,17 +104,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
 .activate-wrap h2{font-size:22px;font-weight:800;margin-bottom:10px}
 .activate-wrap p{font-size:13.5px;color:var(--t2);line-height:1.6;margin-bottom:24px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<!-- ═══════ ÉCRAN D'ACTIVATION (affiché si pas encore ambassadeur) ═══════ -->
+<!-- ═══════ ÉCRAN D'ACTIVATION (affiché si pas encore connecté) ═══════ -->
 <div id="gate-activate" class="activate-wrap" style="display:none">
   <div class="badge-live" style="margin:0 auto 20px;width:fit-content">GC AMBASSADORS OS</div>
   <h2>Deviens ambassadeur Génération Capable</h2>
   <p>Recrute, gagne des commissions récurrentes sur chaque abonnement actif que tu apportes, et progresse avec un coach IA dédié — activation immédiate.</p>
   <input class="chat-input" id="activate-email" type="email" placeholder="Ton email" style="width:100%;margin-bottom:12px;text-align:center">
-  <button class="btn btn-gold" onclick="activateAmbassador()">🚀 Activer mon accès ambassadeur</button>
+  <button class="btn btn-gold" onclick="activateAmbassador()">🚀 Recevoir mon lien de connexion</button>
   <div id="activate-error" style="color:#e08080;font-size:12px;margin-top:10px"></div>
+</div>
+
+<!-- ═══════ ÉCRAN "VÉRIFIE TA BOÎTE MAIL" ═══════ -->
+<div id="gate-check-email" class="activate-wrap" style="display:none">
+  <div class="badge-live" style="margin:0 auto 20px;width:fit-content">GC AMBASSADORS OS</div>
+  <h2>Vérifie ta boîte mail 📩</h2>
+  <p>On vient de t'envoyer un lien de connexion à <strong id="check-email-addr"></strong>. Ouvre l'email et clique sur le lien — ça te connecte directement, aucun mot de passe à retenir.</p>
+  <button class="btn btn-g" onclick="checkGate()">← Retour</button>
 </div>
 
 <div id="gate-loading" class="activate-wrap" style="display:none">
@@ -248,45 +257,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
 // ══════════════════════════════════════════════════════════
 //  GC AMBASSADORS OS — V1
 //
-//  ÉTAT ACTUEL (honnête, à lire avant de modifier) :
-//  Cette V1 utilise localStorage comme couche de données temporaire.
-//  Ce n'est PAS la source de vérité définitive (LAW-003 du Canon : le
-//  backend décide) — c'est un choix assumé pour livrer une V1 testable
-//  MAINTENANT plutôt que d'attendre un vrai backend (Supabase) qui,
-//  au moment de cette écriture, est bloqué côté outillage (permissions).
-//  Quand Supabase sera débloqué : remplacer les fonctions marquée
-//  "// TODO BACKEND" par de vrais appels API, sans toucher au reste
-//  de l'interface (elle ne connaît pas la source de données).
-//
-//  Ambassadeur = un compte Génération Capable existant qui active le
-//  rôle depuis cet écran (décision A3, activation immédiate, zéro
-//  friction — cohérent avec le Canon).
+//  AUTH (2026-07-23) : connexion par magic link (email), via Supabase Auth.
+//  Plus de localStorage pour l'identité — la session vit dans Supabase Auth
+//  (stockée par supabase-js dans localStorage sous son propre format, gérée
+//  automatiquement). Chaque appel à ambassador-data.js envoie le token de
+//  session dans le header Authorization ; le backend vérifie ce token avant
+//  toute lecture/écriture (voir ambassador-data.js pour le détail).
 // ══════════════════════════════════════════════════════════
 
-const EMAIL_KEY = 'gc_ambassador_email'; // juste un pointeur local (qui je suis) — les vraies données vivent en base, pas ici.
+// ⚠️ À REMPLIR : colle ici la clé "anon / public" de ton projet Supabase
+// (Supabase dashboard → Settings → API → "anon / public key"). C'est une
+// clé publique, normale à exposer côté client — la vraie sécurité vient
+// des policies RLS + de la vérification du token, pas du secret de cette clé.
+const SUPABASE_URL = 'https://fkhfahmzxsahrstxntjs.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_XfXArB0prFU-BFZUOo6vTw_Hqkr3ZNJ';
 
-function defaultState(){
-  return {
-    active: true,
-    name: 'Ambassadeur',
-    code: 'GC-AMB' + Math.floor(100+Math.random()*900),
-    missionDone: [false, false],
-    revenue: { today: 0, week: 0, month: 0, total: 0, activeSubs: 0, history: [] },
-    training: [
-      { title: 'Comprendre l\'offre Génération Capable', done: true },
-      { title: 'Créer ton premier contenu TikTok', done: false },
-      { title: 'Traiter les objections courantes', done: false },
-      { title: 'Convertir un prospect en abonné', done: false }
-    ],
-    chatHistory: []
-  };
-}
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let STATE = null;
-let AMBASSADOR_EMAIL = localStorage.getItem(EMAIL_KEY);
+let SESSION = null; // { access_token, user: { email, id } }
 
-async function loadStateFromServer(email){
-  const resp = await fetch('/.netlify/functions/ambassador-data?email=' + encodeURIComponent(email));
+async function loadStateFromServer(){
+  const resp = await fetch('/.netlify/functions/ambassador-data', {
+    headers: { 'Authorization': 'Bearer ' + SESSION.access_token }
+  });
   const data = await resp.json();
   if(data.error){
     console.error('[ambassador-data] load error', data.error, data.message || data.detail || '');
@@ -296,12 +290,15 @@ async function loadStateFromServer(email){
 }
 
 async function saveStateToServer(){
-  if(!AMBASSADOR_EMAIL || !STATE) return;
+  if(!SESSION || !STATE) return;
   try{
     const resp = await fetch('/.netlify/functions/ambassador-data', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email: AMBASSADOR_EMAIL, state: STATE })
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer ' + SESSION.access_token
+      },
+      body: JSON.stringify({ state: STATE })
     });
     const data = await resp.json();
     if(data.error) console.error('[ambassador-data] save error', data.error, data.message || data.detail || '');
@@ -315,17 +312,22 @@ function saveState(){ saveStateToServer(); }
 
 // ── Activation (écran gate) ──
 async function checkGate(){
-  if(!AMBASSADOR_EMAIL){
-    document.getElementById('gate-activate').style.display = 'block';
-    document.getElementById('gate-loading').style.display = 'none';
-    document.getElementById('app').style.display = 'none';
-    return;
-  }
   document.getElementById('gate-activate').style.display = 'none';
+  document.getElementById('gate-check-email').style.display = 'none';
   document.getElementById('gate-loading').style.display = 'block';
   document.getElementById('app').style.display = 'none';
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if(!session){
+    document.getElementById('gate-activate').style.display = 'block';
+    document.getElementById('gate-loading').style.display = 'none';
+    return;
+  }
+
+  SESSION = session;
   try{
-    STATE = await loadStateFromServer(AMBASSADOR_EMAIL);
+    STATE = await loadStateFromServer();
     document.getElementById('gate-loading').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     renderAll();
@@ -335,6 +337,7 @@ async function checkGate(){
        <button class="btn btn-g" style="margin-top:14px" onclick="checkGate()">Réessayer</button>`;
   }
 }
+
 async function activateAmbassador(){
   const emailInput = document.getElementById('activate-email');
   const email = emailInput.value.trim().toLowerCase();
@@ -344,16 +347,38 @@ async function activateAmbassador(){
     return;
   }
   errEl.textContent = '';
-  AMBASSADOR_EMAIL = email;
-  localStorage.setItem(EMAIL_KEY, email);
-  checkGate();
+
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href.split('#')[0] }
+  });
+
+  if(error){
+    errEl.textContent = "Impossible d'envoyer le lien, réessaie dans une minute.";
+    console.error('[auth] signInWithOtp error', error);
+    return;
+  }
+
+  document.getElementById('check-email-addr').textContent = email;
+  document.getElementById('gate-activate').style.display = 'none';
+  document.getElementById('gate-check-email').style.display = 'block';
 }
-function deactivateDemo(){
-  localStorage.removeItem(EMAIL_KEY);
-  AMBASSADOR_EMAIL = null;
+
+async function deactivateDemo(){
+  await supabaseClient.auth.signOut();
+  SESSION = null;
   STATE = null;
   checkGate();
 }
+
+// Supabase gère automatiquement l'échange du lien magique contre une session
+// au chargement de la page (detectSessionInUrl activé par défaut). On écoute
+// simplement les changements de session pour rafraîchir l'écran au bon moment.
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED'){
+    SESSION = session;
+  }
+});
 
 // ── Navigation ──
 function goScreen(name){
