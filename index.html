@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="gc-signature-id" content="GC-2026-generation-capable-main">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Génération Capable</title>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -50,7 +51,12 @@ async function activateSubscription(){
     }catch(e){ console.warn('Compte Supabase non créé (Supabase pas encore configuré) :', e); }
   }
 
-  window.open(STRIPE_LINKS.eco_monthly, '_blank');
+  if(window.GCShield){
+    const checkout = await window.GCShield.startPayment({ product_code: 'eco_monthly', buyer_email: emailVal, metadata: { source: 'subscribe_modal' } });
+    window.open(checkout || STRIPE_LINKS.eco_monthly, '_blank');
+  } else {
+    window.open(STRIPE_LINKS.eco_monthly, '_blank');
+  }
   closeMo('mo-subscribe');
   toast('Compte créé. Finalise ton paiement dans l\'onglet Stripe →');
 }
@@ -783,6 +789,8 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   .fb-scores{grid-template-columns:repeat(3,1fr)}
 }
 </style>
+
+<script src="/gc-shield.js" defer></script>
 </head>
 <body>
 
@@ -4121,8 +4129,13 @@ function proceedToStripePayment(){
 
   // Stocker en localStorage que le paiement a été initié
   // (Stripe redirige vers une URL de succès que tu configures)
-  setTimeout(() => {
-    window.open(finalUrl, '_blank');
+  setTimeout(async () => {
+    if(window.GCShield){
+      const checkout = await window.GCShield.startPayment({ product_code: price, buyer_email: email, metadata: { source: 'module_1_gate', signature } });
+      window.open(checkout || finalUrl, '_blank');
+    } else {
+      window.open(finalUrl, '_blank');
+    }
     // Afficher message d'attente
     document.getElementById('gate-step-payment').innerHTML = `
       <div style="text-align:center;padding:30px 20px">
