@@ -1,28 +1,26 @@
 // netlify/functions/ambassador-data.js
 //
 // Pont entre GC Ambassadors OS (ambassadors.html) et la base Supabase.
-// Le navigateur ne parle JAMAIS directement à Supabase — uniquement à cette
-// fonction, qui elle seule détient la clé Supabase (variable d'environnement
-// Netlify SUPABASE_ANON_KEY, à ajouter comme ANTHROPIC_API_KEY/OPENAI_API_KEY
-// l'ont été précédemment).
 //
-// Ça résout le problème "données coincées sur un seul téléphone" (localStorage)
-// : chaque ambassadeur est identifié par son email, sa progression/ses revenus
-// vivent maintenant en base, accessibles depuis n'importe quel appareil.
+// AUTH (2026-07-27, fix) : ambassadors.html envoie un vrai token de session
+// Supabase (Authorization: Bearer <access_token>, obtenu via le magic link),
+// pas un email en clair. Cette fonction vérifie ce token auprès de Supabase
+// Auth et utilise l'email qu'il contient comme identité — jamais un email
+// fourni tel quel par le client. Avant ce fix, le GET exigeait un ?email=
+// que le front n'envoie plus depuis le passage au vrai auth (23/07), d'où un
+// échec 100% du chargement juste après la connexion par magic link.
+// Ça ferme aussi le trou décrit dans le Pack Légal V1 (accès par email seul,
+// sans session vérifiée) : un utilisateur ne peut plus lire/écrire les
+// données d'un autre ambassadeur en devinant son adresse.
 //
 // ROUTES
-//   GET  /.netlify/functions/ambassador-data?email=xxx
-//        → renvoie l'état de l'ambassadeur (le crée avec l'état par défaut
-//          s'il n'existe pas encore)
-//   POST /.netlify/functions/ambassador-data  { email, state }
-//        → écrit l'état (upsert)
-//
-// SÉCURITÉ V1 (honnête, à lire) : il n'y a pas encore de vraie authentification
-// (pas de mot de passe / session vérifiée) — n'importe qui connaissant un email
-// pourrait en théorie lire/écrire l'état associé. Acceptable pour un pilote à
-// quelques ambassadeurs de confiance. À durcir avant un lancement ouvert : vraie
-// auth Supabase (magic link ou mot de passe) + policies RLS par utilisateur au
-// lieu de la policy permissive posée en V1.
+//   GET  /.netlify/functions/ambassador-data
+//        (Authorization: Bearer <session_token> requis)
+//        → renvoie l'état de l'ambassadeur authentifié (le crée avec l'état
+//          par défaut si c'est sa première connexion)
+//   POST /.netlify/functions/ambassador-data  { state }
+//        (Authorization: Bearer <session_token> requis)
+//        → écrit l'état de l'ambassadeur authentifié
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://fkhfahmzxsahrstxntjs.supabase.co';
 
@@ -43,11 +41,35 @@ function defaultState(){
   };
 }
 
+// Vérifie le token de session envoyé par le front auprès de Supabase Auth et
+// retourne l'email vérifié. Ne fait JAMAIS confiance à un email fourni par
+// le client lui-même.
+async function getVerifiedEmail(event, anonKey){
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader) return { error: 'MISSING_TOKEN' };
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return { error: 'MISSING_TOKEN' };
+
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { 'apikey': anonKey, 'Authorization': `Bearer ${token}` }
+  });
+  if (!r.ok) return { error: 'INVALID_TOKEN' };
+  const user = await r.json();
+  if (!user?.email) return { error: 'INVALID_TOKEN' };
+  return { email: user.email.toLowerCase() };
+}
+
 exports.handler = async (event) => {
   const anonKey = process.env.SUPABASE_ANON_KEY;
   if (!anonKey) {
     console.error('[ambassador-data] SUPABASE_ANON_KEY absente sur Netlify.');
     return json(200, { error: 'NO_SUPABASE_KEY', message: "Clé Supabase non configurée sur Netlify (SUPABASE_ANON_KEY)." });
+  }
+
+  const { email, error: authError } = await getVerifiedEmail(event, anonKey);
+  if (authError) {
+    console.error('[ambassador-data] Auth échouée:', authError);
+    return json(401, { error: authError, message: 'Session invalide ou expirée — reconnecte-toi.' });
   }
 
   const headers = {
@@ -58,9 +80,6 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === 'GET') {
-      const email = (event.queryStringParameters || {}).email;
-      if (!email) return json(400, { error: 'Missing email' });
-
       const r = await fetch(
         `${SUPABASE_URL}/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}&select=state`,
         { headers }
@@ -75,7 +94,7 @@ exports.handler = async (event) => {
         return json(200, { state: rows[0].state });
       }
 
-      // Ambassadeur inconnu → on le crée avec l'état par défaut.
+      // Ambassadeur inconnu → première connexion, on le crée avec l'état par défaut.
       const initial = defaultState();
       const createR = await fetch(`${SUPABASE_URL}/rest/v1/ambassadors`, {
         method: 'POST',
@@ -97,8 +116,8 @@ exports.handler = async (event) => {
       } catch (e) {
         return json(400, { error: 'Invalid JSON body' });
       }
-      const { email, state } = payload;
-      if (!email || !state) return json(400, { error: 'Missing email or state' });
+      const { state } = payload;
+      if (!state) return json(400, { error: 'Missing state' });
 
       const r = await fetch(
         `${SUPABASE_URL}/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}`,
