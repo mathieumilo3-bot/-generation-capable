@@ -76,7 +76,22 @@ exports.handler = async (event) => {
   if (!messages) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing messages' }) };
   }
-  const max_tokens = Math.max(payload.max_tokens || 1000, 2000);
+
+  // Plancher 2000 (cf. FIX audit 2026-07-21 ci-dessus) et plafond 4000 : sans
+  // plafond, un appelant pouvait demander un max_tokens arbitrairement élevé
+  // (aucune vérification d'auth sur cette fonction) et faire exploser la
+  // facture OpenAI/Anthropic pour un seul appel.
+  const MAX_TOKENS_CEILING = 4000;
+  const max_tokens = Math.min(Math.max(payload.max_tokens || 1000, 2000), MAX_TOKENS_CEILING);
+
+  // Garde-fou taille d'entrée : les prompts réels de ce site (system + message
+  // utilisateur) font quelques Ko au maximum. Une entrée anormalement grosse
+  // n'a pas d'usage légitime ici et ne fait qu'augmenter le coût par appel.
+  const MAX_INPUT_CHARS = 20000;
+  const inputSize = (system || '').length + JSON.stringify(messages).length;
+  if (inputSize > MAX_INPUT_CHARS) {
+    return { statusCode: 413, body: JSON.stringify({ error: 'PAYLOAD_TOO_LARGE' }) };
+  }
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
