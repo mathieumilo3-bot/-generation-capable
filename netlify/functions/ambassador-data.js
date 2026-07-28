@@ -2,16 +2,23 @@
 //
 // Pont entre GC Ambassadors OS (ambassadors.html) et la base Supabase.
 //
-// AUTH (2026-07-27, fix) : ambassadors.html envoie un vrai token de session
+// AUTH (2026-07-27) : ambassadors.html envoie un vrai token de session
 // Supabase (Authorization: Bearer <access_token>, obtenu via le magic link),
-// pas un email en clair. Cette fonction vérifie ce token auprès de Supabase
-// Auth et utilise l'email qu'il contient comme identité — jamais un email
-// fourni tel quel par le client. Avant ce fix, le GET exigeait un ?email=
-// que le front n'envoie plus depuis le passage au vrai auth (23/07), d'où un
-// échec 100% du chargement juste après la connexion par magic link.
-// Ça ferme aussi le trou décrit dans le Pack Légal V1 (accès par email seul,
-// sans session vérifiée) : un utilisateur ne peut plus lire/écrire les
-// données d'un autre ambassadeur en devinant son adresse.
+// jamais un email en clair. Cette fonction vérifie ce token auprès de
+// Supabase Auth et utilise l'email qu'il contient comme identité.
+//
+// FIX (audit production) : cette fonction appelait ensuite l'API REST
+// Supabase avec la clé ANON (publique, visible dans ambassadors.html). Pour
+// que ça fonctionne, la RLS de la table "ambassadors" devait forcément
+// autoriser le rôle "anon" à lire/écrire — ce qui voulait dire que N'IMPORTE
+// QUI pouvait appeler l'API Supabase directement avec cette même clé et
+// lire/écrire les données de n'importe quel ambassadeur en devinant son
+// email, en contournant complètement la vérification de token ci-dessous.
+// Fix : la fonction utilise maintenant SUPABASE_SERVICE_ROLE_KEY (qui
+// contourne la RLS) pour l'accès aux données, après avoir vérifié le token
+// elle-même. La RLS sur "ambassadors" n'accorde plus aucun accès à
+// anon/authenticated (voir supabase/migrations/0001_subscribers_roles_and_rls.sql) :
+// cette fonction redevient la seule porte d'entrée possible.
 //
 // ROUTES
 //   GET  /.netlify/functions/ambassador-data
@@ -22,7 +29,9 @@
 //        (Authorization: Bearer <session_token> requis)
 //        → écrit l'état de l'ambassadeur authentifié
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://fkhfahmzxsahrstxntjs.supabase.co';
+const { verifySessionToken, supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
+
+const MAX_STATE_BYTES = 200_000; // large marge au-dessus d'un usage normal, évite l'abus
 
 function defaultState(){
   return {
@@ -41,72 +50,51 @@ function defaultState(){
   };
 }
 
-// Vérifie le token de session envoyé par le front auprès de Supabase Auth et
-// retourne l'email vérifié. Ne fait JAMAIS confiance à un email fourni par
-// le client lui-même.
-async function getVerifiedEmail(event, anonKey){
-  const authHeader = event.headers.authorization || event.headers.Authorization;
-  if (!authHeader) return { error: 'MISSING_TOKEN' };
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (!token) return { error: 'MISSING_TOKEN' };
-
-  const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { 'apikey': anonKey, 'Authorization': `Bearer ${token}` }
-  });
-  if (!r.ok) return { error: 'INVALID_TOKEN' };
-  const user = await r.json();
-  if (!user?.email) return { error: 'INVALID_TOKEN' };
-  return { email: user.email.toLowerCase() };
-}
-
 exports.handler = async (event) => {
   const anonKey = process.env.SUPABASE_ANON_KEY;
   if (!anonKey) {
     console.error('[ambassador-data] SUPABASE_ANON_KEY absente sur Netlify.');
-    return json(200, { error: 'NO_SUPABASE_KEY', message: "Clé Supabase non configurée sur Netlify (SUPABASE_ANON_KEY)." });
+    return jsonResponse(200, { error: 'NO_SUPABASE_KEY', message: "Clé Supabase non configurée sur Netlify (SUPABASE_ANON_KEY)." });
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[ambassador-data] SUPABASE_SERVICE_ROLE_KEY absente sur Netlify.');
+    return jsonResponse(200, { error: 'NO_SERVICE_ROLE_KEY', message: "Clé Supabase privilégiée non configurée sur Netlify (SUPABASE_SERVICE_ROLE_KEY)." });
   }
 
-  const { email, error: authError } = await getVerifiedEmail(event, anonKey);
+  const { email, error: authError } = await verifySessionToken(event, anonKey);
   if (authError) {
     console.error('[ambassador-data] Auth échouée:', authError);
-    return json(401, { error: authError, message: 'Session invalide ou expirée — reconnecte-toi.' });
+    return jsonResponse(401, { error: authError, message: 'Session invalide ou expirée — reconnecte-toi.' });
   }
-
-  const headers = {
-    'Content-Type': 'application/json',
-    'apikey': anonKey,
-    'Authorization': `Bearer ${anonKey}`
-  };
 
   try {
     if (event.httpMethod === 'GET') {
-      const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}&select=state`,
-        { headers }
+      const r = await supabaseAdminRequest(
+        `/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}&select=state`
       );
       const rows = await r.json();
       if (!r.ok) {
         console.error('[ambassador-data] Erreur lecture Supabase', r.status, JSON.stringify(rows));
-        return json(200, { error: 'SUPABASE_READ_ERROR', detail: rows });
+        return jsonResponse(200, { error: 'SUPABASE_READ_ERROR', detail: rows });
       }
 
       if (rows.length > 0) {
-        return json(200, { state: rows[0].state });
+        return jsonResponse(200, { state: rows[0].state });
       }
 
       // Ambassadeur inconnu → première connexion, on le crée avec l'état par défaut.
       const initial = defaultState();
-      const createR = await fetch(`${SUPABASE_URL}/rest/v1/ambassadors`, {
+      const createR = await supabaseAdminRequest('/rest/v1/ambassadors', {
         method: 'POST',
-        headers: { ...headers, 'Prefer': 'return=representation' },
+        headers: { Prefer: 'return=representation' },
         body: JSON.stringify({ email, state: initial })
       });
       const created = await createR.json();
       if (!createR.ok) {
         console.error('[ambassador-data] Erreur création Supabase', createR.status, JSON.stringify(created));
-        return json(200, { error: 'SUPABASE_CREATE_ERROR', detail: created });
+        return jsonResponse(200, { error: 'SUPABASE_CREATE_ERROR', detail: created });
       }
-      return json(200, { state: initial });
+      return jsonResponse(200, { state: initial });
     }
 
     if (event.httpMethod === 'POST') {
@@ -114,35 +102,34 @@ exports.handler = async (event) => {
       try {
         payload = JSON.parse(event.body || '{}');
       } catch (e) {
-        return json(400, { error: 'Invalid JSON body' });
+        return jsonResponse(400, { error: 'Invalid JSON body' });
       }
       const { state } = payload;
-      if (!state) return json(400, { error: 'Missing state' });
+      if (!state) return jsonResponse(400, { error: 'Missing state' });
+      if (JSON.stringify(state).length > MAX_STATE_BYTES) {
+        return jsonResponse(413, { error: 'STATE_TOO_LARGE' });
+      }
 
-      const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}`,
+      const r = await supabaseAdminRequest(
+        `/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}`,
         {
           method: 'PATCH',
-          headers: { ...headers, 'Prefer': 'return=minimal' },
+          headers: { Prefer: 'return=minimal' },
           body: JSON.stringify({ state, updated_at: new Date().toISOString() })
         }
       );
       if (!r.ok) {
         const detail = await r.text();
         console.error('[ambassador-data] Erreur écriture Supabase', r.status, detail);
-        return json(200, { error: 'SUPABASE_WRITE_ERROR', detail });
+        return jsonResponse(200, { error: 'SUPABASE_WRITE_ERROR', detail });
       }
-      return json(200, { ok: true });
+      return jsonResponse(200, { ok: true });
     }
 
-    return json(405, { error: 'Method not allowed' });
+    return jsonResponse(405, { error: 'Method not allowed' });
 
   } catch (e) {
     console.error('[ambassador-data] NETWORK_ERROR', e);
-    return json(200, { error: 'NETWORK_ERROR', message: String(e) });
+    return jsonResponse(200, { error: 'NETWORK_ERROR', message: String(e) });
   }
 };
-
-function json(statusCode, data) {
-  return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) };
-}
