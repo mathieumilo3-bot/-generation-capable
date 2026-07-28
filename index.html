@@ -2909,7 +2909,12 @@ var STATE = {
 };
 
 function go(id, el){
-  if(id !== 'accueil' && id !== 'login' && id !== 'rejoindre' && typeof STATE !== 'undefined' && !STATE.module1Validated){
+  // 'admin' est exempté de ce garde-fou payant : l'accès admin est décidé
+  // exclusivement par checkAdminAccess() (vérification serveur du rôle),
+  // pas par un abonnement actif. Sans cette exception, un compte fondateur
+  // qui n'est pas lui-même abonné ne pouvait jamais atteindre la page admin
+  // — trouvé en testant le parcours administrateur de bout en bout.
+  if(id !== 'accueil' && id !== 'login' && id !== 'rejoindre' && id !== 'admin' && typeof STATE !== 'undefined' && !STATE.module1Validated){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     document.getElementById('page-accueil').classList.add('on');
     toast('🔑 Entre ton code d\'accès pour continuer');
