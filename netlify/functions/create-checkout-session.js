@@ -1,19 +1,17 @@
 // netlify/functions/create-checkout-session.js
 //
-// Crée une session Stripe Checkout côté serveur. Remplace les anciens liens
-// Stripe (buy.stripe.com) codés en dur et identiques pour toutes les offres,
-// et remplace surtout l'ancien "honor system" (confirmPaymentReturn() côté
-// front activait l'accès sur un simple clic, sans aucune vérification).
+// Crée une session Stripe Checkout côté serveur pour l'unique offre du
+// produit (Génération Capable, 67€/mois). Remplace tout lien Stripe codé en
+// dur et toute activation d'accès sans vérification réelle du paiement.
 //
-// Le client n'envoie qu'une clé symbolique d'offre ("eco_monthly",
-// "academie_97", ...) — jamais un Price ID ou un montant. Le mapping vers le
-// vrai Price ID Stripe est fait ici, côté serveur, à partir d'une
-// configuration fixe (_lib/stripe-offers.js). Impossible pour un client de
-// obtenir un prix ou un produit différent de celui prévu en modifiant la
-// requête.
+// Le client n'envoie qu'une clé symbolique d'offre ("gc_67") — jamais un
+// Price ID ou un montant. Le mapping vers le vrai Price ID Stripe est fait
+// ici, côté serveur, à partir d'une configuration fixe
+// (_lib/stripe-offers.js). Impossible pour un client d'obtenir un prix ou un
+// produit différent de celui prévu en modifiant la requête.
 //
 // POST /.netlify/functions/create-checkout-session
-//   body: { offer: 'eco_monthly'|'eco_semester'|'academie_97'|'academie_247', email, name? }
+//   body: { offer: 'gc_67', email, name? }
 //   → { url: 'https://checkout.stripe.com/...' }  (à rediriger, même onglet)
 
 const { getOffer } = require('./_lib/stripe-offers');

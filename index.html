@@ -4067,10 +4067,7 @@ async function onAuthSuccess(session){
 // n'envoie que cette clé symbolique à /.netlify/functions/create-checkout-session,
 // jamais une URL ou un Price ID Stripe : le mapping vers le vrai Price ID
 // (cf. netlify/functions/_lib/stripe-offers.js) est fait exclusivement côté
-// serveur. Avant ce fix, 5 offres différentes existaient et pointaient
-// toutes vers le même lien Stripe statique (buy.stripe.com/eVq14faCzehj85l1Yv18c0c) ;
-// les paliers Académie (97€/247€) et semestriel ont été retirés du produit —
-// ils n'avaient de toute façon plus aucune UI qui y menait dans ce fichier.
+// serveur.
 
 // ── EMAILJS CONFIG ──
 // 1. Crée un compte gratuit sur emailjs.com
@@ -4140,16 +4137,10 @@ function registerMember(name, email, type){
   } catch(e){}
 }
 
-// FIX (audit production) : proceedToStripePayment() / confirmPaymentReturn()
-// référençaient des éléments (#gate-name, #gate-email, #gate-cgu,
-// #gate-signature, #mo-gate) qui n'existent plus dans ce fichier — la
-// modale "Module 01 — lettre d'engagement" a été retirée du HTML à un moment
-// donné, laissant ces fonctions mortes (aucun appelant). confirmPaymentReturn()
-// activait en plus l'accès sur un simple clic, sans aucune vérification de
-// paiement : même si elle avait été appelable, c'était un contournement total
-// du paiement. Les deux fonctions ont été supprimées ; le paiement passe
-// exclusivement par redirectToStripeCheckout() + handleCheckoutReturn()
-// ci-dessous, pour l'unique offre restante (67€/mois).
+// Le paiement passe exclusivement par redirectToStripeCheckout() (envoi vers
+// Stripe Checkout) + handleCheckoutReturn() ci-dessous (confirmation
+// serveur du paiement avant toute activation) : jamais d'activation sur un
+// simple clic côté client.
 
 // Appelé au chargement de la page si l'URL contient ?checkout=success|cancelled
 // (retour de Stripe Checkout). Ne fait JAMAIS confiance à ce paramètre seul :

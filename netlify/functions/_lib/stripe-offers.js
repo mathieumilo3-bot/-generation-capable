@@ -1,9 +1,7 @@
 // netlify/functions/_lib/stripe-offers.js
 //
 // Configuration centralisée de l'offre Stripe. Génération Capable ne vend
-// plus qu'un seul abonnement (67 €/mois) — les anciens paliers (semestriel,
-// Académie 97€/247€) ont été retirés du produit et de ce fichier ; ils
-// n'avaient de toute façon plus aucune UI qui y menait dans index.html.
+// qu'un seul abonnement (67 €/mois) — un seul produit, un seul Price ID.
 //
 // Le client n'envoie qu'une clé symbolique ('gc_67'), jamais un Price ID ou
 // un montant : le mapping vers le vrai Price ID Stripe se fait exclusivement
