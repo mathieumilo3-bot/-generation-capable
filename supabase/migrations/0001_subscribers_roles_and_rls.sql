@@ -21,6 +21,9 @@
 -- ──────────────────────────────────────────────────────────────────────────
 create table if not exists public.subscribers (
   id                     uuid primary key default gen_random_uuid(),
+  -- Lien optionnel, non fiable pour la sécurité : Stripe ne connaît que
+  -- l'email du payeur, jamais l'id Supabase Auth. Toute vérification
+  -- d'accès (RLS, admin-verify.js) se fait sur "email", jamais sur user_id.
   user_id                uuid references auth.users(id) on delete set null,
   email                  text not null,
   is_active              boolean not null default false,
@@ -65,11 +68,19 @@ create unique index if not exists subscribers_user_id_unique_idx
 
 alter table public.subscribers enable row level security;
 
+-- Comparaison par email (via le claim "email" du JWT vérifié), pas par
+-- user_id : les lignes créées à partir d'un événement Stripe (paiement) sont
+-- écrites par verify-checkout-session.js / stripe-webhook.js, qui ne
+-- connaissent que l'email du payeur (Stripe ne renvoie pas d'id Supabase Auth)
+-- — user_id y reste donc NULL. Une policy basée sur auth.uid() = user_id ne
+-- laisserait jamais un abonné voir sa propre ligne. auth.jwt()->>'email' est
+-- le claim standard Supabase, présent pour toute session (mot de passe,
+-- OAuth, magic link) — fiable indépendamment de tout lien user_id.
 drop policy if exists subscribers_select_own on public.subscribers;
 create policy subscribers_select_own
   on public.subscribers for select
   to authenticated
-  using (auth.uid() = user_id);
+  using (lower(email) = lower(auth.jwt() ->> 'email'));
 
 -- Aucune policy insert/update/delete pour anon/authenticated : toute écriture
 -- (activation après paiement, changement de rôle) passe exclusivement par
@@ -122,7 +133,7 @@ create policy modules_select_active_subscribers
   using (
     exists (
       select 1 from public.subscribers s
-      where s.user_id = auth.uid() and s.is_active = true
+      where lower(s.email) = lower(auth.jwt() ->> 'email') and s.is_active = true
     )
   );
 

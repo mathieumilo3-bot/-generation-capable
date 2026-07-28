@@ -28,14 +28,18 @@ exports.handler = async (event) => {
     return jsonResponse(500, { authorized: false, error: 'SERVER_NOT_CONFIGURED' });
   }
 
-  const { id: userId, error: authError } = await verifySessionToken(event, anonKey);
+  // On vérifie par email (claim vérifié par Supabase Auth), pas par user_id :
+  // les lignes "subscribers" créées après un paiement Stripe ne connaissent
+  // que l'email du payeur (voir migration SQL) — filtrer par user_id ne
+  // trouverait jamais ces lignes.
+  const { email, error: authError } = await verifySessionToken(event, anonKey);
   if (authError) {
     return jsonResponse(401, { authorized: false, error: authError });
   }
 
   try {
     const r = await supabaseAdminRequest(
-      `/rest/v1/subscribers?user_id=eq.${encodeURIComponent(userId)}&select=role`
+      `/rest/v1/subscribers?email=eq.${encodeURIComponent(email)}&select=role`
     );
     const rows = await r.json();
     if (!r.ok) {

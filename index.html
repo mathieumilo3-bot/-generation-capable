@@ -4048,6 +4048,11 @@ async function signOutUser(){
 // dans la table "subscribers" si cette personne a bien un abonnement actif.
 // C'est CETTE vérification côté serveur (via RLS Supabase) qui remplace
 // les anciens codes d'accès en clair — impossible à falsifier depuis le JS.
+// Filtre par email (pas par user_id) : les lignes créées après un paiement
+// Stripe ne connaissent que l'email du payeur (voir la RLS de "subscribers"
+// dans supabase/migrations/) — filtrer par user_id ne les trouverait jamais.
+// Le filtre ci-dessous est un confort de lecture ; la vraie restriction de
+// sécurité vient de la policy RLS elle-même, pas de ce .eq() côté client.
 async function onAuthSuccess(session){
   if(!session?.user) return;
   STATE.memberEmail = session.user.email;
@@ -4057,7 +4062,7 @@ async function onAuthSuccess(session){
   const { data: sub, error } = await supa
     .from('subscribers')
     .select('is_active')
-    .eq('user_id', session.user.id)
+    .eq('email', session.user.email.toLowerCase())
     .maybeSingle();
 
   if(error){ console.error(error); toast('❌ Erreur de vérification de l\'abonnement'); return; }
