@@ -51,8 +51,7 @@ async function activateSubscription(){
     }catch(e){ console.warn('Compte Supabase non créé (Supabase pas encore configuré) :', e); }
   }
 
-  const offer = STATE.subPlan === 'semester' ? 'eco_semester' : 'eco_monthly';
-  await redirectToStripeCheckout(offer, emailVal, 'sub-confirm-btn');
+  await redirectToStripeCheckout('gc_67', emailVal, 'sub-confirm-btn');
   closeMo('mo-subscribe');
 }
 
@@ -729,44 +728,6 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 .pw-inline-title{font-size:13px;font-weight:800;color:var(--gold);margin-bottom:2px}
 .pw-inline-sub{font-size:12px;color:var(--t2)}
 
-.plan-toggle{flex:1;border:1.5px solid var(--b);border-radius:12px;padding:14px 12px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02)}
-.plan-toggle:hover{border-color:var(--bh)}
-.plan-toggle.on{border-color:var(--gold);background:rgba(245,197,24,.08)}
-
-/* ═══════════════ MODULE 1 — FAÇADE D'ENTRÉE (lettre + paiement) ═══════════════ */
-.m1-facade{position:relative;background:linear-gradient(160deg,rgba(245,197,24,.1),rgba(41,151,255,.04) 60%,var(--bg1) 100%);border:1.5px solid rgba(245,197,24,.28);border-radius:20px;padding:32px;margin-bottom:36px;overflow:hidden}
-.m1-facade::before{content:'';position:absolute;top:-40%;right:-15%;width:300px;height:300px;background:radial-gradient(circle,rgba(245,197,24,.12),transparent 70%);pointer-events:none}
-.m1-top-row{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;position:relative;z-index:1}
-.m1-badge-num{width:54px;height:54px;border-radius:15px;background:linear-gradient(160deg,#ffd43d,var(--gold));display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:800;color:#1a1300;flex-shrink:0;box-shadow:0 8px 20px rgba(245,197,24,.3)}
-.m1-eyebrow{font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
-.m1-title{font-size:21px;font-weight:800;letter-spacing:-.4px;margin-bottom:6px}
-.m1-desc{font-size:13px;color:var(--t2);line-height:1.6;max-width:520px}
-.m1-status-pill{margin-left:auto;flex-shrink:0;font-size:11px;font-weight:800;padding:6px 13px;border-radius:20px;white-space:nowrap}
-
-.m1-steps-row{display:flex;gap:12px;margin-bottom:22px;position:relative;z-index:1}
-.m1-step-card{flex:1;background:rgba(0,0,0,.22);border:1px solid var(--b);border-radius:12px;padding:16px 18px}
-.m1-step-card.done{border-color:rgba(48,209,88,.3);background:rgba(48,209,88,.05)}
-.m1-step-ico{font-size:18px;margin-bottom:8px}
-.m1-step-t{font-size:12.5px;font-weight:700;margin-bottom:3px}
-.m1-step-d{font-size:11px;color:var(--t3);line-height:1.4}
-.m1-step-state{font-size:10.5px;font-weight:800;margin-top:8px;display:inline-block}
-
-.m1-price-row{display:flex;align-items:center;gap:18px;background:rgba(0,0,0,.25);border:1px solid var(--b);border-radius:14px;padding:18px 22px;position:relative;z-index:1;flex-wrap:wrap}
-.m1-price-num{font-size:34px;font-weight:800;letter-spacing:-1.2px;color:var(--gold)}
-.m1-price-old{font-size:15px;color:var(--t3);text-decoration:line-through;font-weight:600;margin-left:6px}
-.m1-price-label{font-size:11.5px;color:var(--t2);margin-top:2px}
-.m1-slots-wrap{flex:1;min-width:180px}
-.m1-slots-label{font-size:10.5px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;justify-content:space-between}
-.m1-slots-bar{height:7px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden}
-.m1-slots-fill{height:100%;background:linear-gradient(90deg,#ffd43d,var(--gold));border-radius:7px;transition:width .6s var(--ease)}
-.m1-slots-note{font-size:10.5px;color:var(--orange);font-weight:700;margin-top:6px}
-
-@media(max-width:700px){
-  .m1-steps-row{flex-direction:column}
-  .m1-top-row{flex-direction:column}
-  .m1-status-pill{margin-left:0}
-  .m1-price-row{flex-direction:column;align-items:flex-start}
-}
 
 /* ═══════════════ APERÇU TOP 5 — gratuit, dans Opportunités ═══════════════ */
 .preview-top5{background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:24px;position:relative}
@@ -2376,8 +2337,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div style="background:var(--bg1);border:1px solid var(--b);border-radius:10px;padding:16px 18px">
           <div style="font-size:11px;font-weight:800;color:var(--gold);margin-bottom:6px">OFFRES ET TARIFS</div>
           <div style="font-size:13px;color:var(--t2);line-height:1.7">
-            <strong style="color:var(--t1)">Accès Académie (formation)</strong> — 97 € TTC (tarif fondateur, limité aux 100 premiers membres) puis 247 € TTC. Paiement unique. Accès à vie aux modules 1 à 7 et à l'ensemble des fiches terrain.<br><br>
-            <strong style="color:var(--t1)">Accès Écosystème (abonnement)</strong> — 67 € TTC/mois. Accès au Centre d'Opportunités, CRM & Outils, Challenges, Coaching privé, Communauté, Ressources et Commissions. Résiliable à tout moment depuis l'espace profil.
+            <strong style="color:var(--t1)">Accès Génération Capable (abonnement)</strong> — 67 € TTC/mois. Accès à l'intégralité de la plateforme : modules de formation, Centre d'Opportunités, CRM & Outils, Challenges, Coaching privé, Communauté, Ressources et Commissions. Résiliable à tout moment depuis l'espace profil.
           </div>
         </div>
 
@@ -2398,7 +2358,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 
         <div style="background:var(--bg1);border:1px solid var(--b);border-radius:10px;padding:16px 18px">
           <div style="font-size:11px;font-weight:800;color:var(--gold);margin-bottom:6px">RÉSILIATION DE L'ABONNEMENT</div>
-          <div style="font-size:13px;color:var(--t2);line-height:1.7">L'abonnement mensuel ou semestriel est résiliable à tout moment depuis l'espace Profil. La résiliation prend effet à la fin de la période en cours. Aucun remboursement au prorata n'est accordé pour la période en cours.</div>
+          <div style="font-size:13px;color:var(--t2);line-height:1.7">L'abonnement mensuel est résiliable à tout moment depuis l'espace Profil. La résiliation prend effet à la fin de la période en cours. Aucun remboursement au prorata n'est accordé pour la période en cours.</div>
         </div>
 
         <div style="background:var(--bg1);border:1px solid var(--b);border-radius:10px;padding:16px 18px">
@@ -2887,7 +2847,6 @@ var STATE = {
   memberName:       _sv.memberName||'Membre',
   memberEmail:      _sv.memberEmail||'',
   module1Letter:    _sv.module1Letter||'',
-  m1SlotsTaken:     _sv.m1SlotsTaken||23,
   prospects:        _sv.prospects||0,
   reponses:         _sv.reponses||0,
   rdv:              _sv.rdv||0,
@@ -2982,17 +2941,6 @@ function openTileForPage(pageId){
   }
 }
 
-
-// Pré-sélectionne le plan dans le modal d'abonnement (mensuel ou semestriel)
-function selectSubPlan(plan){
-  STATE.subPlan = plan;
-  const btnMonth = document.getElementById('plan-toggle-monthly');
-  const btnSem = document.getElementById('plan-toggle-semester');
-  const confirmBtn = document.getElementById('sub-confirm-btn');
-  if(btnMonth) btnMonth.classList.toggle('on', plan==='monthly');
-  if(btnSem) btnSem.classList.toggle('on', plan==='semester');
-  if(confirmBtn) confirmBtn.textContent = plan === 'semester' ? `Confirmer · ${STATE.subPriceSemester} €/6 mois` : `Confirmer · ${STATE.subPrice} €/mois`;
-}
 
 function closeMob(){
   document.getElementById('sb').classList.remove('mob-on');
@@ -3129,8 +3077,8 @@ function openModPage(num){
     html += `<div class="m1-cta-box" style="margin-top:28px;background:linear-gradient(160deg,rgba(245,197,24,.1),rgba(245,197,24,.02));border:1.5px solid rgba(245,197,24,.28);border-radius:16px;padding:24px">
       <div style="font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Étape suivante</div>
       <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px">Prêt à passer à la suite ?</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">Le Module 01 est terminé. Pour débloquer les Modules 02 à 07 et tout le reste de Génération Capable : signe ta lettre d'engagement et active ton accès — ${currentGatePrice()}€, tarif fondateur tant qu'il reste des places.</div>
-      <button class="btn btn-gold" onclick="openGateModal()">🔑 Signer ma lettre et débloquer l'accès</button>
+      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">Le Module 01 est terminé. Pour débloquer les Modules 02 à 07 et tout le reste de Génération Capable : active ton accès Génération Capable — ${STATE.subPrice}€/mois.</div>
+      <button class="btn btn-gold" onclick="openGateModal()">🔑 Débloquer l'accès</button>
     </div>`;
   }
 
@@ -3437,6 +3385,30 @@ function renderRanking(){
   const el = document.getElementById('ranking-body');
   if(!el) return;
   el.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement disponible dès que plusieurs vendeurs seront actifs sur la plateforme.</td></tr>`;
+}
+
+// FIX (audit production) : appelée à plusieurs endroits (dont le retour de
+// paiement Stripe et le feedback d'évaluation IA) mais jamais définie — un
+// ReferenceError ici, non intercepté à ces deux endroits, faisait tomber
+// dans le bloc catch et afficher un message d'échec générique alors même
+// que l'opération réelle (paiement confirmé, évaluation reçue) avait réussi.
+function renderNotifs(){
+  const el = document.getElementById('notif-feed');
+  if(!el) return;
+  const notifs = STATE.notifications || [];
+  if(!notifs.length){
+    el.innerHTML = `<div style="font-size:12.5px;color:var(--t3);text-align:center;padding:20px 0">Aucune notification pour l'instant.</div>`;
+    return;
+  }
+  el.innerHTML = notifs.map(n => `
+    <div class="notif-item">
+      <div class="notif-ico" style="background:${n.ico_bg||'rgba(255,255,255,.06)'}">${n.ico||'🔔'}</div>
+      <div>
+        <div class="notif-t">${escapeHtml(n.t||'')}</div>
+        <div class="notif-d">${escapeHtml(n.d||'')}</div>
+      </div>
+      <div class="notif-time">${escapeHtml(n.time||'')}</div>
+    </div>`).join('');
 }
 
 // Vérification serveur du rôle admin (netlify/functions/admin-verify.js).
@@ -4090,15 +4062,15 @@ async function onAuthSuccess(session){
 //  CONFIGURATION PAIEMENT & EMAILS
 // ══════════════════════════════════════════════════════════
 
-// ── OFFRES STRIPE ──
-// Le front n'envoie qu'une clé symbolique ('eco_monthly', 'academie_97', ...)
-// à /.netlify/functions/create-checkout-session, jamais une URL ou un Price
-// ID Stripe : le mapping vers le vrai Price ID (un par offre, cf.
-// netlify/functions/_lib/stripe-offers.js) est fait exclusivement côté
-// serveur, pour qu'une requête modifiée ne puisse jamais obtenir un
-// produit/prix différent de celui prévu. Avant ce fix, les 5 offres
-// pointaient toutes vers le même lien Stripe statique
-// (buy.stripe.com/eVq14faCzehj85l1Yv18c0c).
+// ── OFFRE STRIPE ──
+// Un seul abonnement : Génération Capable à 67€/mois (clé 'gc_67'). Le front
+// n'envoie que cette clé symbolique à /.netlify/functions/create-checkout-session,
+// jamais une URL ou un Price ID Stripe : le mapping vers le vrai Price ID
+// (cf. netlify/functions/_lib/stripe-offers.js) est fait exclusivement côté
+// serveur. Avant ce fix, 5 offres différentes existaient et pointaient
+// toutes vers le même lien Stripe statique (buy.stripe.com/eVq14faCzehj85l1Yv18c0c) ;
+// les paliers Académie (97€/247€) et semestriel ont été retirés du produit —
+// ils n'avaient de toute façon plus aucune UI qui y menait dans ce fichier.
 
 // ── EMAILJS CONFIG ──
 // 1. Crée un compte gratuit sur emailjs.com
@@ -4175,11 +4147,9 @@ function registerMember(name, email, type){
 // donné, laissant ces fonctions mortes (aucun appelant). confirmPaymentReturn()
 // activait en plus l'accès sur un simple clic, sans aucune vérification de
 // paiement : même si elle avait été appelable, c'était un contournement total
-// du paiement. Les deux fonctions sont supprimées. Le paiement "Académie" est
-// géré comme les autres offres par redirectToStripeCheckout() +
-// handleCheckoutReturn() ci-dessous, dès qu'une UI lui sera associée — le
-// serveur (create-checkout-session.js) sait déjà traiter 'academie_97' et
-// 'academie_247'.
+// du paiement. Les deux fonctions ont été supprimées ; le paiement passe
+// exclusivement par redirectToStripeCheckout() + handleCheckoutReturn()
+// ci-dessous, pour l'unique offre restante (67€/mois).
 
 // Appelé au chargement de la page si l'URL contient ?checkout=success|cancelled
 // (retour de Stripe Checkout). Ne fait JAMAIS confiance à ce paramètre seul :
@@ -4202,53 +4172,49 @@ async function handleCheckoutReturn(){
   if(checkout !== 'success') return;
 
   const sessionId = params.get('session_id');
-  const offer = params.get('offer');
   if(!sessionId){ toast('❌ Retour de paiement invalide'); return; }
 
   toast('🔒 Vérification du paiement...');
+  let data;
   try{
     const resp = await fetch('/.netlify/functions/verify-checkout-session?session_id=' + encodeURIComponent(sessionId));
-    const data = await resp.json();
+    data = await resp.json();
     if(!resp.ok || !data.activated){
       toast('⚠️ Paiement non confirmé — contacte le support si tu as bien payé');
       return;
     }
-
-    const pending = STATE.pendingMember || {};
-    const name = pending.name || STATE.memberName || 'Membre';
-    const isAcademie = offer === 'academie_97' || offer === 'academie_247';
-
-    if(isAcademie){
-      STATE.module1Validated = true;
-      STATE.m1SlotsTaken = Math.min((STATE.m1SlotsTaken||0) + 1, STATE.m1SlotsTotal ?? Infinity);
-      if(MODULES[1]){ MODULES[1].status = 'done'; MODULES[1].pct = 100; }
-      registerMember(name, data.email, 'academie');
-      await sendConfirmationEmail(name, data.email, 'academie');
-    } else {
-      STATE.subscribed = true;
-      STATE.module1Validated = true;
-      registerMember(name, data.email, 'ecosysteme');
-      await sendConfirmationEmail(name, data.email, 'ecosysteme');
-      await loadModules();
-    }
-
-    saveState();
-    applyPaywallGates();
-    renderAll();
-    toast('🎉 Paiement confirmé — bienvenue dans Génération Capable !');
-
-    STATE.notifications.unshift({
-      ico: '🎓', ico_bg: 'rgba(201,168,76,.14)',
-      t: 'Accès activé',
-      d: `Bienvenue ${name} ! Ton accès est maintenant actif.`,
-      time: 'À l\'instant', read: false
-    });
-    renderNotifs();
-
   }catch(e){
-    console.error('[checkout-return] Échec:', e);
+    console.error('[checkout-return] Échec de la vérification:', e);
     toast('❌ Erreur de vérification du paiement — contacte le support');
+    return;
   }
+
+  // À partir d'ici, le paiement est confirmé par le serveur : ça ne doit
+  // plus jamais redevenir un échec aux yeux de l'utilisateur. Les étapes
+  // suivantes (mail de confirmation, chargement des modules) sont du
+  // "meilleur effort" — chacune isolée dans son propre try/catch, comme
+  // partout ailleurs dans ce fichier — pour qu'un pépin sur l'une d'elles
+  // n'affiche jamais "paiement non confirmé" à quelqu'un qui a bien payé.
+  const name = STATE.memberName || 'Membre';
+  STATE.subscribed = true;
+  STATE.module1Validated = true;
+  saveState();
+
+  try{ registerMember(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] registerMember:', e); }
+  try{ await sendConfirmationEmail(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] sendConfirmationEmail:', e); }
+  try{ await loadModules(); }catch(e){ console.error('[checkout-return] loadModules:', e); }
+
+  try{ applyPaywallGates(); }catch(e){}
+  try{ renderAll(); }catch(e){}
+  toast('🎉 Paiement confirmé — bienvenue dans Génération Capable !');
+
+  STATE.notifications.unshift({
+    ico: '🎓', ico_bg: 'rgba(201,168,76,.14)',
+    t: 'Accès activé',
+    d: `Bienvenue ${name} ! Ton accès est maintenant actif.`,
+    time: 'À l\'instant', read: false
+  });
+  try{ renderNotifs(); }catch(e){ console.error('[checkout-return] renderNotifs:', e); }
 }
 
 
