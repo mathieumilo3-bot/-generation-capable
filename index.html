@@ -3517,6 +3517,14 @@ Direct, terrain, sans jargon corporate inutile — même registre que l'équipe 
 FORMAT DE SORTIE
 Tu dois répondre STRICTEMENT au format JSON demandé dans le message utilisateur, rien d'autre avant ou après (pas de préambule, pas de markdown, pas de \`\`\`json). Chaque champ texte du JSON doit respecter les règles ci-dessus : direct, honnête, actionnable, jamais dix conseils à la fois, toujours une priorité claire.`;
 
+// Échappe le HTML avant insertion via innerHTML — les champs texte renvoyés par
+// l'IA (basés sur des saisies utilisateur) ne sont jamais du HTML de confiance.
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str ?? '');
+  return div.innerHTML;
+}
+
 // ══════════════════════════════════════════════════════════
 //  ÉVALUATION IA — NOTATION AUTOMATIQUE
 // ══════════════════════════════════════════════════════════
@@ -3580,18 +3588,18 @@ function renderEvalResult(fb, el){
   const scoreKeys = [{key:'discipline',label:'Discipline'},{key:'communication',label:'Commun.'},{key:'prospection',label:'Prospection'},{key:'decouverte',label:'Découverte'},{key:'vente',label:'Vente'}];
   const scoreColor2 = (v) => v >= 8 ? 'var(--green)' : v >= 6 ? 'var(--blue)' : v >= 4 ? 'var(--orange)' : 'var(--red)';
   const scoresHtml = scoreKeys.map(s => `<div class="fb-sc"><div class="fb-sc-n">${s.label}</div><div class="fb-sc-v" style="color:${scoreColor2(fb.scores?.[s.key]||0)}">${fb.scores?.[s.key]||0}</div><div class="fb-sc-m">/10</div></div>`).join('');
-  const fortHtml = (fb.points_forts||[]).map(p => `<div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${p}</span></div>`).join('');
-  const axeHtml = (fb.axes_amelioration||[]).map(a => `<div class="fb-axe"><div class="fb-axe-t">⚠️ ${a.titre}</div><div class="fb-axe-d">${a.detail}</div></div>`).join('');
+  const fortHtml = (fb.points_forts||[]).map(p => `<div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${escapeHtml(p)}</span></div>`).join('');
+  const axeHtml = (fb.axes_amelioration||[]).map(a => `<div class="fb-axe"><div class="fb-axe-t">⚠️ ${escapeHtml(a.titre)}</div><div class="fb-axe-d">${escapeHtml(a.detail)}</div></div>`).join('');
 
   el.innerHTML = `<div class="fb-wrap">
     <div class="fb-top"><div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">Résultat · Semaine 3</div><div class="fb-scores">${scoresHtml}</div></div>
-    <div class="fb-total"><div><div class="fb-total-num" style="color:${scoreColor}">${total}<span style="font-size:18px;color:var(--t3);font-weight:400">/50</span></div><div class="fb-total-label">${fb.verdict||''}</div></div><div style="margin-left:auto;text-align:right"><div class="fb-total-pct" style="color:${scoreColor}">${pct}%</div><div style="font-size:11px;color:var(--t3);margin-top:3px">${pct>=80?'Excellent':pct>=60?'Bon niveau':pct>=40?'À progresser':'Insuffisant'}</div></div></div>
+    <div class="fb-total"><div><div class="fb-total-num" style="color:${scoreColor}">${total}<span style="font-size:18px;color:var(--t3);font-weight:400">/50</span></div><div class="fb-total-label">${escapeHtml(fb.verdict||'')}</div></div><div style="margin-left:auto;text-align:right"><div class="fb-total-pct" style="color:${scoreColor}">${pct}%</div><div style="font-size:11px;color:var(--t3);margin-top:3px">${pct>=80?'Excellent':pct>=60?'Bon niveau':pct>=40?'À progresser':'Insuffisant'}</div></div></div>
     <div class="fb-section"><div class="fb-sec-title">💪 Points forts cette semaine</div>${fortHtml}</div>
     <div class="fb-section"><div class="fb-sec-title">🎯 Axes d'amélioration prioritaires</div>${axeHtml}</div>
-    <div class="fb-section"><div class="fb-sec-title">🔬 Analyse de ton approche</div><div class="fb-item"><span class="fb-item-ico" style="color:var(--blue)">→</span><span class="fb-item-txt">${fb.analyse_script||''}</span></div></div>
-    ${fb.script_suggere ? `<div class="fb-section"><div class="fb-sec-title">✏️ Script / approche suggéré(e)</div><div class="fb-script">${fb.script_suggere}</div></div>` : ''}
-    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Ton action prioritaire cette semaine</div><div style="font-size:14px;font-weight:700;color:var(--t1);line-height:1.55">${fb.action_prioritaire||''}</div></div>
-    <div class="fb-section" style="background:rgba(255,255,255,.02)"><div class="fb-sec-title">🎙 Message du coach</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${fb.message_coach||''}"</div></div>
+    <div class="fb-section"><div class="fb-sec-title">🔬 Analyse de ton approche</div><div class="fb-item"><span class="fb-item-ico" style="color:var(--blue)">→</span><span class="fb-item-txt">${escapeHtml(fb.analyse_script||'')}</span></div></div>
+    ${fb.script_suggere ? `<div class="fb-section"><div class="fb-sec-title">✏️ Script / approche suggéré(e)</div><div class="fb-script">${escapeHtml(fb.script_suggere)}</div></div>` : ''}
+    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Ton action prioritaire cette semaine</div><div style="font-size:14px;font-weight:700;color:var(--t1);line-height:1.55">${escapeHtml(fb.action_prioritaire||'')}</div></div>
+    <div class="fb-section" style="background:rgba(255,255,255,.02)"><div class="fb-sec-title">🎙 Message du coach</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${escapeHtml(fb.message_coach||'')}"</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-p" onclick="go('performance',null)">Mettre à jour mon pipeline</button><button class="btn btn-g" onclick="go('coaching',null)">Déposer une question spécifique</button></div>`;
 }
@@ -3646,17 +3654,17 @@ function renderCoachResult(fb, el, cat, situation){
   const urgLabel = fb.niveau_urgence==='élevé'?'🔴 Urgence élevée':fb.niveau_urgence==='moyen'?'🟡 Urgence modérée':'🟢 Faible urgence';
   el.innerHTML = `<div class="fb-wrap" style="margin-top:0">
     <div style="padding:18px 20px;border-bottom:1px solid var(--b);background:rgba(41,151,255,.04)">
-      <div style="font-size:9.5px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Feedback IA · ${cat}</div>
-      <div style="font-size:15px;font-weight:800;letter-spacing:-.3px">${fb.diagnostic||''}</div>
+      <div style="font-size:9.5px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Feedback IA · ${escapeHtml(cat)}</div>
+      <div style="font-size:15px;font-weight:800;letter-spacing:-.3px">${escapeHtml(fb.diagnostic||'')}</div>
       <div style="margin-top:8px"><span style="font-size:11px;font-weight:700;color:${urgColor};background:${urgColor}18;padding:3px 9px;border-radius:20px">${urgLabel}</span></div>
     </div>
-    <div class="fb-section"><div class="fb-sec-title">🧠 Analyse psychologique</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${fb.analyse_psychologique||''}</span></div></div>
-    <div class="fb-section"><div class="fb-sec-title">❌ Ce qui cloche dans ton approche</div>${(fb.ce_qui_cloche||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt">${p}</span></div>`).join('')}</div>
-    <div class="fb-section"><div class="fb-sec-title">✏️ Script / approche corrigé(e)</div><div class="fb-script">${fb.script_corrige||''}</div></div>
-    ${fb.reponse_objection ? `<div class="fb-section"><div class="fb-sec-title">🛡 Réponse à l'objection</div><div class="fb-script" style="border-color:rgba(48,209,88,.2)">${fb.reponse_objection}</div></div>` : ''}
-    <div class="fb-section"><div class="fb-sec-title">🎯 Technique recommandée</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${fb.technique_recommandee||''}</span></div></div>
-    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Action immédiate — dans les 24h</div><div style="font-size:14px;font-weight:700;line-height:1.5">${fb.action_immediate||''}</div></div>
-    <div class="fb-section" style="background:rgba(255,255,255,.02)"><div class="fb-sec-title">🎙 Conseil final — sans filtre</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${fb.conseil_final||''}"</div></div>
+    <div class="fb-section"><div class="fb-sec-title">🧠 Analyse psychologique</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${escapeHtml(fb.analyse_psychologique||'')}</span></div></div>
+    <div class="fb-section"><div class="fb-sec-title">❌ Ce qui cloche dans ton approche</div>${(fb.ce_qui_cloche||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt">${escapeHtml(p)}</span></div>`).join('')}</div>
+    <div class="fb-section"><div class="fb-sec-title">✏️ Script / approche corrigé(e)</div><div class="fb-script">${escapeHtml(fb.script_corrige||'')}</div></div>
+    ${fb.reponse_objection ? `<div class="fb-section"><div class="fb-sec-title">🛡 Réponse à l'objection</div><div class="fb-script" style="border-color:rgba(48,209,88,.2)">${escapeHtml(fb.reponse_objection)}</div></div>` : ''}
+    <div class="fb-section"><div class="fb-sec-title">🎯 Technique recommandée</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${escapeHtml(fb.technique_recommandee||'')}</span></div></div>
+    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Action immédiate — dans les 24h</div><div style="font-size:14px;font-weight:700;line-height:1.5">${escapeHtml(fb.action_immediate||'')}</div></div>
+    <div class="fb-section" style="background:rgba(255,255,255,.02)"><div class="fb-sec-title">🎙 Conseil final — sans filtre</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${escapeHtml(fb.conseil_final||'')}"</div></div>
   </div>`;
 }
 
@@ -4402,13 +4410,13 @@ function renderRapportSoirResult(fb){
       <div style="font-size:34px;font-weight:800;color:${scoreColor}">${score}<span style="font-size:14px;color:var(--t3);font-weight:400">/10</span></div>
       <div><div style="font-size:14px;font-weight:700">Score du jour</div><div style="font-size:12px;color:var(--t3);margin-top:2px">${score>=8?'Excellente journée':score>=5?'Journée correcte':'Journée difficile — demain sera mieux'}</div></div>
     </div>
-    <div class="fb-section"><div class="fb-sec-title">✅ Points positifs</div>${(fb.etape1_positifs||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${p}</span></div>`).join('')}</div>
-    <div class="fb-section"><div class="fb-sec-title">⚠️ Points négatifs</div>${(fb.etape2_negatifs||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt">${p}</span></div>`).join('')}</div>
-    <div class="fb-section"><div class="fb-sec-title">📈 Axe d'amélioration principal</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${fb.etape3_amelioration||''}</span></div></div>
-    <div class="fb-section"><div class="fb-sec-title">🔄 Sur la stagnation</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${fb.etape4_stagnation||''}</span></div></div>
-    <div class="fb-section" style="background:rgba(255,159,10,.04)"><div class="fb-sec-title" style="color:var(--orange)">🧠 On comprend — et voilà pourquoi tu dois changer ça</div><div style="font-size:13px;color:var(--t2);line-height:1.65">${fb.etape5_comprendre||''}</div></div>
-    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Plan d'action pour demain</div>${(fb.etape6_plan_demain||[]).map((a,i)=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--blue);font-weight:800">${i+1}.</span><span class="fb-item-txt"><strong>${a}</strong></span></div>`).join('')}</div>
-    <div class="fb-section"><div class="fb-sec-title">🎙 Message du coach</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${fb.message_final||''}"</div></div>
+    <div class="fb-section"><div class="fb-sec-title">✅ Points positifs</div>${(fb.etape1_positifs||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${escapeHtml(p)}</span></div>`).join('')}</div>
+    <div class="fb-section"><div class="fb-sec-title">⚠️ Points négatifs</div>${(fb.etape2_negatifs||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt">${escapeHtml(p)}</span></div>`).join('')}</div>
+    <div class="fb-section"><div class="fb-sec-title">📈 Axe d'amélioration principal</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${escapeHtml(fb.etape3_amelioration||'')}</span></div></div>
+    <div class="fb-section"><div class="fb-sec-title">🔄 Sur la stagnation</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${escapeHtml(fb.etape4_stagnation||'')}</span></div></div>
+    <div class="fb-section" style="background:rgba(255,159,10,.04)"><div class="fb-sec-title" style="color:var(--orange)">🧠 On comprend — et voilà pourquoi tu dois changer ça</div><div style="font-size:13px;color:var(--t2);line-height:1.65">${escapeHtml(fb.etape5_comprendre||'')}</div></div>
+    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Plan d'action pour demain</div>${(fb.etape6_plan_demain||[]).map((a,i)=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--blue);font-weight:800">${i+1}.</span><span class="fb-item-txt"><strong>${escapeHtml(a)}</strong></span></div>`).join('')}</div>
+    <div class="fb-section"><div class="fb-sec-title">🎙 Message du coach</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${escapeHtml(fb.message_final||'')}"</div></div>
   </div>`;
   el.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -4490,8 +4498,8 @@ function renderScanResult(scan, el){
           <div style="font-size:12px;color:var(--t3)">Score global</div>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px">${scan.profil_type||'Vendeur en formation'}</div>
-          <div style="font-size:12.5px;color:var(--t2);max-width:360px;line-height:1.5">${scan.description_profil||''}</div>
+          <div style="font-size:15px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px">${escapeHtml(scan.profil_type||'Vendeur en formation')}</div>
+          <div style="font-size:12.5px;color:var(--t2);max-width:360px;line-height:1.5">${escapeHtml(scan.description_profil||'')}</div>
         </div>
       </div>
       <div class="fb-scores">
@@ -4501,40 +4509,40 @@ function renderScanResult(scan, el){
 
     <div class="fb-section">
       <div class="fb-sec-title">💪 Ta force principale</div>
-      <div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${scan.force_principale||''}</span></div>
+      <div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${escapeHtml(scan.force_principale||'')}</span></div>
     </div>
     <div class="fb-section">
       <div class="fb-sec-title">⚠️ Ta faiblesse critique</div>
-      <div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt"><strong>${scan.faiblesse_critique||''}</strong></span></div>
+      <div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt"><strong>${escapeHtml(scan.faiblesse_critique||'')}</strong></span></div>
     </div>
 
     <div class="fb-section">
       <div class="fb-sec-title">🎯 Recommandations personnalisées</div>
       ${(scan.recommandations||[]).map(r=>`
         <div class="fb-axe" style="border-color:rgba(${r.priorite==='haute'?'255,69,58':'255,159,10'},.2)">
-          <div class="fb-axe-t" style="color:${prioColor(r.priorite)}">⚡ ${r.dimension} — Priorité ${r.priorite}</div>
-          <div style="font-size:13px;font-weight:700;margin-bottom:4px">${r.action}</div>
-          <div class="fb-axe-d">${r.explication}</div>
+          <div class="fb-axe-t" style="color:${prioColor(r.priorite)}">⚡ ${escapeHtml(r.dimension)} — Priorité ${escapeHtml(r.priorite)}</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px">${escapeHtml(r.action)}</div>
+          <div class="fb-axe-d">${escapeHtml(r.explication)}</div>
         </div>`).join('')}
     </div>
 
     <div class="fb-section" style="background:rgba(41,151,255,.04)">
       <div class="fb-sec-title" style="color:var(--blue)">📚 Module à travailler en priorité</div>
       <div style="display:flex;align-items:center;gap:12px;padding:12px 0">
-        <div style="width:44px;height:44px;background:rgba(41,151,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--blue);flex-shrink:0">${(scan.module_prioritaire||'').replace('Module ','')}</div>
-        <div><div style="font-size:13px;font-weight:700;margin-bottom:3px">${scan.module_prioritaire||''}</div><div style="font-size:12px;color:var(--t2)">${scan.raison_module||''}</div></div>
+        <div style="width:44px;height:44px;background:rgba(41,151,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--blue);flex-shrink:0">${escapeHtml((scan.module_prioritaire||'').replace('Module ',''))}</div>
+        <div><div style="font-size:13px;font-weight:700;margin-bottom:3px">${escapeHtml(scan.module_prioritaire||'')}</div><div style="font-size:12px;color:var(--t2)">${escapeHtml(scan.raison_module||'')}</div></div>
         <button class="btn btn-p" style="margin-left:auto;flex-shrink:0" onclick="go('academie',null)">Aller au module →</button>
       </div>
     </div>
 
     <div class="fb-section">
       <div class="fb-sec-title">⚡ Plan d'action — cette semaine</div>
-      ${(scan.plan_action_semaine||[]).map((a,i)=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--blue);font-weight:800">${i+1}.</span><span class="fb-item-txt"><strong>${a}</strong></span></div>`).join('')}
+      ${(scan.plan_action_semaine||[]).map((a,i)=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--blue);font-weight:800">${i+1}.</span><span class="fb-item-txt"><strong>${escapeHtml(a)}</strong></span></div>`).join('')}
     </div>
 
     <div class="fb-section" style="background:rgba(255,255,255,.02)">
       <div class="fb-sec-title">🎙 Message du coach</div>
-      <div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${scan.message_coach||''}"</div>
+      <div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${escapeHtml(scan.message_coach||'')}"</div>
     </div>
   </div>
   <div style="display:flex;gap:8px;margin-top:16px">

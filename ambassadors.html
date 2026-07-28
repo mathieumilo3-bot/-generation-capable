@@ -380,6 +380,14 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   }
 });
 
+// Échappe le HTML avant insertion via innerHTML — la chat box affiche du texte
+// libre (saisie utilisateur + réponses IA), jamais du HTML de confiance.
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str ?? '');
+  return div.innerHTML;
+}
+
 // ── Navigation ──
 function goScreen(name){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -584,7 +592,7 @@ Réponses courtes, actionnables, sans préambule. Si on te demande un script, do
 function renderChatHistory(){
   const box = document.getElementById('chat-box');
   box.innerHTML = STATE.chatHistory.map(m =>
-    `<div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${m.text}</div>`
+    `<div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${escapeHtml(m.text)}</div>`
   ).join('');
   box.scrollIntoView({block:'end'});
 }
