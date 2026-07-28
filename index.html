@@ -34,8 +34,9 @@ async function activateSubscription(){
   STATE.memberEmail = emailVal;
 
   // Crée le compte Supabase AVANT le paiement, avec le même email que sur Stripe.
-  // Le webhook Stripe (fonction Netlify séparée) retrouvera ce compte par email
-  // pour activer subscribers.is_active une fois le paiement confirmé.
+  // Le webhook Stripe (netlify/functions/stripe-webhook.js) retrouvera ce
+  // compte par email pour activer subscribers.is_active une fois le
+  // paiement confirmé — jamais avant.
   if(typeof supa !== 'undefined' && supa){
     try{
       const { error } = await supa.auth.signUp({
@@ -50,9 +51,39 @@ async function activateSubscription(){
     }catch(e){ console.warn('Compte Supabase non créé (Supabase pas encore configuré) :', e); }
   }
 
-  window.open(STRIPE_LINKS.eco_monthly, '_blank');
+  const offer = STATE.subPlan === 'semester' ? 'eco_semester' : 'eco_monthly';
+  await redirectToStripeCheckout(offer, emailVal, 'sub-confirm-btn');
   closeMo('mo-subscribe');
-  toast('Compte créé. Finalise ton paiement dans l\'onglet Stripe →');
+}
+
+// Crée une session Stripe Checkout côté serveur et redirige vers Stripe.
+// Remplace l'ancien lien statique (identique pour toutes les offres) et
+// l'ancienne activation "sur simple clic" : l'accès n'est débloqué qu'après
+// confirmation réelle du paiement (voir handleCheckoutReturn()).
+async function redirectToStripeCheckout(offer, email, submitBtnId){
+  const btn = submitBtnId ? document.getElementById(submitBtnId) : null;
+  if(btn) btn.disabled = true;
+  toast('🔒 Préparation du paiement sécurisé...');
+  try{
+    const resp = await fetch('/.netlify/functions/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ offer, email })
+    });
+    const data = await resp.json();
+    if(!resp.ok || data.error || !data.url){
+      console.error('[checkout]', data.error, data.message || '');
+      toast('❌ ' + (data.message || 'Paiement indisponible — réessaie dans un instant'));
+      if(btn) btn.disabled = false;
+      return;
+    }
+    saveState();
+    window.location.href = data.url;
+  }catch(e){
+    console.error('[checkout] NETWORK_ERROR', e);
+    toast('❌ Erreur réseau — réessaie');
+    if(btn) btn.disabled = false;
+  }
 }
 
 function renderAll(){
@@ -2554,13 +2585,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
     <div class="topbar"><div class="tb-title">Administration</div></div>
     <div class="admin-gate">
       <div class="admin-card">
-        <div class="admin-lock">🔐</div>
-        <div class="admin-t">Accès restreint</div>
-        <div class="admin-s">Réservé au fondateur. Entrez le mot de passe pour accéder au back-office.</div>
-        <div class="admin-err" id="admin-err">Mot de passe incorrect.</div>
-        <label>Mot de passe fondateur</label>
-        <input class="field" type="password" id="admin-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdmin()">
-        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:4px" onclick="checkAdmin()">Accéder →</button>
+        <div class="admin-lock" id="admin-gate-icon">🔐</div>
+        <div class="admin-t" id="admin-gate-title">Vérification en cours...</div>
+        <div class="admin-s" id="admin-gate-sub">Confirmation de ton accès administrateur auprès du serveur.</div>
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:4px;display:none" id="admin-gate-action">Se connecter →</button>
       </div>
     </div>
   </div>
@@ -2655,7 +2683,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <label>Prénom</label><input id="sub-name" class="field" placeholder="Ton prénom">
       <label>Email</label><input id="sub-email" class="field" type="email" placeholder="ton@email.com">
       <label>Mot de passe</label><input id="sub-password" class="field" type="password" placeholder="Choisis un mot de passe (8 caractères min.)">
-      <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:6px;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;font-weight:800" onclick="activateSubscription()">Continuer vers le paiement →</button>
+      <button class="btn btn-p" id="sub-confirm-btn" style="width:100%;justify-content:center;margin-top:6px;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;font-weight:800" onclick="activateSubscription()">Continuer vers le paiement →</button>
       <div style="font-size:10px;color:var(--t3);text-align:center;margin-top:12px">🔒 Paiement sécurisé · Propulsé par Stripe</div>
     </div>
   </div>
@@ -2879,7 +2907,6 @@ var STATE = {
   coaching:         _sv.coaching||[],      // FIX #5 : évite un crash sur STATE.coaching.unshift(...)
   notifications:    _sv.notifications||[], // FIX #5 : évite un crash sur STATE.notifications.unshift(...)
   subPrice:         _sv.subPrice||67,      // FIX #6 : évite l'affichage "undefined €/mois" — 67€ = prix déjà affiché partout sur la page
-  ADMIN_PW:         'GC2025', // ⚠️ change ce mot de passe pour le tien
 };
 
 function go(id, el){
@@ -2900,6 +2927,7 @@ function go(id, el){
   if(id==='acquisition'){ try{ renderChannelList(); }catch(e){} }
   if(id==='revenus'){ try{ renderRevenus(); }catch(e){} }
   if(id==='performance'){ try{ renderRanking(); }catch(e){} }
+  if(id==='admin'){ checkAdminAccess(); }
   openTileForPage(id);
 }
 
@@ -3409,24 +3437,61 @@ function renderRanking(){
   el.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement disponible dès que plusieurs vendeurs seront actifs sur la plateforme.</td></tr>`;
 }
 
-function checkAdmin(){
-  const pw = document.getElementById('admin-pw').value;
-  if(pw === STATE.ADMIN_PW){
-    STATE.adminUnlocked=true;
-    document.getElementById('admin-gate').style.display='none';
-    document.getElementById('admin-panel').style.display='block';
-    toast('✅ Accès fondateur accordé');
+// Vérification serveur du rôle admin (netlify/functions/admin-verify.js).
+// Aucune sécurité ne repose ici sur le JavaScript du navigateur : ce code ne
+// fait qu'afficher le résultat renvoyé par le serveur, qui seul décide.
+// L'ancien système (mot de passe 'GC2025' en clair dans ce fichier, lisible
+// par n'importe qui via "Afficher le code source") est supprimé.
+function setAdminGateUI(icon, title, sub, actionLabel, actionFn){
+  document.getElementById('admin-gate-icon').textContent = icon;
+  document.getElementById('admin-gate-title').textContent = title;
+  document.getElementById('admin-gate-sub').textContent = sub;
+  const actionEl = document.getElementById('admin-gate-action');
+  if(actionLabel){
+    actionEl.textContent = actionLabel;
+    actionEl.style.display = 'block';
+    actionEl.onclick = actionFn;
   } else {
-    document.getElementById('admin-err').style.display='block';
-    document.getElementById('admin-pw').value='';
-    setTimeout(()=>document.getElementById('admin-err').style.display='none',3000);
+    actionEl.style.display = 'none';
   }
 }
+
+async function checkAdminAccess(){
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('admin-gate').style.display = 'block';
+  setAdminGateUI('🔐', 'Vérification en cours...', 'Confirmation de ton accès administrateur auprès du serveur.', null);
+
+  if(!supa){
+    setAdminGateUI('⚠️', 'Service indisponible', 'Connexion au serveur impossible — réessaie dans un instant.', null);
+    return;
+  }
+
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session){
+    setAdminGateUI('🔐', 'Connexion requise', 'Connecte-toi avec ton compte pour accéder à l\'administration.', 'Se connecter →', ()=>go('login', null));
+    return;
+  }
+
+  try{
+    const resp = await fetch('/.netlify/functions/admin-verify', {
+      headers: { 'Authorization': 'Bearer ' + session.access_token }
+    });
+    const data = await resp.json();
+    if(resp.ok && data.authorized === true){
+      document.getElementById('admin-gate').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+    } else {
+      setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
+    }
+  }catch(e){
+    console.error('[admin-verify] échec', e);
+    setAdminGateUI('⚠️', 'Erreur de vérification', 'Réessaie dans un instant.', null);
+  }
+}
+
 function lockAdmin(){
-  STATE.adminUnlocked=false;
-  document.getElementById('admin-gate').style.display='block';
   document.getElementById('admin-panel').style.display='none';
-  document.getElementById('admin-pw').value='';
+  checkAdminAccess();
   toast('Back-office verrouillé');
 }
 
@@ -3890,32 +3955,35 @@ document.addEventListener('DOMContentLoaded', ()=>{
 // ══════════════════════════════════════════════════════════
 //  AUTHENTIFICATION RÉELLE — Supabase Auth
 // ══════════════════════════════════════════════════════════
-//  ⚠️ TODO ENZO — AVANT QUE ÇA MARCHE :
-//  1. Va sur supabase.com → ton projet (ou crée-en un) → Settings → API
-//  2. Remplace les deux valeurs ci-dessous par ton URL et ta clé "anon public"
-//     (la clé anon est PUBLIQUE par design chez Supabase — elle est faite pour
-//     être dans le code client, ce n'est pas un secret. Ne mets JAMAIS la
-//     "service_role key" ici, celle-là reste uniquement côté serveur).
-//  3. Dans Supabase → Authentication → Providers, active Google et Apple,
-//     et configure leurs identifiants OAuth respectifs.
-//  4. Exécute le SQL fourni (table "subscribers" + policies RLS) dans
-//     Supabase → SQL Editor.
-//  5. Déploie la fonction Netlify de webhook Stripe (fournie séparément)
-//     pour que "subscribers.is_active" se mette à jour automatiquement
-//     quand quelqu'un paie ou résilie.
+//  Même projet Supabase que ambassadors.html et les Netlify Functions
+//  (fkhfahmzxsahrstxntjs) — un seul backend pour tout l'écosystème GC.
+//  La clé "anon/publishable" est publique par design chez Supabase (elle est
+//  faite pour être dans le code client) : la vraie sécurité vient des
+//  policies RLS côté base, jamais de cette clé. Ne JAMAIS mettre la
+//  "service_role key" ici — elle reste exclusivement dans les variables
+//  d'environnement Netlify, côté Netlify Functions.
+//
+//  Reste à faire côté tableau de bord (non versionnable, pas vérifiable
+//  depuis ce dépôt) :
+//   1. Authentication → Providers : activer Google/Apple si ces boutons
+//      doivent fonctionner (sinon ils échoueront proprement avec un toast).
+//   2. Exécuter supabase/migrations/0001_subscribers_and_roles.sql dans
+//      le SQL Editor (table "subscribers" + policies RLS + rôles admin).
+//   3. Déployer la fonction webhook Stripe (netlify/functions/stripe-webhook.js)
+//      pour que "subscribers.is_active" se mette à jour automatiquement.
 // ══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://TON-PROJET.supabase.co';       // TODO
-const SUPABASE_ANON_KEY = 'TON-ANON-KEY-ICI';                 // TODO
+const SUPABASE_URL = 'https://fkhfahmzxsahrstxntjs.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_XfXArB0prFU-BFZUOo6vTw_Hqkr3ZNJ';
 
 let supa = null;
 try{
-  if(window.supabase && !SUPABASE_URL.includes('TON-PROJET')){
+  if(window.supabase){
     supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 }catch(e){ console.warn('Supabase non initialisé :', e); }
 
 function authNotConfigured(){
-  toast('⚠️ Supabase pas encore configuré — voir le commentaire TODO en haut du script d\'authentification');
+  toast('⚠️ Connexion au serveur impossible — réessaie dans un instant');
   return true;
 }
 
@@ -4025,14 +4093,15 @@ async function onAuthSuccess(session){
 //  CONFIGURATION PAIEMENT & EMAILS
 // ══════════════════════════════════════════════════════════
 
-// ── STRIPE PAYMENT LINKS (vrais liens) ──
-const STRIPE_LINKS = {
-  eco_monthly:  'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-  eco_semester: 'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-  academie_97:  'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-  academie_247: 'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-  studio:       'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-};
+// ── OFFRES STRIPE ──
+// Le front n'envoie qu'une clé symbolique ('eco_monthly', 'academie_97', ...)
+// à /.netlify/functions/create-checkout-session, jamais une URL ou un Price
+// ID Stripe : le mapping vers le vrai Price ID (un par offre, cf.
+// netlify/functions/_lib/stripe-offers.js) est fait exclusivement côté
+// serveur, pour qu'une requête modifiée ne puisse jamais obtenir un
+// produit/prix différent de celui prévu. Avant ce fix, les 5 offres
+// pointaient toutes vers le même lien Stripe statique
+// (buy.stripe.com/eVq14faCzehj85l1Yv18c0c).
 
 // ── EMAILJS CONFIG ──
 // 1. Crée un compte gratuit sur emailjs.com
@@ -4102,80 +4171,87 @@ function registerMember(name, email, type){
   } catch(e){}
 }
 
-// Redirection vers Stripe avec pré-remplissage email
-function proceedToStripePayment(){
-  const name = (document.getElementById('gate-name')?.value || '').trim();
-  const email = (document.getElementById('gate-email')?.value || '').trim();
-  const cgu = document.getElementById('gate-cgu')?.checked;
-  const signature = (document.getElementById('gate-signature')?.value || '').trim();
+// FIX (audit production) : proceedToStripePayment() / confirmPaymentReturn()
+// référençaient des éléments (#gate-name, #gate-email, #gate-cgu,
+// #gate-signature, #mo-gate) qui n'existent plus dans ce fichier — la
+// modale "Module 01 — lettre d'engagement" a été retirée du HTML à un moment
+// donné, laissant ces fonctions mortes (aucun appelant). confirmPaymentReturn()
+// activait en plus l'accès sur un simple clic, sans aucune vérification de
+// paiement : même si elle avait été appelable, c'était un contournement total
+// du paiement. Les deux fonctions sont supprimées. Le paiement "Académie" est
+// géré comme les autres offres par redirectToStripeCheckout() +
+// handleCheckoutReturn() ci-dessous, dès qu'une UI lui sera associée — le
+// serveur (create-checkout-session.js) sait déjà traiter 'academie_97' et
+// 'academie_247'.
 
-  if(!name){ toast('⚠️ Entre ton nom complet'); return; }
-  if(!email || !email.includes('@')){ toast('⚠️ Entre un email valide'); return; }
-  if(!cgu){ toast('⚠️ Tu dois accepter les conditions pour continuer'); return; }
-  if(!signature){ toast('⚠️ Signe avec ton prénom pour valider'); return; }
+// Appelé au chargement de la page si l'URL contient ?checkout=success|cancelled
+// (retour de Stripe Checkout). Ne fait JAMAIS confiance à ce paramètre seul :
+// l'activation réelle vient de la vérification serveur du session_id auprès
+// de Stripe (voir netlify/functions/verify-checkout-session.js).
+async function handleCheckoutReturn(){
+  const params = new URLSearchParams(window.location.search);
+  const checkout = params.get('checkout');
+  if(!checkout) return;
 
-  // Sauvegarder les infos avant redirection
-  STATE.pendingMember = { name, email, signature, date: new Date().toISOString() };
-  saveState();
+  // Nettoie l'URL immédiatement : un rafraîchissement de page ne doit pas
+  // redéclencher la vérification (idempotent côté serveur de toute façon,
+  // mais inutile de le refaire à chaque F5).
+  window.history.replaceState({}, '', window.location.origin + window.location.pathname);
 
-  // Déterminer le bon lien Stripe selon le prix actuel
-  const price = STATE.m1SlotsTaken < STATE.m1SlotsTotal ? 'academie_97' : 'academie_247';
-  const stripeUrl = STRIPE_LINKS[price];
+  if(checkout === 'cancelled'){
+    toast('Paiement annulé — tu peux réessayer quand tu veux');
+    return;
+  }
+  if(checkout !== 'success') return;
 
-  // Construire l'URL Stripe avec email pré-rempli
-  const finalUrl = stripeUrl + (stripeUrl.includes('?') ? '&' : '?') + 'prefilled_email=' + encodeURIComponent(email);
+  const sessionId = params.get('session_id');
+  const offer = params.get('offer');
+  if(!sessionId){ toast('❌ Retour de paiement invalide'); return; }
 
-  toast('🔒 Redirection vers Stripe...');
+  toast('🔒 Vérification du paiement...');
+  try{
+    const resp = await fetch('/.netlify/functions/verify-checkout-session?session_id=' + encodeURIComponent(sessionId));
+    const data = await resp.json();
+    if(!resp.ok || !data.activated){
+      toast('⚠️ Paiement non confirmé — contacte le support si tu as bien payé');
+      return;
+    }
 
-  // Stocker en localStorage que le paiement a été initié
-  // (Stripe redirige vers une URL de succès que tu configures)
-  setTimeout(() => {
-    window.open(finalUrl, '_blank');
-    // Afficher message d'attente
-    document.getElementById('gate-step-payment').innerHTML = `
-      <div style="text-align:center;padding:30px 20px">
-        <div style="font-size:32px;margin-bottom:14px">🔒</div>
-        <div style="font-size:15px;font-weight:800;margin-bottom:8px">Paiement ouvert dans un nouvel onglet</div>
-        <div style="font-size:13px;color:var(--t2);margin-bottom:24px;line-height:1.6">Une fois ton paiement confirmé par Stripe, reviens ici et clique sur le bouton ci-dessous.</div>
-        <button class="btn btn-gold" style="width:100%;justify-content:center;padding:12px;font-size:13px" onclick="confirmPaymentReturn()">
-          ✓ J'ai payé — Activer mon accès
-        </button>
-        <div style="font-size:11px;color:var(--t3);margin-top:12px">Tu recevras un email de confirmation à <strong style="color:var(--t2)">${email}</strong></div>
-      </div>`;
-  }, 800);
-}
+    const pending = STATE.pendingMember || {};
+    const name = pending.name || STATE.memberName || 'Membre';
+    const isAcademie = offer === 'academie_97' || offer === 'academie_247';
 
-// Appelé quand l'utilisateur revient après paiement Stripe
-async function confirmPaymentReturn(){
-  const pending = STATE.pendingMember || {};
-  const name = pending.name || 'Membre';
-  const email = pending.email || '';
+    if(isAcademie){
+      STATE.module1Validated = true;
+      STATE.m1SlotsTaken = Math.min((STATE.m1SlotsTaken||0) + 1, STATE.m1SlotsTotal ?? Infinity);
+      if(MODULES[1]){ MODULES[1].status = 'done'; MODULES[1].pct = 100; }
+      registerMember(name, data.email, 'academie');
+      await sendConfirmationEmail(name, data.email, 'academie');
+    } else {
+      STATE.subscribed = true;
+      STATE.module1Validated = true;
+      registerMember(name, data.email, 'ecosysteme');
+      await sendConfirmationEmail(name, data.email, 'ecosysteme');
+      await loadModules();
+    }
 
-  // Activer l'accès
-  STATE.module1Validated = true;
-  STATE.m1SlotsTaken = Math.min(STATE.m1SlotsTaken + 1, STATE.m1SlotsTotal);
-  if(MODULES[1]){ MODULES[1].status='done'; MODULES[1].pct=100; }
-  saveState();
+    saveState();
+    applyPaywallGates();
+    renderAll();
+    toast('🎉 Paiement confirmé — bienvenue dans Génération Capable !');
 
-  // Enregistrer le membre
-  registerMember(name, email, 'academie');
+    STATE.notifications.unshift({
+      ico: '🎓', ico_bg: 'rgba(201,168,76,.14)',
+      t: 'Accès activé',
+      d: `Bienvenue ${name} ! Ton accès est maintenant actif.`,
+      time: 'À l\'instant', read: false
+    });
+    renderNotifs();
 
-  // Envoyer email de confirmation
-  await sendConfirmationEmail(name, email, 'academie');
-
-  closeMo('mo-gate');
-  applyPaywallGates();
-  renderAll();
-
-  toast('🎉 Accès activé — Bienvenue dans Génération Capable !');
-
-  STATE.notifications.unshift({
-    ico:'🎓', ico_bg:'rgba(201,168,76,.14)',
-    t:'Accès Académie activé',
-    d:`Bienvenue ${name} ! Tous les modules sont maintenant accessibles.`,
-    time:'À l\'instant', read:false
-  });
-  renderNotifs();
+  }catch(e){
+    console.error('[checkout-return] Échec:', e);
+    toast('❌ Erreur de vérification du paiement — contacte le support');
+  }
 }
 
 
@@ -4553,6 +4629,7 @@ function renderScanResult(scan, el){
 
 loadState();
 renderAll();
+handleCheckoutReturn();
 </script>
 
 </body>
