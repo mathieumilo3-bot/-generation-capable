@@ -53,7 +53,7 @@ exports.handler = async (event) => {
   }
 
   const { offer: offerKey, email } = payload;
-  if (!offerKey || !email || !EMAIL_RE.test(email)) {
+  if (!offerKey || !email || email.length > 254 || !EMAIL_RE.test(email)) {
     return json(400, { error: 'Missing or invalid offer/email' });
   }
 

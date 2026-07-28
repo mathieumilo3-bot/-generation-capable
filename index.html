@@ -501,7 +501,6 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 .admin-lock{font-size:40px;margin-bottom:16px}
 .admin-t{font-size:20px;font-weight:800;letter-spacing:-0.4px;margin-bottom:6px}
 .admin-s{font-size:13px;color:var(--t2);margin-bottom:28px}
-.admin-err{font-size:12px;color:var(--red);margin-bottom:12px;display:none}
 
 /* ─── COMMISSION ROW ─── */
 .cr{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--b);gap:12px}
@@ -3382,8 +3381,6 @@ function tryCloseVideo(){
   document.getElementById('video-overlay').classList.remove('on');
 }
 function stopTicker(){ clearInterval(VP.ticker); VP.ticker = null; }
-function closeVideo(){ tryCloseVideo(); }
-function openMod(num){ openModPage(num); }
 
 function openChannel(name){
   document.getElementById('ch-t').textContent = name;
@@ -3739,7 +3736,6 @@ function resetCoachForm(){
   if(res){ res.style.display='none'; res.innerHTML=''; }
 }
 function showLastFeedback(){ toast('Feedback S2 — 34/50 · Bonne progression'); }
-function submitEval(){ submitEvalIA(); }
 function switchTab(btn){
   btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
@@ -3773,15 +3769,6 @@ function renderApiError(retryCall){
 //  GC STUDIO
 // ══════════════════════════════════════════════════════════
 const HEYGEN_API = 'https://api.heygen.com';
-
-// Navigation vers GC Studio
-
-
-// Gate paywall studio
-
-
-// Ouvrir le paiement Studio
-
 
 // Secteur custom
 document.addEventListener('change', function(e){
