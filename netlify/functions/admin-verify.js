@@ -8,7 +8,7 @@
 //
 // GET /.netlify/functions/admin-verify
 //   (Authorization: Bearer <session_token> requis)
-//   → { authorized: true }  si subscribers.role = 'admin' pour ce compte
+//   → { authorized: true }  si l'email de ce compte figure dans public.admins
 //   → 403 { authorized: false } sinon
 //   → 401 si le token est absent/invalide/expiré
 //
@@ -28,10 +28,11 @@ exports.handler = async (event) => {
     return jsonResponse(500, { authorized: false, error: 'SERVER_NOT_CONFIGURED' });
   }
 
-  // On vérifie par email (claim vérifié par Supabase Auth), pas par user_id :
-  // les lignes "subscribers" créées après un paiement Stripe ne connaissent
-  // que l'email du payeur (voir migration SQL) — filtrer par user_id ne
-  // trouverait jamais ces lignes.
+  // Le rôle admin est décidé par la table "admins" (email -> compte fondateur
+  // / staff), distincte de "subscribers" (qui ne porte que l'abonnement
+  // payant et est indexée sur user_id). "admins" a RLS activée sans aucune
+  // policy pour anon/authenticated : seule une requête service_role (celle-ci)
+  // peut la lire.
   const { email, error: authError } = await verifySessionToken(event, anonKey);
   if (authError) {
     return jsonResponse(401, { authorized: false, error: authError });
@@ -39,7 +40,7 @@ exports.handler = async (event) => {
 
   try {
     const r = await supabaseAdminRequest(
-      `/rest/v1/subscribers?email=eq.${encodeURIComponent(email)}&select=role`
+      `/rest/v1/admins?email=eq.${encodeURIComponent(email)}&select=email`
     );
     const rows = await r.json();
     if (!r.ok) {
@@ -47,7 +48,7 @@ exports.handler = async (event) => {
       return jsonResponse(500, { authorized: false, error: 'SUPABASE_READ_ERROR' });
     }
 
-    const isAdmin = rows.length > 0 && rows[0].role === 'admin';
+    const isAdmin = Array.isArray(rows) && rows.length > 0;
     if (!isAdmin) {
       return jsonResponse(403, { authorized: false });
     }

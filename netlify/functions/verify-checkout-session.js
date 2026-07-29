@@ -18,12 +18,24 @@
 // annulation, remboursement) — cette fonction ne couvre que le retour
 // immédiat post-paiement pour débloquer l'accès sans attendre.
 //
+// Le schéma "subscribers" de production est indexé sur user_id (pas email) :
+// Stripe ne connaissant que l'email du payeur, cette fonction retrouve (ou
+// crée) le compte Supabase Auth correspondant via l'API admin avant d'écrire
+// quoi que ce soit. Elle génère aussi un jeton "magic link" à usage unique
+// pour que le navigateur du payeur obtienne une vraie session Supabase Auth
+// tout de suite après paiement — la "connexion immédiate" du parcours.
+//
 // GET /.netlify/functions/verify-checkout-session?session_id=cs_...
-//   → { activated: true, email }   si le paiement est confirmé
-//   → { activated: false, ... }    sinon (jamais d'activation par défaut)
+//   → { activated: true, email, login_token }  si le paiement est confirmé
+//   → { activated: false, ... }                sinon (jamais d'activation par défaut)
 
 const { stripeRequest } = require('./_lib/stripe-rest');
-const { supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
+const {
+  supabaseAdminRequest,
+  jsonResponse,
+  ensureAuthUserForEmail,
+  generateMagicLinkOtp,
+} = require('./_lib/supabase-admin');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') {
@@ -60,13 +72,22 @@ exports.handler = async (event) => {
       return jsonResponse(200, { activated: false, error: 'NO_EMAIL_ON_SESSION' });
     }
 
+    let loginToken = null;
     if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      await activateSubscriber({ email, offer, session });
+      try {
+        loginToken = await activateSubscriber({ email, offer, session });
+      } catch (e) {
+        // Le paiement EST confirmé par Stripe à ce stade — on ne fait plus
+        // jamais redescendre "activated" à false pour un souci d'écriture en
+        // base : l'utilisateur a payé, il ne doit pas voir une erreur. On
+        // journalise pour investigation manuelle plutôt que de bloquer.
+        console.error('[verify-checkout-session] Échec activation (paiement confirmé quand même):', e);
+      }
     } else {
       console.error('[verify-checkout-session] SUPABASE_SERVICE_ROLE_KEY absente — activation Stripe confirmée mais pas persistée en base.');
     }
 
-    return jsonResponse(200, { activated: true, email, offer });
+    return jsonResponse(200, { activated: true, email, offer, login_token: loginToken });
 
   } catch (e) {
     console.error('[verify-checkout-session] NETWORK_ERROR', e);
@@ -75,36 +96,52 @@ exports.handler = async (event) => {
 };
 
 async function activateSubscriber({ email, offer, session }) {
-  // Upsert sur l'email (contrainte unique posée par la migration SQL).
-  await supabaseAdminRequest('/rest/v1/subscribers?on_conflict=email', {
+  // Le compte Supabase Auth est censé déjà exister (créé côté client avant le
+  // paiement) — mais s'il manque ou n'est pas confirmé, on ne bloque jamais
+  // l'activation pour autant : on le crée/confirme ici, le paiement Stripe
+  // étant une preuve d'identité largement suffisante.
+  const user = await ensureAuthUserForEmail(email);
+
+  // Upsert sur user_id (clé primaire de "subscribers" en production) — pas
+  // sur email, colonne qui n'existe pas sur cette table.
+  await supabaseAdminRequest('/rest/v1/subscribers?on_conflict=user_id', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({
-      email,
+      user_id: user.id,
       is_active: true,
-      plan: offer,
       stripe_customer_id: session.customer || null,
-      stripe_subscription_id: session.subscription || null,
       updated_at: new Date().toISOString(),
     })
   });
 
-  // Trace d'audit — idempotent : un même session_id ne crée qu'une ligne
-  // (stripe_event_id unique), un second appel (double retour navigateur,
-  // rafraîchissement de page) est silencieusement ignoré côté Postgres.
-  await supabaseAdminRequest('/rest/v1/payments?on_conflict=stripe_event_id', {
+  // Idempotence : un même session_id ne déclenche qu'une seule écriture dans
+  // "sales" (un second appel — double retour navigateur, F5 — est ignoré).
+  const dedupeResp = await supabaseAdminRequest('/rest/v1/stripe_events_processed', {
     method: 'POST',
-    headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    body: JSON.stringify({
-      stripe_event_id: `checkout_verify_${session.id}`,
-      stripe_session_id: session.id,
-      stripe_customer_id: session.customer || null,
-      email,
-      offer,
-      amount_total: session.amount_total ?? null,
-      currency: session.currency ?? null,
-      status: 'paid',
-      raw_event: session,
-    })
+    headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
+    body: JSON.stringify({ event_id: `checkout_verify_${session.id}`, event_type: 'checkout_verify' })
   });
+  const dedupeRows = dedupeResp.ok ? await dedupeResp.json() : [];
+  if (Array.isArray(dedupeRows) && dedupeRows.length > 0) {
+    await supabaseAdminRequest('/rest/v1/sales', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        stripe_session_id: session.id,
+        stripe_customer_id: session.customer || null,
+        buyer_user_id: user.id,
+        product_id: offer || 'gc_67',
+        product_name: 'Génération Capable — 67€/mois',
+        amount: session.amount_total ?? 0,
+        currency: session.currency || 'eur',
+        status: 'completed',
+        source: 'checkout_verify',
+      })
+    });
+  }
+
+  // Jeton de connexion immédiate — dégradé silencieusement en cas d'échec
+  // (l'utilisateur pourra toujours se connecter avec son mot de passe).
+  return generateMagicLinkOtp(email);
 }

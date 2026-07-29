@@ -3966,14 +3966,14 @@ async function authWithEmail(){
 // OAuth Google
 async function authWithGoogle(){
   if(!supa) return authNotConfigured();
-  const { error } = await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.href } });
+  const { error } = await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } });
   if(error) toast('❌ ' + error.message);
 }
 
 // OAuth Apple
 async function authWithApple(){
   if(!supa) return authNotConfigured();
-  const { error } = await supa.auth.signInWithOAuth({ provider:'apple', options:{ redirectTo: window.location.href } });
+  const { error } = await supa.auth.signInWithOAuth({ provider:'apple', options:{ redirectTo: window.location.origin + window.location.pathname } });
   if(error) toast('❌ ' + error.message);
 }
 
@@ -3991,7 +3991,7 @@ async function sendResetEmail(){
   if(!email){ toast('Entre ton email'); return; }
   if(!supa) return authNotConfigured();
 
-  const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+  const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
   if(error){ toast('❌ ' + error.message); return; }
   toast('✓ Email envoyé — vérifie ta boîte de réception');
   showLoginForm();
@@ -4012,13 +4012,18 @@ async function signOutUser(){
 // dans la table "subscribers" si cette personne a bien un abonnement actif.
 // C'est CETTE vérification côté serveur (via RLS Supabase) qui remplace
 // les anciens codes d'accès en clair — impossible à falsifier depuis le JS.
-// Filtre par email (pas par user_id) : les lignes créées après un paiement
-// Stripe ne connaissent que l'email du payeur (voir la RLS de "subscribers"
-// dans supabase/migrations/) — filtrer par user_id ne les trouverait jamais.
-// Le filtre ci-dessous est un confort de lecture ; la vraie restriction de
-// sécurité vient de la policy RLS elle-même, pas de ce .eq() côté client.
+// Filtre par user_id (clé primaire de "subscribers" en production, liée par
+// clé étrangère à auth.users) — PAS par email : cette colonne n'existe pas
+// sur cette table. La policy RLS ("auth.uid() = user_id") est la vraie
+// restriction de sécurité ; ce .eq() est juste un confort de lecture.
+// Garde anti-doublon : établir une session (ex: verifyOtp() après paiement)
+// déclenche aussi l'écouteur onAuthStateChange('SIGNED_IN') ci-dessous, qui
+// appellerait onAuthSuccess() une seconde fois pour le même access_token.
+let _lastAuthSuccessToken = null;
 async function onAuthSuccess(session){
   if(!session?.user) return;
+  if(session.access_token && session.access_token === _lastAuthSuccessToken) return;
+  _lastAuthSuccessToken = session.access_token || null;
   STATE.memberEmail = session.user.email;
 
   if(!supa) return authNotConfigured();
@@ -4026,7 +4031,7 @@ async function onAuthSuccess(session){
   const { data: sub, error } = await supa
     .from('subscribers')
     .select('is_active')
-    .eq('email', session.user.email.toLowerCase())
+    .eq('user_id', session.user.id)
     .maybeSingle();
 
   if(error){ console.error(error); toast('❌ Erreur de vérification de l\'abonnement'); return; }
@@ -4182,22 +4187,44 @@ async function handleCheckoutReturn(){
 
   // À partir d'ici, le paiement est confirmé par le serveur : ça ne doit
   // plus jamais redevenir un échec aux yeux de l'utilisateur. Les étapes
-  // suivantes (mail de confirmation, chargement des modules) sont du
-  // "meilleur effort" — chacune isolée dans son propre try/catch, comme
-  // partout ailleurs dans ce fichier — pour qu'un pépin sur l'une d'elles
-  // n'affiche jamais "paiement non confirmé" à quelqu'un qui a bien payé.
+  // suivantes (connexion auto, mail de confirmation) sont du "meilleur
+  // effort" — chacune isolée dans son propre try/catch, comme partout
+  // ailleurs dans ce fichier — pour qu'un pépin sur l'une d'elles n'affiche
+  // jamais "paiement non confirmé" à quelqu'un qui a bien payé.
   const name = STATE.memberName || 'Membre';
-  STATE.subscribed = true;
-  STATE.module1Validated = true;
-  saveState();
 
   try{ registerMember(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] registerMember:', e); }
   try{ await sendConfirmationEmail(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] sendConfirmationEmail:', e); }
-  try{ await loadModules(); }catch(e){ console.error('[checkout-return] loadModules:', e); }
 
-  try{ applyPaywallGates(); }catch(e){}
-  try{ renderAll(); }catch(e){}
-  toast('🎉 Paiement confirmé — bienvenue dans Génération Capable !');
+  // Connexion immédiate : le serveur a renvoyé un jeton "magic link" à usage
+  // unique (voir verify-checkout-session.js) — on l'échange contre une VRAIE
+  // session Supabase Auth, sans ressaisie du mot de passe. onAuthSuccess()
+  // fait ensuite la même vérification is_active que pour une connexion
+  // normale (RLS incluse) avant de débloquer l'espace membre : le paiement
+  // confirmé par Stripe et l'activation en base sont deux choses distinctes,
+  // et c'est cette vérification qui garantit qu'on ne débloque jamais
+  // l'accès sur la seule foi d'un paramètre d'URL.
+  let session = null;
+  if(data.login_token && supa){
+    try{
+      const { data: otpData, error: otpErr } = await supa.auth.verifyOtp({
+        email: data.email, token: data.login_token, type: 'magiclink'
+      });
+      if(otpErr) console.error('[checkout-return] verifyOtp:', otpErr);
+      else session = otpData.session;
+    }catch(e){ console.error('[checkout-return] verifyOtp EXCEPTION:', e); }
+  }
+
+  if(session){
+    toast('🎉 Paiement confirmé — connexion en cours...');
+    await onAuthSuccess(session);
+  } else {
+    // Le paiement est bien confirmé et actif côté serveur — seule la
+    // connexion automatique a échoué (jeton non généré, réseau...). On
+    // invite simplement à se connecter avec le mot de passe déjà choisi.
+    toast('🎉 Paiement confirmé — connecte-toi pour accéder à ton espace');
+    go('login', null);
+  }
 
   STATE.notifications.unshift({
     ico: '🎓', ico_bg: 'rgba(201,168,76,.14)',
