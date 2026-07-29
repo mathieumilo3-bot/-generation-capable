@@ -1,0 +1,20 @@
+-- ══════════════════════════════════════════════════════════════════════════
+-- Sécurise les retries Stripe : un échec partiel ne doit JAMAIS bloquer
+-- pour toujours le traitement d'un événement
+-- ══════════════════════════════════════════════════════════════════════════
+-- stripe_events_processed (migration 0003) insère l'event_id AVANT le
+-- traitement (protège contre deux livraisons quasi simultanées du même
+-- événement). Mais avec les nouveaux handlers multi-étapes (handleOrderPaid
+-- fait 5 lectures/écritures séquentielles), un échec transitoire à
+-- N'IMPORTE quelle étape après l'insertion aurait bloqué DÉFINITIVEMENT tout
+-- retry de cet événement : Stripe réessaie automatiquement sur une réponse
+-- 500, mais le retry aurait été silencieusement ignoré par le garde-fou de
+-- déduplication, qui ne distingue pas "déjà vu" de "déjà traité avec succès".
+--
+-- Ajout d'un marqueur explicite de succès (completed_at) : l'événement n'est
+-- considéré "déjà traité" (et donc ignoré) que s'il a réellement fini son
+-- traitement sans erreur. Un échec partiel laisse completed_at NULL, ce qui
+-- autorise le prochain retry Stripe à reprendre le traitement — chaque
+-- handler (handleOrderPaid, etc.) reste lui-même idempotent via ses propres
+-- vérifications (ex: "if order.status === 'paid' return").
+alter table public.stripe_events_processed add column if not exists completed_at timestamptz;

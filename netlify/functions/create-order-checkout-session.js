@@ -123,11 +123,27 @@ exports.handler = async (event) => {
     // Réservation immédiate du lien créé : la commande passe en
     // "awaiting_payment" pour apparaître dans "paiements en cours" du
     // wallet, même avant que le client n'ait payé.
-    await supabaseAdminRequest(`/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}`, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ stripe_session_id: data.id, status: 'awaiting_payment', updated_at: new Date().toISOString() }),
-    });
+    //
+    // Comparer-et-échanger sur le statut lu au tout début (draft ou
+    // awaiting_payment) : si un double-clic ou deux onglets déclenchent cet
+    // appel deux fois en parallèle, les deux créent chacun une session
+    // Stripe, mais UNE SEULE des deux écritures peut réussir (la seconde ne
+    // trouve plus de ligne avec l'ancien statut). Sans ce filtre, les deux
+    // PATCH réussiraient silencieusement et le lien réellement actif
+    // dépendrait de l'ordre d'arrivée réseau, invisible et non reproductible.
+    const patchResp = await supabaseAdminRequest(
+      `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&status=eq.${encodeURIComponent(order.status)}`,
+      {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({ stripe_session_id: data.id, status: 'awaiting_payment', updated_at: new Date().toISOString() }),
+      }
+    );
+    const patched = await patchResp.json().catch(() => []);
+    if (!Array.isArray(patched) || patched.length === 0) {
+      console.error('[create-order-checkout-session] Conflit de concurrence détecté sur la commande', orderId);
+      return jsonResponse(200, { error: 'CONCURRENT_UPDATE', message: 'Cette commande vient d\'être modifiée ailleurs (double-clic ou autre onglet) — réessaie.' });
+    }
 
     return jsonResponse(200, { url: data.url });
 
