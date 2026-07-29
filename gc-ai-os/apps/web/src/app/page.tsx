@@ -1,31 +1,24 @@
 "use client";
 
-import type { ChatMessage } from "@gc-ai-os/model-provider";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { AgentsView } from "@/components/agents-view";
+import { ChatConsole } from "@/components/chat-console";
+import { GoalConsole } from "@/components/goal-console";
 
-interface Turn {
-  id: string;
-  role: "user" | "agent";
-  text: string;
-  agentName?: string;
-  escalated?: boolean;
-}
+type Tab = "objectives" | "chat" | "agents";
 
-interface ChatApiResponse {
-  agentId: string;
-  agentName: string;
-  taskId: string;
-  text: string;
-  escalated: boolean;
-  modelMode: "anthropic" | "fallback";
-}
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "objectives", label: "Objectifs" },
+  { id: "chat", label: "Conversation" },
+  { id: "agents", label: "Agents" },
+];
 
-export default function ChatConsole() {
-  const [turns, setTurns] = useState<Turn[]>([]);
-  const [input, setInput] = useState("");
-  const [pending, setPending] = useState(false);
+export default function Home() {
+  // Les objectifs sont l'onglet par défaut : c'est le mode de travail
+  // principal du système (voir docs/gc-ai-os/10-moteur-objectifs.md), la
+  // conversation n'en est qu'un cas particulier à un seul tour.
+  const [tab, setTab] = useState<Tab>("objectives");
   const [modelMode, setModelMode] = useState<"anthropic" | "fallback" | null>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/chat")
@@ -33,71 +26,6 @@ export default function ChatConsole() {
       .then((data: { modelMode: "anthropic" | "fallback" }) => setModelMode(data.modelMode))
       .catch(() => setModelMode("fallback"));
   }, []);
-
-  useEffect(() => {
-    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
-  }, [turns, pending]);
-
-  async function send() {
-    const message = input.trim();
-    if (!message || pending) return;
-
-    const userTurn: Turn = { id: crypto.randomUUID(), role: "user", text: message };
-    const history: ChatMessage[] = turns.map((turn) => ({
-      role: turn.role === "user" ? "user" : "assistant",
-      content: turn.text,
-    }));
-
-    setTurns((prev) => [...prev, userTurn]);
-    setInput("");
-    setPending(true);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message, history }),
-      });
-
-      if (!res.ok) {
-        const errorBody = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errorBody?.error ?? `Erreur serveur (${res.status})`);
-      }
-
-      const data = (await res.json()) as ChatApiResponse;
-      setModelMode(data.modelMode);
-      setTurns((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "agent",
-          text: data.text,
-          agentName: data.agentName,
-          escalated: data.escalated,
-        },
-      ]);
-    } catch (error) {
-      setTurns((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "agent",
-          text: error instanceof Error ? error.message : "Erreur inconnue.",
-          agentName: "Orchestrateur",
-          escalated: true,
-        },
-      ]);
-    } finally {
-      setPending(false);
-    }
-  }
-
-  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      void send();
-    }
-  }
 
   return (
     <div className="console">
@@ -113,64 +41,24 @@ export default function ChatConsole() {
         )}
       </header>
 
-      <div className="console-body" ref={bodyRef}>
-        {turns.length === 0 && (
-          <p className="empty-state">
-            Écris à l&apos;Orchestrateur. Il route ta demande vers l&apos;un des 19
-            agents (CEO par défaut, ou un spécialiste selon le sujet — technique,
-            marketing, commercial, finance, juridique…), journalise le tour, et
-            répond ici.
-          </p>
-        )}
-
-        {turns.map((turn) => (
-          <div key={turn.id} className={`turn ${turn.role}${turn.escalated ? " escalated" : ""}`}>
-            <span className={`turn-label${turn.escalated ? " escalated" : ""}`}>
-              {turn.role === "user" ? (
-                "Toi"
-              ) : (
-                <>
-                  <span className="agent-dot" aria-hidden="true" />
-                  {turn.agentName}
-                  {turn.escalated ? " · escaladé" : ""}
-                </>
-              )}
-            </span>
-            <div className="bubble">{turn.text}</div>
-          </div>
+      <div className="tabs" role="tablist" aria-label="Vues de GC AI OS">
+        {TABS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            className="tab"
+            aria-selected={tab === entry.id}
+            onClick={() => setTab(entry.id)}
+          >
+            {entry.label}
+          </button>
         ))}
-
-        {pending && (
-          <div className="turn agent">
-            <span className="turn-label">
-              <span className="agent-dot" aria-hidden="true" />
-              …
-            </span>
-            <div className="bubble">
-              <span className="typing" aria-label="En train de répondre">
-                <span />
-                <span />
-                <span />
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="console-form">
-        <textarea
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Écris un message…"
-          rows={1}
-          disabled={pending}
-          aria-label="Message pour l'Orchestrateur"
-        />
-        <button type="button" onClick={() => void send()} disabled={pending || !input.trim()}>
-          Envoyer
-        </button>
-      </div>
+      {tab === "objectives" && <GoalConsole />}
+      {tab === "chat" && <ChatConsole />}
+      {tab === "agents" && <AgentsView />}
     </div>
   );
 }

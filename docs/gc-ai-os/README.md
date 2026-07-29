@@ -25,6 +25,10 @@ séparé : **gc-ai-os** (voir section « Repository technique » ci-dessous).
 | [07-interface.md](./07-interface.md) | Dashboard, vues (agents, tâches, mémoire, workflows, monitoring, logs) |
 | [08-stack-technique.md](./08-stack-technique.md) | Choix technologiques justifiés, structure du monorepo |
 | [09-roadmap.md](./09-roadmap.md) | Phases : OS interne → généralisation → GC AI Factory |
+| [10-moteur-objectifs.md](./10-moteur-objectifs.md) | Système orienté objectifs : plan → missions → exécution parallèle → auto-correction → livraison |
+| [11-factory.md](./11-factory.md) | GC AI Factory : les agents qui créent des agents (manifestes déclaratifs, pas de codegen) |
+| [12-competences.md](./12-competences.md) | Compétences mesurées par l'exécution réelle (niveau, fiabilité, coût, temps) |
+| [13-directeur-general.md](./13-directeur-general.md) | Directeur Général IA : arbitrage déterministe et auditable au-dessus de l'Orchestrateur |
 
 ## Repository technique
 

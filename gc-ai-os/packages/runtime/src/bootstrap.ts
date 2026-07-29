@@ -22,14 +22,41 @@ import { AuthorizationService } from "@gc-ai-os/security";
 import { SecurityAgent } from "@gc-ai-os/security-agent";
 import { SupabaseAgent } from "@gc-ai-os/supabase-agent";
 import { SupportAgent } from "@gc-ai-os/support-agent";
+import { AgentFactory, DeclarativeAgent } from "@gc-ai-os/factory";
+import { ExecutiveEngine } from "@gc-ai-os/executive";
+import {
+  DeliverableValidator,
+  GoalEngine,
+  ModelPlanner,
+  PlaybookPlanner,
+} from "@gc-ai-os/goals";
+import { SkillRegistry } from "@gc-ai-os/telemetry";
 import { LocalHashEmbeddingProvider } from "./local-embedding";
+import {
+  SqliteGoalStore,
+  decisionSinkOf,
+  deliverableStoreOf,
+  keyResultStoreOf,
+  missionStoreOf,
+  objectiveStoreOf,
+  publishedAgentStoreOf,
+  skillRepositoryOf,
+} from "./goal-store";
 import { SqliteRuntimeStore } from "./sqlite-store";
 
 export interface GcRuntime {
   orchestrator: Orchestrator;
   store: SqliteRuntimeStore;
+  goalStore: SqliteGoalStore;
+  goalEngine: GoalEngine;
+  executive: ExecutiveEngine;
+  skills: SkillRegistry;
+  factory: AgentFactory;
+  agents: AgentRegistry;
   /** "anthropic" si ANTHROPIC_API_KEY est configurée, "fallback" sinon. */
   modelMode: "anthropic" | "fallback";
+  /** Nombre d'agents fabriqués par la Factory rechargés au démarrage. */
+  publishedAgentCount: number;
 }
 
 /**
@@ -114,5 +141,76 @@ export function bootstrapRuntime(dbPath: string): GcRuntime {
     memory,
   });
 
-  return { orchestrator, store, modelMode: model.mode };
+  // ---- Couche objectifs ------------------------------------------------
+  // Partage la connexion SQLite du socle plutôt que d'en ouvrir une
+  // seconde sur le même fichier (voir SqliteRuntimeStore.connection).
+  const goalStore = new SqliteGoalStore(store.connection);
+  const skills = new SkillRegistry(skillRepositoryOf(goalStore));
+  const executive = new ExecutiveEngine(registry, skills, decisionSinkOf(goalStore));
+  const factory = new AgentFactory(model, publishedAgentStoreOf(goalStore));
+
+  // Agents fabriqués par la Factory : rechargés au démarrage et
+  // enregistrés comme n'importe quel agent du catalogue. C'est ce qui
+  // rend un employé IA créé hier réellement opérationnel aujourd'hui.
+  const published = loadPublishedAgents(goalStore, registry, model, store);
+
+  const goalEngine = new GoalEngine({
+    objectives: objectiveStoreOf(goalStore),
+    keyResults: keyResultStoreOf(goalStore),
+    missions: missionStoreOf(goalStore),
+    deliverables: deliverableStoreOf(goalStore),
+    planner: new ModelPlanner(model, new PlaybookPlanner()),
+    executive,
+    agents: registry,
+    skills,
+    validator: new DeliverableValidator(model),
+    authorization,
+    memory,
+  });
+
+  return {
+    orchestrator,
+    store,
+    goalStore,
+    goalEngine,
+    executive,
+    skills,
+    factory,
+    agents: registry,
+    modelMode: model.mode,
+    publishedAgentCount: published,
+  };
+}
+
+/**
+ * Recharge les agents publiés par la Factory. Les échecs
+ * d'enregistrement (domaine devenu conflictuel, manifeste écrit par une
+ * version antérieure du schéma) sont ignorés agent par agent : un
+ * blueprint devenu invalide ne doit pas empêcher tout le système de
+ * démarrer.
+ */
+function loadPublishedAgents(
+  goalStore: SqliteGoalStore,
+  registry: AgentRegistry,
+  model: ReturnType<typeof createModelProvider>,
+  store: SqliteRuntimeStore,
+): number {
+  let loaded = 0;
+
+  for (const published of goalStore.listPublishedSync()) {
+    try {
+      registry.register(new DeclarativeAgent(published.blueprint, model));
+      store.grantPermission({
+        roleId: published.blueprint.id,
+        capability: `${published.blueprint.id}.converse`,
+        allowed: true,
+        requiresHumanValidation: false,
+      });
+      loaded += 1;
+    } catch {
+      // Agent ignoré : voir la table published_agents pour diagnostiquer.
+    }
+  }
+
+  return loaded;
 }

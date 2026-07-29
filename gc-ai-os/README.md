@@ -10,12 +10,27 @@ dossier en est l'implémentation de phase 1 (voir
 documentation d'architecture doit être résolue en mettant l'un ou l'autre
 à jour explicitement, jamais laissée en silence.
 
-**État réel, pas une promesse** : ce n'est pas une maquette. Le chat
-fonctionne de bout en bout — routage vers l'un des 19 agents, RBAC, audit,
-mémoire — dès `pnpm install && pnpm dev`, sans aucune configuration. Ce
-qui est simulé (la génération de texte, tant qu'aucune clé de modèle
-n'est fournie) est annoncé comme tel par l'application elle-même, jamais
-présenté comme réel quand il ne l'est pas.
+**État réel, pas une promesse** : ce n'est pas une maquette. Le système
+est **orienté objectifs**, pas seulement conversationnel — on lui donne un
+but (« amener Génération Capable à 10 000 clients »), il le décompose en
+missions, les affecte aux agents, les exécute en parallèle, se corrige,
+valide, et produit un **dossier téléchargeable**. Tout cela fonctionne dès
+`pnpm install && pnpm dev`, sans aucune configuration. Ce qui est simulé
+(la rédaction de fond, tant qu'aucune clé de modèle n'est fournie) est
+annoncé comme tel par l'application elle-même, jamais présenté comme réel
+quand il ne l'est pas.
+
+## Le pipeline
+
+```
+Objectif → Planification → Missions → Affectation (Directeur Général)
+        → Exécution parallèle → Auto-correction → Validation → Livraison
+```
+
+Trois garde-fous rendent l'autonomie acceptable en entreprise : **budget
+dur** (le Directeur Général interrompt à l'épuisement), **plafond de
+tentatives** (pas de boucle infinie), **RBAC et escalade** (aucune action
+critique exécutée sans validation humaine).
 
 ## Démarrer
 
@@ -87,6 +102,23 @@ Chaque `packages/agents/<nom>-agent` dépend de `agents-core` et
 `model-provider`, jamais l'inverse — un agent doit pouvoir être supprimé
 ou remplacé sans casser le reste du système.
 
+## Les deux décisions d'architecture qui comptent
+
+**Le Directeur Général n'est pas un LLM.** C'est un moteur de politique
+déterministe alimenté par la télémétrie réelle des agents. Un modèle sur
+le chemin critique de chaque affectation ajouterait latence, coût et
+surtout imprévisibilité à une décision qui doit être reproductible et
+explicable (« pourquoi cet agent ? » → une formule chiffrée, pas « le
+modèle a estimé »). Le LLM garde le jugement qualitatif — rédiger un
+plan, critiquer un livrable. Voir `docs/gc-ai-os/13-directeur-general.md`.
+
+**La Factory ne génère pas de code.** Elle produit des manifestes
+déclaratifs validés par schéma, chargés au démarrage. Un agent fabriqué
+est une ligne en base : validable, versionnable, révocable, incapable
+d'exécuter autre chose que ce que le RBAC lui accorde. C'est ce qui rend
+la fabrique d'employés IA diffusable à des milliers d'organisations sans
+exécuter du code non relu. Voir `docs/gc-ai-os/11-factory.md`.
+
 ## Ce qui tourne réellement aujourd'hui
 
 - **Chat** : chaque message passe par l'Orchestrateur, qui route vers l'un
@@ -128,15 +160,49 @@ ou remplacé sans casser le reste du système.
   un socle codé en dur dans le prompt système, pas encore une mémoire
   versionnée et enrichissable — voir `docs/gc-ai-os/04-memoire.md`).
 
+## Moteur d'objectifs, en pratique
+
+Onglet **Objectifs** (vue par défaut) :
+
+- **Planifier** — décompose sans rien exécuter. Le plan se relit avant
+  d'engager du budget.
+- **Planifier et exécuter** — lance les agents en parallèle par vagues de
+  dépendances, avec auto-correction et validation, puis expose le dossier
+  et chaque livrable au téléchargement.
+
+API équivalente :
+
+```bash
+curl -X POST localhost:3000/api/objectives \
+  -H 'content-type: application/json' \
+  -d '{"title":"Amener Génération Capable à 10 000 clients","execute":true}'
+
+curl -O -J localhost:3000/api/objectives/<id>/dossier   # le fichier .md
+```
+
 ## Vérifié avant ce commit
 
-`pnpm install`, `tsc --noEmit` sur les 27 packages (dont les 19 agents),
-`next build`, puis `next start` avec des appels réels à `/api/chat` sur
-huit domaines différents (défaut CEO, marketing, commercial, finance,
-legal, security, recruitment, supabase — tous routés vers le bon agent),
-plus deux escalades critiques vérifiées (« rembourse le client » →
-Finance Agent refuse, « signe le contrat » → Legal Agent refuse) et
-inspection directe du fichier SQLite pour confirmer les 19 lignes RBAC et
-l'écriture réelle des tâches/audit/mémoire. Un bug de routage a été
-trouvé et corrigé pendant cette vérification (le mot-clé finance ne
-matchait que « remboursement », pas le verbe « rembourse »).
+`pnpm install`, `tsc --noEmit` sur les 31 packages, `next build`, puis
+`next start` avec des exécutions réelles :
+
+- **Objectif « Amener Génération Capable à 10 000 clients »** exécuté de
+  bout en bout : 6 missions générées, affectées par le Directeur Général
+  à 6 agents distincts (data, marketing ×2, commercial, recruitment,
+  customer-success), toutes terminées, 6 livrables produits, dossier
+  téléchargé (7 Ko, en-têtes `content-disposition` corrects). La cible
+  chiffrée `10000` a été extraite automatiquement de l'énoncé.
+- **Objectif « Refondre la plateforme technique »** : playbook différent
+  correctement sélectionné, routage vers CEO/CTO/backend/QA/security.
+- **Factory** : agent « Analyste de la performance des ambassadeurs
+  TikTok » fabriqué, évalué (score 1,0), publié — puis **rechargé au
+  redémarrage** et actif (20 agents au total, confirmé via `/api/agents`).
+- **Télémétrie** : les compétences sont passées de 50 (démarrage à froid)
+  à 67 après une exécution réussie — conforme au lissage de Laplace
+  documenté, et non à une valeur écrite en dur.
+- **Mémoire structurée** : 2 entrées `decision` et 11 `learning` écrites
+  automatiquement, vérifiées directement en base.
+
+Une amélioration a été faite pendant cette vérification : le livrable
+produit hors-ligne était un écho inutilisable ; il est désormais une
+fiche de travail structurée (mandat, critère, sections à compléter),
+explicitement marquée comme non rédigée par un modèle.

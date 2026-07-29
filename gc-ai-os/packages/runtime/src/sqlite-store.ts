@@ -44,6 +44,8 @@ function rowToTask(row: TaskRow): Task {
 interface MemoryRow {
   id: string;
   scope: string;
+  kind: string | null;
+  objective_id: string | null;
   project_id: string | null;
   agent_id: string | null;
   title: string;
@@ -59,6 +61,8 @@ function rowToMemoryEntry(row: MemoryRow): MemoryEntry {
   return {
     id: row.id,
     scope: row.scope as MemoryScope,
+    ...(row.kind !== null ? { kind: row.kind as NonNullable<MemoryEntry["kind"]> } : {}),
+    ...(row.objective_id !== null ? { objectiveId: row.objective_id } : {}),
     ...(row.project_id !== null ? { projectId: row.project_id } : {}),
     ...(row.agent_id !== null ? { agentId: row.agent_id } : {}),
     title: row.title,
@@ -85,6 +89,15 @@ export class SqliteRuntimeStore implements TaskStore, PermissionStore, AuditSink
     this.db = new DatabaseSync(path);
     this.db.exec("pragma journal_mode = WAL;");
     this.db.exec(SCHEMA_SQL);
+  }
+
+  /**
+   * Connexion sous-jacente, exposée pour que la couche objectifs
+   * (SqliteGoalStore) partage la même base et la même transactionnalité
+   * plutôt que d'ouvrir un second handle sur le même fichier.
+   */
+  get connection(): DatabaseSync {
+    return this.db;
   }
 
   close(): void {
@@ -246,12 +259,14 @@ export class SqliteRuntimeStore implements TaskStore, PermissionStore, AuditSink
   async insert(entry: MemoryEntry, embedding: number[]): Promise<void> {
     this.db
       .prepare(
-        `insert into memory_entries (id, scope, project_id, agent_id, title, content, embedding, created_by, created_at, version, superseded_by)
-         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, null)`,
+        `insert into memory_entries (id, scope, kind, objective_id, project_id, agent_id, title, content, embedding, created_by, created_at, version, superseded_by)
+         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, null)`,
       )
       .run(
         entry.id,
         entry.scope,
+        entry.kind ?? "note",
+        entry.objectiveId ?? null,
         entry.projectId ?? null,
         entry.agentId ?? null,
         entry.title,

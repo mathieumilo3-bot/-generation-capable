@@ -88,19 +88,83 @@ export class FallbackModelProvider implements ModelProvider {
   readonly mode = "fallback" as const;
 
   async complete(messages: ChatMessage[]): Promise<ModelCompletion> {
-    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
-    const excerpt = lastUserMessage?.content.slice(0, 240) ?? "";
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    const mission = parseMissionPrompt(lastUserMessage);
 
-    const text =
-      `Mode démonstration hors-ligne (aucune ANTHROPIC_API_KEY configurée).\n\n` +
-      `Message reçu : « ${excerpt} »\n\n` +
-      `Le routage, la vérification de permissions et la journalisation d'audit ` +
-      `viennent réellement de s'exécuter pour ce message — seule la génération ` +
-      `de réponse est simulée. Ajoute ANTHROPIC_API_KEY dans ` +
-      `apps/web/.env.local puis redémarre pour obtenir de vraies réponses.`;
+    // Une mission attend un livrable exploitable : plutôt que de renvoyer
+    // un écho inutilisable, on produit une fiche de travail structurée à
+    // partir du brief. Ce n'est pas du contenu généré — c'est le brief
+    // mis en forme, et le document le dit explicitement.
+    const text = mission
+      ? buildMissionWorksheet(mission)
+      : `Mode démonstration hors-ligne (aucune ANTHROPIC_API_KEY configurée).\n\n` +
+        `Message reçu : « ${lastUserMessage.slice(0, 240)} »\n\n` +
+        `Le routage, la vérification de permissions et la journalisation d'audit ` +
+        `viennent réellement de s'exécuter pour ce message — seule la génération ` +
+        `de réponse est simulée. Ajoute ANTHROPIC_API_KEY dans ` +
+        `apps/web/.env.local puis redémarre pour obtenir de vraies réponses.`;
 
     return { text, mode: "fallback" };
   }
+}
+
+interface ParsedMission {
+  title: string;
+  brief: string;
+  criteria: string;
+}
+
+function parseMissionPrompt(prompt: string): ParsedMission | null {
+  const title = prompt.match(/^Mission\s*:\s*(.+)$/m)?.[1]?.trim();
+  if (!title) return null;
+
+  const brief = prompt.match(/Brief\s*:\s*\n([\s\S]*?)(?:\n\s*Critère de réussite|$)/)?.[1]?.trim();
+  const criteria = prompt.match(/Critère de réussite\s*:\s*(.+)$/m)?.[1]?.trim();
+
+  return { title, brief: brief ?? "", criteria: criteria ?? "" };
+}
+
+/**
+ * Transforme un brief de mission en fiche de travail structurée,
+ * utilisable telle quelle par un humain ou comme point de départ pour un
+ * agent une fois le modèle branché. Aucun contenu n'est inventé : seules
+ * les consignes du brief sont restituées, plus des sections vides
+ * explicitement marquées comme à compléter.
+ */
+function buildMissionWorksheet(mission: ParsedMission): string {
+  return [
+    `# ${mission.title}`,
+    "",
+    "> **Fiche de travail générée sans modèle.** GC AI OS tourne actuellement sans clé",
+    "> `ANTHROPIC_API_KEY` : le routage, l'affectation par le Directeur Général, le contrôle",
+    "> de permissions, la télémétrie et la validation se sont réellement exécutés, mais",
+    "> l'analyse de fond n'a pas été rédigée. Les sections ci-dessous sont à compléter —",
+    "> par un humain, ou automatiquement dès qu'une clé est configurée.",
+    "",
+    "## Mandat",
+    "",
+    mission.brief || "_Aucun brief fourni._",
+    "",
+    "## Critère de réussite",
+    "",
+    mission.criteria || "_Aucun critère fourni._",
+    "",
+    "## État des lieux",
+    "",
+    "_À compléter : ce qui est factuellement connu aujourd'hui sur ce sujet._",
+    "",
+    "## Analyse",
+    "",
+    "_À compléter : ce que ces faits impliquent, et ce qui limite actuellement la progression._",
+    "",
+    "## Recommandation",
+    "",
+    "_À compléter : l'option retenue et sa justification._",
+    "",
+    "## Action prioritaire",
+    "",
+    "_À compléter : UNE action concrète, avec son critère de réussite mesurable._",
+  ].join("\n");
 }
 
 export function createModelProvider(env: NodeJS.ProcessEnv = process.env): ModelProvider {

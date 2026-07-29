@@ -20,6 +20,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@gc-ai-os/goals':
+        specifier: workspace:*
+        version: link:../../packages/goals
       '@gc-ai-os/model-provider':
         specifier: workspace:*
         version: link:../../packages/model-provider
@@ -298,6 +301,54 @@ importers:
         specifier: workspace:*
         version: link:../shared-types
 
+  packages/executive:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../agents-core
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@gc-ai-os/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+
+  packages/factory:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+
+  packages/goals:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../agents-core
+      '@gc-ai-os/executive':
+        specifier: workspace:*
+        version: link:../executive
+      '@gc-ai-os/memory':
+        specifier: workspace:*
+        version: link:../memory
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../model-provider
+      '@gc-ai-os/security':
+        specifier: workspace:*
+        version: link:../security
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@gc-ai-os/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+
   packages/memory:
     dependencies:
       '@gc-ai-os/shared-types':
@@ -356,12 +407,21 @@ importers:
       '@gc-ai-os/devops-agent':
         specifier: workspace:*
         version: link:../agents/devops-agent
+      '@gc-ai-os/executive':
+        specifier: workspace:*
+        version: link:../executive
+      '@gc-ai-os/factory':
+        specifier: workspace:*
+        version: link:../factory
       '@gc-ai-os/finance-agent':
         specifier: workspace:*
         version: link:../agents/finance-agent
       '@gc-ai-os/frontend-agent':
         specifier: workspace:*
         version: link:../agents/frontend-agent
+      '@gc-ai-os/goals':
+        specifier: workspace:*
+        version: link:../goals
       '@gc-ai-os/legal-agent':
         specifier: workspace:*
         version: link:../agents/legal-agent
@@ -401,6 +461,9 @@ importers:
       '@gc-ai-os/support-agent':
         specifier: workspace:*
         version: link:../agents/support-agent
+      '@gc-ai-os/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
 
   packages/security:
     dependencies:
@@ -409,6 +472,12 @@ importers:
         version: link:../shared-types
 
   packages/shared-types: {}
+
+  packages/telemetry:
+    dependencies:
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
 
 packages:
 
