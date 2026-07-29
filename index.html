@@ -4690,13 +4690,32 @@ async function handleCheckoutReturn(){
 }
 
 
-const EV_STATE = {
-  objectifs: { contacts:20, rdv:4, propositions:2, revenu:500, engagement:'' },
-  semaine: { contacts:0, rdv:0, propositions:0, revenu:0 },
-  jouractuel: { contacts:0, rdv:0, propositions:0, humeur:'', engagement:'', checkindone:false },
-  planDuJour: [],
-  suiviActions: [],
-};
+// FIX (audit 2026-07-29) : EV_STATE (objectifs de la semaine, check-in du
+// jour, suivi des actions) n'était JAMAIS persisté — un simple rafraîchissement
+// de page effaçait silencieusement tout ce que l'utilisateur venait de saisir.
+// Persisté maintenant dans localStorage, comme STATE.
+function loadEVState(){
+  const defaults = {
+    objectifs: { contacts:20, rdv:4, propositions:2, revenu:500, engagement:'' },
+    semaine: { contacts:0, rdv:0, propositions:0, revenu:0 },
+    jouractuel: { contacts:0, rdv:0, propositions:0, humeur:'', engagement:'', checkindone:false },
+    planDuJour: [],
+    suiviActions: [],
+  };
+  try{
+    const saved = JSON.parse(localStorage.getItem('gc_ev_state_v1') || '{}');
+    return {
+      objectifs: { ...defaults.objectifs, ...(saved.objectifs||{}) },
+      semaine: { ...defaults.semaine, ...(saved.semaine||{}) },
+      jouractuel: { ...defaults.jouractuel, ...(saved.jouractuel||{}) },
+      planDuJour: saved.planDuJour || defaults.planDuJour,
+      suiviActions: saved.suiviActions || defaults.suiviActions,
+    };
+  }catch(e){ return defaults; }
+}
+function saveEVState(){ try{ localStorage.setItem('gc_ev_state_v1', JSON.stringify(EV_STATE)); }catch(e){} }
+
+let EV_STATE = loadEVState();
 
 function initEspaceVendeur(){
   // Date du jour
@@ -4741,6 +4760,7 @@ function sauvegarderObjectifs(){
   EV_STATE.objectifs.propositions = parseInt(document.getElementById('obj-propositions')?.value)||2;
   EV_STATE.objectifs.revenu = parseInt(document.getElementById('obj-revenu')?.value)||500;
   EV_STATE.objectifs.engagement = document.getElementById('obj-engagement')?.value||'';
+  saveEVState();
   closeMo('mo-objectifs-semaine');
   renderEvStats();
   genererPlanDuJour();
@@ -4777,6 +4797,8 @@ Réponds STRICTEMENT en JSON :
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const plan = JSON.parse(raw.replace(/```json|```/g,'').trim());
     EV_STATE.planDuJour = plan.actions||[];
+    EV_STATE.suiviActions = [];
+    saveEVState();
     renderPlanDuJour(plan);
     renderSuivi();
   } catch(e){
@@ -4828,6 +4850,7 @@ function renderSuivi(){
 
 function toggleSuiviAction(i){
   EV_STATE.suiviActions[i] = !EV_STATE.suiviActions[i];
+  saveEVState();
   const done = EV_STATE.suiviActions.filter(Boolean).length;
   renderSuivi();
   if(done === EV_STATE.planDuJour.length) toast('🔥 Toutes les actions du jour complétées !');
@@ -4837,6 +4860,7 @@ function validerAction(){
   const nextIdx = EV_STATE.suiviActions.findIndex(v=>!v);
   if(nextIdx === -1){ toast('Toutes les actions sont déjà validées ✓'); return; }
   EV_STATE.suiviActions[nextIdx] = true;
+  saveEVState();
   renderSuivi();
   toast(`✓ Action ${nextIdx+1} validée`);
 }
@@ -4846,6 +4870,7 @@ function setHumeur(btn, emoji){
   btn.style.background='rgba(41,151,255,0.15)';
   btn.style.transform='scale(1.15)';
   EV_STATE.jouractuel.humeur = emoji;
+  saveEVState();
 }
 
 function validerCheckin(){
@@ -4853,6 +4878,7 @@ function validerCheckin(){
   if(!engagement){ toast('⚠️ Écris ton engagement du jour avant de valider'); return; }
   EV_STATE.jouractuel.engagement = engagement;
   EV_STATE.jouractuel.checkindone = true;
+  saveEVState();
   toast('✓ Check-in validé — bonne journée !');
 }
 
