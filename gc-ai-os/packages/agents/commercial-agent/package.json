@@ -1,0 +1,13 @@
+{
+  "name": "@gc-ai-os/commercial-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@gc-ai-os/agents-core": "workspace:*",
+    "@gc-ai-os/model-provider": "workspace:*",
+    "@gc-ai-os/shared-types": "workspace:*"
+  }
+}

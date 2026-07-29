@@ -1,0 +1,30 @@
+{
+  "name": "@gc-ai-os/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gc-ai-os/executive-brain": "workspace:*",
+    "@gc-ai-os/goals": "workspace:*",
+    "@gc-ai-os/metrics": "workspace:*",
+    "@gc-ai-os/model-provider": "workspace:*",
+    "@gc-ai-os/people": "workspace:*",
+    "@gc-ai-os/runtime": "workspace:*",
+    "@gc-ai-os/shared-types": "workspace:*",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}
