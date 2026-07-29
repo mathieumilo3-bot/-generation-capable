@@ -8,7 +8,7 @@
 // ici, côté serveur, pour qu'une requête modifiée ne puisse jamais obtenir un
 // produit/prix différent de celui prévu.
 //
-// STRIPE_PRICE_GC_67 est un Price ID Stripe (ex: "price_1AbCDeFgHiJ...") à
+// STRIPE_PRICE_ID est un Price ID Stripe (ex: "price_1AbCDeFgHiJ...") à
 // créer dans le Dashboard Stripe → Produits, puis à coller dans les
 // variables d'environnement Netlify. Rien de secret ici : un Price ID n'a
 // pas besoin d'être caché, mais il doit rester configurable sans toucher au
@@ -18,7 +18,7 @@ const OFFERS = {
   gc_67: {
     label: 'Génération Capable — 67€/mois',
     mode: 'subscription',
-    priceEnvVar: 'STRIPE_PRICE_GC_67',
+    priceEnvVar: 'STRIPE_PRICE_ID',
   },
 };
 
