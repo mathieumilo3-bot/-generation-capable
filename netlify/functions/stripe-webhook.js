@@ -23,7 +23,7 @@
 //   → copier le "Signing secret" (whsec_...) dans STRIPE_WEBHOOK_SECRET (Netlify).
 
 const crypto = require('crypto');
-const { supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
+const { supabaseAdminRequest, jsonResponse, ensureAuthUserForEmail } = require('./_lib/supabase-admin');
 
 const TOLERANCE_SECONDS = 5 * 60; // rejette les événements trop vieux (anti-rejeu)
 
@@ -103,29 +103,53 @@ exports.handler = async (event) => {
 };
 
 async function recordAndProcess(stripeEvent) {
+  // Idempotence en tout premier : "stripe_events_processed" a une PK sur
+  // event_id (l'id Stripe, globalement unique). Si cet événement a déjà été
+  // traité (retry Stripe, double livraison), l'insert échoue en conflit et on
+  // s'arrête là — aucun effet de bord n'est rejoué.
+  const dedupeResp = await supabaseAdminRequest('/rest/v1/stripe_events_processed', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
+    body: JSON.stringify({ event_id: stripeEvent.id, event_type: stripeEvent.type })
+  });
+  const dedupeRows = dedupeResp.ok ? await dedupeResp.json() : null;
+  if (!Array.isArray(dedupeRows) || dedupeRows.length === 0) {
+    console.log('[stripe-webhook] Événement déjà traité, ignoré:', stripeEvent.id, stripeEvent.type);
+    return;
+  }
+
   const obj = stripeEvent.data?.object || {};
 
   switch (stripeEvent.type) {
     case 'checkout.session.completed': {
       const email = (obj.customer_details?.email || obj.customer_email || '').toLowerCase();
-      const offer = obj.metadata?.offer || null;
+      const offer = obj.metadata?.offer || 'gc_67';
       if (email) {
-        await upsertSubscriber({
-          email,
+        // Le schéma "subscribers" de production est indexé sur user_id, pas
+        // email — Stripe ne connaissant que l'email du payeur, on retrouve
+        // (ou crée) le compte Supabase Auth correspondant avant d'écrire.
+        const user = await ensureAuthUserForEmail(email);
+        await upsertSubscriberByUserId(user.id, {
           is_active: true,
-          plan: offer,
           stripe_customer_id: obj.customer || null,
-          stripe_subscription_id: obj.subscription || null,
+        });
+        await supabaseAdminRequest('/rest/v1/sales', {
+          method: 'POST',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            stripe_session_id: obj.id || null,
+            stripe_customer_id: obj.customer || null,
+            buyer_user_id: user.id,
+            product_id: offer,
+            product_name: 'Génération Capable — 67€/mois',
+            amount: obj.amount_total ?? 0,
+            currency: obj.currency || 'eur',
+            status: 'completed',
+            stripe_event_id: stripeEvent.id,
+            source: 'stripe_webhook',
+          })
         });
       }
-      await logPayment(stripeEvent, {
-        email, offer,
-        stripe_customer_id: obj.customer || null,
-        stripe_session_id: obj.id || null,
-        amount_total: obj.amount_total ?? null,
-        currency: obj.currency ?? null,
-        status: 'paid',
-      });
       break;
     }
 
@@ -134,10 +158,6 @@ async function recordAndProcess(stripeEvent) {
       if (obj.customer) {
         await updateSubscriberByCustomerId(obj.customer, { is_active: active });
       }
-      await logPayment(stripeEvent, {
-        stripe_customer_id: obj.customer || null,
-        status: `subscription_${obj.status}`,
-      });
       break;
     }
 
@@ -145,10 +165,6 @@ async function recordAndProcess(stripeEvent) {
       if (obj.customer) {
         await updateSubscriberByCustomerId(obj.customer, { is_active: false });
       }
-      await logPayment(stripeEvent, {
-        stripe_customer_id: obj.customer || null,
-        status: 'subscription_cancelled',
-      });
       break;
     }
 
@@ -157,13 +173,6 @@ async function recordAndProcess(stripeEvent) {
       // automatiquement plusieurs fois — "dunning") : c'est
       // customer.subscription.updated qui déclenchera la désactivation si
       // Stripe finit par marquer l'abonnement past_due/unpaid/canceled.
-      // On journalise systématiquement pour garder une trace fiable.
-      await logPayment(stripeEvent, {
-        stripe_customer_id: obj.customer || null,
-        amount_total: obj.amount_due ?? null,
-        currency: obj.currency ?? null,
-        status: 'payment_failed',
-      });
       break;
     }
 
@@ -171,28 +180,21 @@ async function recordAndProcess(stripeEvent) {
       if (obj.customer) {
         await updateSubscriberByCustomerId(obj.customer, { is_active: false });
       }
-      await logPayment(stripeEvent, {
-        stripe_customer_id: obj.customer || null,
-        amount_total: obj.amount_refunded ?? null,
-        currency: obj.currency ?? null,
-        status: 'refunded',
-      });
       break;
     }
 
     default: {
-      // Événement reçu mais non géré par cette intégration — on journalise
-      // quand même pour garder une trace complète de tout ce que Stripe envoie.
-      await logPayment(stripeEvent, { status: `unhandled_${stripeEvent.type}` });
+      // Événement reçu mais non géré par cette intégration — déjà tracé dans
+      // stripe_events_processed ci-dessus, rien de plus à faire.
     }
   }
 }
 
-async function upsertSubscriber(fields) {
-  await supabaseAdminRequest('/rest/v1/subscribers?on_conflict=email', {
+async function upsertSubscriberByUserId(userId, fields) {
+  await supabaseAdminRequest('/rest/v1/subscribers?on_conflict=user_id', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({ ...fields, updated_at: new Date().toISOString() })
+    body: JSON.stringify({ user_id: userId, ...fields, updated_at: new Date().toISOString() })
   });
 }
 
@@ -205,16 +207,4 @@ async function updateSubscriberByCustomerId(stripeCustomerId, fields) {
       body: JSON.stringify({ ...fields, updated_at: new Date().toISOString() })
     }
   );
-}
-
-async function logPayment(stripeEvent, fields) {
-  await supabaseAdminRequest('/rest/v1/payments?on_conflict=stripe_event_id', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    body: JSON.stringify({
-      stripe_event_id: stripeEvent.id,
-      raw_event: stripeEvent,
-      ...fields,
-    })
-  });
 }

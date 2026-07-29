@@ -1,4 +1,24 @@
 -- ══════════════════════════════════════════════════════════════════════════
+-- ⚠️  DÉPRÉCIÉ / NE PLUS EXÉCUTER — schéma remplacé en production (2026-07-29)
+-- ══════════════════════════════════════════════════════════════════════════
+-- La table "subscribers" réellement live n'a NI colonne "email", NI "role",
+-- NI "plan", NI "stripe_subscription_id" : elle est indexée sur "user_id"
+-- (clé primaire, FK vers auth.users) et ne porte que
+-- is_active/stripe_customer_id/referred_by_ambassador_id. Ce fichier décrit
+-- une itération antérieure du schéma qui a été remplacée directement en
+-- base (hors dépôt) sans que ce fichier soit mis à jour en conséquence —
+-- c'est ce décalage entre ce fichier et la réalité qui a cassé la
+-- vérification d'abonnement, l'activation post-paiement et l'accès admin
+-- (voir 0003_document_live_production_schema.sql pour le schéma réel).
+--
+-- NE PAS rejouer ce fichier sur le projet fkhfahmzxsahrstxntjs : les
+-- "alter table add column if not exists" ajouteraient email/role/plan/
+-- stripe_subscription_id à la table de production, sans policy RLS
+-- cohérente avec le reste du schéma actuel (RLS sur user_id) — cela ouvrirait
+-- une brèche de sécurité. Conservé uniquement pour l'historique.
+-- ══════════════════════════════════════════════════════════════════════════
+
+-- ══════════════════════════════════════════════════════════════════════════
 -- Génération Capable — schéma de production : abonnements, rôles, paiements
 -- ══════════════════════════════════════════════════════════════════════════
 -- À exécuter dans Supabase → SQL Editor (projet fkhfahmzxsahrstxntjs, celui

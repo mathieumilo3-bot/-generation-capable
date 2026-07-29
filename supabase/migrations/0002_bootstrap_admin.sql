@@ -1,4 +1,13 @@
 -- ══════════════════════════════════════════════════════════════════════════
+-- ⚠️  DÉPRÉCIÉ / NE PLUS EXÉCUTER — repose sur le schéma de 0001, remplacé
+-- ══════════════════════════════════════════════════════════════════════════
+-- "subscribers" n'a plus de colonne "role" en production : le rôle admin est
+-- désormais porté par la table dédiée "public.admins" (email -> compte
+-- admin), lue via la fonction is_current_user_admin(). Voir
+-- 0003_document_live_production_schema.sql. Conservé pour l'historique.
+-- ══════════════════════════════════════════════════════════════════════════
+
+-- ══════════════════════════════════════════════════════════════════════════
 -- Amorce le compte admin — à exécuter une fois, après 0001_subscribers_roles_and_rls.sql
 -- ══════════════════════════════════════════════════════════════════════════
 -- Insère (ou met à jour) la ligne "subscribers" pour ton email avec
