@@ -10,8 +10,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@gc-ai-os/model-provider": "workspace:*",
+    "@gc-ai-os/executive-brain": "workspace:*",
     "@gc-ai-os/goals": "workspace:*",
+    "@gc-ai-os/metrics": "workspace:*",
+    "@gc-ai-os/model-provider": "workspace:*",
+    "@gc-ai-os/people": "workspace:*",
     "@gc-ai-os/runtime": "workspace:*",
     "@gc-ai-os/shared-types": "workspace:*",
     "next": "^15.0.0",

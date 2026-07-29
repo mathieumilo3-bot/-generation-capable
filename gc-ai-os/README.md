@@ -20,6 +20,32 @@ valide, et produit un **dossier téléchargeable**. Tout cela fonctionne dès
 annoncé comme tel par l'application elle-même, jamais présenté comme réel
 quand il ne l'est pas.
 
+## L'étage exécutif
+
+Onglet **Direction** (vue d'accueil) : note d'entreprise par département,
+priorité du jour argumentée, constat des 8 Executive Brains, et lacunes
+d'instrumentation — plus le briefing téléchargeable.
+
+**Le Directeur Général et les Executive Brains ne sont pas des LLM.**
+Huit modèles qui « débattent » n'échantillonnent qu'une seule
+distribution : on paie huit appels pour le théâtre de la délibération.
+Ce qui distingue un CFO d'un CMO, c'est la donnée qu'il regarde, pas son
+tempérament. Les Brains sont donc des analystes instrumentés, et
+l'arbitrage est calculé — reproductible, gratuit, explicable.
+
+**Aucun chiffre n'est inventé.** `value: null` signifie « non mesuré » et
+traverse tout le système jusqu'à l'écran. Un département sans données
+affiche « non mesuré », jamais 0 ; et la note globale reste masquée tant
+que moins de la moitié des départements sont notables — une moyenne sur
+un département donnerait une fausse impression de maîtrise.
+
+Mécanisme central : la **confiance** d'une proposition dérive des données
+qui la fondent (0,25 sans preuve, 0,80 avec). Résultat observé en
+fonctionnement — sans données, la priorité du système devient
+« branche cette source » ; dès qu'on lui donne un taux de résiliation
+réel, il bascule sur « enraye la résiliation avant d'investir en
+acquisition ».
+
 ## Le pipeline
 
 ```

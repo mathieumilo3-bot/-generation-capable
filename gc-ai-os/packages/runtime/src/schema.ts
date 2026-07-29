@@ -177,6 +177,37 @@ create index if not exists executive_decisions_objective_idx on executive_decisi
 -- GC AI Factory (voir 11-factory.md) — agents déclaratifs, pas de code
 -- ---------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------
+-- Étage exécutif (voir 14-executive-brain.md, 15-human-brain.md)
+-- ---------------------------------------------------------------------
+
+create table if not exists metric_readings (
+  metric_id text primary key,
+  value real,
+  source text not null default 'unmeasured',
+  measured_at text
+);
+
+create table if not exists people (
+  id text primary key,
+  display_name text not null,
+  role text not null,
+  status text not null default 'active',
+  joined_at text not null,
+  channel text not null default 'unknown',
+  window_pref text not null default 'unknown',
+  prefers_short integer not null default 0,
+  locale text not null default 'fr',
+  activity_count integer not null default 0,
+  days_since_last_activity integer,
+  revenue_generated real not null default 0,
+  conversion_rate real,
+  consents_personalisation integer not null default 0,
+  updated_at text not null
+);
+
+create index if not exists people_role_idx on people (role);
+
 create table if not exists published_agents (
   agent_id text primary key,
   blueprint text not null,

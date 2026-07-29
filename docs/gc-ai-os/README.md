@@ -29,6 +29,8 @@ séparé : **gc-ai-os** (voir section « Repository technique » ci-dessous).
 | [11-factory.md](./11-factory.md) | GC AI Factory : les agents qui créent des agents (manifestes déclaratifs, pas de codegen) |
 | [12-competences.md](./12-competences.md) | Compétences mesurées par l'exécution réelle (niveau, fiabilité, coût, temps) |
 | [13-directeur-general.md](./13-directeur-general.md) | Directeur Général IA : arbitrage déterministe et auditable au-dessus de l'Orchestrateur |
+| [14-executive-brain.md](./14-executive-brain.md) | GC Executive Brain : 8 Brains instrumentés, Decision Engine, Enterprise Score, briefing du matin |
+| [15-human-brain.md](./15-human-brain.md) | GC Human Brain : direction humaine, préférences observées, consentement et RGPD |
 
 ## Repository technique
 

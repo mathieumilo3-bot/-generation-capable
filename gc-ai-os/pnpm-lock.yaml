@@ -20,12 +20,21 @@ importers:
 
   apps/web:
     dependencies:
+      '@gc-ai-os/executive-brain':
+        specifier: workspace:*
+        version: link:../../packages/executive-brain
       '@gc-ai-os/goals':
         specifier: workspace:*
         version: link:../../packages/goals
+      '@gc-ai-os/metrics':
+        specifier: workspace:*
+        version: link:../../packages/metrics
       '@gc-ai-os/model-provider':
         specifier: workspace:*
         version: link:../../packages/model-provider
+      '@gc-ai-os/people':
+        specifier: workspace:*
+        version: link:../../packages/people
       '@gc-ai-os/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
@@ -313,6 +322,18 @@ importers:
         specifier: workspace:*
         version: link:../telemetry
 
+  packages/executive-brain:
+    dependencies:
+      '@gc-ai-os/metrics':
+        specifier: workspace:*
+        version: link:../metrics
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+
   packages/factory:
     dependencies:
       '@gc-ai-os/agents-core':
@@ -355,6 +376,12 @@ importers:
         specifier: workspace:*
         version: link:../shared-types
 
+  packages/metrics:
+    dependencies:
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+
   packages/model-provider: {}
 
   packages/orchestrator:
@@ -371,6 +398,12 @@ importers:
       '@gc-ai-os/security':
         specifier: workspace:*
         version: link:../security
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+
+  packages/people:
+    dependencies:
       '@gc-ai-os/shared-types':
         specifier: workspace:*
         version: link:../shared-types
@@ -410,6 +443,9 @@ importers:
       '@gc-ai-os/executive':
         specifier: workspace:*
         version: link:../executive
+      '@gc-ai-os/executive-brain':
+        specifier: workspace:*
+        version: link:../executive-brain
       '@gc-ai-os/factory':
         specifier: workspace:*
         version: link:../factory
@@ -431,12 +467,18 @@ importers:
       '@gc-ai-os/memory':
         specifier: workspace:*
         version: link:../memory
+      '@gc-ai-os/metrics':
+        specifier: workspace:*
+        version: link:../metrics
       '@gc-ai-os/model-provider':
         specifier: workspace:*
         version: link:../model-provider
       '@gc-ai-os/orchestrator':
         specifier: workspace:*
         version: link:../orchestrator
+      '@gc-ai-os/people':
+        specifier: workspace:*
+        version: link:../people
       '@gc-ai-os/qa-agent':
         specifier: workspace:*
         version: link:../agents/qa-agent

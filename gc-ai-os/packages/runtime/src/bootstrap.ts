@@ -30,7 +30,10 @@ import {
   ModelPlanner,
   PlaybookPlanner,
 } from "@gc-ai-os/goals";
+import { MetricRegistry } from "@gc-ai-os/metrics";
+import { HumanBrain } from "@gc-ai-os/people";
 import { SkillRegistry } from "@gc-ai-os/telemetry";
+import { SqliteExecutiveStore } from "./executive-store";
 import { LocalHashEmbeddingProvider } from "./local-embedding";
 import {
   SqliteGoalStore,
@@ -53,6 +56,9 @@ export interface GcRuntime {
   skills: SkillRegistry;
   factory: AgentFactory;
   agents: AgentRegistry;
+  metrics: MetricRegistry;
+  humanBrain: HumanBrain;
+  executiveStore: SqliteExecutiveStore;
   /** "anthropic" si ANTHROPIC_API_KEY est configurée, "fallback" sinon. */
   modelMode: "anthropic" | "fallback";
   /** Nombre d'agents fabriqués par la Factory rechargés au démarrage. */
@@ -168,6 +174,16 @@ export function bootstrapRuntime(dbPath: string): GcRuntime {
     memory,
   });
 
+  // ---- Étage exécutif ---------------------------------------------------
+  const executiveStore = new SqliteExecutiveStore(store.connection);
+  const metrics = new MetricRegistry(executiveStore);
+  const humanBrain = new HumanBrain(executiveStore);
+
+  // Seules les métriques réellement calculables depuis l'état interne
+  // sont alimentées. Toutes les autres restent « non mesurées » tant
+  // qu'un connecteur externe ne les remplit pas — voir @gc-ai-os/metrics.
+  refreshDerivedMetrics(goalStore, executiveStore);
+
   return {
     orchestrator,
     store,
@@ -177,9 +193,38 @@ export function bootstrapRuntime(dbPath: string): GcRuntime {
     skills,
     factory,
     agents: registry,
+    metrics,
+    humanBrain,
+    executiveStore,
     modelMode: model.mode,
     publishedAgentCount: published,
   };
+}
+
+/**
+ * Alimente les métriques que GC AI OS peut mesurer sur lui-même, sans
+ * connecteur externe : activité opérationnelle et fiabilité des agents.
+ *
+ * C'est délibérément le seul endroit où des métriques sont écrites au
+ * démarrage. Tout ce qui vient de Stripe, Supabase, GitHub ou des
+ * réseaux sociaux reste vide et visible comme tel — le tableau de bord
+ * doit montrer ce qui manque, pas le combler.
+ */
+function refreshDerivedMetrics(goalStore: SqliteGoalStore, executiveStore: SqliteExecutiveStore): void {
+  const stats = goalStore.operationalStats();
+  const now = new Date().toISOString();
+
+  const write = (metricId: string, value: number) => {
+    void executiveStore.record({ metricId, value, source: "derived", measuredAt: now });
+  };
+
+  write("missions_completed", stats.missionsCompleted);
+  write("missions_blocked", stats.missionsFailed);
+  write("pending_validations", stats.missionsAwaitingValidation);
+
+  if (stats.skillRuns > 0) {
+    write("agent_success_rate", Math.round((stats.skillSuccesses / stats.skillRuns) * 100));
+  }
 }
 
 /**

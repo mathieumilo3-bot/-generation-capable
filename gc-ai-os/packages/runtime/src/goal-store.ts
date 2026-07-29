@@ -391,6 +391,34 @@ export class SqliteGoalStore {
    * runtime de façon synchrone, et SQLite l'est nativement — inutile de
    * rendre tout le chemin d'amorçage asynchrone pour une seule lecture.
    */
+  /**
+   * Compteurs opérationnels que le système observe sur lui-même. Sert à
+   * alimenter les métriques `derived` du COO Brain — la seule famille de
+   * métriques qui ne dépend d'aucun connecteur externe.
+   */
+  operationalStats(): {
+    missionsCompleted: number;
+    missionsFailed: number;
+    missionsAwaitingValidation: number;
+    skillRuns: number;
+    skillSuccesses: number;
+  } {
+    const count = (sql: string): number => {
+      const row = this.db.prepare(sql).get() as Row | undefined;
+      return typeof row?.n === "number" ? row.n : 0;
+    };
+
+    return {
+      missionsCompleted: count(`select count(*) as n from missions where status = 'completed'`),
+      missionsFailed: count(`select count(*) as n from missions where status = 'failed'`),
+      missionsAwaitingValidation: count(
+        `select count(*) as n from missions where status = 'awaiting_validation'`,
+      ),
+      skillRuns: count(`select coalesce(sum(runs), 0) as n from agent_skills`),
+      skillSuccesses: count(`select coalesce(sum(successes), 0) as n from agent_skills`),
+    };
+  }
+
   listPublishedSync(): PublishedAgent[] {
     const rows = this.db
       .prepare(`select * from published_agents where status = 'published'`)
