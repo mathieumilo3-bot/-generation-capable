@@ -1326,8 +1326,8 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   <div class="topbar">
     <div class="tb-title">Pipeline commercial</div>
     <div class="tb-right">
-      <span class="auto-badge">Mise à jour auto · 3h</span>
-      <button class="btn btn-g" onclick="toast('Export CSV téléchargé')">↓ Exporter</button>
+      <span class="auto-badge">Basé sur tes vrais prospects</span>
+      <button class="btn btn-g" onclick="exportPipelineCSV()">↓ Exporter</button>
     </div>
   </div>
   <div class="ct">
@@ -1341,7 +1341,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
     <div class="card" style="padding:24px;margin-bottom:28px" id="conv-bars"></div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-p" onclick="openMo('mo-prospect')">+ Ajouter un prospect</button>
-      <button class="btn btn-g" onclick="toast('Pipeline mis à jour ✓')">Actualiser</button>
+      <button class="btn btn-g" onclick="renderPipelineStats()">Actualiser</button>
     </div>
   </div>
 </div>
@@ -1579,31 +1579,21 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <div class="hero">
         <div class="hero-ey">Gestion clients</div>
         <div class="hero-t">Ton CRM, prêt à l'emploi.</div>
-        <div class="hero-s">Tous tes prospects et clients au même endroit, avec relances et modèles inclus.</div>
+        <div class="hero-s">Tous tes prospects et clients au même endroit. Le pipeline complet (étapes, commandes, paiement) se gère depuis <a href="#" onclick="go('opportunites',null);return false" style="color:var(--blue)">Opportunités</a>.</div>
       </div>
-      <div class="sg">
-        <div class="sc"><div class="sc-l">Prospects actifs</div><div class="sc-v">12</div><div class="sc-c">↑ 3 cette semaine</div></div>
-        <div class="sc"><div class="sc-l">Relances dues</div><div class="sc-v" style="color:var(--orange)">4</div><div class="sc-c m">À traiter</div></div>
-        <div class="sc"><div class="sc-l">Contrats en cours</div><div class="sc-v">2</div><div class="sc-c dim">En attente signature</div></div>
-        <div class="sc"><div class="sc-l">Taux de relance</div><div class="sc-v" style="color:var(--green)">78%</div><div class="sc-c">Bon rythme</div></div>
+      <div class="sg" id="crm-outils-stats">
+        <div class="sc"><div class="sc-l">Prospects actifs</div><div class="sc-v">—</div></div>
+        <div class="sc"><div class="sc-l">Devis envoyés</div><div class="sc-v">—</div></div>
+        <div class="sc"><div class="sc-l">Commandes signées</div><div class="sc-v">—</div></div>
+        <div class="sc"><div class="sc-l">Chiffre d'affaires signé</div><div class="sc-v">—</div></div>
       </div>
-      <div class="sec-hd"><div class="sec-t">Modèles disponibles</div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px">
-        <div class="fiche-card" onclick="toast('Modèle de devis ouvert')"><div class="fiche-ico">📄</div><div class="fiche-info"><div class="fiche-t">Modèle de devis</div><div class="fiche-d">Word · Personnalisable</div></div><div class="fiche-dl">↓</div></div>
-        <div class="fiche-card" onclick="toast('Modèle de contrat ouvert')"><div class="fiche-ico">📝</div><div class="fiche-info"><div class="fiche-t">Modèle de contrat</div><div class="fiche-d">PDF · Prêt à signer</div></div><div class="fiche-dl">↓</div></div>
-        <div class="fiche-card" onclick="toast('Séquence de relance ouverte')"><div class="fiche-ico">🔁</div><div class="fiche-info"><div class="fiche-t">Séquence de relance</div><div class="fiche-d">3 messages · Email + SMS</div></div><div class="fiche-dl">↓</div></div>
-        <div class="fiche-card" onclick="toast('Export CSV démarré')"><div class="fiche-ico">📊</div><div class="fiche-info"><div class="fiche-t">Export contacts</div><div class="fiche-d">CSV · Tous tes prospects</div></div><div class="fiche-dl">↓</div></div>
+      <div class="sec-hd"><div class="sec-t">Modèles & séquences de relance</div></div>
+      <div style="background:var(--bg1);border:1px solid var(--b);border-radius:14px;padding:18px;margin-bottom:28px;font-size:12.5px;color:var(--t3)">
+        Bientôt disponible — modèles de devis/contrat et séquences de relance automatiques ne sont pas encore construits.
       </div>
       <div class="sec-hd"><div class="sec-t">Mes prospects</div></div>
-      <div class="card" style="overflow:hidden">
-        <table class="at">
-          <thead><tr><th>Nom</th><th>Statut</th><th>Dernière relance</th><th>Action</th></tr></thead>
-          <tbody>
-            <tr><td style="font-weight:600">Restaurant Le Moulin</td><td><span class="tag tag-o">Relance due</span></td><td>Il y a 6 jours</td><td><button class="btn btn-g" style="padding:4px 10px;font-size:11px" onclick="toast('Relance envoyée ✓')">Relancer</button></td></tr>
-            <tr><td style="font-weight:600">Salon Kâlima</td><td><span class="tag tag-b">En discussion</span></td><td>Il y a 2 jours</td><td><button class="btn btn-g" style="padding:4px 10px;font-size:11px" onclick="toast('Note ajoutée')">Noter</button></td></tr>
-            <tr><td style="font-weight:600">Garage Petit</td><td><span class="tag tag-g">Contrat envoyé</span></td><td>Hier</td><td><button class="btn btn-g" style="padding:4px 10px;font-size:11px" onclick="toast('Contrat ouvert')">Voir</button></td></tr>
-          </tbody>
-        </table>
+      <div class="card" style="overflow:hidden" id="crm-outils-prospects-table">
+        <div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>
       </div>
     </div>
   </div>
@@ -2974,6 +2964,8 @@ function go(id, el){
   // affiché sur la page "opportunites", pas "performance" — l'appel visait
   // le mauvais onglet et ne remplissait jamais le tableau réellement visible.
   if(id==='opportunites'){ try{ switchCrmTab('prospects'); }catch(e){} }
+  if(id==='performance'){ try{ renderPipelineStats(); }catch(e){} }
+  if(id==='crm-outils'){ try{ renderCrmOutilsPage(); }catch(e){} }
   if(id==='challenges'){ try{ renderMissions(); }catch(e){} }
   if(id==='communaute'){ try{ loadFeed(); }catch(e){} }
   if(id==='commissions'){ try{ renderCommissions(); }catch(e){} }
@@ -4007,6 +3999,129 @@ async function renderProspectHistory(){
   }).join('') + `</div>`;
 }
 
+// FIX (audit post-lancement) : #pipeline-grid/#conv-bars (page "Pipeline
+// commercial") sont restés vides depuis toujours — aucune fonction ne les a
+// jamais remplis, et go() n'appelait même aucun rendu pour cette page.
+// Remplacé par un vrai entonnoir calculé depuis les prospects réels du
+// vendeur (jamais un nombre fabriqué) : effectif par étape du pipeline et
+// taux "atteint cette étape ou au-delà" par rapport au total de prospects.
+let PIPELINE_STATS_CACHE = [];
+
+async function renderPipelineStats(){
+  const gridEl = document.getElementById('pipeline-grid');
+  const barsEl = document.getElementById('conv-bars');
+  if(!gridEl || !barsEl || !supa) return;
+  gridEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  barsEl.innerHTML = '';
+
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const { data, error } = await supa.from('prospects').select('stage').eq('seller_user_id', session.user.id);
+  if(error){
+    console.error('[pipeline] load:', error);
+    gridEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--red);font-size:12.5px">Erreur de chargement.</div>`;
+    return;
+  }
+  PIPELINE_STATS_CACHE = data || [];
+  if(!PIPELINE_STATS_CACHE.length){
+    gridEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucun prospect pour l'instant.</div>`;
+    barsEl.innerHTML = `<div style="text-align:center;color:var(--t3);font-size:12.5px">Ajoute un prospect pour voir apparaître ton entonnoir.</div>`;
+    return;
+  }
+
+  const counts = {};
+  PROSPECT_STAGES.forEach(s => counts[s] = 0);
+  PIPELINE_STATS_CACHE.forEach(r => { if(counts[r.stage] !== undefined) counts[r.stage]++; });
+
+  gridEl.innerHTML = PROSPECT_STAGES.map(s => `
+    <div class="sc">
+      <div class="sc-l">${PROSPECT_STAGE_LABELS[s]}</div>
+      <div class="sc-v">${counts[s]}</div>
+    </div>`).join('');
+
+  const total = PIPELINE_STATS_CACHE.length;
+  barsEl.innerHTML = PROSPECT_STAGES.map((s, i) => {
+    const atOrBeyond = PROSPECT_STAGES.slice(i).reduce((sum, st) => sum + counts[st], 0);
+    const pct = total > 0 ? Math.round((atOrBeyond / total) * 100) : 0;
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>${PROSPECT_STAGE_LABELS[s]}</span><span style="font-weight:700">${pct}%</span></div>
+      <div style="height:6px;background:var(--b);border-radius:6px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--blue);border-radius:6px"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// FIX (audit post-lancement) : "CRM & Outils" affichait 12 prospects/4
+// relances/78% fabriqués en dur, plus 3 clients factices (Restaurant Le
+// Moulin, Salon Kâlima, Garage Petit) dont les boutons ne faisaient qu'un
+// toast. Remplacé par les vraies données du même CRM que la page
+// Opportunités — cette page devient une vue résumée en lecture, l'édition
+// complète (pipeline, commande, paiement) reste sur Opportunités pour
+// éviter deux implémentations divergentes du même prospect.
+async function renderCrmOutilsPage(){
+  const statsEl = document.getElementById('crm-outils-stats');
+  const tableEl = document.getElementById('crm-outils-prospects-table');
+  if(!statsEl || !tableEl || !supa) return;
+  tableEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const [{ data: prospects, error: pErr }, { data: orders, error: oErr }] = await Promise.all([
+    supa.from('prospects').select('id,first_name,last_name,company,stage,created_at').eq('seller_user_id', session.user.id).order('created_at', { ascending: false }),
+    supa.from('orders').select('status,price').eq('seller_user_id', session.user.id),
+  ]);
+  if(pErr) console.error('[crm-outils] prospects:', pErr);
+  if(oErr) console.error('[crm-outils] orders:', oErr);
+
+  const prospectRows = prospects || [];
+  const orderRows = (orders || []).filter(o => o.status !== 'draft' && o.status !== 'cancelled');
+  const signedOrders = orderRows.filter(o => o.status !== 'awaiting_payment');
+  const revenueCents = signedOrders.reduce((sum, o) => sum + (o.price || 0), 0);
+
+  statsEl.innerHTML = `
+    <div class="sc"><div class="sc-l">Prospects actifs</div><div class="sc-v">${prospectRows.filter(p => p.stage !== 'done').length}</div></div>
+    <div class="sc"><div class="sc-l">Devis envoyés</div><div class="sc-v">${prospectRows.filter(p => p.stage === 'quote_sent').length}</div></div>
+    <div class="sc"><div class="sc-l">Commandes signées</div><div class="sc-v">${signedOrders.length}</div></div>
+    <div class="sc"><div class="sc-l">Chiffre d'affaires signé</div><div class="sc-v" style="color:var(--green)">${eurFromCents(revenueCents)} €</div></div>
+  `;
+
+  if(!prospectRows.length){
+    tableEl.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">🗂️</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucun prospect pour l'instant</div>
+      <button class="btn btn-p" style="margin-top:16px" onclick="openMo('mo-prospect')">+ Nouveau prospect</button>
+    </div>`;
+    return;
+  }
+  tableEl.innerHTML = `<table class="at">
+    <thead><tr><th>Nom</th><th>Étape</th><th>Ajouté le</th><th>Action</th></tr></thead>
+    <tbody>${prospectRows.map(p => `
+      <tr>
+        <td style="font-weight:600">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}${p.company ? ' · '+escapeHtml(p.company) : ''}</td>
+        <td><span style="font-size:11px;font-weight:700;color:${PROSPECT_STAGE_COLORS[p.stage]||'var(--t3)'}">${PROSPECT_STAGE_LABELS[p.stage]||p.stage}</span></td>
+        <td>${new Date(p.created_at).toLocaleDateString('fr-FR')}</td>
+        <td><button class="btn btn-g" style="padding:4px 10px;font-size:11px" onclick="openProspectDetail('${p.id}')">Voir</button></td>
+      </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function exportPipelineCSV(){
+  if(!PIPELINE_STATS_CACHE.length){ toast('Aucun prospect à exporter'); return; }
+  const counts = {};
+  PROSPECT_STAGES.forEach(s => counts[s] = 0);
+  PIPELINE_STATS_CACHE.forEach(r => { if(counts[r.stage] !== undefined) counts[r.stage]++; });
+  const header = 'etape,nombre_de_prospects\n';
+  const rows = PROSPECT_STAGES.map(s => `"${PROSPECT_STAGE_LABELS[s]}",${counts[s]}`).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'pipeline_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✓ Export CSV téléchargé');
+}
+
 // ── Création d'un prospect (modal "mo-prospect", ouvert depuis Opportunités,
 //    Pipeline et CRM & Outils) ──
 let PROSPECT_SUBMIT_INFLIGHT = false;
@@ -4085,7 +4200,10 @@ async function openProspectDetail(id){
 
   const { data: orders, error: oErr } = await supa.from('orders').select('*').eq('prospect_id', id).order('created_at', { ascending: false });
   if(oErr) console.error('[crm] orders load:', oErr);
-  PD_CURRENT_ORDER = (orders && orders[0]) || null;
+  // Une commande annulée ne doit jamais bloquer la création d'une nouvelle
+  // commande pour ce prospect (voir cancel_order()) — on ignore les
+  // commandes 'cancelled' pour choisir la commande "active" à afficher.
+  PD_CURRENT_ORDER = (orders || []).find(o => o.status !== 'cancelled') || null;
 
   renderProspectDetailBody();
 }
@@ -4113,14 +4231,16 @@ function renderOrderStatusBlock(o){
   const statusLabels = { draft:'Brouillon', awaiting_payment:'En attente de paiement', paid:'Payée', production:'En production', delivered:'Livrée', done:'Terminée', cancelled:'Annulée', refunded:'Remboursée' };
   let actionHtml = '';
   if(o.status === 'draft'){
-    actionHtml = `<button class="btn btn-gold" id="pd-pay-btn" onclick="createOrderPayment('${o.id}')">💳 Créer le lien de paiement</button>`;
+    actionHtml = `<button class="btn btn-gold" id="pd-pay-btn" onclick="createOrderPayment('${o.id}')">💳 Créer le lien de paiement</button>
+      <button class="btn btn-g" style="margin-left:8px" onclick="cancelCurrentOrder('${o.id}')">Annuler la commande</button>`;
   } else if(o.status === 'awaiting_payment'){
     actionHtml = `<div style="font-size:12px;color:var(--t3);margin-bottom:8px">Lien de paiement envoyé au client, en attente de confirmation Stripe.</div>
       <div id="pd-order-link-box" style="display:none;gap:6px;margin-bottom:8px">
         <input class="field" id="pd-order-link-input" style="margin-bottom:0;font-size:11px" readonly onclick="this.select()">
         <button class="btn btn-g" type="button" onclick="copyOrderLink()">Copier</button>
       </div>
-      <button class="btn btn-g" id="pd-pay-btn" onclick="createOrderPayment('${o.id}')">↻ Régénérer le lien</button>`;
+      <button class="btn btn-g" id="pd-pay-btn" onclick="createOrderPayment('${o.id}')">↻ Régénérer le lien</button>
+      <button class="btn btn-g" style="margin-left:8px" onclick="cancelCurrentOrder('${o.id}')">Annuler la commande</button>`;
   } else if(o.status === 'paid' && !o.locked){
     actionHtml = `<button class="btn btn-p" onclick="signAndLockCurrentOrder('${o.id}')">✓ Envoyer au studio</button>`;
   } else if(o.locked){
@@ -4133,6 +4253,25 @@ function renderOrderStatusBlock(o){
     </div>
     ${actionHtml}
   `;
+}
+
+async function cancelCurrentOrder(orderId){
+  if(ORDER_ACTION_INFLIGHT || !supa) return;
+  if(!confirm('Annuler cette commande ? Cette action est définitive — le vendeur pourra en créer une nouvelle pour ce prospect si besoin.')) return;
+  ORDER_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('cancel_order', { p_order_id: orderId });
+    if(error){
+      console.error('[crm] cancel_order:', error);
+      toast(error.message || "Impossible d'annuler cette commande pour le moment.");
+      return;
+    }
+    toast('✓ Commande annulée');
+    await openProspectDetail(PD_CURRENT_PROSPECT.id);
+    try{ renderProspectsList(); }catch(e){}
+  } finally {
+    ORDER_ACTION_INFLIGHT = false;
+  }
 }
 
 function renderProspectDetailBody(){
