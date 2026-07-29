@@ -354,11 +354,15 @@ async function handleOrderRefund(charge) {
     } else if (c.status === 'withdrawn') {
       // Déjà versée au vendeur : dette qui sera déduite du prochain retrait,
       // jamais une réécriture silencieuse de la ligne historique déjà payée.
+      // Montant stocké en magnitude POSITIVE (commissions.amount a un
+      // CHECK amount >= 0) : get_my_wallet()/request_payout() SOUSTRAIENT
+      // les lignes 'debt' plutôt que de supposer un montant déjà négatif
+      // (voir migration 0008 — bug trouvé en testant ce flux par exécution).
       await supabaseAdminRequest('/rest/v1/commissions', {
         method: 'POST', headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({
           sale_id: sale.id, order_id: c.order_id, seller_id: c.seller_id,
-          amount: -Math.abs(c.amount), percentage: 0, status: 'debt',
+          amount: Math.abs(c.amount), percentage: 0, status: 'debt',
         })
       });
     }
