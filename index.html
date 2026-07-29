@@ -1508,29 +1508,40 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   </div>
   <div id="comm-content" style="display:none">
     <div class="topbar">
-      <div class="tb-title">Commissions</div>
-      <div class="tb-right"><span class="auto-badge">Versement auto J+15</span></div>
+      <div class="tb-title">Wallet</div>
+      <div class="tb-right"><span class="auto-badge">Maturation J+15 · Retraits ouverts à partir du 5</span></div>
     </div>
     <div class="ct">
       <div class="hero">
-        <div class="hero-ey">Centre des commissions</div>
-        <div class="hero-t" id="comm-hero">0 € disponibles.</div>
-        <div class="hero-s">Versement automatique 15 jours après chaque vente, après délai légal de rétractation.</div>
+        <div class="hero-ey">Mon Wallet</div>
+        <div class="hero-t" id="wallet-hero">0,00 € disponibles.</div>
+        <div class="hero-s">Chaque commission mûrit 15 jours après la vente (délai légal de rétractation). Les retraits sont ouverts à partir du 5 de chaque mois — la maturation continue indépendamment.</div>
       </div>
       <div class="sg">
-        <div class="sc"><div class="sc-l">Total généré</div><div class="sc-v" style="color:var(--green)" id="comm-total">0 €</div></div>
-        <div class="sc"><div class="sc-l">En attente</div><div class="sc-v" style="color:var(--orange)" id="comm-pend">0 €</div></div>
-        <div class="sc"><div class="sc-l">Versé ce mois</div><div class="sc-v" id="comm-paid">0 €</div></div>
-        <div class="sc"><div class="sc-l">Prochain versement</div><div class="sc-v" id="comm-next">—</div></div>
+        <div class="sc"><div class="sc-l">Disponible</div><div class="sc-v" style="color:var(--green)" id="wallet-available">0,00 €</div></div>
+        <div class="sc"><div class="sc-l">En attente (mûrit)</div><div class="sc-v" style="color:var(--orange)" id="wallet-pending">0,00 €</div></div>
+        <div class="sc"><div class="sc-l">Paiements en cours</div><div class="sc-v" id="wallet-inprogress">0,00 €</div></div>
+        <div class="sc"><div class="sc-l">Déjà retiré</div><div class="sc-v" id="wallet-withdrawn">0,00 €</div></div>
       </div>
-      <div class="sec-hd"><div class="sec-t">Historique</div></div>
-      <div class="card" style="padding:22px" id="comm-list">
+      <div id="wallet-debt-box" style="display:none;margin-bottom:16px"></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn btn-gold" id="wallet-withdraw-btn" onclick="requestWalletPayout()">💰 Retirer mes gains</button>
+      </div>
+      <div id="wallet-withdraw-msg" style="font-size:12px;color:var(--red);margin-bottom:24px"></div>
+
+      <div class="sec-hd"><div class="sec-t">Historique des commissions</div></div>
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:28px" id="comm-list">
         <div style="text-align:center;padding:36px 0">
           <div style="font-size:28px;margin-bottom:10px">💸</div>
           <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune commission pour l'instant</div>
           <div style="font-size:12px;color:var(--t3)">Ta première vente déclenchera ton premier versement automatique.</div>
-          <button class="btn btn-p" style="margin-top:16px" onclick="go('opportunites',null)">Voir les produits →</button>
+          <button class="btn btn-p" style="margin-top:16px" onclick="go('opportunites',null)">Voir mes prospects →</button>
         </div>
+      </div>
+
+      <div class="sec-hd"><div class="sec-t">Retraits</div></div>
+      <div class="card" style="padding:0;overflow:hidden" id="payouts-list">
+        <div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucun retrait pour l'instant.</div>
       </div>
     </div>
   </div>
@@ -3649,63 +3660,117 @@ async function renderRevenus(){
     </div>`;
 }
 
-// FIX (audit 2026-07-29) : cette page ("Commissions" / Wallet) était morte —
-// tous ses champs (#comm-total, #comm-pend, #comm-paid, #comm-next,
-// #comm-list) restaient figés à leur valeur codée en dur dans le HTML,
-// aucune fonction ne les mettait à jour. Lit désormais la vraie table
-// "commissions" (RLS scopée à seller_id = moi).
+// FIX (audit 2026-07-29 puis reconstruit — voir migration 0006/0008) : cette
+// page lisait directement "commissions" avec les anciens statuts
+// (pending/validated/paid/cancelled/refunded) et n'avait aucune notion de
+// maturation J+15, de dette suite remboursement, ni de retrait — devenue
+// obsolète dès que le moteur financier réel (get_my_wallet(),
+// get_my_commissions(), get_my_payouts(), request_payout()) a été construit.
+// Reconstruite comme un vrai Wallet : soldes TOUJOURS recalculés en direct
+// côté base (jamais un compteur stocké qui pourrait désynchroniser).
+const COMMISSION_STATUS_LABELS = { available:'Disponible', pending:'En attente (mûrit)', validated:'Validée', cancelled:'Annulée', refunded:'Remboursée', debt:'Dette', withdrawn:'Retirée', disputed:'En litige' };
+const COMMISSION_STATUS_COLORS = { available:'var(--green)', pending:'var(--orange)', validated:'var(--blue)', cancelled:'var(--t3)', refunded:'var(--red)', debt:'var(--red)', withdrawn:'var(--t3)', disputed:'var(--red)' };
+
+function buildCommissionRowsHtml(rows){
+  return rows.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b)">
+    <div>
+      <div style="font-size:13.5px;font-weight:700">${Number(r.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
+      <div style="font-size:11.5px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')}${r.effective_status==='pending' && r.available_at ? ' · dispo le '+new Date(r.available_at).toLocaleDateString('fr-FR') : ''}</div>
+    </div>
+    <span style="font-size:11px;font-weight:700;color:${COMMISSION_STATUS_COLORS[r.effective_status]||'var(--t3)'}">${COMMISSION_STATUS_LABELS[r.effective_status]||r.effective_status}</span>
+  </div>`).join('');
+}
+
 async function renderCommissions(){
   if(!supa) return;
   const { data: { session } } = await supa.auth.getSession();
   if(!session?.user) return;
 
-  const { data, error } = await supa
-    .from('commissions')
-    .select('id,amount,status,created_at')
-    .eq('seller_id', session.user.id)
-    .order('created_at', { ascending: false });
-  if(error){ console.error('[commissions] load:', error); return; }
+  const { data: walletRows, error: walletErr } = await supa.rpc('get_my_wallet');
+  if(walletErr) console.error('[wallet] get_my_wallet:', walletErr);
+  const w = (walletRows && walletRows[0]) || { pending_balance:0, available_balance:0, in_progress_balance:0, withdrawn_total:0, debt_total:0 };
+  const fmt = n => Number(n||0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const rows = data || [];
-  const eur = cents => (cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const totalAll = rows.reduce((s,r) => s + r.amount, 0);
-  const pending = rows.filter(r => ['pending','validated'].includes(r.status)).reduce((s,r) => s + r.amount, 0);
-  const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0);
-  const paidThisMonth = rows.filter(r => r.status === 'paid' && new Date(r.created_at) >= startOfMonth).reduce((s,r) => s + r.amount, 0);
+  const heroEl = document.getElementById('wallet-hero'); if(heroEl) heroEl.textContent = `${fmt(w.available_balance)} € disponibles.`;
+  const availEl = document.getElementById('wallet-available'); if(availEl) availEl.textContent = fmt(w.available_balance) + ' €';
+  const pendEl = document.getElementById('wallet-pending'); if(pendEl) pendEl.textContent = fmt(w.pending_balance) + ' €';
+  const inprogEl = document.getElementById('wallet-inprogress'); if(inprogEl) inprogEl.textContent = fmt(w.in_progress_balance) + ' €';
+  const withEl = document.getElementById('wallet-withdrawn'); if(withEl) withEl.textContent = fmt(w.withdrawn_total) + ' €';
 
-  const heroEl = document.getElementById('comm-hero');
-  if(heroEl) heroEl.textContent = `${eur(pending)} € disponibles.`;
-  const totalEl = document.getElementById('comm-total'); if(totalEl) totalEl.textContent = eur(totalAll) + ' €';
-  const pendEl = document.getElementById('comm-pend'); if(pendEl) pendEl.textContent = eur(pending) + ' €';
-  const paidEl = document.getElementById('comm-paid'); if(paidEl) paidEl.textContent = eur(paidThisMonth) + ' €';
-
-  const nextEl = document.getElementById('comm-next');
-  const oldestPending = rows.filter(r => ['pending','validated'].includes(r.status))
-    .sort((a,b) => new Date(a.created_at) - new Date(b.created_at))[0];
-  if(nextEl) nextEl.textContent = oldestPending
-    ? new Date(new Date(oldestPending.created_at).getTime() + 15*24*3600*1000).toLocaleDateString('fr-FR')
-    : '—';
+  const debtBox = document.getElementById('wallet-debt-box');
+  if(debtBox){
+    if(Number(w.debt_total) < 0){
+      debtBox.style.display = 'block';
+      debtBox.innerHTML = `<div style="padding:12px 14px;background:rgba(255,69,58,.08);border:1px solid rgba(255,69,58,.25);border-radius:10px;font-size:12.5px;color:var(--red)">⚠️ Tu as une dette de ${fmt(Math.abs(w.debt_total))} € suite à un remboursement client — elle sera automatiquement déduite de ton prochain retrait.</div>`;
+    } else {
+      debtBox.style.display = 'none';
+      debtBox.innerHTML = '';
+    }
+  }
 
   const listEl = document.getElementById('comm-list');
-  if(!listEl) return;
-  if(!rows.length){
-    listEl.innerHTML = `<div style="text-align:center;padding:36px 0">
-      <div style="font-size:28px;margin-bottom:10px">💸</div>
-      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune commission pour l'instant</div>
-      <div style="font-size:12px;color:var(--t3)">Ta première vente déclenchera ton premier versement automatique.</div>
-      <button class="btn btn-p" style="margin-top:16px" onclick="go('opportunites',null)">Voir les produits →</button>
-    </div>`;
-    return;
+  if(listEl){
+    const { data, error } = await supa.rpc('get_my_commissions');
+    if(error){
+      console.error('[wallet] get_my_commissions:', error);
+      listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement.</div>`;
+    } else if(!data || !data.length){
+      listEl.innerHTML = `<div style="text-align:center;padding:36px 0">
+        <div style="font-size:28px;margin-bottom:10px">💸</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune commission pour l'instant</div>
+        <div style="font-size:12px;color:var(--t3)">Ta première vente déclenchera ton premier versement automatique.</div>
+        <button class="btn btn-p" style="margin-top:16px" onclick="go('opportunites',null)">Voir mes prospects →</button>
+      </div>`;
+    } else {
+      listEl.innerHTML = buildCommissionRowsHtml(data);
+    }
   }
-  const statusLabel = { pending:'En attente', validated:'Validée', paid:'Versée', cancelled:'Annulée', refunded:'Remboursée' };
-  const statusColor = { pending:'var(--orange)', validated:'var(--blue)', paid:'var(--green)', cancelled:'var(--t3)', refunded:'var(--red)' };
-  listEl.innerHTML = rows.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--b)">
-    <div>
-      <div style="font-size:13px;font-weight:700">${eur(r.amount)} €</div>
-      <div style="font-size:11px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')}</div>
-    </div>
-    <span style="font-size:11px;font-weight:700;color:${statusColor[r.status]||'var(--t3)'}">${statusLabel[r.status]||r.status}</span>
-  </div>`).join('');
+
+  const payoutsEl = document.getElementById('payouts-list');
+  if(payoutsEl){
+    const { data: payouts, error: payoutsErr } = await supa.rpc('get_my_payouts');
+    if(payoutsErr){
+      console.error('[wallet] get_my_payouts:', payoutsErr);
+      payoutsEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement.</div>`;
+    } else if(!payouts || !payouts.length){
+      payoutsEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucun retrait pour l'instant.</div>`;
+    } else {
+      const payoutStatusLabels = { requested:'Demandé', paid:'Versé', failed:'Échoué', cancelled:'Annulé' };
+      const payoutStatusColors = { requested:'var(--orange)', paid:'var(--green)', failed:'var(--red)', cancelled:'var(--t3)' };
+      payoutsEl.innerHTML = payouts.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b)">
+        <div>
+          <div style="font-size:13.5px;font-weight:700">${fmt(p.amount)} €</div>
+          <div style="font-size:11.5px;color:var(--t3)">Demandé le ${new Date(p.requested_at).toLocaleDateString('fr-FR')}${p.paid_at ? ' · versé le '+new Date(p.paid_at).toLocaleDateString('fr-FR') : ''}</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${payoutStatusColors[p.status]||'var(--t3)'}">${payoutStatusLabels[p.status]||p.status}</span>
+      </div>`).join('');
+    }
+  }
+}
+
+let WALLET_WITHDRAW_INFLIGHT = false;
+async function requestWalletPayout(){
+  if(WALLET_WITHDRAW_INFLIGHT || !supa) return;
+  const msgEl = document.getElementById('wallet-withdraw-msg');
+  if(msgEl) msgEl.textContent = '';
+  if(!confirm('Confirmer la demande de retrait de la totalité de ton solde disponible ?')) return;
+
+  WALLET_WITHDRAW_INFLIGHT = true;
+  const btn = document.getElementById('wallet-withdraw-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Demande en cours...'; }
+  try{
+    const { error } = await supa.rpc('request_payout');
+    if(error){
+      console.error('[wallet] request_payout:', error);
+      if(msgEl) msgEl.textContent = error.message || "Impossible de demander un retrait pour le moment.";
+      return;
+    }
+    toast('✓ Retrait demandé');
+    await renderCommissions();
+  } finally {
+    WALLET_WITHDRAW_INFLIGHT = false;
+    if(btn){ btn.disabled = false; btn.textContent = '💰 Retirer mes gains'; }
+  }
 }
 
 // FIX (audit 2026-07-29) : ce tableau affichait TOUJOURS le même message de
@@ -3868,16 +3933,7 @@ async function renderMyCommissionsList(){
     </div>`;
     return;
   }
-  const statusLabels = { available:'Disponible', pending:'En attente (mûrit)', validated:'Validée', cancelled:'Annulée', refunded:'Remboursée', debt:'Dette', withdrawn:'Retirée', disputed:'En litige' };
-  const statusColors = { available:'var(--green)', pending:'var(--orange)', validated:'var(--blue)', cancelled:'var(--t3)', refunded:'var(--red)', debt:'var(--red)', withdrawn:'var(--t3)', disputed:'var(--red)' };
-  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + rows.map(r => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b)">
-      <div>
-        <div style="font-size:13.5px;font-weight:700">${Number(r.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
-        <div style="font-size:11.5px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')}${r.effective_status==='pending' && r.available_at ? ' · dispo le '+new Date(r.available_at).toLocaleDateString('fr-FR') : ''}</div>
-      </div>
-      <span style="font-size:11px;font-weight:700;color:${statusColors[r.effective_status]||'var(--t3)'}">${statusLabels[r.effective_status]||r.effective_status}</span>
-    </div>`).join('') + `</div>`;
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + buildCommissionRowsHtml(rows) + `</div>`;
 }
 
 async function renderProspectHistory(){
