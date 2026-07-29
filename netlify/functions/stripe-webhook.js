@@ -110,19 +110,27 @@ exports.handler = async (event) => {
 };
 
 async function recordAndProcess(stripeEvent) {
-  // Idempotence en tout premier : "stripe_events_processed" a une PK sur
-  // event_id (l'id Stripe, globalement unique). Si cet événement a déjà été
-  // traité (retry Stripe, double livraison), l'insert échoue en conflit et on
-  // s'arrête là — aucun effet de bord n'est rejoué.
-  const dedupeResp = await supabaseAdminRequest('/rest/v1/stripe_events_processed', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
-    body: JSON.stringify({ event_id: stripeEvent.id, event_type: stripeEvent.type })
-  });
-  const dedupeRows = dedupeResp.ok ? await dedupeResp.json() : null;
-  if (!Array.isArray(dedupeRows) || dedupeRows.length === 0) {
-    console.log('[stripe-webhook] Événement déjà traité, ignoré:', stripeEvent.id, stripeEvent.type);
+  // Idempotence en deux temps ("vu" puis "terminé"), pas une seule insertion
+  // avant traitement : avec les handlers multi-étapes ci-dessous
+  // (handleOrderPaid fait 5 lectures/écritures séquentielles), un échec
+  // transitoire à n'importe quelle étape aurait, avec une simple insertion
+  // préalable, bloqué DÉFINITIVEMENT tout retry Stripe de cet événement —
+  // Stripe réessaie sur une réponse 500, mais le retry aurait été
+  // silencieusement ignoré par la déduplication (voir migration 0013).
+  const existingResp = await supabaseAdminRequest(
+    `/rest/v1/stripe_events_processed?event_id=eq.${encodeURIComponent(stripeEvent.id)}&select=completed_at`
+  );
+  const existing = existingResp.ok ? await existingResp.json() : [];
+  if (Array.isArray(existing) && existing.length > 0 && existing[0].completed_at) {
+    console.log('[stripe-webhook] Événement déjà traité avec succès, ignoré:', stripeEvent.id, stripeEvent.type);
     return;
+  }
+  if (!Array.isArray(existing) || existing.length === 0) {
+    await supabaseAdminRequest('/rest/v1/stripe_events_processed', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      body: JSON.stringify({ event_id: stripeEvent.id, event_type: stripeEvent.type })
+    });
   }
 
   const obj = stripeEvent.data?.object || {};
@@ -217,6 +225,15 @@ async function recordAndProcess(stripeEvent) {
       // stripe_events_processed ci-dessus, rien de plus à faire.
     }
   }
+
+  // Traitement terminé sans erreur (un throw plus haut aurait interrompu
+  // l'exécution avant d'arriver ici) : marque définitivement l'événement
+  // comme traité, ce qui bloquera tout retry futur — c'est le comportement
+  // voulu une fois le traitement réellement complet.
+  await supabaseAdminRequest(`/rest/v1/stripe_events_processed?event_id=eq.${encodeURIComponent(stripeEvent.id)}`, {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ completed_at: new Date().toISOString() })
+  });
 }
 
 async function upsertSubscriberByUserId(userId, fields) {
@@ -233,12 +250,29 @@ async function upsertSubscriberByUserId(userId, fields) {
 // (advance_prospect_stage() en base refuse explicitement l'étape "paid") :
 // c'est cette fonction, déclenchée uniquement par un événement Stripe
 // signé, qui fait foi.
+// Vérifie qu'une écriture Supabase a réussi ; sinon lève une exception qui
+// remonte jusqu'à exports.handler, y renvoie un 500, et déclenche le retry
+// automatique de Stripe (voir migration 0013 — un échec ici ne bloque plus
+// définitivement le traitement de l'événement). Avant ce fix, un échec
+// HTTP sur n'importe laquelle de ces écritures était silencieusement ignoré
+// (le code continuait comme si de rien n'était), pouvant laisser une vente
+// sans commission, ou une commande "paid" sans jamais avoir généré la
+// commission associée — perte d'argent invisible, sans aucune trace.
+async function assertOk(resp, context) {
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '');
+    throw new Error(`${context} — HTTP ${resp.status}: ${body}`);
+  }
+  return resp;
+}
+
 async function handleOrderPaid(session, stripeEvent) {
   const orderId = session.metadata.order_id;
 
   const orderResp = await supabaseAdminRequest(
     `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,prospect_id,seller_user_id,product_type,price,commission_rate,status`
   );
+  await assertOk(orderResp, `handleOrderPaid: lecture commande ${orderId}`);
   const orders = await orderResp.json();
   const order = Array.isArray(orders) ? orders[0] : null;
   if (!order) {
@@ -246,8 +280,8 @@ async function handleOrderPaid(session, stripeEvent) {
     return;
   }
   if (order.status === 'paid') {
-    // Déjà traité par un événement antérieur (ne devrait pas arriver grâce
-    // à la déduplication sur stripeEvent.id, mais reste un garde-fou honnête).
+    // Déjà traité par un événement antérieur (protection applicative en plus
+    // de la déduplication sur stripeEvent.id — voir migration 0013).
     console.log('[stripe-webhook] handleOrderPaid: commande déjà payée, ignoré', orderId);
     return;
   }
@@ -275,15 +309,15 @@ async function handleOrderPaid(session, stripeEvent) {
       source: 'crm_order',
     })
   });
+  await assertOk(saleResp, `handleOrderPaid: création vente pour commande ${orderId}`);
   const sales = await saleResp.json();
   const sale = Array.isArray(sales) ? sales[0] : null;
   if (!sale) {
-    console.error('[stripe-webhook] handleOrderPaid: échec création de la vente pour la commande', orderId);
-    return;
+    throw new Error(`handleOrderPaid: la création de la vente pour la commande ${orderId} n'a renvoyé aucune ligne`);
   }
 
   const commissionAmount = Math.round((session.amount_total ?? order.price) * order.commission_rate);
-  await supabaseAdminRequest('/rest/v1/commissions', {
+  const commResp = await supabaseAdminRequest('/rest/v1/commissions', {
     method: 'POST',
     headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({
@@ -299,22 +333,26 @@ async function handleOrderPaid(session, stripeEvent) {
       available_at: new Date(Date.now() + 15 * 24 * 3600 * 1000).toISOString(),
     })
   });
+  await assertOk(commResp, `handleOrderPaid: création commission pour vente ${sale.id}`);
 
-  await supabaseAdminRequest(`/rest/v1/orders?id=eq.${encodeURIComponent(order.id)}`, {
+  const orderPatchResp = await supabaseAdminRequest(`/rest/v1/orders?id=eq.${encodeURIComponent(order.id)}`, {
     method: 'PATCH',
     headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({ status: 'paid', updated_at: new Date().toISOString() })
   });
+  await assertOk(orderPatchResp, `handleOrderPaid: passage à "paid" de la commande ${orderId}`);
 
   const prospectResp = await supabaseAdminRequest(`/rest/v1/prospects?id=eq.${encodeURIComponent(order.prospect_id)}&select=stage`);
+  await assertOk(prospectResp, `handleOrderPaid: lecture prospect ${order.prospect_id}`);
   const prospects = await prospectResp.json();
   const previousStage = prospects?.[0]?.stage || null;
-  await supabaseAdminRequest(`/rest/v1/prospects?id=eq.${encodeURIComponent(order.prospect_id)}`, {
+  const prospectPatchResp = await supabaseAdminRequest(`/rest/v1/prospects?id=eq.${encodeURIComponent(order.prospect_id)}`, {
     method: 'PATCH',
     headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({ stage: 'paid', updated_at: new Date().toISOString() })
   });
-  await supabaseAdminRequest('/rest/v1/prospect_stage_history', {
+  await assertOk(prospectPatchResp, `handleOrderPaid: passage du prospect ${order.prospect_id} à "paid"`);
+  const historyResp = await supabaseAdminRequest('/rest/v1/prospect_stage_history', {
     method: 'POST',
     headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({
@@ -325,6 +363,7 @@ async function handleOrderPaid(session, stripeEvent) {
       justification: 'Paiement confirmé automatiquement par Stripe',
     })
   });
+  await assertOk(historyResp, `handleOrderPaid: historique de stage pour prospect ${order.prospect_id}`);
 }
 
 // Remboursement d'une commande CRM : retrouve la vente via le
@@ -337,20 +376,23 @@ async function handleOrderRefund(charge) {
   const saleResp = await supabaseAdminRequest(
     `/rest/v1/sales?stripe_payment_intent=eq.${encodeURIComponent(charge.payment_intent)}&order_id=not.is.null&select=id,order_id`
   );
+  await assertOk(saleResp, `handleOrderRefund: recherche vente pour payment_intent ${charge.payment_intent}`);
   const sales = await saleResp.json();
   const sale = Array.isArray(sales) ? sales[0] : null;
   if (!sale) return false;
 
   const commResp = await supabaseAdminRequest(`/rest/v1/commissions?sale_id=eq.${encodeURIComponent(sale.id)}&select=id,status,amount,seller_id,order_id`);
+  await assertOk(commResp, `handleOrderRefund: lecture commissions pour vente ${sale.id}`);
   const commissions = await commResp.json();
 
   for (const c of (commissions || [])) {
     if (c.status === 'pending') {
       // Pas encore versée (mûre ou non) : simple annulation, aucune dette.
-      await supabaseAdminRequest(`/rest/v1/commissions?id=eq.${encodeURIComponent(c.id)}`, {
+      const patchResp = await supabaseAdminRequest(`/rest/v1/commissions?id=eq.${encodeURIComponent(c.id)}`, {
         method: 'PATCH', headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({ status: 'cancelled', updated_at: new Date().toISOString() })
       });
+      await assertOk(patchResp, `handleOrderRefund: annulation commission ${c.id}`);
     } else if (c.status === 'withdrawn') {
       // Déjà versée au vendeur : dette qui sera déduite du prochain retrait,
       // jamais une réécriture silencieuse de la ligne historique déjà payée.
@@ -358,37 +400,69 @@ async function handleOrderRefund(charge) {
       // CHECK amount >= 0) : get_my_wallet()/request_payout() SOUSTRAIENT
       // les lignes 'debt' plutôt que de supposer un montant déjà négatif
       // (voir migration 0008 — bug trouvé en testant ce flux par exécution).
-      await supabaseAdminRequest('/rest/v1/commissions', {
+      const debtResp = await supabaseAdminRequest('/rest/v1/commissions', {
         method: 'POST', headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({
           sale_id: sale.id, order_id: c.order_id, seller_id: c.seller_id,
           amount: Math.abs(c.amount), percentage: 0, status: 'debt',
         })
       });
+      await assertOk(debtResp, `handleOrderRefund: création dette pour commission ${c.id}`);
     }
   }
 
-  await supabaseAdminRequest(`/rest/v1/orders?id=eq.${encodeURIComponent(sale.order_id)}`, {
+  const orderPatchResp = await supabaseAdminRequest(`/rest/v1/orders?id=eq.${encodeURIComponent(sale.order_id)}`, {
     method: 'PATCH', headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({ status: 'refunded', updated_at: new Date().toISOString() })
   });
+  await assertOk(orderPatchResp, `handleOrderRefund: passage à "refunded" de la commande ${sale.order_id}`);
 
   return true;
 }
 
+// Gèle la ou les commissions liées à la vente remboursée par le litige.
+// Deux cas bien distincts :
+//  - commission encore "pending" : gelée en "disputed" directement (rien
+//    n'a encore été versé, aucun risque financier immédiat).
+//  - commission déjà "withdrawn" (versée au vendeur) : la ligne historique
+//    n'est JAMAIS modifiée (même principe que handleOrderRefund) — une
+//    ligne "disputed" MIROIR est créée à côté, de la même magnitude,
+//    purement informative pour le dashboard admin (get_my_wallet() ne
+//    compte "disputed" dans aucun total tant qu'elle n'est pas résolue).
+//    Trouvé en auditant ce flux après coup : sans ce cas, un litige arrivant
+//    après un retrait ne laissait absolument aucune trace nulle part.
 async function freezeCommissionForDispute(charge) {
   if (!charge.payment_intent) return;
   const saleResp = await supabaseAdminRequest(
     `/rest/v1/sales?stripe_payment_intent=eq.${encodeURIComponent(charge.payment_intent)}&order_id=not.is.null&select=id`
   );
+  await assertOk(saleResp, `freezeCommissionForDispute: recherche vente pour payment_intent ${charge.payment_intent}`);
   const sales = await saleResp.json();
   const sale = Array.isArray(sales) ? sales[0] : null;
   if (!sale) return;
 
-  await supabaseAdminRequest(`/rest/v1/commissions?sale_id=eq.${encodeURIComponent(sale.id)}&status=eq.pending`, {
-    method: 'PATCH', headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({ status: 'disputed', updated_at: new Date().toISOString() })
-  });
+  const commResp = await supabaseAdminRequest(`/rest/v1/commissions?sale_id=eq.${encodeURIComponent(sale.id)}&select=id,status,amount,seller_id,order_id`);
+  await assertOk(commResp, `freezeCommissionForDispute: lecture commissions pour vente ${sale.id}`);
+  const commissions = await commResp.json();
+
+  for (const c of (commissions || [])) {
+    if (c.status === 'pending') {
+      const patchResp = await supabaseAdminRequest(`/rest/v1/commissions?id=eq.${encodeURIComponent(c.id)}`, {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'disputed', updated_at: new Date().toISOString() })
+      });
+      await assertOk(patchResp, `freezeCommissionForDispute: gel commission ${c.id}`);
+    } else if (c.status === 'withdrawn') {
+      const shadowResp = await supabaseAdminRequest('/rest/v1/commissions', {
+        method: 'POST', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          sale_id: sale.id, order_id: c.order_id, seller_id: c.seller_id,
+          amount: c.amount, percentage: 0, status: 'disputed',
+        })
+      });
+      await assertOk(shadowResp, `freezeCommissionForDispute: création ligne miroir pour commission déjà retirée ${c.id}`);
+    }
+  }
 }
 
 async function updateSubscriberByCustomerId(stripeCustomerId, fields) {
