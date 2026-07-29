@@ -31,6 +31,7 @@ séparé : **gc-ai-os** (voir section « Repository technique » ci-dessous).
 | [13-directeur-general.md](./13-directeur-general.md) | Directeur Général IA : arbitrage déterministe et auditable au-dessus de l'Orchestrateur |
 | [14-executive-brain.md](./14-executive-brain.md) | GC Executive Brain : 8 Brains instrumentés, Decision Engine, Enterprise Score, briefing du matin |
 | [15-human-brain.md](./15-human-brain.md) | GC Human Brain : direction humaine, préférences observées, consentement et RGPD |
+| [16-audit.md](./16-audit.md) | **Audit du 29/07/2026** : promis vs implémenté, écarts vérifiés par commande, ordre de réparation |
 
 ## Repository technique
 
