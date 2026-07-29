@@ -73,8 +73,11 @@ exports.handler = async (event) => {
       console.error('[create-order-checkout-session] Tentative d\'accès à une commande d\'un autre vendeur', { sellerId, orderId });
       return jsonResponse(403, { error: 'FORBIDDEN' });
     }
-    if (order.status !== 'draft') {
-      return jsonResponse(200, { error: 'ORDER_NOT_DRAFT', message: `Cette commande n'est plus au statut brouillon (statut actuel: ${order.status}).` });
+    // "draft" (premier lien) et "awaiting_payment" (régénération d'un lien —
+    // client qui l'a perdu, lien expiré...) sont tous deux acceptés. Au-delà
+    // (paid/production/...), la commande est déjà réglée ou verrouillée.
+    if (order.status !== 'draft' && order.status !== 'awaiting_payment') {
+      return jsonResponse(200, { error: 'ORDER_NOT_PAYABLE', message: `Cette commande n'est plus payable (statut actuel: ${order.status}).` });
     }
     if (!order.price || order.price <= 0) {
       return jsonResponse(200, { error: 'INVALID_PRICE', message: 'Le prix de la commande est invalide.' });

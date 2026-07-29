@@ -1391,7 +1391,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   <div id="opp-content" style="display:none">
     <div class="topbar">
       <div class="tb-title">Centre d'Opportunités</div>
-      <div class="tb-right"><button class="btn btn-g" onclick="go('commissions',null)">Mes commissions →</button></div>
+      <div class="tb-right"><button class="btn btn-p" onclick="openMo('mo-prospect')">+ Nouveau prospect</button></div>
     </div>
     <div class="ct">
       <div class="hero">
@@ -1400,13 +1400,12 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="hero-s">Tu ne produis pas, tu ne livres pas. Tu vends. La production est 100% gérée par Génération Capable.</div>
       </div>
       <div class="og">
-        <div class="oc" onclick="toast('Bibliothèque formation ouverte')">
+        <div class="oc">
           <div class="oc-ico" style="background:rgba(41,151,255,.12)">🎓</div>
           <div class="oc-t">Formation Génération Capable</div>
           <div class="oc-p" style="color:var(--blue)">50%</div>
           <div class="oc-c">Commission par vente</div>
           <div class="oc-d">Le produit phare. Le plus puissant à vendre.</div>
-          <button class="btn btn-p" style="margin-top:14px;width:100%;justify-content:center" onclick="event.stopPropagation();toast('Ressources ouvertes')">Voir les ressources</button>
         </div>
         <div class="oc">
           <div class="oc-ico" style="background:rgba(191,90,242,.12)">🌐</div>
@@ -1441,12 +1440,32 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
       </div>
       <div class="div"></div>
-      <div class="sec-hd"><div class="sec-t">Classement vendeurs</div><span class="auto-badge">Mise à jour auto</span></div>
-      <div class="card" style="overflow:hidden">
-        <table class="at">
-          <thead><tr><th>#</th><th>Vendeur</th><th>Ventes</th><th>Chiffre d'affaires</th></tr></thead>
-          <tbody id="ranking-body"></tbody>
-        </table>
+
+      <!-- ══ CRM RÉEL — prospects, pipeline, commandes, commissions ══ -->
+      <div class="tabs" id="crm-tabs">
+        <button class="tab on" data-crmtab="prospects" onclick="switchCrmTab('prospects')">Mes prospects</button>
+        <button class="tab" data-crmtab="sales" onclick="switchCrmTab('sales')">Mes ventes</button>
+        <button class="tab" data-crmtab="commissions" onclick="switchCrmTab('commissions')">Mes commissions</button>
+        <button class="tab" data-crmtab="history" onclick="switchCrmTab('history')">Historique</button>
+        <button class="tab" data-crmtab="ranking" onclick="switchCrmTab('ranking')">Classement</button>
+      </div>
+
+      <div id="crm-panel-prospects" class="crm-panel"></div>
+
+      <div id="crm-panel-sales" class="crm-panel" style="display:none"></div>
+
+      <div id="crm-panel-commissions" class="crm-panel" style="display:none"></div>
+
+      <div id="crm-panel-history" class="crm-panel" style="display:none"></div>
+
+      <div id="crm-panel-ranking" class="crm-panel" style="display:none">
+        <div class="sec-hd"><div class="sec-t">Classement vendeurs</div><span class="auto-badge">Mise à jour auto</span></div>
+        <div class="card" style="overflow:hidden">
+          <table class="at">
+            <thead><tr><th>#</th><th>Vendeur</th><th>Ventes</th><th>Chiffre d'affaires</th></tr></thead>
+            <tbody id="ranking-body"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -2668,22 +2687,42 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 <div class="mo" id="mo-prospect">
   <div class="md">
     <div class="md-hd">
-      <div><div class="md-ey">Pipeline</div><div class="md-t">Ajouter un prospect</div></div>
+      <div><div class="md-ey">Pipeline</div><div class="md-t">Nouveau prospect</div></div>
       <button class="md-cl" onclick="closeMo('mo-prospect')">✕</button>
     </div>
     <div class="md-bd">
-      <label>Nom / Entreprise</label><input class="field" placeholder="Ex: Restaurant Le Moulin">
-      <label>Canal de contact</label>
-      <select class="field"><option>Terrain</option><option>Téléphone</option><option>Instagram</option><option>LinkedIn</option><option>Email</option></select>
-      <label>Étape du pipeline</label>
-      <select class="field"><option>Contacté</option><option>Réponse obtenue</option><option>Qualifié</option><option>RDV obtenu</option><option>Proposition réalisée</option><option>Vendu</option></select>
+      <label>Prénom *</label><input class="field" id="pr-first-name" placeholder="Ex: Julie" maxlength="100">
+      <label>Nom *</label><input class="field" id="pr-last-name" placeholder="Ex: Martin" maxlength="100">
+      <label>Téléphone</label><input class="field" id="pr-phone" placeholder="Ex: 06 12 34 56 78" maxlength="30">
+      <label>Email</label><input class="field" id="pr-email" type="email" placeholder="Ex: julie@entreprise.fr" maxlength="200">
+      <label>Entreprise</label><input class="field" id="pr-company" placeholder="Ex: Restaurant Le Moulin" maxlength="200">
+      <label>SIRET</label><input class="field" id="pr-siret" placeholder="Ex: 123 456 789 00012" maxlength="20">
+      <label>Besoin(s)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="site_internet"> Site Internet</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="ia"> Solution IA</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="generation_capable"> Génération Capable</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="accompagnement"> Accompagnement</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="autre"> Autre</label>
+      </div>
       <label>Notes</label>
-      <textarea class="field" placeholder="Besoins détectés, suite à donner..."></textarea>
+      <textarea class="field" id="pr-notes" maxlength="2000" placeholder="Besoins détectés, suite à donner..."></textarea>
+      <div id="pr-error" style="font-size:12px;color:var(--red);margin-bottom:8px"></div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-p" onclick="closeMo('mo-prospect');toast('Prospect ajouté au pipeline ✓')">Ajouter</button>
+        <button class="btn btn-p" id="pr-submit-btn" onclick="createProspect()">Ajouter</button>
         <button class="btn btn-g" onclick="closeMo('mo-prospect')">Annuler</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="mo" id="mo-prospect-detail">
+  <div class="md" style="max-width:640px">
+    <div class="md-hd">
+      <div><div class="md-ey">Prospect</div><div class="md-t" id="pd-title">—</div></div>
+      <button class="md-cl" onclick="closeMo('mo-prospect-detail')">✕</button>
+    </div>
+    <div class="md-bd" id="pd-body"></div>
   </div>
 </div>
 
@@ -2889,7 +2928,7 @@ function go(id, el){
   // FIX (audit 2026-07-29) : le tableau de classement (#ranking-body) est
   // affiché sur la page "opportunites", pas "performance" — l'appel visait
   // le mauvais onglet et ne remplissait jamais le tableau réellement visible.
-  if(id==='opportunites'){ try{ renderRanking(); }catch(e){} }
+  if(id==='opportunites'){ try{ switchCrmTab('prospects'); }catch(e){} }
   if(id==='challenges'){ try{ renderMissions(); }catch(e){} }
   if(id==='communaute'){ try{ loadFeed(); }catch(e){} }
   if(id==='commissions'){ try{ renderCommissions(); }catch(e){} }
@@ -3698,6 +3737,505 @@ async function renderRanking(){
     <td>${row.sales_count}</td>
     <td style="color:var(--green);font-weight:700">${Number(row.total_amount).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})} €</td>
   </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  CRM RÉEL — prospects, pipeline (8 étapes), commandes, ventes,
+//  commissions, historique. Voir migrations 0006/0009/0010.
+//  "paid"/"production"/"delivered"/"done" ne sont JAMAIS déclarables à la
+//  main par le vendeur — advance_prospect_stage() (base) les bloque déjà,
+//  mais cette UI ne propose même pas ces choix pour ne jamais y exposer
+//  un vendeur (défense en profondeur : UI + base, pas l'un ou l'autre).
+// ══════════════════════════════════════════════════════════
+const PROSPECT_STAGES = ['created','contacted','rdv','quote_sent','paid','production','delivered','done'];
+const PROSPECT_STAGE_LABELS = {
+  created:'Créé', contacted:'Contacté', rdv:'RDV programmé', quote_sent:'Devis envoyé',
+  paid:'Payé', production:'En production', delivered:'Livré', done:'Terminé',
+};
+const PROSPECT_STAGE_COLORS = {
+  created:'var(--t3)', contacted:'var(--blue)', rdv:'var(--purple)', quote_sent:'var(--orange)',
+  paid:'var(--green)', production:'var(--blue)', delivered:'var(--green)', done:'var(--green)',
+};
+const CRM_PRODUCT_LABELS = {
+  site_internet:'Site Internet', ia:'Solution IA', generation_capable:'Génération Capable',
+  accompagnement:'Accompagnement', autre:'Prestation',
+};
+const eurFromCents = c => (Number(c||0)/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+let CRM_PROSPECTS_CACHE = [];
+
+function switchCrmTab(tabName){
+  document.querySelectorAll('#crm-tabs .tab').forEach(t => t.classList.toggle('on', t.dataset.crmtab === tabName));
+  ['prospects','sales','commissions','history','ranking'].forEach(t => {
+    const el = document.getElementById('crm-panel-'+t);
+    if(el) el.style.display = (t === tabName) ? 'block' : 'none';
+  });
+  if(tabName === 'prospects') renderProspectsList();
+  else if(tabName === 'sales') renderMySales();
+  else if(tabName === 'commissions') renderMyCommissionsList();
+  else if(tabName === 'history') renderProspectHistory();
+  else if(tabName === 'ranking') renderRanking();
+}
+
+async function renderProspectsList(){
+  const el = document.getElementById('crm-panel-prospects');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const { data, error } = await supa.from('prospects')
+    .select('id,first_name,last_name,phone,email,company,siret,needs,notes,stage,created_at')
+    .eq('seller_user_id', session.user.id)
+    .order('created_at', { ascending: false });
+  if(error){
+    console.error('[crm] prospects load:', error);
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement des prospects.</div>`;
+    return;
+  }
+  CRM_PROSPECTS_CACHE = data || [];
+  if(!CRM_PROSPECTS_CACHE.length){
+    el.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">🗂️</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucun prospect pour l'instant</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">Ajoute ton premier prospect pour démarrer ton pipeline de vente.</div>
+      <button class="btn btn-p" onclick="openMo('mo-prospect')">+ Nouveau prospect</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + CRM_PROSPECTS_CACHE.map(p => `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--b);cursor:pointer" onclick="openProspectDetail('${p.id}')">
+      <div style="min-width:0">
+        <div style="font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}${p.company ? ' · '+escapeHtml(p.company) : ''}</div>
+        <div style="font-size:11.5px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.email || p.phone || '—')} · ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <span style="flex-shrink:0;font-size:11px;font-weight:700;color:${PROSPECT_STAGE_COLORS[p.stage]||'var(--t3)'};background:rgba(255,255,255,.06);padding:4px 10px;border-radius:20px">${PROSPECT_STAGE_LABELS[p.stage]||p.stage}</span>
+    </div>`).join('') + `</div>`;
+}
+
+async function renderMySales(){
+  const el = document.getElementById('crm-panel-sales');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const { data, error } = await supa.from('sales')
+    .select('id,product_name,amount,status,created_at')
+    .eq('seller_user_id', session.user.id)
+    .order('created_at', { ascending: false });
+  if(error){
+    console.error('[crm] sales load:', error);
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement des ventes.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">💰</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune vente pour l'instant</div>
+      <div style="font-size:12px;color:var(--t3)">Chaque commande payée par un client apparaîtra ici automatiquement.</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + rows.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b)">
+      <div>
+        <div style="font-size:13.5px;font-weight:700">${escapeHtml(r.product_name)}</div>
+        <div style="font-size:11.5px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <div style="font-size:13.5px;font-weight:800;color:var(--green)">${eurFromCents(r.amount)} €</div>
+    </div>`).join('') + `</div>`;
+}
+
+async function renderMyCommissionsList(){
+  const el = document.getElementById('crm-panel-commissions');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('get_my_commissions');
+  if(error){
+    console.error('[crm] get_my_commissions:', error);
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement des commissions.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">💸</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune commission pour l'instant</div>
+      <div style="font-size:12px;color:var(--t3)">Ta première vente déclenchera ta première commission (versée 15 jours après, hors litige).</div>
+    </div>`;
+    return;
+  }
+  const statusLabels = { available:'Disponible', pending:'En attente (mûrit)', validated:'Validée', cancelled:'Annulée', refunded:'Remboursée', debt:'Dette', withdrawn:'Retirée', disputed:'En litige' };
+  const statusColors = { available:'var(--green)', pending:'var(--orange)', validated:'var(--blue)', cancelled:'var(--t3)', refunded:'var(--red)', debt:'var(--red)', withdrawn:'var(--t3)', disputed:'var(--red)' };
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + rows.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b)">
+      <div>
+        <div style="font-size:13.5px;font-weight:700">${Number(r.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
+        <div style="font-size:11.5px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')}${r.effective_status==='pending' && r.available_at ? ' · dispo le '+new Date(r.available_at).toLocaleDateString('fr-FR') : ''}</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;color:${statusColors[r.effective_status]||'var(--t3)'}">${statusLabels[r.effective_status]||r.effective_status}</span>
+    </div>`).join('') + `</div>`;
+}
+
+async function renderProspectHistory(){
+  const el = document.getElementById('crm-panel-history');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const { data, error } = await supa.from('prospect_stage_history')
+    .select('id,from_stage,to_stage,justification,created_at,prospects(first_name,last_name)')
+    .eq('seller_user_id', session.user.id)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if(error){
+    console.error('[crm] history load:', error);
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement de l'historique.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">🕓</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucun historique pour l'instant</div>
+      <div style="font-size:12px;color:var(--t3)">Chaque changement d'étape de tes prospects sera tracé ici.</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + rows.map(r => {
+    const name = r.prospects ? `${r.prospects.first_name} ${r.prospects.last_name}` : 'Prospect supprimé';
+    const fromLabel = r.from_stage ? (PROSPECT_STAGE_LABELS[r.from_stage] || r.from_stage) : '—';
+    const toLabel = PROSPECT_STAGE_LABELS[r.to_stage] || r.to_stage;
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--b)">
+      <div style="font-size:12.5px;font-weight:700">${escapeHtml(name)} — ${escapeHtml(fromLabel)} → ${escapeHtml(toLabel)}</div>
+      <div style="font-size:11px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')} à ${new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}${r.justification ? ' · '+escapeHtml(r.justification) : ''}</div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+// ── Création d'un prospect (modal "mo-prospect", ouvert depuis Opportunités,
+//    Pipeline et CRM & Outils) ──
+let PROSPECT_SUBMIT_INFLIGHT = false;
+async function createProspect(){
+  if(PROSPECT_SUBMIT_INFLIGHT) return;
+  const errEl = document.getElementById('pr-error');
+  if(errEl) errEl.textContent = '';
+
+  const firstName = document.getElementById('pr-first-name')?.value?.trim();
+  const lastName = document.getElementById('pr-last-name')?.value?.trim();
+  const phone = document.getElementById('pr-phone')?.value?.trim();
+  const email = document.getElementById('pr-email')?.value?.trim();
+  const company = document.getElementById('pr-company')?.value?.trim();
+  const siret = document.getElementById('pr-siret')?.value?.trim();
+  const notes = document.getElementById('pr-notes')?.value?.trim();
+  const needs = Array.from(document.querySelectorAll('.pr-need:checked')).map(c => c.value);
+
+  if(!firstName || !lastName){
+    if(errEl) errEl.textContent = 'Le prénom et le nom sont obligatoires.';
+    return;
+  }
+  if(!supa) return;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user){ toast('Connecte-toi pour ajouter un prospect'); return; }
+
+  PROSPECT_SUBMIT_INFLIGHT = true;
+  const btn = document.getElementById('pr-submit-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Ajout...'; }
+  try{
+    const { error } = await supa.from('prospects').insert({
+      seller_user_id: session.user.id,
+      first_name: firstName, last_name: lastName,
+      phone: phone || null, email: email || null,
+      company: company || null, siret: siret || null,
+      needs, notes: notes || null,
+    });
+    if(error){
+      console.error('[crm] createProspect:', error);
+      if(errEl) errEl.textContent = "Impossible d'ajouter ce prospect pour le moment.";
+      return;
+    }
+    closeMo('mo-prospect');
+    toast('✓ Prospect ajouté');
+    ['pr-first-name','pr-last-name','pr-phone','pr-email','pr-company','pr-siret','pr-notes'].forEach(id => {
+      const f = document.getElementById(id); if(f) f.value = '';
+    });
+    document.querySelectorAll('.pr-need').forEach(c => c.checked = false);
+    try{ renderProspectsList(); }catch(e){}
+  } finally {
+    PROSPECT_SUBMIT_INFLIGHT = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Ajouter'; }
+  }
+}
+
+// ── Détail d'un prospect : pipeline, commande, paiement, envoi studio ──
+let PD_CURRENT_PROSPECT = null;
+let PD_CURRENT_ORDER = null;
+let ORDER_ACTION_INFLIGHT = false;
+
+async function openProspectDetail(id){
+  const bodyEl = document.getElementById('pd-body');
+  const titleEl = document.getElementById('pd-title');
+  if(bodyEl) bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  if(titleEl) titleEl.textContent = '—';
+  openMo('mo-prospect-detail');
+  if(!supa) return;
+
+  const { data: prospect, error: pErr } = await supa.from('prospects').select('*').eq('id', id).maybeSingle();
+  if(pErr || !prospect){
+    console.error('[crm] openProspectDetail:', pErr);
+    if(bodyEl) bodyEl.innerHTML = `<div style="color:var(--red);font-size:12.5px">Prospect introuvable.</div>`;
+    return;
+  }
+  PD_CURRENT_PROSPECT = prospect;
+  if(titleEl) titleEl.textContent = `${prospect.first_name} ${prospect.last_name}`;
+
+  const { data: orders, error: oErr } = await supa.from('orders').select('*').eq('prospect_id', id).order('created_at', { ascending: false });
+  if(oErr) console.error('[crm] orders load:', oErr);
+  PD_CURRENT_ORDER = (orders && orders[0]) || null;
+
+  renderProspectDetailBody();
+}
+
+function renderNewOrderForm(){
+  return `
+    <label style="font-size:11.5px;color:var(--t3);font-weight:700;text-transform:uppercase">Type de prestation</label>
+    <select class="field" id="pd-order-type">
+      <option value="site_internet">Site Internet</option>
+      <option value="ia">Solution IA</option>
+      <option value="generation_capable">Génération Capable</option>
+      <option value="accompagnement">Accompagnement</option>
+      <option value="autre">Prestation</option>
+    </select>
+    <label style="font-size:11.5px;color:var(--t3);font-weight:700;text-transform:uppercase">Prix TTC (€)</label>
+    <input class="field" type="number" min="0" step="0.01" id="pd-order-price" placeholder="Ex: 995">
+    <label style="font-size:11.5px;color:var(--t3);font-weight:700;text-transform:uppercase">Détails de la commande</label>
+    <textarea class="field" id="pd-order-details" maxlength="4000" placeholder="Cahier des charges, options choisies, délais convenus..."></textarea>
+    <div id="pd-order-error" style="font-size:12px;color:var(--red);margin-bottom:8px"></div>
+    <button class="btn btn-p" id="pd-order-create-btn" onclick="createOrderForCurrentProspect()">Créer la commande</button>
+  `;
+}
+
+function renderOrderStatusBlock(o){
+  const statusLabels = { draft:'Brouillon', awaiting_payment:'En attente de paiement', paid:'Payée', production:'En production', delivered:'Livrée', done:'Terminée', cancelled:'Annulée', refunded:'Remboursée' };
+  let actionHtml = '';
+  if(o.status === 'draft'){
+    actionHtml = `<button class="btn btn-gold" id="pd-pay-btn" onclick="createOrderPayment('${o.id}')">💳 Créer le lien de paiement</button>`;
+  } else if(o.status === 'awaiting_payment'){
+    actionHtml = `<div style="font-size:12px;color:var(--t3);margin-bottom:8px">Lien de paiement envoyé au client, en attente de confirmation Stripe.</div>
+      <div id="pd-order-link-box" style="display:none;gap:6px;margin-bottom:8px">
+        <input class="field" id="pd-order-link-input" style="margin-bottom:0;font-size:11px" readonly onclick="this.select()">
+        <button class="btn btn-g" type="button" onclick="copyOrderLink()">Copier</button>
+      </div>
+      <button class="btn btn-g" id="pd-pay-btn" onclick="createOrderPayment('${o.id}')">↻ Régénérer le lien</button>`;
+  } else if(o.status === 'paid' && !o.locked){
+    actionHtml = `<button class="btn btn-p" onclick="signAndLockCurrentOrder('${o.id}')">✓ Envoyer au studio</button>`;
+  } else if(o.locked){
+    actionHtml = `<div style="font-size:12px;color:var(--green);font-weight:700">✓ Envoyée au studio — verrouillée</div>`;
+  }
+  return `
+    <div class="sc" style="margin-bottom:10px">
+      <div class="sc-l">${statusLabels[o.status] || o.status}</div>
+      <div class="sc-v">${eurFromCents(o.price)} €</div>
+    </div>
+    ${actionHtml}
+  `;
+}
+
+function renderProspectDetailBody(){
+  const p = PD_CURRENT_PROSPECT, o = PD_CURRENT_ORDER;
+  const bodyEl = document.getElementById('pd-body');
+  if(!bodyEl || !p) return;
+
+  const stageIdx = PROSPECT_STAGES.indexOf(p.stage);
+  const paidIdx = PROSPECT_STAGES.indexOf('paid');
+  const sellerCanAdvance = stageIdx < paidIdx;
+
+  const stageHtml = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">` +
+    PROSPECT_STAGES.map((s,i) => `<span style="font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;background:${i===stageIdx?'var(--blue)':'rgba(255,255,255,.06)'};color:${i===stageIdx?'#fff':'var(--t3)'}">${PROSPECT_STAGE_LABELS[s]}</span>`).join('')
+  + `</div>`;
+
+  let advanceHtml = '';
+  if(sellerCanAdvance){
+    const nextStage = PROSPECT_STAGES[stageIdx+1];
+    advanceHtml = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">`;
+    if(nextStage && nextStage !== 'paid'){
+      advanceHtml += `<button class="btn btn-p" onclick="doAdvanceStage('${nextStage}')">→ ${PROSPECT_STAGE_LABELS[nextStage]}</button>`;
+    }
+    advanceHtml += `<button class="btn btn-g" onclick="promptAdvanceStage()">Changer d'étape...</button>`;
+    advanceHtml += `</div>`;
+  }
+
+  let orderHtml;
+  if(!o){
+    orderHtml = (stageIdx >= PROSPECT_STAGES.indexOf('quote_sent'))
+      ? renderNewOrderForm()
+      : `<div style="font-size:12px;color:var(--t3)">Passe le prospect à l'étape "Devis envoyé" pour pouvoir créer une commande.</div>`;
+  } else {
+    orderHtml = renderOrderStatusBlock(o);
+  }
+
+  bodyEl.innerHTML = `
+    <div style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:700;margin-bottom:6px">Étape actuelle</div>
+    ${stageHtml}
+    ${advanceHtml}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div class="sc"><div class="sc-l">Téléphone</div><div class="sc-v" style="font-size:13px">${escapeHtml(p.phone || '—')}</div></div>
+      <div class="sc"><div class="sc-l">Email</div><div class="sc-v" style="font-size:13px">${escapeHtml(p.email || '—')}</div></div>
+      <div class="sc"><div class="sc-l">Entreprise</div><div class="sc-v" style="font-size:13px">${escapeHtml(p.company || '—')}</div></div>
+      <div class="sc"><div class="sc-l">SIRET</div><div class="sc-v" style="font-size:13px">${escapeHtml(p.siret || '—')}</div></div>
+    </div>
+    ${p.notes ? `<div style="font-size:12px;color:var(--t3);margin-bottom:14px"><strong>Notes :</strong> ${escapeHtml(p.notes)}</div>` : ''}
+    <div class="div"></div>
+    <div class="sec-hd" style="margin-top:0"><div class="sec-t">Commande</div></div>
+    <div id="pd-order-zone">${orderHtml}</div>
+  `;
+
+  if(o && o.status === 'awaiting_payment' && o._checkoutUrl){
+    const linkBox = document.getElementById('pd-order-link-box');
+    const linkInput = document.getElementById('pd-order-link-input');
+    if(linkBox && linkInput){ linkBox.style.display = 'flex'; linkInput.value = o._checkoutUrl; }
+  }
+}
+
+function copyOrderLink(){
+  if(!PD_CURRENT_ORDER?._checkoutUrl) return;
+  navigator.clipboard.writeText(PD_CURRENT_ORDER._checkoutUrl)
+    .then(() => toast('✓ Lien copié'))
+    .catch(() => toast('Impossible de copier — sélectionne le champ et copie manuellement'));
+}
+
+async function createOrderForCurrentProspect(){
+  if(ORDER_ACTION_INFLIGHT || !PD_CURRENT_PROSPECT) return;
+  const errEl = document.getElementById('pd-order-error');
+  if(errEl) errEl.textContent = '';
+
+  const productType = document.getElementById('pd-order-type')?.value;
+  const priceEur = parseFloat(document.getElementById('pd-order-price')?.value);
+  const details = document.getElementById('pd-order-details')?.value?.trim();
+
+  if(!priceEur || priceEur <= 0 || !isFinite(priceEur)){
+    if(errEl) errEl.textContent = 'Indique un prix valide.';
+    return;
+  }
+  if(!supa) return;
+
+  ORDER_ACTION_INFLIGHT = true;
+  const btn = document.getElementById('pd-order-create-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Création...'; }
+  try{
+    const priceCents = Math.round(priceEur * 100);
+    const { error } = await supa.rpc('create_order_for_prospect', {
+      p_prospect_id: PD_CURRENT_PROSPECT.id,
+      p_product_type: productType,
+      p_price: priceCents,
+      p_commande_details: details ? { notes: details } : {},
+    });
+    if(error){
+      console.error('[crm] create_order_for_prospect:', error);
+      if(errEl) errEl.textContent = "Impossible de créer la commande pour le moment.";
+      return;
+    }
+    toast('✓ Commande créée');
+    await openProspectDetail(PD_CURRENT_PROSPECT.id);
+    try{ renderProspectsList(); }catch(e){}
+  } finally {
+    ORDER_ACTION_INFLIGHT = false;
+  }
+}
+
+async function createOrderPayment(orderId){
+  if(ORDER_ACTION_INFLIGHT) return;
+  ORDER_ACTION_INFLIGHT = true;
+  const btn = document.getElementById('pd-pay-btn');
+  if(btn) btn.disabled = true;
+  toast('Génération du lien de paiement...');
+  try{
+    const { data: { session } } = await supa.auth.getSession();
+    if(!session?.access_token){ toast('Connecte-toi pour continuer'); return; }
+    const res = await fetch('/.netlify/functions/create-order-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ order_id: orderId }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if(!res.ok || json.error){
+      console.error('[crm] createOrderPayment:', json);
+      toast(json.message || "Impossible de générer le lien de paiement pour le moment.");
+      return;
+    }
+    if(json.url && PD_CURRENT_ORDER){
+      PD_CURRENT_ORDER.status = 'awaiting_payment';
+      PD_CURRENT_ORDER._checkoutUrl = json.url;
+      renderProspectDetailBody();
+      try{ await navigator.clipboard.writeText(json.url); toast('✓ Lien copié — envoie-le à ton client'); }
+      catch(e){ toast('✓ Lien de paiement créé'); }
+      try{ renderProspectsList(); }catch(e){}
+    }
+  } catch(e){
+    console.error('[crm] createOrderPayment network:', e);
+    toast('Erreur réseau — réessaie dans quelques instants.');
+  } finally {
+    ORDER_ACTION_INFLIGHT = false;
+  }
+}
+
+async function signAndLockCurrentOrder(orderId){
+  if(ORDER_ACTION_INFLIGHT) return;
+  if(!confirm('Envoyer cette commande au studio ? Les détails seront verrouillés définitivement.')) return;
+  ORDER_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('sign_and_lock_order', { p_order_id: orderId });
+    if(error){
+      console.error('[crm] sign_and_lock_order:', error);
+      toast(error.message || "Impossible d'envoyer au studio pour le moment.");
+      return;
+    }
+    toast('✓ Commande envoyée au studio');
+    await openProspectDetail(PD_CURRENT_PROSPECT.id);
+    try{ renderProspectsList(); }catch(e){}
+  } finally {
+    ORDER_ACTION_INFLIGHT = false;
+  }
+}
+
+async function doAdvanceStage(newStage, justification){
+  if(!PD_CURRENT_PROSPECT) return;
+  const { error } = await supa.rpc('advance_prospect_stage', {
+    p_prospect_id: PD_CURRENT_PROSPECT.id, p_new_stage: newStage, p_justification: justification || null,
+  });
+  if(error){
+    console.error('[crm] advance_prospect_stage:', error);
+    toast(error.message || "Impossible de changer l'étape pour le moment.");
+    return;
+  }
+  toast('✓ Étape mise à jour');
+  await openProspectDetail(PD_CURRENT_PROSPECT.id);
+  try{ renderProspectsList(); }catch(e){}
+}
+
+function promptAdvanceStage(){
+  if(!PD_CURRENT_PROSPECT) return;
+  const manualStages = PROSPECT_STAGES.slice(0, PROSPECT_STAGES.indexOf('paid'));
+  const options = manualStages.map((s,i) => `${i+1}. ${PROSPECT_STAGE_LABELS[s]}`).join('\n');
+  const choice = prompt(`Choisis la nouvelle étape (entre le numéro) :\n${options}`);
+  if(!choice) return;
+  const idx = parseInt(choice, 10) - 1;
+  const newStage = manualStages[idx];
+  if(!newStage){ toast('Étape invalide'); return; }
+
+  const currentIdx = PROSPECT_STAGES.indexOf(PD_CURRENT_PROSPECT.stage);
+  const newIdx = PROSPECT_STAGES.indexOf(newStage);
+  if(Math.abs(newIdx - currentIdx) > 1){
+    const justification = prompt(`Tu sautes de "${PROSPECT_STAGE_LABELS[PD_CURRENT_PROSPECT.stage]}" à "${PROSPECT_STAGE_LABELS[newStage]}" — indique pourquoi :`);
+    if(!justification || !justification.trim()){ toast('Justification requise pour sauter une étape'); return; }
+    doAdvanceStage(newStage, justification.trim());
+  } else {
+    doAdvanceStage(newStage, null);
+  }
 }
 
 // FIX (audit 2026-07-29) : les 3 cartes "challenges" étaient 100% codées en
