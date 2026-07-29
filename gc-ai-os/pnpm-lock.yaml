@@ -61,6 +61,66 @@ importers:
         specifier: workspace:*
         version: link:../shared-types
 
+  packages/agents/automation-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/backend-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/ceo-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/commercial-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/content-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
   packages/agents/cto-agent:
     dependencies:
       '@gc-ai-os/agents-core':
@@ -73,7 +133,151 @@ importers:
         specifier: workspace:*
         version: link:../../shared-types
 
+  packages/agents/customer-success-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/data-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
   packages/agents/devops-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/finance-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/frontend-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/legal-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/marketing-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/qa-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/recruitment-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/research-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/security-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/supabase-agent:
+    dependencies:
+      '@gc-ai-os/agents-core':
+        specifier: workspace:*
+        version: link:../../agents-core
+      '@gc-ai-os/model-provider':
+        specifier: workspace:*
+        version: link:../../model-provider
+      '@gc-ai-os/shared-types':
+        specifier: workspace:*
+        version: link:../../shared-types
+
+  packages/agents/support-agent:
     dependencies:
       '@gc-ai-os/agents-core':
         specifier: workspace:*
@@ -125,12 +329,45 @@ importers:
       '@gc-ai-os/agents-core':
         specifier: workspace:*
         version: link:../agents-core
+      '@gc-ai-os/automation-agent':
+        specifier: workspace:*
+        version: link:../agents/automation-agent
+      '@gc-ai-os/backend-agent':
+        specifier: workspace:*
+        version: link:../agents/backend-agent
+      '@gc-ai-os/ceo-agent':
+        specifier: workspace:*
+        version: link:../agents/ceo-agent
+      '@gc-ai-os/commercial-agent':
+        specifier: workspace:*
+        version: link:../agents/commercial-agent
+      '@gc-ai-os/content-agent':
+        specifier: workspace:*
+        version: link:../agents/content-agent
       '@gc-ai-os/cto-agent':
         specifier: workspace:*
         version: link:../agents/cto-agent
+      '@gc-ai-os/customer-success-agent':
+        specifier: workspace:*
+        version: link:../agents/customer-success-agent
+      '@gc-ai-os/data-agent':
+        specifier: workspace:*
+        version: link:../agents/data-agent
       '@gc-ai-os/devops-agent':
         specifier: workspace:*
         version: link:../agents/devops-agent
+      '@gc-ai-os/finance-agent':
+        specifier: workspace:*
+        version: link:../agents/finance-agent
+      '@gc-ai-os/frontend-agent':
+        specifier: workspace:*
+        version: link:../agents/frontend-agent
+      '@gc-ai-os/legal-agent':
+        specifier: workspace:*
+        version: link:../agents/legal-agent
+      '@gc-ai-os/marketing-agent':
+        specifier: workspace:*
+        version: link:../agents/marketing-agent
       '@gc-ai-os/memory':
         specifier: workspace:*
         version: link:../memory
@@ -140,12 +377,30 @@ importers:
       '@gc-ai-os/orchestrator':
         specifier: workspace:*
         version: link:../orchestrator
+      '@gc-ai-os/qa-agent':
+        specifier: workspace:*
+        version: link:../agents/qa-agent
+      '@gc-ai-os/recruitment-agent':
+        specifier: workspace:*
+        version: link:../agents/recruitment-agent
+      '@gc-ai-os/research-agent':
+        specifier: workspace:*
+        version: link:../agents/research-agent
       '@gc-ai-os/security':
         specifier: workspace:*
         version: link:../security
+      '@gc-ai-os/security-agent':
+        specifier: workspace:*
+        version: link:../agents/security-agent
       '@gc-ai-os/shared-types':
         specifier: workspace:*
         version: link:../shared-types
+      '@gc-ai-os/supabase-agent':
+        specifier: workspace:*
+        version: link:../agents/supabase-agent
+      '@gc-ai-os/support-agent':
+        specifier: workspace:*
+        version: link:../agents/support-agent
 
   packages/security:
     dependencies:

@@ -116,8 +116,10 @@ export default function ChatConsole() {
       <div className="console-body" ref={bodyRef}>
         {turns.length === 0 && (
           <p className="empty-state">
-            Écris à l&apos;Orchestrateur. Il route ta demande vers le CTO Agent ou le
-            DevOps Agent selon le sujet, journalise le tour, et répond ici.
+            Écris à l&apos;Orchestrateur. Il route ta demande vers l&apos;un des 19
+            agents (CEO par défaut, ou un spécialiste selon le sujet — technique,
+            marketing, commercial, finance, juridique…), journalise le tour, et
+            répond ici.
           </p>
         )}
 
