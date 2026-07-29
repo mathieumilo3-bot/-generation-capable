@@ -1,14 +1,15 @@
-import { BaseAgent } from "@gc-ai-os/agents-core";
-import type { AgentManifest, Task, TaskResult } from "@gc-ai-os/shared-types";
+import { ConversationalAgent } from "@gc-ai-os/agents-core";
+import type { ModelProvider } from "@gc-ai-os/model-provider";
+import type { AgentManifest } from "@gc-ai-os/shared-types";
 
 /**
  * DevOps Agent (voir docs/gc-ai-os/03-agents.md). CI/CD, déploiement,
- * infrastructure. Tout déploiement en production est une action
- * critique (voir docs/gc-ai-os/06-securite.md) : ce squelette de phase 1
- * ne fait qu'illustrer le contrat d'agent, l'appel réel au connecteur de
- * déploiement est un chantier séparé.
+ * infrastructure. Toute demande de déploiement ou d'action sur
+ * l'infrastructure réelle est traitée comme critique (voir
+ * docs/gc-ai-os/06-securite.md) et explicitement refusée/escaladée tant
+ * que le connecteur de déploiement n'est pas implémenté.
  */
-export class DevopsAgent extends BaseAgent {
+export class DevopsAgent extends ConversationalAgent {
   readonly manifest: AgentManifest = {
     id: "devops-agent",
     name: "DevOps Agent",
@@ -27,10 +28,14 @@ export class DevopsAgent extends BaseAgent {
     model: "claude-sonnet-5",
   };
 
-  protected async execute(task: Task): Promise<TaskResult> {
-    return {
-      status: "escalated",
-      summary: `Déploiement non implémenté dans ce squelette (tâche: ${task.title}). Action classée critique — nécessite le connecteur de déploiement et une validation humaine.`,
-    };
+  protected readonly criticalPatterns = [
+    /d[ée]ploie/i,
+    /mets?\s+en\s+prod/i,
+    /\bdeploy\b/i,
+    /red[ée]marre\s+le\s+serveur/i,
+  ];
+
+  constructor(model: ModelProvider) {
+    super(model);
   }
 }

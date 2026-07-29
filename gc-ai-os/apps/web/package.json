@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@gc-ai-os/model-provider": "workspace:*",
+    "@gc-ai-os/runtime": "workspace:*",
     "@gc-ai-os/shared-types": "workspace:*",
     "next": "^15.0.0",
     "react": "^19.0.0",

@@ -7,6 +7,9 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@gc-ai-os/agents-core": "workspace:*",
+    "@gc-ai-os/memory": "workspace:*",
+    "@gc-ai-os/model-provider": "workspace:*",
+    "@gc-ai-os/security": "workspace:*",
     "@gc-ai-os/shared-types": "workspace:*"
   }
 }

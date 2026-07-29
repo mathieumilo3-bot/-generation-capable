@@ -1,38 +1,174 @@
-/**
- * Point d'entrée du dashboard (voir docs/gc-ai-os/07-interface.md).
- * Squelette de phase 1 : liste statique des vues prévues, sans encore de
- * données réelles branchées sur Supabase. Chaque vue devient une route
- * (`/tasks`, `/agents`, `/memory`, ...) au fur et à mesure de la phase 1.
- */
+"use client";
 
-const views = [
-  { name: "Tâches", description: "Graphe de tâches et sous-tâches, statut, validations en attente" },
-  { name: "Agents", description: "Statut des 19 agents, permissions courantes" },
-  { name: "Mémoire", description: "Explorateur des couches de mémoire, recherche sémantique" },
-  { name: "Workflows", description: "Workflows validés par agent, automatisations n8n/Make" },
-  { name: "Outils", description: "État des connecteurs, quotas, dernière erreur" },
-  { name: "Monitoring", description: "Santé du système, latence, taux d'échec, coût" },
-  { name: "Logs", description: "Journal d'audit, filtrable par agent/capacité/décision" },
-  { name: "Performances", description: "Taux de succès, temps de résolution, taux d'escalade" },
-];
+import type { ChatMessage } from "@gc-ai-os/model-provider";
+import { useEffect, useRef, useState } from "react";
 
-export default function DashboardPage() {
+interface Turn {
+  id: string;
+  role: "user" | "agent";
+  text: string;
+  agentName?: string;
+  escalated?: boolean;
+}
+
+interface ChatApiResponse {
+  agentId: string;
+  agentName: string;
+  taskId: string;
+  text: string;
+  escalated: boolean;
+  modelMode: "anthropic" | "fallback";
+}
+
+export default function ChatConsole() {
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [input, setInput] = useState("");
+  const [pending, setPending] = useState(false);
+  const [modelMode, setModelMode] = useState<"anthropic" | "fallback" | null>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/chat")
+      .then((res) => res.json())
+      .then((data: { modelMode: "anthropic" | "fallback" }) => setModelMode(data.modelMode))
+      .catch(() => setModelMode("fallback"));
+  }, []);
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
+  }, [turns, pending]);
+
+  async function send() {
+    const message = input.trim();
+    if (!message || pending) return;
+
+    const userTurn: Turn = { id: crypto.randomUUID(), role: "user", text: message };
+    const history: ChatMessage[] = turns.map((turn) => ({
+      role: turn.role === "user" ? "user" : "assistant",
+      content: turn.text,
+    }));
+
+    setTurns((prev) => [...prev, userTurn]);
+    setInput("");
+    setPending(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message, history }),
+      });
+
+      if (!res.ok) {
+        const errorBody = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errorBody?.error ?? `Erreur serveur (${res.status})`);
+      }
+
+      const data = (await res.json()) as ChatApiResponse;
+      setModelMode(data.modelMode);
+      setTurns((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "agent",
+          text: data.text,
+          agentName: data.agentName,
+          escalated: data.escalated,
+        },
+      ]);
+    } catch (error) {
+      setTurns((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "agent",
+          text: error instanceof Error ? error.message : "Erreur inconnue.",
+          agentName: "Orchestrateur",
+          escalated: true,
+        },
+      ]);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void send();
+    }
+  }
+
   return (
-    <main style={{ maxWidth: 720, margin: "0 auto", padding: "2rem 1rem", fontFamily: "system-ui, sans-serif" }}>
-      <h1>GC AI OS</h1>
-      <p>
-        Orchestrateur et agents IA spécialisés pilotant Génération Capable.
-        Voir la documentation d&apos;architecture dans{" "}
-        <code>docs/gc-ai-os/</code> du repository <code>-generation-capable</code>.
-      </p>
-      <h2>Vues prévues</h2>
-      <ul>
-        {views.map((view) => (
-          <li key={view.name}>
-            <strong>{view.name}</strong> — {view.description}
-          </li>
+    <div className="console">
+      <header className="console-header">
+        <div className="console-title">
+          <span className="dot" aria-hidden="true" />
+          GC AI OS
+        </div>
+        {modelMode && (
+          <span className={`status-pill ${modelMode === "anthropic" ? "live" : "demo"}`}>
+            {modelMode === "anthropic" ? "IA connectée" : "Mode démonstration hors-ligne"}
+          </span>
+        )}
+      </header>
+
+      <div className="console-body" ref={bodyRef}>
+        {turns.length === 0 && (
+          <p className="empty-state">
+            Écris à l&apos;Orchestrateur. Il route ta demande vers le CTO Agent ou le
+            DevOps Agent selon le sujet, journalise le tour, et répond ici.
+          </p>
+        )}
+
+        {turns.map((turn) => (
+          <div key={turn.id} className={`turn ${turn.role}${turn.escalated ? " escalated" : ""}`}>
+            <span className={`turn-label${turn.escalated ? " escalated" : ""}`}>
+              {turn.role === "user" ? (
+                "Toi"
+              ) : (
+                <>
+                  <span className="agent-dot" aria-hidden="true" />
+                  {turn.agentName}
+                  {turn.escalated ? " · escaladé" : ""}
+                </>
+              )}
+            </span>
+            <div className="bubble">{turn.text}</div>
+          </div>
         ))}
-      </ul>
-    </main>
+
+        {pending && (
+          <div className="turn agent">
+            <span className="turn-label">
+              <span className="agent-dot" aria-hidden="true" />
+              …
+            </span>
+            <div className="bubble">
+              <span className="typing" aria-label="En train de répondre">
+                <span />
+                <span />
+                <span />
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="console-form">
+        <textarea
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Écris un message…"
+          rows={1}
+          disabled={pending}
+          aria-label="Message pour l'Orchestrateur"
+        />
+        <button type="button" onClick={() => void send()} disabled={pending || !input.trim()}>
+          Envoyer
+        </button>
+      </div>
+    </div>
   );
 }

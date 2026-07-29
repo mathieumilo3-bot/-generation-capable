@@ -8,7 +8,7 @@ export interface MemoryRepository {
     projectId?: string,
     agentId?: string,
   ): Promise<MemoryEntry | undefined>;
-  insert(entry: MemoryEntry): Promise<void>;
+  insert(entry: MemoryEntry, embedding: number[]): Promise<void>;
   markSuperseded(id: string, supersededBy: string): Promise<void>;
   searchByEmbedding(
     embedding: number[],
@@ -50,7 +50,8 @@ export class MemoryClient {
       supersededBy: null,
     };
 
-    await this.repository.insert(entry);
+    const embedding = await this.embeddings.embed(`${entry.title}\n${entry.content}`);
+    await this.repository.insert(entry, embedding);
 
     if (previous) {
       await this.repository.markSuperseded(previous.id, entry.id);

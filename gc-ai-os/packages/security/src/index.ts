@@ -4,4 +4,4 @@ export {
   type AuthorizationResult,
   type PermissionStore,
   type AuditSink,
-} from "./authorization.js";
+} from "./authorization";

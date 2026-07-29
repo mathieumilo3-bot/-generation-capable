@@ -1,5 +1,5 @@
 {
-  "name": "@gc-ai-os/devops-agent",
+  "name": "@gc-ai-os/runtime",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,7 +7,12 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@gc-ai-os/agents-core": "workspace:*",
+    "@gc-ai-os/cto-agent": "workspace:*",
+    "@gc-ai-os/devops-agent": "workspace:*",
+    "@gc-ai-os/memory": "workspace:*",
     "@gc-ai-os/model-provider": "workspace:*",
+    "@gc-ai-os/orchestrator": "workspace:*",
+    "@gc-ai-os/security": "workspace:*",
     "@gc-ai-os/shared-types": "workspace:*"
   }
 }

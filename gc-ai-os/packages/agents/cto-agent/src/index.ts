@@ -1,14 +1,16 @@
-import { BaseAgent } from "@gc-ai-os/agents-core";
-import type { AgentManifest, Task, TaskResult } from "@gc-ai-os/shared-types";
+import { ConversationalAgent } from "@gc-ai-os/agents-core";
+import type { ModelProvider } from "@gc-ai-os/model-provider";
+import type { AgentManifest } from "@gc-ai-os/shared-types";
 
 /**
  * CTO Agent (voir docs/gc-ai-os/03-agents.md). Garant de l'architecture
- * technique et des standards de qualité. Squelette de phase 1 : la
- * logique de revue réelle (appel modèle, lecture du code via le
- * connecteur GitHub) est un chantier séparé de ce scaffold
- * d'architecture.
+ * technique et des standards de qualité. Conversationnel dès la phase 1 :
+ * répond aux questions d'architecture, de revue de code, de choix
+ * technique. Les actions réelles (écrire du code, ouvrir une PR) restent
+ * hors scope tant que les connecteurs correspondants ne sont pas
+ * implémentés.
  */
-export class CtoAgent extends BaseAgent {
+export class CtoAgent extends ConversationalAgent {
   readonly manifest: AgentManifest = {
     id: "cto-agent",
     name: "CTO Agent",
@@ -27,10 +29,13 @@ export class CtoAgent extends BaseAgent {
     model: "claude-sonnet-5",
   };
 
-  protected async execute(task: Task): Promise<TaskResult> {
-    return {
-      status: "escalated",
-      summary: `Revue d'architecture non implémentée dans ce squelette (tâche: ${task.title}).`,
-    };
+  protected readonly criticalPatterns = [
+    /d[ée]ploi(e|er|ement)s?\s+en\s+prod/i,
+    /merge\s+(la\s+)?pr\s+.*prod/i,
+    /supprim(e|er)\s+(la\s+)?base\s+de\s+donn[ée]es/i,
+  ];
+
+  constructor(model: ModelProvider) {
+    super(model);
   }
 }

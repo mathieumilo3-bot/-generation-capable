@@ -1,3 +1,3 @@
-export { ConnectorRegistry } from "./registry.js";
-export { ConnectorGateway, type GatewayCallParams } from "./gateway.js";
-export { GithubConnector } from "./github-connector.js";
+export { ConnectorRegistry } from "./registry";
+export { ConnectorGateway, type GatewayCallParams } from "./gateway";
+export { GithubConnector } from "./github-connector";

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { AuthorizationService } from "@gc-ai-os/security";
 import type { ConnectorResult } from "@gc-ai-os/shared-types";
-import type { ConnectorRegistry } from "./registry.js";
+import type { ConnectorRegistry } from "./registry";
 
 export interface GatewayCallParams {
   agentId: string;
