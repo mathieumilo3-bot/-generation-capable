@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="gc-signature-id" content="GC-2026-generation-capable-ambassadors">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GC Ambassadors OS</title>
 <style>
@@ -105,6 +106,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
 .activate-wrap p{font-size:13.5px;color:var(--t2);line-height:1.6;margin-bottom:24px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/gc-shield.js" defer></script>
 </head>
 <body>
 
@@ -584,7 +586,7 @@ Réponses courtes, actionnables, sans préambule. Si on te demande un script, do
 function renderChatHistory(){
   const box = document.getElementById('chat-box');
   box.innerHTML = STATE.chatHistory.map(m =>
-    `<div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${m.text}</div>`
+    `<div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${escapeHtml(m.text)}</div>`
   ).join('');
   box.scrollIntoView({block:'end'});
 }
