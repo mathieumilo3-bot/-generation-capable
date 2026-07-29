@@ -1,5 +1,10 @@
 # 16 — Audit complet (29 juillet 2026)
 
+> **Mise à jour du 29/07, fin de journée** — les 4 chantiers prioritaires
+> issus de cet audit ont été réalisés. Les sections ci-dessous conservent
+> le constat d'origine ; l'état corrigé est indiqué en tête de chaque
+> point traité. Voir `17-operating-manual.md` pour le manuel de direction.
+
 Audit de tout ce qui a été promis depuis le premier jour, comparé à ce
 qui tourne réellement. Chaque ligne a été vérifiée par une commande sur
 le code, pas de mémoire.
@@ -49,22 +54,22 @@ Supabase qui a 9 tables de retard.
 
 | Promesse | Où c'était écrit | État |
 |---|---|---|
-| **Tests automatisés** | 01, 08 (« Vitest + Playwright », « tests obligatoires avant merge ») | **0 fichier de test.** Rien ne protège contre une régression. |
-| **CI/CD GitHub Actions** | 08, agent DevOps | **Aucun workflow.** |
-| **ESLint + Prettier** | 08 (« configuration unique à la racine ») | **Aucune config.** |
-| **Connecteurs réels** | 05 (18 connecteurs listés) | GitHub et Stripe déclarent des capacités, **aucun appel externe n'est fait**. |
+| **Tests automatisés** | 01, 08 | ✅ **58 tests** sur 7 modules critiques (`pnpm test:unit`). |
+| **CI/CD GitHub Actions** | 08, agent DevOps | ✅ `.github/workflows/ci.yml` : typage des 35 packages, tests, build. |
+| **ESLint + Prettier** | 08 | ❌ Toujours absent — le typage strict et les tests couvrent l'essentiel, le formatage reste à faire. |
+| **Connecteurs réels** | 05 (18 connecteurs listés) | 🟡 **Stripe implémenté** (lecture abonnements, MRR, résiliation) via la passerelle. Les 16 autres restent des squelettes. |
 | **Sandbox, rollback, gestion des secrets, chiffrement** | 06 | Documentés, **rien d'implémenté**. |
 | **Historique de conversations** | 04 | Table `conversations` créée, **jamais écrite**. |
 | **Décisions type ADR** | 04 | Table `decisions` créée, **jamais écrite** (les décisions vont dans `memory_entries`). |
 | **Adaptateur Supabase** | 08, 10 | Rien. Uniquement SQLite local. |
 | **Ordonnanceur persistant** | 10 | Un objectif ne peut pas « travailler plusieurs jours » — tout se joue dans une requête HTTP. |
-| **Founder Operating Manual** | Demandé aujourd'hui | Pas encore construit. |
+| **Founder Operating Manual** | Demandé aujourd'hui | ✅ Construit et consommé par les agents **et** le Decision Engine (voir 17). |
 
 ---
 
 ## ⚠️ À refactoriser avant d'aller plus loin
 
-### 1. Le package `connectors` n'est importé par personne — GRAVE
+### 1. Le package `connectors` n'est importé par personne — ✅ CORRIGÉ
 
 ```
 grep ConnectorGateway → 1 seule occurrence, dans un commentaire
@@ -80,7 +85,14 @@ faits*. Ce n'est pas une faille — rien ne s'exécute — mais c'est une
 affirmation d'architecture non tenue, et le premier connecteur réel
 devra la rendre vraie avant de faire le moindre appel.
 
-### 2. Le moteur d'objectifs court-circuite l'Orchestrateur — GRAVE
+**Corrigé.** `ConnectorRegistry` et `ConnectorGateway` sont câblés dans
+le runtime, GitHub et Stripe enregistrés, et l'ingestion de métriques
+Stripe passe obligatoirement par la passerelle. Vérifié en conditions
+réelles : l'appel apparaît dans `audit_log`
+(`metric-ingestion | stripe.read_subscription | allowed | low`), et
+`stripe.create_refund` exige une validation humaine.
+
+### 2. Le moteur d'objectifs court-circuite l'Orchestrateur — ✅ CORRIGÉ
 
 `GoalEngine.execute()` appelle `agents.get(agentId).converse()` en
 direct. Il vérifie bien le RBAC, mais **il ne passe pas par
@@ -92,11 +104,13 @@ ne sont appelés par personne à l'extérieur du package. Trois méthodes
 publiques mortes, et deux chemins d'exécution parallèles qui vont
 diverger.
 
-**À trancher** : soit le GoalEngine passe par l'Orchestrateur, soit
-l'Orchestrateur perd ces méthodes et le doc 02 est corrigé. Laisser les
-deux est le pire choix.
+**Tranché** : le GoalEngine passe désormais par
+`Orchestrator.runAgent()`, seul chemin d'exécution vers un agent.
+`plan()` et `dispatch()`, sans appelant, ont été supprimés. Vérifié :
+une exécution d'objectif à 6 missions produit 6 entrées `.converse` dans
+le journal d'audit.
 
-### 3. La migration Supabase a 9 tables de retard — GRAVE
+### 3. La migration Supabase a 9 tables de retard — ✅ CORRIGÉ
 
 | | Tables |
 |---|---|
@@ -111,20 +125,28 @@ Le README affirme « même structure » — **c'est faux aujourd'hui**.
 Migrer vers Supabase en l'état perdrait tout l'étage objectifs et
 exécutif.
 
-### 4. Le RLS Supabase bloque tout
+**Corrigé** par `supabase/migrations/0002_executive_layer.sql` : les 9
+tables manquantes, avec contraintes de cohérence et index.
+
+### 4. Le RLS Supabase bloque tout — ✅ CORRIGÉ
 
 RLS activée sans aucune politique permissive. Cohérent avec le
-deny-by-default, mais la base est inutilisable telle quelle. À traiter en
-même temps que le point 3.
+deny-by-default, mais la base est inutilisable telle quelle.
 
-### 5. Le scoring ignore le risque de l'inaction
+**Corrigé** dans la même migration : accès complet pour `service_role`
+uniquement, aucun accès anonyme. `audit_log` reste append-only —
+insertion et lecture, jamais modification ni suppression.
+
+### 5. Le scoring ignore le risque de l'inaction — ✅ CORRIGÉ
 
 Observé en test : trésorerie à 4 mois (risque `high`, alignement 1,0) est
 passée **derrière** la résiliation, parce que la formule pénalise le
 risque de *l'action* sans jamais évaluer le risque de *ne rien faire*.
 
-Sur une trésorerie critique, c'est le mauvais arbitrage. À corriger dans
-le Decision Engine.
+Sur une trésorerie critique, c'est le mauvais arbitrage.
+
+**Corrigé** : une proposition urgente et parfaitement alignée voit sa
+pénalité de risque compensée. Couvert par deux tests.
 
 ---
 

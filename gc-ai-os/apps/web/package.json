@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@gc-ai-os/connectors": "workspace:*",
     "@gc-ai-os/executive-brain": "workspace:*",
     "@gc-ai-os/goals": "workspace:*",
     "@gc-ai-os/metrics": "workspace:*",

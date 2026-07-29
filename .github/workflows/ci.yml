@@ -1,0 +1,42 @@
+name: CI
+
+# Protège contre les régressions silencieuses sur le RBAC, l'arbitrage et
+# l'ordonnancement — les endroits où une erreur ne lève aucune exception
+# mais produit une mauvaise décision.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+defaults:
+  run:
+    working-directory: gc-ai-os
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: gc-ai-os/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typage strict (tous les packages)
+        run: pnpm run typecheck:all
+
+      - name: Tests
+        run: pnpm run test:unit
+
+      - name: Build de production
+        run: pnpm --filter @gc-ai-os/web build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

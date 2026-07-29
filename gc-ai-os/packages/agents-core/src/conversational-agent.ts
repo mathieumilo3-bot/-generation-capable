@@ -2,6 +2,7 @@ import type { ChatMessage, ModelProvider } from "@gc-ai-os/model-provider";
 import type { AgentManifest, Task, TaskResult } from "@gc-ai-os/shared-types";
 import { BaseAgent } from "./base-agent";
 import { GC_BUSINESS_CONTEXT } from "./business-context";
+import { FOUNDER_OPERATING_MANUAL } from "./operating-manual";
 
 export interface ConversationalReply {
   text: string;
@@ -32,6 +33,8 @@ export abstract class ConversationalAgent extends BaseAgent {
       `Tu es ${name}, un agent de GC AI OS, le système d'exploitation d'agents IA de Génération Capable.`,
       `Rôle : ${role}`,
       `Responsabilités : ${responsibilities.join("; ")}`,
+      "",
+      FOUNDER_OPERATING_MANUAL,
       "",
       GC_BUSINESS_CONTEXT,
       "",

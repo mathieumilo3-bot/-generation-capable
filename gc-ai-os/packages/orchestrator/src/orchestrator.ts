@@ -2,7 +2,7 @@ import type { AgentRegistry } from "@gc-ai-os/agents-core";
 import type { MemoryClient } from "@gc-ai-os/memory";
 import type { ChatMessage } from "@gc-ai-os/model-provider";
 import type { AuthorizationService } from "@gc-ai-os/security";
-import type { Task, TaskResult } from "@gc-ai-os/shared-types";
+import type { RiskLevel } from "@gc-ai-os/shared-types";
 import type { DomainClassifier } from "./domain-classifier";
 import { RoutingAmbiguityError } from "./errors";
 import { hashText } from "./hash";
@@ -60,41 +60,48 @@ export class Orchestrator {
   }
 
   /**
-   * Planner — décompose une tâche en sous-tâches liées par
-   * `parentTaskId`. Le squelette de phase 1 délègue la décomposition à
-   * l'appelant (humain ou agent CEO/CTO) ; l'auto-décomposition par un
-   * agent planificateur est un chantier de phase 2.
+   * Superviseur — fait exécuter un travail par un agent nommé, en
+   * appliquant le contrôle de permission et la journalisation.
+   *
+   * C'est le **point de passage unique** : le chat comme le moteur
+   * d'objectifs passent par ici. Avant, le moteur d'objectifs appelait
+   * les agents en direct, ce qui créait deux chemins d'exécution
+   * parallèles voués à diverger — l'audit du 29/07 l'a relevé.
    */
-  async plan(
-    parent: Task,
-    subtasks: Array<Omit<Task, "id" | "createdAt" | "updatedAt" | "closedAt" | "parentTaskId">>,
-  ): Promise<Task[]> {
-    return Promise.all(
-      subtasks.map((subtask) =>
-        this.tasks.create({ ...subtask, parentTaskId: parent.id }),
-      ),
-    );
-  }
+  async runAgent(input: {
+    agentId: string;
+    prompt: string;
+    riskLevel: RiskLevel;
+    taskId: string | null;
+  }): Promise<{ text: string; escalated: boolean }> {
+    const agent = this.agents.get(input.agentId);
+    if (!agent) {
+      return { text: `Agent introuvable : ${input.agentId}`, escalated: true };
+    }
 
-  /**
-   * Superviseur — assigne la tâche à l'agent routé, exécute, persiste le
-   * résultat. Les échecs remontent tels quels : la politique de retry /
-   * escalade est un chantier de phase 2, volontairement absent de ce
-   * squelette pour ne pas figer une stratégie non encore éprouvée.
-   */
-  async dispatch(task: Task, requiredDomain: string): Promise<TaskResult> {
-    const agent = this.route(requiredDomain);
-    await this.tasks.assign(task.id, agent.manifest.id);
-    await this.tasks.updateStatus(task.id, "in_progress");
+    if (this.options.authorization) {
+      const auth = await this.options.authorization.authorize({
+        agentId: input.agentId,
+        roleId: input.agentId,
+        capability: `${input.agentId}.converse`,
+        riskLevel: input.riskLevel,
+        paramsHash: hashText(input.prompt),
+        taskId: input.taskId,
+      });
 
-    const result = await agent.handleTask(task);
+      if (auth.decision === "denied") {
+        return {
+          text: `Action refusée par le RBAC : ${input.agentId} n'a pas la permission requise.`,
+          escalated: true,
+        };
+      }
+    }
 
-    await this.tasks.updateStatus(
-      task.id,
-      result.status === "completed" ? "completed" : "failed",
-    );
+    if (!isConversable(agent)) {
+      return { text: `Agent ${input.agentId} non conversationnel.`, escalated: true };
+    }
 
-    return result;
+    return agent.converse([{ role: "user", content: input.prompt }]);
   }
 
   /**

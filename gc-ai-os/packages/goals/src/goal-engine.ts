@@ -1,12 +1,11 @@
-import type { AgentRegistry } from "@gc-ai-os/agents-core";
 import { BudgetExhaustedError, type ExecutiveEngine } from "@gc-ai-os/executive";
 import type { MemoryClient } from "@gc-ai-os/memory";
-import type { AuthorizationService } from "@gc-ai-os/security";
 import type {
   Deliverable,
   Mission,
   Objective,
   ObjectiveHorizon,
+  RiskLevel,
 } from "@gc-ai-os/shared-types";
 import type { SkillRegistry } from "@gc-ai-os/telemetry";
 import { slug, type Planner } from "./planner";
@@ -30,14 +29,18 @@ export interface PursueResult {
   haltReason: string | null;
 }
 
-interface Conversable {
-  converse(
-    history: Array<{ role: "system" | "user" | "assistant"; content: string }>,
-  ): Promise<{ text: string; escalated: boolean }>;
-}
-
-function isConversable(agent: unknown): agent is Conversable {
-  return typeof (agent as Partial<Conversable>).converse === "function";
+/**
+ * Contrat minimal attendu de l'Orchestrateur. Déclaré ici plutôt
+ * qu'importé pour éviter une dépendance circulaire entre les deux
+ * packages — le runtime câble l'implémentation réelle.
+ */
+export interface AgentRunner {
+  runAgent(input: {
+    agentId: string;
+    prompt: string;
+    riskLevel: RiskLevel;
+    taskId: string | null;
+  }): Promise<{ text: string; escalated: boolean }>;
 }
 
 /**
@@ -69,10 +72,10 @@ export class GoalEngine {
       deliverables: DeliverableStore;
       planner: Planner;
       executive: ExecutiveEngine;
-      agents: AgentRegistry;
+      /** L'Orchestrateur — seul chemin d'exécution vers un agent. */
+      runner: AgentRunner;
       skills: SkillRegistry;
       validator: DeliverableValidator;
-      authorization?: AuthorizationService;
       memory?: MemoryClient;
     },
   ) {}
@@ -321,51 +324,33 @@ export class GoalEngine {
   }
 
   /**
-   * Fait produire le livrable par l'agent affecté. Passe par le RBAC
-   * avant toute exécution : une mission ne contourne jamais les
-   * permissions parce qu'elle vient d'un objectif plutôt que d'un chat.
+   * Fait produire le livrable par l'agent affecté, **via
+   * l'Orchestrateur**. Celui-ci applique le RBAC et la journalisation :
+   * une mission ne contourne jamais les permissions parce qu'elle vient
+   * d'un objectif plutôt que d'un chat.
    */
   private async execute(
     mission: Mission,
     agentId: string,
     critique: string,
   ): Promise<{ kind: "produced"; content: string } | { kind: "escalated"; reason: string }> {
-    if (this.deps.authorization) {
-      const auth = await this.deps.authorization.authorize({
-        agentId,
-        roleId: agentId,
-        capability: `${agentId}.converse`,
-        riskLevel: mission.riskLevel,
-        paramsHash: slug(mission.id),
-        taskId: null,
-      });
-      if (auth.decision === "denied") {
-        return { kind: "escalated", reason: `RBAC : ${agentId} n'a pas la permission requise.` };
-      }
-    }
-
-    const agent = this.deps.agents.get(agentId);
-    if (!agent || !isConversable(agent)) {
-      return { kind: "escalated", reason: `Agent ${agentId} introuvable ou non conversationnel.` };
-    }
-
     const correction = critique
       ? `\n\nLa tentative précédente a été rejetée à la validation pour cette raison :\n` +
         `« ${critique} »\nCorrige précisément ce point dans cette nouvelle version.`
       : "";
 
-    const reply = await agent.converse([
-      {
-        role: "user",
-        content:
-          `Mission : ${mission.title}\n\n` +
-          `Brief :\n${mission.brief}\n\n` +
-          `Critère de réussite : ${mission.acceptanceCriteria}\n\n` +
-          `Produis directement le livrable en Markdown, structuré et actionnable. ` +
-          `Pas de préambule, pas de méta-commentaire sur ta démarche.` +
-          correction,
-      },
-    ]);
+    const reply = await this.deps.runner.runAgent({
+      agentId,
+      riskLevel: mission.riskLevel,
+      taskId: null,
+      prompt:
+        `Mission : ${mission.title}\n\n` +
+        `Brief :\n${mission.brief}\n\n` +
+        `Critère de réussite : ${mission.acceptanceCriteria}\n\n` +
+        `Produis directement le livrable en Markdown, structuré et actionnable. ` +
+        `Pas de préambule, pas de méta-commentaire sur ta démarche.` +
+        correction,
+    });
 
     if (reply.escalated) {
       return { kind: "escalated", reason: reply.text };

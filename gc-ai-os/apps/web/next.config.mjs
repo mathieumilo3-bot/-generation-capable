@@ -13,6 +13,7 @@ const nextConfig = {
     "@gc-ai-os/executive",
     "@gc-ai-os/goals",
     "@gc-ai-os/factory",
+    "@gc-ai-os/connectors",
     "@gc-ai-os/metrics",
     "@gc-ai-os/executive-brain",
     "@gc-ai-os/people",

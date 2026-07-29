@@ -1,3 +1,4 @@
+import { priorityForDomain, priorityWeight } from "@gc-ai-os/agents-core";
 import type { BrainProposal, Effort, Horizon, Risk } from "./types";
 
 /**
@@ -9,11 +10,12 @@ import type { BrainProposal, Effort, Horizon, Risk } from "./types";
  * 5 ans — en critères pondérés et calculables.
  */
 export const DECISION_WEIGHTS = {
-  alignment: 0.25,
-  roi: 0.25,
+  alignment: 0.2,
+  roi: 0.2,
   confidence: 0.2,
   urgency: 0.15,
-  safety: 0.15,
+  safety: 0.1,
+  priority: 0.15,
 } as const;
 
 /**
@@ -25,6 +27,18 @@ export const TIE_THRESHOLD = 0.05;
 
 const EFFORT_COST: Record<Effort, number> = { low: 0.2, medium: 0.5, high: 1 };
 const RISK_LEVEL: Record<Risk, number> = { low: 0.15, medium: 0.5, high: 1 };
+
+/**
+ * Une action urgente et parfaitement alignée est rarement risquée « pour
+ * rien » : c'est le plus souvent l'inaction qui l'est. Sans ce
+ * correctif, une trésorerie critique — action à risque élevé — passait
+ * derrière un problème moins grave mais confortable à traiter. Observé
+ * en conditions réelles, corrigé ici.
+ */
+function inactionRisk(proposal: BrainProposal): number {
+  const urgent = proposal.horizon === "immediate";
+  return urgent && proposal.alignment >= 0.9 ? 0.8 : 0;
+}
 const URGENCY: Record<Horizon, number> = {
   immediate: 1,
   month: 0.65,
@@ -82,7 +96,10 @@ export function scoreProposal(proposal: BrainProposal): ScoredProposal {
     roi: roiOf(proposal),
     confidence: confidenceOf(proposal),
     urgency: URGENCY[proposal.horizon],
-    safety: 1 - RISK_LEVEL[proposal.risk],
+    // La sûreté compare le risque d'agir à celui de ne pas agir : ne
+    // rien faire n'est jamais gratuit par défaut.
+    safety: 1 - Math.max(0, RISK_LEVEL[proposal.risk] - inactionRisk(proposal)),
+    priority: priorityWeight(priorityForDomain(proposal.executionDomain)),
   };
 
   const score =
@@ -90,7 +107,8 @@ export function scoreProposal(proposal: BrainProposal): ScoredProposal {
     breakdown.roi * DECISION_WEIGHTS.roi +
     breakdown.confidence * DECISION_WEIGHTS.confidence +
     breakdown.urgency * DECISION_WEIGHTS.urgency +
-    breakdown.safety * DECISION_WEIGHTS.safety;
+    breakdown.safety * DECISION_WEIGHTS.safety +
+    breakdown.priority * DECISION_WEIGHTS.priority;
 
   return {
     proposal,
@@ -102,7 +120,8 @@ export function scoreProposal(proposal: BrainProposal): ScoredProposal {
       `confiance ${breakdown.confidence.toFixed(2)} ` +
       `(${proposal.evidence.filter((e) => e.value !== null).length} métrique(s) mesurée(s)) · ` +
       `urgence ${breakdown.urgency.toFixed(2)} · ` +
-      `sûreté ${breakdown.safety.toFixed(2)}`,
+      `sûreté ${breakdown.safety.toFixed(2)} · ` +
+      `priorité ${breakdown.priority.toFixed(2)} (${priorityForDomain(proposal.executionDomain)})`,
   };
 }
 

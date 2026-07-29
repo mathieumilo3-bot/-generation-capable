@@ -30,6 +30,7 @@ import {
   ModelPlanner,
   PlaybookPlanner,
 } from "@gc-ai-os/goals";
+import { ConnectorGateway, ConnectorRegistry, GithubConnector, StripeConnector } from "@gc-ai-os/connectors";
 import { MetricRegistry } from "@gc-ai-os/metrics";
 import { HumanBrain } from "@gc-ai-os/people";
 import { SkillRegistry } from "@gc-ai-os/telemetry";
@@ -59,6 +60,9 @@ export interface GcRuntime {
   metrics: MetricRegistry;
   humanBrain: HumanBrain;
   executiveStore: SqliteExecutiveStore;
+  /** Passerelle de connecteurs — seul chemin vers un outil externe. */
+  gateway: ConnectorGateway;
+  connectors: ConnectorRegistry;
   /** "anthropic" si ANTHROPIC_API_KEY est configurée, "fallback" sinon. */
   modelMode: "anthropic" | "fallback";
   /** Nombre d'agents fabriqués par la Factory rechargés au démarrage. */
@@ -160,6 +164,28 @@ export function bootstrapRuntime(dbPath: string): GcRuntime {
   // rend un employé IA créé hier réellement opérationnel aujourd'hui.
   const published = loadPublishedAgents(goalStore, registry, model, store);
 
+  // Connecteurs : enregistrés et exposés via la passerelle, qui applique
+  // le RBAC et journalise chaque appel. Avant la réconciliation du
+  // 29/07, ce package n'était importé nulle part — la garantie était
+  // vraie sur le papier et câblée à rien.
+  const connectors = new ConnectorRegistry();
+  connectors.register(new GithubConnector());
+  connectors.register(new StripeConnector());
+  const gateway = new ConnectorGateway(connectors, authorization);
+
+  // L'ingestion de métriques est un acteur système à part entière : elle
+  // a son propre rôle RBAC, distinct des agents.
+  for (const connector of connectors.list()) {
+    for (const capability of connector.capabilities) {
+      store.grantPermission({
+        roleId: "metric-ingestion",
+        capability: `${connector.id}.${capability.name}`,
+        allowed: capability.riskLevel === "low",
+        requiresHumanValidation: capability.riskLevel === "critical",
+      });
+    }
+  }
+
   const goalEngine = new GoalEngine({
     objectives: objectiveStoreOf(goalStore),
     keyResults: keyResultStoreOf(goalStore),
@@ -167,10 +193,11 @@ export function bootstrapRuntime(dbPath: string): GcRuntime {
     deliverables: deliverableStoreOf(goalStore),
     planner: new ModelPlanner(model, new PlaybookPlanner()),
     executive,
-    agents: registry,
+    // Le moteur d'objectifs délègue à l'Orchestrateur : un seul chemin
+    // de routage pour tout le système (réconciliation du 29/07).
+    runner: orchestrator,
     skills,
     validator: new DeliverableValidator(model),
-    authorization,
     memory,
   });
 
@@ -196,6 +223,8 @@ export function bootstrapRuntime(dbPath: string): GcRuntime {
     metrics,
     humanBrain,
     executiveStore,
+    gateway,
+    connectors,
     modelMode: model.mode,
     publishedAgentCount: published,
   };
