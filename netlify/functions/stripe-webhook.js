@@ -19,8 +19,15 @@
 //   URL      : https://generationcapable.fr/.netlify/functions/stripe-webhook
 //   Events   : checkout.session.completed, customer.subscription.updated,
 //              customer.subscription.deleted, invoice.payment_failed,
-//              charge.refunded
+//              charge.refunded, charge.dispute.created
 //   → copier le "Signing secret" (whsec_...) dans STRIPE_WEBHOOK_SECRET (Netlify).
+//
+// Deux flux distincts partagent ce webhook, différenciés par la présence de
+// metadata.order_id (posé uniquement par create-order-checkout-session.js) :
+//   1. Abonnement Génération Capable 67€/mois (metadata.offer) — inchangé.
+//   2. Commande CRM vendeur (metadata.order_id) — commande → sales → commission
+//      → wallet. Le vendeur ne déclare jamais "payé" lui-même : c'est ici,
+//      et seulement ici, que orders.status passe à 'paid'.
 
 const crypto = require('crypto');
 const { supabaseAdminRequest, jsonResponse, ensureAuthUserForEmail } = require('./_lib/supabase-admin');
@@ -122,6 +129,11 @@ async function recordAndProcess(stripeEvent) {
 
   switch (stripeEvent.type) {
     case 'checkout.session.completed': {
+      if (obj.metadata?.order_id) {
+        await handleOrderPaid(obj, stripeEvent);
+        break;
+      }
+
       const email = (obj.customer_details?.email || obj.customer_email || '').toLowerCase();
       const offer = obj.metadata?.offer || 'gc_67';
       if (email) {
@@ -138,6 +150,7 @@ async function recordAndProcess(stripeEvent) {
           headers: { Prefer: 'return=minimal' },
           body: JSON.stringify({
             stripe_session_id: obj.id || null,
+            stripe_payment_intent: obj.payment_intent || null,
             stripe_customer_id: obj.customer || null,
             buyer_user_id: user.id,
             product_id: offer,
@@ -177,9 +190,25 @@ async function recordAndProcess(stripeEvent) {
     }
 
     case 'charge.refunded': {
-      if (obj.customer) {
+      // Une commande CRM (paiement unique) et un abonnement (paiement
+      // récurrent) peuvent tous deux être remboursés — on tente d'abord de
+      // retrouver une commande via le payment_intent (obj.payment_intent
+      // existe sur l'objet Charge), sinon on retombe sur le comportement
+      // existant (désactivation d'abonnement par stripe_customer_id).
+      const handledAsOrder = await handleOrderRefund(obj);
+      if (!handledAsOrder && obj.customer) {
         await updateSubscriberByCustomerId(obj.customer, { is_active: false });
       }
+      break;
+    }
+
+    case 'charge.dispute.created': {
+      // Litige Stripe : on gèle la commission concernée (statut 'disputed',
+      // exclue du solde disponible/en attente) plutôt que de la laisser
+      // comptée normalement pendant l'instruction du litige. Résolution
+      // manuelle par l'admin ensuite (hors automatisation Stripe : Stripe ne
+      // notifie pas de façon fiable et automatisable une résolution positive).
+      await freezeCommissionForDispute(obj);
       break;
     }
 
@@ -195,6 +224,166 @@ async function upsertSubscriberByUserId(userId, fields) {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ user_id: userId, ...fields, updated_at: new Date().toISOString() })
+  });
+}
+
+// ── Commandes CRM : commande → vente → commission → wallet ──
+//
+// Le vendeur ne déclare jamais lui-même qu'une commande est payée
+// (advance_prospect_stage() en base refuse explicitement l'étape "paid") :
+// c'est cette fonction, déclenchée uniquement par un événement Stripe
+// signé, qui fait foi.
+async function handleOrderPaid(session, stripeEvent) {
+  const orderId = session.metadata.order_id;
+
+  const orderResp = await supabaseAdminRequest(
+    `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,prospect_id,seller_user_id,product_type,price,commission_rate,status`
+  );
+  const orders = await orderResp.json();
+  const order = Array.isArray(orders) ? orders[0] : null;
+  if (!order) {
+    console.error('[stripe-webhook] handleOrderPaid: commande introuvable', orderId);
+    return;
+  }
+  if (order.status === 'paid') {
+    // Déjà traité par un événement antérieur (ne devrait pas arriver grâce
+    // à la déduplication sur stripeEvent.id, mais reste un garde-fou honnête).
+    console.log('[stripe-webhook] handleOrderPaid: commande déjà payée, ignoré', orderId);
+    return;
+  }
+
+  const productLabels = {
+    site_internet: 'Site Internet', ia: 'Solution IA',
+    generation_capable: 'Génération Capable', accompagnement: 'Accompagnement', autre: 'Prestation',
+  };
+
+  const saleResp = await supabaseAdminRequest('/rest/v1/sales', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({
+      order_id: order.id,
+      seller_user_id: order.seller_user_id,
+      stripe_session_id: session.id,
+      stripe_payment_intent: session.payment_intent || null,
+      stripe_customer_id: session.customer || null,
+      product_id: order.product_type,
+      product_name: productLabels[order.product_type] || 'Prestation',
+      amount: session.amount_total ?? order.price,
+      currency: session.currency || 'eur',
+      status: 'completed',
+      stripe_event_id: stripeEvent.id,
+      source: 'crm_order',
+    })
+  });
+  const sales = await saleResp.json();
+  const sale = Array.isArray(sales) ? sales[0] : null;
+  if (!sale) {
+    console.error('[stripe-webhook] handleOrderPaid: échec création de la vente pour la commande', orderId);
+    return;
+  }
+
+  const commissionAmount = Math.round((session.amount_total ?? order.price) * order.commission_rate);
+  await supabaseAdminRequest('/rest/v1/commissions', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      sale_id: sale.id,
+      order_id: order.id,
+      seller_id: order.seller_user_id,
+      amount: commissionAmount,
+      percentage: order.commission_rate,
+      status: 'pending',
+      // 15 jours de délai avant maturation (voir get_my_wallet() : calculé
+      // en direct depuis available_at, jamais un statut qu'un job devrait
+      // faire progresser).
+      available_at: new Date(Date.now() + 15 * 24 * 3600 * 1000).toISOString(),
+    })
+  });
+
+  await supabaseAdminRequest(`/rest/v1/orders?id=eq.${encodeURIComponent(order.id)}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ status: 'paid', updated_at: new Date().toISOString() })
+  });
+
+  const prospectResp = await supabaseAdminRequest(`/rest/v1/prospects?id=eq.${encodeURIComponent(order.prospect_id)}&select=stage`);
+  const prospects = await prospectResp.json();
+  const previousStage = prospects?.[0]?.stage || null;
+  await supabaseAdminRequest(`/rest/v1/prospects?id=eq.${encodeURIComponent(order.prospect_id)}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ stage: 'paid', updated_at: new Date().toISOString() })
+  });
+  await supabaseAdminRequest('/rest/v1/prospect_stage_history', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      prospect_id: order.prospect_id,
+      seller_user_id: order.seller_user_id,
+      from_stage: previousStage,
+      to_stage: 'paid',
+      justification: 'Paiement confirmé automatiquement par Stripe',
+    })
+  });
+}
+
+// Remboursement d'une commande CRM : retrouve la vente via le
+// payment_intent du Charge remboursé. Si aucune vente CRM ne correspond
+// (ex: remboursement d'un abonnement), renvoie false pour laisser
+// l'appelant traiter le cas abonnement existant.
+async function handleOrderRefund(charge) {
+  if (!charge.payment_intent) return false;
+
+  const saleResp = await supabaseAdminRequest(
+    `/rest/v1/sales?stripe_payment_intent=eq.${encodeURIComponent(charge.payment_intent)}&order_id=not.is.null&select=id,order_id`
+  );
+  const sales = await saleResp.json();
+  const sale = Array.isArray(sales) ? sales[0] : null;
+  if (!sale) return false;
+
+  const commResp = await supabaseAdminRequest(`/rest/v1/commissions?sale_id=eq.${encodeURIComponent(sale.id)}&select=id,status,amount,seller_id,order_id`);
+  const commissions = await commResp.json();
+
+  for (const c of (commissions || [])) {
+    if (c.status === 'pending') {
+      // Pas encore versée (mûre ou non) : simple annulation, aucune dette.
+      await supabaseAdminRequest(`/rest/v1/commissions?id=eq.${encodeURIComponent(c.id)}`, {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'cancelled', updated_at: new Date().toISOString() })
+      });
+    } else if (c.status === 'withdrawn') {
+      // Déjà versée au vendeur : dette qui sera déduite du prochain retrait,
+      // jamais une réécriture silencieuse de la ligne historique déjà payée.
+      await supabaseAdminRequest('/rest/v1/commissions', {
+        method: 'POST', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          sale_id: sale.id, order_id: c.order_id, seller_id: c.seller_id,
+          amount: -Math.abs(c.amount), percentage: 0, status: 'debt',
+        })
+      });
+    }
+  }
+
+  await supabaseAdminRequest(`/rest/v1/orders?id=eq.${encodeURIComponent(sale.order_id)}`, {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ status: 'refunded', updated_at: new Date().toISOString() })
+  });
+
+  return true;
+}
+
+async function freezeCommissionForDispute(charge) {
+  if (!charge.payment_intent) return;
+  const saleResp = await supabaseAdminRequest(
+    `/rest/v1/sales?stripe_payment_intent=eq.${encodeURIComponent(charge.payment_intent)}&order_id=not.is.null&select=id`
+  );
+  const sales = await saleResp.json();
+  const sale = Array.isArray(sales) ? sales[0] : null;
+  if (!sale) return;
+
+  await supabaseAdminRequest(`/rest/v1/commissions?sale_id=eq.${encodeURIComponent(sale.id)}&status=eq.pending`, {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ status: 'disputed', updated_at: new Date().toISOString() })
   });
 }
 
