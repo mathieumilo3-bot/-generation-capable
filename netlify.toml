@@ -1,2 +1,14 @@
 [build]
   functions = "netlify/functions"
+
+# En-têtes de sécurité de base. Pas de Content-Security-Policy : le site
+# repose entièrement sur des <script> et des attributs onclick= inline sans
+# nonce, une CSP stricte casserait toute interactivité. Ajouter une CSP est
+# un chantier à part (nonces ou hashes sur chaque script inline) — voir audit.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"

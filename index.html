@@ -34,8 +34,9 @@ async function activateSubscription(){
   STATE.memberEmail = emailVal;
 
   // Crée le compte Supabase AVANT le paiement, avec le même email que sur Stripe.
-  // Le webhook Stripe (fonction Netlify séparée) retrouvera ce compte par email
-  // pour activer subscribers.is_active une fois le paiement confirmé.
+  // Le webhook Stripe (netlify/functions/stripe-webhook.js) retrouvera ce
+  // compte par email pour activer subscribers.is_active une fois le
+  // paiement confirmé — jamais avant.
   if(typeof supa !== 'undefined' && supa){
     try{
       const { error } = await supa.auth.signUp({
@@ -50,9 +51,38 @@ async function activateSubscription(){
     }catch(e){ console.warn('Compte Supabase non créé (Supabase pas encore configuré) :', e); }
   }
 
-  window.open(STRIPE_LINKS.eco_monthly, '_blank');
+  await redirectToStripeCheckout('gc_67', emailVal, 'sub-confirm-btn');
   closeMo('mo-subscribe');
-  toast('Compte créé. Finalise ton paiement dans l\'onglet Stripe →');
+}
+
+// Crée une session Stripe Checkout côté serveur et redirige vers Stripe.
+// Remplace l'ancien lien statique (identique pour toutes les offres) et
+// l'ancienne activation "sur simple clic" : l'accès n'est débloqué qu'après
+// confirmation réelle du paiement (voir handleCheckoutReturn()).
+async function redirectToStripeCheckout(offer, email, submitBtnId){
+  const btn = submitBtnId ? document.getElementById(submitBtnId) : null;
+  if(btn) btn.disabled = true;
+  toast('🔒 Préparation du paiement sécurisé...');
+  try{
+    const resp = await fetch('/.netlify/functions/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ offer, email })
+    });
+    const data = await resp.json();
+    if(!resp.ok || data.error || !data.url){
+      console.error('[checkout]', data.error, data.message || '');
+      toast('❌ ' + (data.message || 'Paiement indisponible — réessaie dans un instant'));
+      if(btn) btn.disabled = false;
+      return;
+    }
+    saveState();
+    window.location.href = data.url;
+  }catch(e){
+    console.error('[checkout] NETWORK_ERROR', e);
+    toast('❌ Erreur réseau — réessaie');
+    if(btn) btn.disabled = false;
+  }
 }
 
 function renderAll(){
@@ -470,7 +500,6 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 .admin-lock{font-size:40px;margin-bottom:16px}
 .admin-t{font-size:20px;font-weight:800;letter-spacing:-0.4px;margin-bottom:6px}
 .admin-s{font-size:13px;color:var(--t2);margin-bottom:28px}
-.admin-err{font-size:12px;color:var(--red);margin-bottom:12px;display:none}
 
 /* ─── COMMISSION ROW ─── */
 .cr{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--b);gap:12px}
@@ -699,44 +728,6 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 .pw-inline-title{font-size:13px;font-weight:800;color:var(--gold);margin-bottom:2px}
 .pw-inline-sub{font-size:12px;color:var(--t2)}
 
-.plan-toggle{flex:1;border:1.5px solid var(--b);border-radius:12px;padding:14px 12px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02)}
-.plan-toggle:hover{border-color:var(--bh)}
-.plan-toggle.on{border-color:var(--gold);background:rgba(245,197,24,.08)}
-
-/* ═══════════════ MODULE 1 — FAÇADE D'ENTRÉE (lettre + paiement) ═══════════════ */
-.m1-facade{position:relative;background:linear-gradient(160deg,rgba(245,197,24,.1),rgba(41,151,255,.04) 60%,var(--bg1) 100%);border:1.5px solid rgba(245,197,24,.28);border-radius:20px;padding:32px;margin-bottom:36px;overflow:hidden}
-.m1-facade::before{content:'';position:absolute;top:-40%;right:-15%;width:300px;height:300px;background:radial-gradient(circle,rgba(245,197,24,.12),transparent 70%);pointer-events:none}
-.m1-top-row{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;position:relative;z-index:1}
-.m1-badge-num{width:54px;height:54px;border-radius:15px;background:linear-gradient(160deg,#ffd43d,var(--gold));display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:800;color:#1a1300;flex-shrink:0;box-shadow:0 8px 20px rgba(245,197,24,.3)}
-.m1-eyebrow{font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
-.m1-title{font-size:21px;font-weight:800;letter-spacing:-.4px;margin-bottom:6px}
-.m1-desc{font-size:13px;color:var(--t2);line-height:1.6;max-width:520px}
-.m1-status-pill{margin-left:auto;flex-shrink:0;font-size:11px;font-weight:800;padding:6px 13px;border-radius:20px;white-space:nowrap}
-
-.m1-steps-row{display:flex;gap:12px;margin-bottom:22px;position:relative;z-index:1}
-.m1-step-card{flex:1;background:rgba(0,0,0,.22);border:1px solid var(--b);border-radius:12px;padding:16px 18px}
-.m1-step-card.done{border-color:rgba(48,209,88,.3);background:rgba(48,209,88,.05)}
-.m1-step-ico{font-size:18px;margin-bottom:8px}
-.m1-step-t{font-size:12.5px;font-weight:700;margin-bottom:3px}
-.m1-step-d{font-size:11px;color:var(--t3);line-height:1.4}
-.m1-step-state{font-size:10.5px;font-weight:800;margin-top:8px;display:inline-block}
-
-.m1-price-row{display:flex;align-items:center;gap:18px;background:rgba(0,0,0,.25);border:1px solid var(--b);border-radius:14px;padding:18px 22px;position:relative;z-index:1;flex-wrap:wrap}
-.m1-price-num{font-size:34px;font-weight:800;letter-spacing:-1.2px;color:var(--gold)}
-.m1-price-old{font-size:15px;color:var(--t3);text-decoration:line-through;font-weight:600;margin-left:6px}
-.m1-price-label{font-size:11.5px;color:var(--t2);margin-top:2px}
-.m1-slots-wrap{flex:1;min-width:180px}
-.m1-slots-label{font-size:10.5px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;justify-content:space-between}
-.m1-slots-bar{height:7px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden}
-.m1-slots-fill{height:100%;background:linear-gradient(90deg,#ffd43d,var(--gold));border-radius:7px;transition:width .6s var(--ease)}
-.m1-slots-note{font-size:10.5px;color:var(--orange);font-weight:700;margin-top:6px}
-
-@media(max-width:700px){
-  .m1-steps-row{flex-direction:column}
-  .m1-top-row{flex-direction:column}
-  .m1-status-pill{margin-left:0}
-  .m1-price-row{flex-direction:column;align-items:flex-start}
-}
 
 /* ═══════════════ APERÇU TOP 5 — gratuit, dans Opportunités ═══════════════ */
 .preview-top5{background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:24px;position:relative}
@@ -2346,8 +2337,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div style="background:var(--bg1);border:1px solid var(--b);border-radius:10px;padding:16px 18px">
           <div style="font-size:11px;font-weight:800;color:var(--gold);margin-bottom:6px">OFFRES ET TARIFS</div>
           <div style="font-size:13px;color:var(--t2);line-height:1.7">
-            <strong style="color:var(--t1)">Accès Académie (formation)</strong> — 97 € TTC (tarif fondateur, limité aux 100 premiers membres) puis 247 € TTC. Paiement unique. Accès à vie aux modules 1 à 7 et à l'ensemble des fiches terrain.<br><br>
-            <strong style="color:var(--t1)">Accès Écosystème (abonnement)</strong> — 67 € TTC/mois. Accès au Centre d'Opportunités, CRM & Outils, Challenges, Coaching privé, Communauté, Ressources et Commissions. Résiliable à tout moment depuis l'espace profil.
+            <strong style="color:var(--t1)">Accès Génération Capable (abonnement)</strong> — 67 € TTC/mois. Accès à l'intégralité de la plateforme : modules de formation, Centre d'Opportunités, CRM & Outils, Challenges, Coaching privé, Communauté, Ressources et Commissions. Résiliable à tout moment depuis l'espace profil.
           </div>
         </div>
 
@@ -2368,7 +2358,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 
         <div style="background:var(--bg1);border:1px solid var(--b);border-radius:10px;padding:16px 18px">
           <div style="font-size:11px;font-weight:800;color:var(--gold);margin-bottom:6px">RÉSILIATION DE L'ABONNEMENT</div>
-          <div style="font-size:13px;color:var(--t2);line-height:1.7">L'abonnement mensuel ou semestriel est résiliable à tout moment depuis l'espace Profil. La résiliation prend effet à la fin de la période en cours. Aucun remboursement au prorata n'est accordé pour la période en cours.</div>
+          <div style="font-size:13px;color:var(--t2);line-height:1.7">L'abonnement mensuel est résiliable à tout moment depuis l'espace Profil. La résiliation prend effet à la fin de la période en cours. Aucun remboursement au prorata n'est accordé pour la période en cours.</div>
         </div>
 
         <div style="background:var(--bg1);border:1px solid var(--b);border-radius:10px;padding:16px 18px">
@@ -2554,13 +2544,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
     <div class="topbar"><div class="tb-title">Administration</div></div>
     <div class="admin-gate">
       <div class="admin-card">
-        <div class="admin-lock">🔐</div>
-        <div class="admin-t">Accès restreint</div>
-        <div class="admin-s">Réservé au fondateur. Entrez le mot de passe pour accéder au back-office.</div>
-        <div class="admin-err" id="admin-err">Mot de passe incorrect.</div>
-        <label>Mot de passe fondateur</label>
-        <input class="field" type="password" id="admin-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdmin()">
-        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:4px" onclick="checkAdmin()">Accéder →</button>
+        <div class="admin-lock" id="admin-gate-icon">🔐</div>
+        <div class="admin-t" id="admin-gate-title">Vérification en cours...</div>
+        <div class="admin-s" id="admin-gate-sub">Confirmation de ton accès administrateur auprès du serveur.</div>
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:4px;display:none" id="admin-gate-action">Se connecter →</button>
       </div>
     </div>
   </div>
@@ -2655,7 +2642,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <label>Prénom</label><input id="sub-name" class="field" placeholder="Ton prénom">
       <label>Email</label><input id="sub-email" class="field" type="email" placeholder="ton@email.com">
       <label>Mot de passe</label><input id="sub-password" class="field" type="password" placeholder="Choisis un mot de passe (8 caractères min.)">
-      <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:6px;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;font-weight:800" onclick="activateSubscription()">Continuer vers le paiement →</button>
+      <button class="btn btn-p" id="sub-confirm-btn" style="width:100%;justify-content:center;margin-top:6px;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;font-weight:800" onclick="activateSubscription()">Continuer vers le paiement →</button>
       <div style="font-size:10px;color:var(--t3);text-align:center;margin-top:12px">🔒 Paiement sécurisé · Propulsé par Stripe</div>
     </div>
   </div>
@@ -2860,7 +2847,6 @@ var STATE = {
   memberName:       _sv.memberName||'Membre',
   memberEmail:      _sv.memberEmail||'',
   module1Letter:    _sv.module1Letter||'',
-  m1SlotsTaken:     _sv.m1SlotsTaken||23,
   prospects:        _sv.prospects||0,
   reponses:         _sv.reponses||0,
   rdv:              _sv.rdv||0,
@@ -2879,11 +2865,15 @@ var STATE = {
   coaching:         _sv.coaching||[],      // FIX #5 : évite un crash sur STATE.coaching.unshift(...)
   notifications:    _sv.notifications||[], // FIX #5 : évite un crash sur STATE.notifications.unshift(...)
   subPrice:         _sv.subPrice||67,      // FIX #6 : évite l'affichage "undefined €/mois" — 67€ = prix déjà affiché partout sur la page
-  ADMIN_PW:         'GC2025', // ⚠️ change ce mot de passe pour le tien
 };
 
 function go(id, el){
-  if(id !== 'accueil' && id !== 'login' && id !== 'rejoindre' && typeof STATE !== 'undefined' && !STATE.module1Validated){
+  // 'admin' est exempté de ce garde-fou payant : l'accès admin est décidé
+  // exclusivement par checkAdminAccess() (vérification serveur du rôle),
+  // pas par un abonnement actif. Sans cette exception, un compte fondateur
+  // qui n'est pas lui-même abonné ne pouvait jamais atteindre la page admin
+  // — trouvé en testant le parcours administrateur de bout en bout.
+  if(id !== 'accueil' && id !== 'login' && id !== 'rejoindre' && id !== 'admin' && typeof STATE !== 'undefined' && !STATE.module1Validated){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     document.getElementById('page-accueil').classList.add('on');
     toast('🔑 Entre ton code d\'accès pour continuer');
@@ -2900,6 +2890,7 @@ function go(id, el){
   if(id==='acquisition'){ try{ renderChannelList(); }catch(e){} }
   if(id==='revenus'){ try{ renderRevenus(); }catch(e){} }
   if(id==='performance'){ try{ renderRanking(); }catch(e){} }
+  if(id==='admin'){ checkAdminAccess(); }
   openTileForPage(id);
 }
 
@@ -2950,17 +2941,6 @@ function openTileForPage(pageId){
   }
 }
 
-
-// Pré-sélectionne le plan dans le modal d'abonnement (mensuel ou semestriel)
-function selectSubPlan(plan){
-  STATE.subPlan = plan;
-  const btnMonth = document.getElementById('plan-toggle-monthly');
-  const btnSem = document.getElementById('plan-toggle-semester');
-  const confirmBtn = document.getElementById('sub-confirm-btn');
-  if(btnMonth) btnMonth.classList.toggle('on', plan==='monthly');
-  if(btnSem) btnSem.classList.toggle('on', plan==='semester');
-  if(confirmBtn) confirmBtn.textContent = plan === 'semester' ? `Confirmer · ${STATE.subPriceSemester} €/6 mois` : `Confirmer · ${STATE.subPrice} €/mois`;
-}
 
 function closeMob(){
   document.getElementById('sb').classList.remove('mob-on');
@@ -3097,8 +3077,8 @@ function openModPage(num){
     html += `<div class="m1-cta-box" style="margin-top:28px;background:linear-gradient(160deg,rgba(245,197,24,.1),rgba(245,197,24,.02));border:1.5px solid rgba(245,197,24,.28);border-radius:16px;padding:24px">
       <div style="font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Étape suivante</div>
       <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px">Prêt à passer à la suite ?</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">Le Module 01 est terminé. Pour débloquer les Modules 02 à 07 et tout le reste de Génération Capable : signe ta lettre d'engagement et active ton accès — ${currentGatePrice()}€, tarif fondateur tant qu'il reste des places.</div>
-      <button class="btn btn-gold" onclick="openGateModal()">🔑 Signer ma lettre et débloquer l'accès</button>
+      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">Le Module 01 est terminé. Pour débloquer les Modules 02 à 07 et tout le reste de Génération Capable : active ton accès Génération Capable — ${STATE.subPrice}€/mois.</div>
+      <button class="btn btn-gold" onclick="openGateModal()">🔑 Débloquer l'accès</button>
     </div>`;
   }
 
@@ -3354,8 +3334,6 @@ function tryCloseVideo(){
   document.getElementById('video-overlay').classList.remove('on');
 }
 function stopTicker(){ clearInterval(VP.ticker); VP.ticker = null; }
-function closeVideo(){ tryCloseVideo(); }
-function openMod(num){ openModPage(num); }
 
 function openChannel(name){
   document.getElementById('ch-t').textContent = name;
@@ -3409,24 +3387,85 @@ function renderRanking(){
   el.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement disponible dès que plusieurs vendeurs seront actifs sur la plateforme.</td></tr>`;
 }
 
-function checkAdmin(){
-  const pw = document.getElementById('admin-pw').value;
-  if(pw === STATE.ADMIN_PW){
-    STATE.adminUnlocked=true;
-    document.getElementById('admin-gate').style.display='none';
-    document.getElementById('admin-panel').style.display='block';
-    toast('✅ Accès fondateur accordé');
+// FIX (audit production) : appelée à plusieurs endroits (dont le retour de
+// paiement Stripe et le feedback d'évaluation IA) mais jamais définie — un
+// ReferenceError ici, non intercepté à ces deux endroits, faisait tomber
+// dans le bloc catch et afficher un message d'échec générique alors même
+// que l'opération réelle (paiement confirmé, évaluation reçue) avait réussi.
+function renderNotifs(){
+  const el = document.getElementById('notif-feed');
+  if(!el) return;
+  const notifs = STATE.notifications || [];
+  if(!notifs.length){
+    el.innerHTML = `<div style="font-size:12.5px;color:var(--t3);text-align:center;padding:20px 0">Aucune notification pour l'instant.</div>`;
+    return;
+  }
+  el.innerHTML = notifs.map(n => `
+    <div class="notif-item">
+      <div class="notif-ico" style="background:${n.ico_bg||'rgba(255,255,255,.06)'}">${n.ico||'🔔'}</div>
+      <div>
+        <div class="notif-t">${escapeHtml(n.t||'')}</div>
+        <div class="notif-d">${escapeHtml(n.d||'')}</div>
+      </div>
+      <div class="notif-time">${escapeHtml(n.time||'')}</div>
+    </div>`).join('');
+}
+
+// Vérification serveur du rôle admin (netlify/functions/admin-verify.js).
+// Aucune sécurité ne repose ici sur le JavaScript du navigateur : ce code ne
+// fait qu'afficher le résultat renvoyé par le serveur, qui seul décide.
+// L'ancien système (mot de passe 'GC2025' en clair dans ce fichier, lisible
+// par n'importe qui via "Afficher le code source") est supprimé.
+function setAdminGateUI(icon, title, sub, actionLabel, actionFn){
+  document.getElementById('admin-gate-icon').textContent = icon;
+  document.getElementById('admin-gate-title').textContent = title;
+  document.getElementById('admin-gate-sub').textContent = sub;
+  const actionEl = document.getElementById('admin-gate-action');
+  if(actionLabel){
+    actionEl.textContent = actionLabel;
+    actionEl.style.display = 'block';
+    actionEl.onclick = actionFn;
   } else {
-    document.getElementById('admin-err').style.display='block';
-    document.getElementById('admin-pw').value='';
-    setTimeout(()=>document.getElementById('admin-err').style.display='none',3000);
+    actionEl.style.display = 'none';
   }
 }
+
+async function checkAdminAccess(){
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('admin-gate').style.display = 'block';
+  setAdminGateUI('🔐', 'Vérification en cours...', 'Confirmation de ton accès administrateur auprès du serveur.', null);
+
+  if(!supa){
+    setAdminGateUI('⚠️', 'Service indisponible', 'Connexion au serveur impossible — réessaie dans un instant.', null);
+    return;
+  }
+
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session){
+    setAdminGateUI('🔐', 'Connexion requise', 'Connecte-toi avec ton compte pour accéder à l\'administration.', 'Se connecter →', ()=>go('login', null));
+    return;
+  }
+
+  try{
+    const resp = await fetch('/.netlify/functions/admin-verify', {
+      headers: { 'Authorization': 'Bearer ' + session.access_token }
+    });
+    const data = await resp.json();
+    if(resp.ok && data.authorized === true){
+      document.getElementById('admin-gate').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+    } else {
+      setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
+    }
+  }catch(e){
+    console.error('[admin-verify] échec', e);
+    setAdminGateUI('⚠️', 'Erreur de vérification', 'Réessaie dans un instant.', null);
+  }
+}
+
 function lockAdmin(){
-  STATE.adminUnlocked=false;
-  document.getElementById('admin-gate').style.display='block';
   document.getElementById('admin-panel').style.display='none';
-  document.getElementById('admin-pw').value='';
+  checkAdminAccess();
   toast('Back-office verrouillé');
 }
 
@@ -3517,6 +3556,14 @@ Direct, terrain, sans jargon corporate inutile — même registre que l'équipe 
 FORMAT DE SORTIE
 Tu dois répondre STRICTEMENT au format JSON demandé dans le message utilisateur, rien d'autre avant ou après (pas de préambule, pas de markdown, pas de \`\`\`json). Chaque champ texte du JSON doit respecter les règles ci-dessus : direct, honnête, actionnable, jamais dix conseils à la fois, toujours une priorité claire.`;
 
+// Échappe le HTML avant insertion via innerHTML — les champs texte renvoyés par
+// l'IA (basés sur des saisies utilisateur) ne sont jamais du HTML de confiance.
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str ?? '');
+  return div.innerHTML;
+}
+
 // ══════════════════════════════════════════════════════════
 //  ÉVALUATION IA — NOTATION AUTOMATIQUE
 // ══════════════════════════════════════════════════════════
@@ -3580,18 +3627,18 @@ function renderEvalResult(fb, el){
   const scoreKeys = [{key:'discipline',label:'Discipline'},{key:'communication',label:'Commun.'},{key:'prospection',label:'Prospection'},{key:'decouverte',label:'Découverte'},{key:'vente',label:'Vente'}];
   const scoreColor2 = (v) => v >= 8 ? 'var(--green)' : v >= 6 ? 'var(--blue)' : v >= 4 ? 'var(--orange)' : 'var(--red)';
   const scoresHtml = scoreKeys.map(s => `<div class="fb-sc"><div class="fb-sc-n">${s.label}</div><div class="fb-sc-v" style="color:${scoreColor2(fb.scores?.[s.key]||0)}">${fb.scores?.[s.key]||0}</div><div class="fb-sc-m">/10</div></div>`).join('');
-  const fortHtml = (fb.points_forts||[]).map(p => `<div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${p}</span></div>`).join('');
-  const axeHtml = (fb.axes_amelioration||[]).map(a => `<div class="fb-axe"><div class="fb-axe-t">⚠️ ${a.titre}</div><div class="fb-axe-d">${a.detail}</div></div>`).join('');
+  const fortHtml = (fb.points_forts||[]).map(p => `<div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${escapeHtml(p)}</span></div>`).join('');
+  const axeHtml = (fb.axes_amelioration||[]).map(a => `<div class="fb-axe"><div class="fb-axe-t">⚠️ ${escapeHtml(a.titre)}</div><div class="fb-axe-d">${escapeHtml(a.detail)}</div></div>`).join('');
 
   el.innerHTML = `<div class="fb-wrap">
     <div class="fb-top"><div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">Résultat · Semaine 3</div><div class="fb-scores">${scoresHtml}</div></div>
-    <div class="fb-total"><div><div class="fb-total-num" style="color:${scoreColor}">${total}<span style="font-size:18px;color:var(--t3);font-weight:400">/50</span></div><div class="fb-total-label">${fb.verdict||''}</div></div><div style="margin-left:auto;text-align:right"><div class="fb-total-pct" style="color:${scoreColor}">${pct}%</div><div style="font-size:11px;color:var(--t3);margin-top:3px">${pct>=80?'Excellent':pct>=60?'Bon niveau':pct>=40?'À progresser':'Insuffisant'}</div></div></div>
+    <div class="fb-total"><div><div class="fb-total-num" style="color:${scoreColor}">${total}<span style="font-size:18px;color:var(--t3);font-weight:400">/50</span></div><div class="fb-total-label">${escapeHtml(fb.verdict||'')}</div></div><div style="margin-left:auto;text-align:right"><div class="fb-total-pct" style="color:${scoreColor}">${pct}%</div><div style="font-size:11px;color:var(--t3);margin-top:3px">${pct>=80?'Excellent':pct>=60?'Bon niveau':pct>=40?'À progresser':'Insuffisant'}</div></div></div>
     <div class="fb-section"><div class="fb-sec-title">💪 Points forts cette semaine</div>${fortHtml}</div>
     <div class="fb-section"><div class="fb-sec-title">🎯 Axes d'amélioration prioritaires</div>${axeHtml}</div>
-    <div class="fb-section"><div class="fb-sec-title">🔬 Analyse de ton approche</div><div class="fb-item"><span class="fb-item-ico" style="color:var(--blue)">→</span><span class="fb-item-txt">${fb.analyse_script||''}</span></div></div>
-    ${fb.script_suggere ? `<div class="fb-section"><div class="fb-sec-title">✏️ Script / approche suggéré(e)</div><div class="fb-script">${fb.script_suggere}</div></div>` : ''}
-    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Ton action prioritaire cette semaine</div><div style="font-size:14px;font-weight:700;color:var(--t1);line-height:1.55">${fb.action_prioritaire||''}</div></div>
-    <div class="fb-section" style="background:rgba(255,255,255,.02)"><div class="fb-sec-title">🎙 Message du coach</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${fb.message_coach||''}"</div></div>
+    <div class="fb-section"><div class="fb-sec-title">🔬 Analyse de ton approche</div><div class="fb-item"><span class="fb-item-ico" style="color:var(--blue)">→</span><span class="fb-item-txt">${escapeHtml(fb.analyse_script||'')}</span></div></div>
+    ${fb.script_suggere ? `<div class="fb-section"><div class="fb-sec-title">✏️ Script / approche suggéré(e)</div><div class="fb-script">${escapeHtml(fb.script_suggere)}</div></div>` : ''}
+    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Ton action prioritaire cette semaine</div><div style="font-size:14px;font-weight:700;color:var(--t1);line-height:1.55">${escapeHtml(fb.action_prioritaire||'')}</div></div>
+    <div class="fb-section" style="background:rgba(255,255,255,.02)"><div class="fb-sec-title">🎙 Message du coach</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${escapeHtml(fb.message_coach||'')}"</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn btn-p" onclick="go('performance',null)">Mettre à jour mon pipeline</button><button class="btn btn-g" onclick="go('coaching',null)">Déposer une question spécifique</button></div>`;
 }
@@ -3646,17 +3693,17 @@ function renderCoachResult(fb, el, cat, situation){
   const urgLabel = fb.niveau_urgence==='élevé'?'🔴 Urgence élevée':fb.niveau_urgence==='moyen'?'🟡 Urgence modérée':'🟢 Faible urgence';
   el.innerHTML = `<div class="fb-wrap" style="margin-top:0">
     <div style="padding:18px 20px;border-bottom:1px solid var(--b);background:rgba(41,151,255,.04)">
-      <div style="font-size:9.5px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Feedback IA · ${cat}</div>
-      <div style="font-size:15px;font-weight:800;letter-spacing:-.3px">${fb.diagnostic||''}</div>
+      <div style="font-size:9.5px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Feedback IA · ${escapeHtml(cat)}</div>
+      <div style="font-size:15px;font-weight:800;letter-spacing:-.3px">${escapeHtml(fb.diagnostic||'')}</div>
       <div style="margin-top:8px"><span style="font-size:11px;font-weight:700;color:${urgColor};background:${urgColor}18;padding:3px 9px;border-radius:20px">${urgLabel}</span></div>
     </div>
-    <div class="fb-section"><div class="fb-sec-title">🧠 Analyse psychologique</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${fb.analyse_psychologique||''}</span></div></div>
-    <div class="fb-section"><div class="fb-sec-title">❌ Ce qui cloche dans ton approche</div>${(fb.ce_qui_cloche||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt">${p}</span></div>`).join('')}</div>
-    <div class="fb-section"><div class="fb-sec-title">✏️ Script / approche corrigé(e)</div><div class="fb-script">${fb.script_corrige||''}</div></div>
-    ${fb.reponse_objection ? `<div class="fb-section"><div class="fb-sec-title">🛡 Réponse à l'objection</div><div class="fb-script" style="border-color:rgba(48,209,88,.2)">${fb.reponse_objection}</div></div>` : ''}
-    <div class="fb-section"><div class="fb-sec-title">🎯 Technique recommandée</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${fb.technique_recommandee||''}</span></div></div>
-    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Action immédiate — dans les 24h</div><div style="font-size:14px;font-weight:700;line-height:1.5">${fb.action_immediate||''}</div></div>
-    <div class="fb-section" style="background:rgba(255,255,255,.02)"><div class="fb-sec-title">🎙 Conseil final — sans filtre</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${fb.conseil_final||''}"</div></div>
+    <div class="fb-section"><div class="fb-sec-title">🧠 Analyse psychologique</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${escapeHtml(fb.analyse_psychologique||'')}</span></div></div>
+    <div class="fb-section"><div class="fb-sec-title">❌ Ce qui cloche dans ton approche</div>${(fb.ce_qui_cloche||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt">${escapeHtml(p)}</span></div>`).join('')}</div>
+    <div class="fb-section"><div class="fb-sec-title">✏️ Script / approche corrigé(e)</div><div class="fb-script">${escapeHtml(fb.script_corrige||'')}</div></div>
+    ${fb.reponse_objection ? `<div class="fb-section"><div class="fb-sec-title">🛡 Réponse à l'objection</div><div class="fb-script" style="border-color:rgba(48,209,88,.2)">${escapeHtml(fb.reponse_objection)}</div></div>` : ''}
+    <div class="fb-section"><div class="fb-sec-title">🎯 Technique recommandée</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${escapeHtml(fb.technique_recommandee||'')}</span></div></div>
+    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Action immédiate — dans les 24h</div><div style="font-size:14px;font-weight:700;line-height:1.5">${escapeHtml(fb.action_immediate||'')}</div></div>
+    <div class="fb-section" style="background:rgba(255,255,255,.02)"><div class="fb-sec-title">🎙 Conseil final — sans filtre</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${escapeHtml(fb.conseil_final||'')}"</div></div>
   </div>`;
 }
 
@@ -3666,7 +3713,6 @@ function resetCoachForm(){
   if(res){ res.style.display='none'; res.innerHTML=''; }
 }
 function showLastFeedback(){ toast('Feedback S2 — 34/50 · Bonne progression'); }
-function submitEval(){ submitEvalIA(); }
 function switchTab(btn){
   btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
@@ -3700,15 +3746,6 @@ function renderApiError(retryCall){
 //  GC STUDIO
 // ══════════════════════════════════════════════════════════
 const HEYGEN_API = 'https://api.heygen.com';
-
-// Navigation vers GC Studio
-
-
-// Gate paywall studio
-
-
-// Ouvrir le paiement Studio
-
 
 // Secteur custom
 document.addEventListener('change', function(e){
@@ -3882,32 +3919,35 @@ document.addEventListener('DOMContentLoaded', ()=>{
 // ══════════════════════════════════════════════════════════
 //  AUTHENTIFICATION RÉELLE — Supabase Auth
 // ══════════════════════════════════════════════════════════
-//  ⚠️ TODO ENZO — AVANT QUE ÇA MARCHE :
-//  1. Va sur supabase.com → ton projet (ou crée-en un) → Settings → API
-//  2. Remplace les deux valeurs ci-dessous par ton URL et ta clé "anon public"
-//     (la clé anon est PUBLIQUE par design chez Supabase — elle est faite pour
-//     être dans le code client, ce n'est pas un secret. Ne mets JAMAIS la
-//     "service_role key" ici, celle-là reste uniquement côté serveur).
-//  3. Dans Supabase → Authentication → Providers, active Google et Apple,
-//     et configure leurs identifiants OAuth respectifs.
-//  4. Exécute le SQL fourni (table "subscribers" + policies RLS) dans
-//     Supabase → SQL Editor.
-//  5. Déploie la fonction Netlify de webhook Stripe (fournie séparément)
-//     pour que "subscribers.is_active" se mette à jour automatiquement
-//     quand quelqu'un paie ou résilie.
+//  Même projet Supabase que ambassadors.html et les Netlify Functions
+//  (fkhfahmzxsahrstxntjs) — un seul backend pour tout l'écosystème GC.
+//  La clé "anon/publishable" est publique par design chez Supabase (elle est
+//  faite pour être dans le code client) : la vraie sécurité vient des
+//  policies RLS côté base, jamais de cette clé. Ne JAMAIS mettre la
+//  "service_role key" ici — elle reste exclusivement dans les variables
+//  d'environnement Netlify, côté Netlify Functions.
+//
+//  Reste à faire côté tableau de bord (non versionnable, pas vérifiable
+//  depuis ce dépôt) :
+//   1. Authentication → Providers : activer Google/Apple si ces boutons
+//      doivent fonctionner (sinon ils échoueront proprement avec un toast).
+//   2. Exécuter supabase/migrations/0001_subscribers_and_roles.sql dans
+//      le SQL Editor (table "subscribers" + policies RLS + rôles admin).
+//   3. Déployer la fonction webhook Stripe (netlify/functions/stripe-webhook.js)
+//      pour que "subscribers.is_active" se mette à jour automatiquement.
 // ══════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://TON-PROJET.supabase.co';       // TODO
-const SUPABASE_ANON_KEY = 'TON-ANON-KEY-ICI';                 // TODO
+const SUPABASE_URL = 'https://fkhfahmzxsahrstxntjs.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_XfXArB0prFU-BFZUOo6vTw_Hqkr3ZNJ';
 
 let supa = null;
 try{
-  if(window.supabase && !SUPABASE_URL.includes('TON-PROJET')){
+  if(window.supabase){
     supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 }catch(e){ console.warn('Supabase non initialisé :', e); }
 
 function authNotConfigured(){
-  toast('⚠️ Supabase pas encore configuré — voir le commentaire TODO en haut du script d\'authentification');
+  toast('⚠️ Connexion au serveur impossible — réessaie dans un instant');
   return true;
 }
 
@@ -3972,6 +4012,11 @@ async function signOutUser(){
 // dans la table "subscribers" si cette personne a bien un abonnement actif.
 // C'est CETTE vérification côté serveur (via RLS Supabase) qui remplace
 // les anciens codes d'accès en clair — impossible à falsifier depuis le JS.
+// Filtre par email (pas par user_id) : les lignes créées après un paiement
+// Stripe ne connaissent que l'email du payeur (voir la RLS de "subscribers"
+// dans supabase/migrations/) — filtrer par user_id ne les trouverait jamais.
+// Le filtre ci-dessous est un confort de lecture ; la vraie restriction de
+// sécurité vient de la policy RLS elle-même, pas de ce .eq() côté client.
 async function onAuthSuccess(session){
   if(!session?.user) return;
   STATE.memberEmail = session.user.email;
@@ -3981,7 +4026,7 @@ async function onAuthSuccess(session){
   const { data: sub, error } = await supa
     .from('subscribers')
     .select('is_active')
-    .eq('user_id', session.user.id)
+    .eq('email', session.user.email.toLowerCase())
     .maybeSingle();
 
   if(error){ console.error(error); toast('❌ Erreur de vérification de l\'abonnement'); return; }
@@ -4017,14 +4062,12 @@ async function onAuthSuccess(session){
 //  CONFIGURATION PAIEMENT & EMAILS
 // ══════════════════════════════════════════════════════════
 
-// ── STRIPE PAYMENT LINKS (vrais liens) ──
-const STRIPE_LINKS = {
-  eco_monthly:  'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-  eco_semester: 'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-  academie_97:  'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-  academie_247: 'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-  studio:       'https://buy.stripe.com/eVq14faCzehj85l1Yv18c0c',
-};
+// ── OFFRE STRIPE ──
+// Un seul abonnement : Génération Capable à 67€/mois (clé 'gc_67'). Le front
+// n'envoie que cette clé symbolique à /.netlify/functions/create-checkout-session,
+// jamais une URL ou un Price ID Stripe : le mapping vers le vrai Price ID
+// (cf. netlify/functions/_lib/stripe-offers.js) est fait exclusivement côté
+// serveur.
 
 // ── EMAILJS CONFIG ──
 // 1. Crée un compte gratuit sur emailjs.com
@@ -4094,80 +4137,75 @@ function registerMember(name, email, type){
   } catch(e){}
 }
 
-// Redirection vers Stripe avec pré-remplissage email
-function proceedToStripePayment(){
-  const name = (document.getElementById('gate-name')?.value || '').trim();
-  const email = (document.getElementById('gate-email')?.value || '').trim();
-  const cgu = document.getElementById('gate-cgu')?.checked;
-  const signature = (document.getElementById('gate-signature')?.value || '').trim();
+// Le paiement passe exclusivement par redirectToStripeCheckout() (envoi vers
+// Stripe Checkout) + handleCheckoutReturn() ci-dessous (confirmation
+// serveur du paiement avant toute activation) : jamais d'activation sur un
+// simple clic côté client.
 
-  if(!name){ toast('⚠️ Entre ton nom complet'); return; }
-  if(!email || !email.includes('@')){ toast('⚠️ Entre un email valide'); return; }
-  if(!cgu){ toast('⚠️ Tu dois accepter les conditions pour continuer'); return; }
-  if(!signature){ toast('⚠️ Signe avec ton prénom pour valider'); return; }
+// Appelé au chargement de la page si l'URL contient ?checkout=success|cancelled
+// (retour de Stripe Checkout). Ne fait JAMAIS confiance à ce paramètre seul :
+// l'activation réelle vient de la vérification serveur du session_id auprès
+// de Stripe (voir netlify/functions/verify-checkout-session.js).
+async function handleCheckoutReturn(){
+  const params = new URLSearchParams(window.location.search);
+  const checkout = params.get('checkout');
+  if(!checkout) return;
 
-  // Sauvegarder les infos avant redirection
-  STATE.pendingMember = { name, email, signature, date: new Date().toISOString() };
-  saveState();
+  // Nettoie l'URL immédiatement : un rafraîchissement de page ne doit pas
+  // redéclencher la vérification (idempotent côté serveur de toute façon,
+  // mais inutile de le refaire à chaque F5).
+  window.history.replaceState({}, '', window.location.origin + window.location.pathname);
 
-  // Déterminer le bon lien Stripe selon le prix actuel
-  const price = STATE.m1SlotsTaken < STATE.m1SlotsTotal ? 'academie_97' : 'academie_247';
-  const stripeUrl = STRIPE_LINKS[price];
+  if(checkout === 'cancelled'){
+    toast('Paiement annulé — tu peux réessayer quand tu veux');
+    return;
+  }
+  if(checkout !== 'success') return;
 
-  // Construire l'URL Stripe avec email pré-rempli
-  const finalUrl = stripeUrl + (stripeUrl.includes('?') ? '&' : '?') + 'prefilled_email=' + encodeURIComponent(email);
+  const sessionId = params.get('session_id');
+  if(!sessionId){ toast('❌ Retour de paiement invalide'); return; }
 
-  toast('🔒 Redirection vers Stripe...');
+  toast('🔒 Vérification du paiement...');
+  let data;
+  try{
+    const resp = await fetch('/.netlify/functions/verify-checkout-session?session_id=' + encodeURIComponent(sessionId));
+    data = await resp.json();
+    if(!resp.ok || !data.activated){
+      toast('⚠️ Paiement non confirmé — contacte le support si tu as bien payé');
+      return;
+    }
+  }catch(e){
+    console.error('[checkout-return] Échec de la vérification:', e);
+    toast('❌ Erreur de vérification du paiement — contacte le support');
+    return;
+  }
 
-  // Stocker en localStorage que le paiement a été initié
-  // (Stripe redirige vers une URL de succès que tu configures)
-  setTimeout(() => {
-    window.open(finalUrl, '_blank');
-    // Afficher message d'attente
-    document.getElementById('gate-step-payment').innerHTML = `
-      <div style="text-align:center;padding:30px 20px">
-        <div style="font-size:32px;margin-bottom:14px">🔒</div>
-        <div style="font-size:15px;font-weight:800;margin-bottom:8px">Paiement ouvert dans un nouvel onglet</div>
-        <div style="font-size:13px;color:var(--t2);margin-bottom:24px;line-height:1.6">Une fois ton paiement confirmé par Stripe, reviens ici et clique sur le bouton ci-dessous.</div>
-        <button class="btn btn-gold" style="width:100%;justify-content:center;padding:12px;font-size:13px" onclick="confirmPaymentReturn()">
-          ✓ J'ai payé — Activer mon accès
-        </button>
-        <div style="font-size:11px;color:var(--t3);margin-top:12px">Tu recevras un email de confirmation à <strong style="color:var(--t2)">${email}</strong></div>
-      </div>`;
-  }, 800);
-}
-
-// Appelé quand l'utilisateur revient après paiement Stripe
-async function confirmPaymentReturn(){
-  const pending = STATE.pendingMember || {};
-  const name = pending.name || 'Membre';
-  const email = pending.email || '';
-
-  // Activer l'accès
+  // À partir d'ici, le paiement est confirmé par le serveur : ça ne doit
+  // plus jamais redevenir un échec aux yeux de l'utilisateur. Les étapes
+  // suivantes (mail de confirmation, chargement des modules) sont du
+  // "meilleur effort" — chacune isolée dans son propre try/catch, comme
+  // partout ailleurs dans ce fichier — pour qu'un pépin sur l'une d'elles
+  // n'affiche jamais "paiement non confirmé" à quelqu'un qui a bien payé.
+  const name = STATE.memberName || 'Membre';
+  STATE.subscribed = true;
   STATE.module1Validated = true;
-  STATE.m1SlotsTaken = Math.min(STATE.m1SlotsTaken + 1, STATE.m1SlotsTotal);
-  if(MODULES[1]){ MODULES[1].status='done'; MODULES[1].pct=100; }
   saveState();
 
-  // Enregistrer le membre
-  registerMember(name, email, 'academie');
+  try{ registerMember(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] registerMember:', e); }
+  try{ await sendConfirmationEmail(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] sendConfirmationEmail:', e); }
+  try{ await loadModules(); }catch(e){ console.error('[checkout-return] loadModules:', e); }
 
-  // Envoyer email de confirmation
-  await sendConfirmationEmail(name, email, 'academie');
-
-  closeMo('mo-gate');
-  applyPaywallGates();
-  renderAll();
-
-  toast('🎉 Accès activé — Bienvenue dans Génération Capable !');
+  try{ applyPaywallGates(); }catch(e){}
+  try{ renderAll(); }catch(e){}
+  toast('🎉 Paiement confirmé — bienvenue dans Génération Capable !');
 
   STATE.notifications.unshift({
-    ico:'🎓', ico_bg:'rgba(201,168,76,.14)',
-    t:'Accès Académie activé',
-    d:`Bienvenue ${name} ! Tous les modules sont maintenant accessibles.`,
-    time:'À l\'instant', read:false
+    ico: '🎓', ico_bg: 'rgba(201,168,76,.14)',
+    t: 'Accès activé',
+    d: `Bienvenue ${name} ! Ton accès est maintenant actif.`,
+    time: 'À l\'instant', read: false
   });
-  renderNotifs();
+  try{ renderNotifs(); }catch(e){ console.error('[checkout-return] renderNotifs:', e); }
 }
 
 
@@ -4402,13 +4440,13 @@ function renderRapportSoirResult(fb){
       <div style="font-size:34px;font-weight:800;color:${scoreColor}">${score}<span style="font-size:14px;color:var(--t3);font-weight:400">/10</span></div>
       <div><div style="font-size:14px;font-weight:700">Score du jour</div><div style="font-size:12px;color:var(--t3);margin-top:2px">${score>=8?'Excellente journée':score>=5?'Journée correcte':'Journée difficile — demain sera mieux'}</div></div>
     </div>
-    <div class="fb-section"><div class="fb-sec-title">✅ Points positifs</div>${(fb.etape1_positifs||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${p}</span></div>`).join('')}</div>
-    <div class="fb-section"><div class="fb-sec-title">⚠️ Points négatifs</div>${(fb.etape2_negatifs||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt">${p}</span></div>`).join('')}</div>
-    <div class="fb-section"><div class="fb-sec-title">📈 Axe d'amélioration principal</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${fb.etape3_amelioration||''}</span></div></div>
-    <div class="fb-section"><div class="fb-sec-title">🔄 Sur la stagnation</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${fb.etape4_stagnation||''}</span></div></div>
-    <div class="fb-section" style="background:rgba(255,159,10,.04)"><div class="fb-sec-title" style="color:var(--orange)">🧠 On comprend — et voilà pourquoi tu dois changer ça</div><div style="font-size:13px;color:var(--t2);line-height:1.65">${fb.etape5_comprendre||''}</div></div>
-    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Plan d'action pour demain</div>${(fb.etape6_plan_demain||[]).map((a,i)=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--blue);font-weight:800">${i+1}.</span><span class="fb-item-txt"><strong>${a}</strong></span></div>`).join('')}</div>
-    <div class="fb-section"><div class="fb-sec-title">🎙 Message du coach</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${fb.message_final||''}"</div></div>
+    <div class="fb-section"><div class="fb-sec-title">✅ Points positifs</div>${(fb.etape1_positifs||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${escapeHtml(p)}</span></div>`).join('')}</div>
+    <div class="fb-section"><div class="fb-sec-title">⚠️ Points négatifs</div>${(fb.etape2_negatifs||[]).map(p=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt">${escapeHtml(p)}</span></div>`).join('')}</div>
+    <div class="fb-section"><div class="fb-sec-title">📈 Axe d'amélioration principal</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${escapeHtml(fb.etape3_amelioration||'')}</span></div></div>
+    <div class="fb-section"><div class="fb-sec-title">🔄 Sur la stagnation</div><div class="fb-item"><span class="fb-item-ico">→</span><span class="fb-item-txt">${escapeHtml(fb.etape4_stagnation||'')}</span></div></div>
+    <div class="fb-section" style="background:rgba(255,159,10,.04)"><div class="fb-sec-title" style="color:var(--orange)">🧠 On comprend — et voilà pourquoi tu dois changer ça</div><div style="font-size:13px;color:var(--t2);line-height:1.65">${escapeHtml(fb.etape5_comprendre||'')}</div></div>
+    <div class="fb-section" style="background:rgba(41,151,255,.04)"><div class="fb-sec-title" style="color:var(--blue)">⚡ Plan d'action pour demain</div>${(fb.etape6_plan_demain||[]).map((a,i)=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--blue);font-weight:800">${i+1}.</span><span class="fb-item-txt"><strong>${escapeHtml(a)}</strong></span></div>`).join('')}</div>
+    <div class="fb-section"><div class="fb-sec-title">🎙 Message du coach</div><div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${escapeHtml(fb.message_final||'')}"</div></div>
   </div>`;
   el.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -4490,8 +4528,8 @@ function renderScanResult(scan, el){
           <div style="font-size:12px;color:var(--t3)">Score global</div>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px">${scan.profil_type||'Vendeur en formation'}</div>
-          <div style="font-size:12.5px;color:var(--t2);max-width:360px;line-height:1.5">${scan.description_profil||''}</div>
+          <div style="font-size:15px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px">${escapeHtml(scan.profil_type||'Vendeur en formation')}</div>
+          <div style="font-size:12.5px;color:var(--t2);max-width:360px;line-height:1.5">${escapeHtml(scan.description_profil||'')}</div>
         </div>
       </div>
       <div class="fb-scores">
@@ -4501,40 +4539,40 @@ function renderScanResult(scan, el){
 
     <div class="fb-section">
       <div class="fb-sec-title">💪 Ta force principale</div>
-      <div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${scan.force_principale||''}</span></div>
+      <div class="fb-item"><span class="fb-item-ico">✅</span><span class="fb-item-txt">${escapeHtml(scan.force_principale||'')}</span></div>
     </div>
     <div class="fb-section">
       <div class="fb-sec-title">⚠️ Ta faiblesse critique</div>
-      <div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt"><strong>${scan.faiblesse_critique||''}</strong></span></div>
+      <div class="fb-item"><span class="fb-item-ico" style="color:var(--red)">✗</span><span class="fb-item-txt"><strong>${escapeHtml(scan.faiblesse_critique||'')}</strong></span></div>
     </div>
 
     <div class="fb-section">
       <div class="fb-sec-title">🎯 Recommandations personnalisées</div>
       ${(scan.recommandations||[]).map(r=>`
         <div class="fb-axe" style="border-color:rgba(${r.priorite==='haute'?'255,69,58':'255,159,10'},.2)">
-          <div class="fb-axe-t" style="color:${prioColor(r.priorite)}">⚡ ${r.dimension} — Priorité ${r.priorite}</div>
-          <div style="font-size:13px;font-weight:700;margin-bottom:4px">${r.action}</div>
-          <div class="fb-axe-d">${r.explication}</div>
+          <div class="fb-axe-t" style="color:${prioColor(r.priorite)}">⚡ ${escapeHtml(r.dimension)} — Priorité ${escapeHtml(r.priorite)}</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px">${escapeHtml(r.action)}</div>
+          <div class="fb-axe-d">${escapeHtml(r.explication)}</div>
         </div>`).join('')}
     </div>
 
     <div class="fb-section" style="background:rgba(41,151,255,.04)">
       <div class="fb-sec-title" style="color:var(--blue)">📚 Module à travailler en priorité</div>
       <div style="display:flex;align-items:center;gap:12px;padding:12px 0">
-        <div style="width:44px;height:44px;background:rgba(41,151,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--blue);flex-shrink:0">${(scan.module_prioritaire||'').replace('Module ','')}</div>
-        <div><div style="font-size:13px;font-weight:700;margin-bottom:3px">${scan.module_prioritaire||''}</div><div style="font-size:12px;color:var(--t2)">${scan.raison_module||''}</div></div>
+        <div style="width:44px;height:44px;background:rgba(41,151,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--blue);flex-shrink:0">${escapeHtml((scan.module_prioritaire||'').replace('Module ',''))}</div>
+        <div><div style="font-size:13px;font-weight:700;margin-bottom:3px">${escapeHtml(scan.module_prioritaire||'')}</div><div style="font-size:12px;color:var(--t2)">${escapeHtml(scan.raison_module||'')}</div></div>
         <button class="btn btn-p" style="margin-left:auto;flex-shrink:0" onclick="go('academie',null)">Aller au module →</button>
       </div>
     </div>
 
     <div class="fb-section">
       <div class="fb-sec-title">⚡ Plan d'action — cette semaine</div>
-      ${(scan.plan_action_semaine||[]).map((a,i)=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--blue);font-weight:800">${i+1}.</span><span class="fb-item-txt"><strong>${a}</strong></span></div>`).join('')}
+      ${(scan.plan_action_semaine||[]).map((a,i)=>`<div class="fb-item"><span class="fb-item-ico" style="color:var(--blue);font-weight:800">${i+1}.</span><span class="fb-item-txt"><strong>${escapeHtml(a)}</strong></span></div>`).join('')}
     </div>
 
     <div class="fb-section" style="background:rgba(255,255,255,.02)">
       <div class="fb-sec-title">🎙 Message du coach</div>
-      <div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${scan.message_coach||''}"</div>
+      <div style="font-size:13.5px;color:var(--t2);line-height:1.7;font-style:italic">"${escapeHtml(scan.message_coach||'')}"</div>
     </div>
   </div>
   <div style="display:flex;gap:8px;margin-top:16px">
@@ -4545,6 +4583,7 @@ function renderScanResult(scan, el){
 
 loadState();
 renderAll();
+handleCheckoutReturn();
 </script>
 
 </body>
