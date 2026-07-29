@@ -871,7 +871,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
         <div class="nav-tile-body">
           <div class="ni" onclick="go('communaute',this);event.stopPropagation()"><span class="ni-ico">💬</span>Fil membres<span class="ni-lock-mini" id="sb-lock-eco-comm2">🔒</span></div>
-          <div class="ni" style="opacity:.5;pointer-events:none"><span class="ni-ico">🏅</span>Classement<span class="ni-lock-mini">🔒</span></div>
+          <div class="ni" onclick="go('opportunites',this);event.stopPropagation()"><span class="ni-ico">🏅</span>Classement</div>
         </div>
       </div>
 
@@ -1341,7 +1341,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <div class="hero" style="margin-bottom:24px">
         <div class="hero-ey">Ce que gagnent les meilleurs</div>
         <div class="hero-t" style="font-size:26px">Voilà ce qui t'attend.</div>
-        <div class="hero-s" style="font-size:13.5px">Ces chiffres sont réels. Chaque vendeur ci-dessous a commencé exactement où tu es maintenant.</div>
+        <div class="hero-s" style="font-size:13.5px">Exemple illustratif de ce que peut représenter un classement de vendeurs actifs — chaque vendeur part exactement d'où tu es maintenant.</div>
       </div>
       <div class="preview-top5">
         <span class="preview-top5-badge">🔒 Classement complet en Pro</span>
@@ -1432,7 +1432,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <div class="sec-hd"><div class="sec-t">Classement vendeurs</div><span class="auto-badge">Mise à jour auto</span></div>
       <div class="card" style="overflow:hidden">
         <table class="at">
-          <thead><tr><th>#</th><th>Vendeur</th><th>Ventes / mois</th><th>Commissions</th><th>Niveau</th></tr></thead>
+          <thead><tr><th>#</th><th>Vendeur</th><th>Ventes</th><th>Chiffre d'affaires</th></tr></thead>
           <tbody id="ranking-body"></tbody>
         </table>
       </div>
@@ -1601,40 +1601,14 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="hero-t">Reste dans l'action.</div>
         <div class="hero-s">Chaque challenge complété rapporte une prime, en plus de tes commissions normales.</div>
       </div>
-      <div class="og">
-        <div class="oc" onclick="toast('Challenge rejoint ✓')">
-          <div class="oc-ico" style="background:rgba(255,159,10,.12)">⚡</div>
-          <div class="oc-t">5 RDV cette semaine</div>
-          <div class="oc-p" style="color:var(--orange)">+50 €</div>
-          <div class="oc-c">Prime bonus</div>
-          <div class="oc-d">2/5 RDV obtenus cette semaine.</div>
-        </div>
-        <div class="oc" onclick="toast('Challenge rejoint ✓')">
-          <div class="oc-ico" style="background:rgba(48,209,88,.12)">🎯</div>
-          <div class="oc-t">Première vente du mois</div>
-          <div class="oc-p" style="color:var(--green)">+100 €</div>
-          <div class="oc-c">Prime bonus</div>
-          <div class="oc-d">Sois le premier de ta cohorte à vendre ce mois-ci.</div>
-        </div>
-        <div class="oc" onclick="toast('Challenge rejoint ✓')">
-          <div class="oc-ico" style="background:rgba(191,90,242,.12)">🔥</div>
-          <div class="oc-t">7 jours de discipline</div>
-          <div class="oc-p" style="color:var(--purple)">Badge "Constant"</div>
-          <div class="oc-c">Récompense visuelle</div>
-          <div class="oc-d">Valide ta discipline 7 jours sans interruption.</div>
-        </div>
+      <div class="og" id="missions-grid">
+        <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement des missions...</div>
       </div>
       <div class="div"></div>
-      <div class="sec-hd"><div class="sec-t">Classement des challenges</div></div>
-      <div class="card" style="overflow:hidden">
-        <table class="at">
-          <thead><tr><th>#</th><th>Membre</th><th>Challenges complétés</th><th>Primes gagnées</th></tr></thead>
-          <tbody>
-            <tr><td>🥇</td><td style="font-weight:700">Camille R.</td><td>9</td><td style="color:var(--green);font-weight:700">680 €</td></tr>
-            <tr><td>🥈</td><td style="font-weight:700">Thomas M.</td><td>7</td><td style="color:var(--green);font-weight:700">510 €</td></tr>
-            <tr><td>🥉</td><td style="font-weight:700">Léa F.</td><td>6</td><td style="color:var(--green);font-weight:700">430 €</td></tr>
-          </tbody>
-        </table>
+      <div class="sec-hd"><div class="sec-t">Classement vendeurs</div></div>
+      <div class="card" style="padding:18px 20px">
+        <div style="font-size:12.5px;color:var(--t2);line-height:1.6">Le classement des challenges suit le même classement vendeurs que le Centre d'Opportunités — basé sur les ventes réelles, pas sur un score séparé.</div>
+        <button class="btn btn-g" style="margin-top:12px" onclick="go('opportunites',null)">Voir le classement complet →</button>
       </div>
     </div>
   </div>
@@ -2484,14 +2458,14 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 <div class="page" id="page-profil">
   <div class="topbar">
     <div class="tb-title">Mon profil</div>
-    <div class="tb-right"><button class="btn btn-g" onclick="toast('Profil mis à jour ✓')">Modifier</button></div>
+    <div class="tb-right"><button class="btn btn-g" onclick="openEditProfileModal()">Modifier</button></div>
   </div>
   <div class="ct">
     <div class="ph">
-      <div class="ph-av">E</div>
+      <div class="ph-av" id="profil-avatar">🙂</div>
       <div>
-        <div class="ph-name">Enzo</div>
-        <div class="ph-role">Fondateur · Génération Capable</div>
+        <div class="ph-name" id="profil-name">Membre</div>
+        <div class="ph-role" id="profil-objective">Aucun objectif défini pour l'instant</div>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
           <span class="tag tag-b">Niveau 2 · Certifié</span>
           <span class="tag tag-o">Module 3 en cours</span>
@@ -2644,6 +2618,21 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <label>Mot de passe</label><input id="sub-password" class="field" type="password" placeholder="Choisis un mot de passe (8 caractères min.)">
       <button class="btn btn-p" id="sub-confirm-btn" style="width:100%;justify-content:center;margin-top:6px;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;font-weight:800" onclick="activateSubscription()">Continuer vers le paiement →</button>
       <div style="font-size:10px;color:var(--t3);text-align:center;margin-top:12px">🔒 Paiement sécurisé · Propulsé par Stripe</div>
+    </div>
+  </div>
+</div>
+
+<div class="mo" id="mo-edit-profile">
+  <div class="md">
+    <div class="md-hd">
+      <div><div class="md-ey">Mon profil</div><div class="md-t">Modifier mes informations</div></div>
+      <button class="md-cl" onclick="closeMo('mo-edit-profile')">✕</button>
+    </div>
+    <div class="md-bd">
+      <label>Avatar (emoji)</label><input id="edit-profile-avatar" class="field" placeholder="🙂" maxlength="8">
+      <label>Pseudo affiché</label><input id="edit-profile-name" class="field" placeholder="Ton pseudo" maxlength="60">
+      <label>Objectif principal</label><textarea id="edit-profile-objective" class="field" placeholder="Ex: Décrocher 10 ventes ce mois-ci" maxlength="300"></textarea>
+      <button class="btn btn-p" id="edit-profile-btn" style="width:100%;justify-content:center;margin-top:6px" onclick="saveProfile()">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -2889,7 +2878,11 @@ function go(id, el){
   if(id==='espace-vendeur'){ initEspaceVendeur(); }
   if(id==='acquisition'){ try{ renderChannelList(); }catch(e){} }
   if(id==='revenus'){ try{ renderRevenus(); }catch(e){} }
-  if(id==='performance'){ try{ renderRanking(); }catch(e){} }
+  // FIX (audit 2026-07-29) : le tableau de classement (#ranking-body) est
+  // affiché sur la page "opportunites", pas "performance" — l'appel visait
+  // le mauvais onglet et ne remplissait jamais le tableau réellement visible.
+  if(id==='opportunites'){ try{ renderRanking(); }catch(e){} }
+  if(id==='challenges'){ try{ renderMissions(); }catch(e){} }
   if(id==='admin'){ checkAdminAccess(); }
   openTileForPage(id);
 }
@@ -3468,10 +3461,81 @@ function renderRevenus(){
     </div>`;
 }
 
-function renderRanking(){
+// FIX (audit 2026-07-29) : ce tableau affichait TOUJOURS le même message de
+// placeholder, sans jamais interroger la base — le classement n'a jamais été
+// réel. Appelle désormais get_leaderboard() (voir migration
+// 0004_profiles_leaderboard_missions_feed.sql), qui calcule le classement en
+// direct depuis les vraies ventes ("sales"), jamais un compteur figé.
+async function renderRanking(){
   const el = document.getElementById('ranking-body');
   if(!el) return;
-  el.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement disponible dès que plusieurs vendeurs seront actifs sur la plateforme.</td></tr>`;
+  el.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement du classement...</td></tr>`;
+
+  if(!supa) { el.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement indisponible pour le moment.</td></tr>`; return; }
+
+  const { data, error } = await supa.rpc('get_leaderboard', { p_limit: 20 });
+  if(error){
+    console.error('[ranking] get_leaderboard:', error);
+    el.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement indisponible pour le moment.</td></tr>`;
+    return;
+  }
+  if(!data || !data.length){
+    el.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement disponible dès que plusieurs vendeurs seront actifs sur la plateforme.</td></tr>`;
+    return;
+  }
+
+  el.innerHTML = data.map(row => `<tr>
+    <td style="font-weight:800">${row.rank_pos}</td>
+    <td>${row.avatar_emoji || '🙂'} ${escapeHtml(row.display_name || 'Vendeur Génération Capable')}</td>
+    <td>${row.sales_count}</td>
+    <td style="color:var(--green);font-weight:700">${Number(row.total_amount).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})} €</td>
+  </tr>`).join('');
+}
+
+// FIX (audit 2026-07-29) : les 3 cartes "challenges" étaient 100% codées en
+// dur (progression, montants) et "Rejoindre" ne faisait qu'un toast sans
+// aucun effet. Remplacé par get_my_missions() (voir migration
+// 0004_profiles_leaderboard_missions_feed.sql) : la progression est calculée
+// en direct depuis les vraies ventes, jamais un compteur qui pourrait
+// désynchroniser de la réalité.
+function missionUnitLabel(targetType){
+  return (targetType === 'revenue_total' || targetType === 'revenue_month') ? '€' : '';
+}
+
+async function renderMissions(){
+  const el = document.getElementById('missions-grid');
+  if(!el) return;
+  if(!supa){ el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Missions indisponibles pour le moment.</div>`; return; }
+
+  const { data, error } = await supa.rpc('get_my_missions');
+  if(error){
+    console.error('[missions] get_my_missions:', error);
+    el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Missions indisponibles pour le moment.</div>`;
+    return;
+  }
+  if(!data || !data.length){
+    el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucune mission active pour l'instant.</div>`;
+    return;
+  }
+
+  el.innerHTML = data.map(m => {
+    const unit = missionUnitLabel(m.target_type);
+    const progress = Number(m.progress);
+    const target = Number(m.target_value);
+    const pct = target > 0 ? Math.min(Math.round(progress / target * 100), 100) : 0;
+    const color = m.completed ? 'var(--green)' : 'var(--orange)';
+    return `<div class="oc">
+      <div class="oc-ico" style="background:${m.completed ? 'rgba(48,209,88,.12)' : 'rgba(255,159,10,.12)'}">${m.completed ? '✅' : '🎯'}</div>
+      <div class="oc-t">${escapeHtml(m.title)}</div>
+      <div class="oc-p" style="color:${color}">${m.reward_label || ''}</div>
+      <div class="oc-c">${m.completed ? 'Mission complétée' : 'En cours'}</div>
+      <div class="oc-d">${escapeHtml(m.description)}</div>
+      <div style="height:5px;background:var(--b);border-radius:5px;overflow:hidden;margin-top:10px">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:5px;transition:width .6s"></div>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:5px">${unit==='€' ? progress.toFixed(0) : Math.floor(progress)}${unit} / ${target.toFixed(0)}${unit}</div>
+    </div>`;
+  }).join('');
 }
 
 // FIX (audit production) : appelée à plusieurs endroits (dont le retour de
@@ -4146,6 +4210,7 @@ async function onAuthSuccess(session){
     STATE.subscribed = true;
     toast('Chargement de tes modules...');
     await loadModules();
+    try{ await loadProfile(); }catch(e){ console.error('[profile] load:', e); }
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     document.getElementById('page-dashboard').classList.add('on');
     try{ renderAll(); }catch(e){}
@@ -4154,6 +4219,70 @@ async function onAuthSuccess(session){
     toast('Ton compte existe mais aucun abonnement actif n\'y est rattaché.');
     go('rejoindre', null);
   }
+}
+
+// ══════════════════════════════════════════════════════════
+//  PROFIL — informations publiques réelles (table "profiles",
+//  distincte de "subscribers" qui reste privée). Voir migration
+//  0004_profiles_leaderboard_missions_feed.sql.
+// ══════════════════════════════════════════════════════════
+let PROFILE = { display_name: null, avatar_emoji: '🙂', objectives: {} };
+
+async function loadProfile(){
+  if(!supa) return;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+  const { data, error } = await supa
+    .from('profiles')
+    .select('display_name,avatar_emoji,objectives')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+  if(error){ console.error('[profile] load:', error); return; }
+  PROFILE = data || { display_name: null, avatar_emoji: '🙂', objectives: {} };
+  renderProfilePage();
+}
+
+function renderProfilePage(){
+  const nameEl = document.getElementById('profil-name');
+  const avEl = document.getElementById('profil-avatar');
+  const objEl = document.getElementById('profil-objective');
+  const displayName = PROFILE.display_name || STATE.memberName || 'Membre';
+  if(nameEl) nameEl.textContent = displayName;
+  if(avEl) avEl.textContent = PROFILE.avatar_emoji || '🙂';
+  if(objEl) objEl.textContent = (PROFILE.objectives && PROFILE.objectives.main) || 'Aucun objectif défini pour l\'instant';
+}
+
+function openEditProfileModal(){
+  const nameInput = document.getElementById('edit-profile-name');
+  const avInput = document.getElementById('edit-profile-avatar');
+  const objInput = document.getElementById('edit-profile-objective');
+  if(nameInput) nameInput.value = PROFILE.display_name || STATE.memberName || '';
+  if(avInput) avInput.value = PROFILE.avatar_emoji || '🙂';
+  if(objInput) objInput.value = (PROFILE.objectives && PROFILE.objectives.main) || '';
+  openMo('mo-edit-profile');
+}
+
+async function saveProfile(){
+  if(!supa) return authNotConfigured();
+  const name = document.getElementById('edit-profile-name')?.value?.trim() || null;
+  const avatar = document.getElementById('edit-profile-avatar')?.value?.trim() || '🙂';
+  const objective = document.getElementById('edit-profile-objective')?.value?.trim() || '';
+  const btn = document.getElementById('edit-profile-btn');
+  if(btn) btn.disabled = true;
+  const { error } = await supa.rpc('update_my_profile', {
+    p_display_name: name,
+    p_avatar_emoji: avatar,
+    p_objectives: { main: objective }
+  });
+  if(btn) btn.disabled = false;
+  if(error){ console.error('[profile] save:', error); toast('❌ ' + error.message); return; }
+  PROFILE = { display_name: name, avatar_emoji: avatar, objectives: { main: objective } };
+  if(name) STATE.memberName = name;
+  saveState();
+  renderProfilePage();
+  try{ renderProfile(); }catch(e){}
+  closeMo('mo-edit-profile');
+  toast('✓ Profil mis à jour');
 }
 
 // Vérifie automatiquement, au chargement de la page, si l'utilisateur a
