@@ -2627,6 +2627,15 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
       </div>
 
+      <!-- LITIGES — commissions gelées par un charge.dispute.created Stripe -->
+      <div class="sec-hd">
+        <div class="sec-t">Litiges Stripe en cours</div>
+        <button class="btn btn-g" onclick="renderAdminDisputes()">🔄 Actualiser</button>
+      </div>
+      <div id="admin-disputes-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
+        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
+      </div>
+
       <!-- CONTACTER LES MEMBRES -->
       <div class="sec-hd"><div class="sec-t">Envoyer un message à tous les membres</div></div>
       <div style="background:var(--bg1);border:1px solid var(--b);border-radius:14px;padding:22px">
@@ -4614,6 +4623,7 @@ async function checkAdminAccess(){
       try{ await renderAdminCommissions(); }catch(e){ console.error('[admin] commissions list:', e); }
       try{ await renderAdminOrders(); }catch(e){ console.error('[admin] orders overview:', e); }
       try{ await renderAdminPayouts(); }catch(e){ console.error('[admin] payouts overview:', e); }
+      try{ await renderAdminDisputes(); }catch(e){ console.error('[admin] disputes overview:', e); }
     } else {
       setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
     }
@@ -4877,6 +4887,49 @@ async function adminMarkPayoutPaid(payoutId){
   if(error){ console.error('[admin] mark payout paid:', error); toast('❌ ' + error.message); return; }
   toast('✓ Retrait marqué comme versé');
   await renderAdminPayouts();
+}
+
+// ── Litiges Stripe — admin_get_disputed_commissions() / admin_resolve_dispute()
+//    (migration 0011). Une commission gelée par charge.dispute.created reste
+//    "disputed" jusqu'à résolution manuelle ici — Stripe ne notifie pas
+//    l'issue d'un litige de façon fiable/automatisable.
+async function renderAdminDisputes(){
+  const el = document.getElementById('admin-disputes-list');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('admin_get_disputed_commissions');
+  if(error){
+    console.error('[admin] disputes overview:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucun litige en cours.</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(d => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:10px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.seller_email)} · ${escapeHtml(d.product_name || 'Vente')}</div>
+        <div style="font-size:11px;color:var(--t3)">${Number(d.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · Gelée le ${new Date(d.created_at).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminResolveDispute('${d.id}', true)">✓ Vendeur gagne</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11px" onclick="adminResolveDispute('${d.id}', false)">✗ Vendeur perd</button>
+      </div>
+    </div>`).join('');
+}
+
+async function adminResolveDispute(commissionId, sellerWins){
+  if(!supa) return;
+  const label = sellerWins ? 'le vendeur a gagné ce litige (commission restaurée)' : 'le vendeur a perdu ce litige (commission annulée)';
+  if(!confirm(`Confirmer que ${label} ? Vérifie d'abord l'issue réelle dans le Dashboard Stripe.`)) return;
+  const { error } = await supa.rpc('admin_resolve_dispute', { p_commission_id: commissionId, p_seller_wins: sellerWins });
+  if(error){ console.error('[admin] resolve dispute:', error); toast('❌ ' + error.message); return; }
+  toast('✓ Litige résolu');
+  await renderAdminDisputes();
 }
 
 // L'envoi groupé nécessite un vrai fournisseur email configuré (EmailJS ou
