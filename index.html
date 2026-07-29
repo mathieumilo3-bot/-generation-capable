@@ -3839,7 +3839,7 @@ function renderFeed(){
       </div>
       ${commentsHtml}
       <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="field" style="margin:0" id="comment-input-${post.id}" placeholder="Ajouter un commentaire..." onkeydown="if(event.key==='Enter'){addComment('${post.id}')}">
+        <input class="field" style="margin:0" id="comment-input-${post.id}" placeholder="Ajouter un commentaire..." maxlength="1000" onkeydown="if(event.key==='Enter'){addComment('${post.id}')}">
         <button class="btn btn-g" style="flex-shrink:0" onclick="addComment('${post.id}')">Envoyer</button>
       </div>
     </div>`;
@@ -3851,47 +3851,76 @@ async function createFeedPost(){
   const input = document.getElementById('new-post-content');
   const content = input?.value?.trim();
   if(!content){ toast('Écris quelque chose avant de publier'); return; }
+  // FIX (audit 2026-07-29 — pentest pass, "10000 caractères") : le
+  // maxlength="2000" HTML limite la saisie/collage normal, mais rien ne
+  // validait côté client avant l'envoi — un contournement (devtools, ou
+  // simplement si la contrainte HTML venait à être retirée) atterrissait
+  // tel quel sur la contrainte SQL et affichait le message Postgres brut
+  // ("new row ... violates check constraint ...") dans un toast.
+  if(content.length > 2000){ toast('⚠️ Ton message est trop long (2000 caractères max)'); return; }
   const { data: { session } } = await supa.auth.getSession();
   if(!session?.user) return authNotConfigured();
   const btn = document.getElementById('new-post-btn');
   if(btn) btn.disabled = true;
   const { error } = await supa.from('feed_posts').insert({ user_id: session.user.id, content });
   if(btn) btn.disabled = false;
-  if(error){ console.error('[feed] create:', error); toast('❌ ' + error.message); return; }
+  if(error){ console.error('[feed] create:', error); toast('❌ Impossible de publier — réessaie'); return; }
   input.value = '';
   closeMo('mo-new-post');
   toast('✓ Publication créée');
   await loadFeed();
 }
 
+// FIX (audit 2026-07-29 — pentest pass, double-clic) : ni toggleLike() ni
+// addComment() n'avaient de garde contre un double-clic/double-tap rapide.
+// toggleLike() était protégé par la contrainte PK de "feed_likes" (un doublon
+// échoue proprement en base) mais addComment() n'a aucune contrainte
+// d'unicité — un double-clic pouvait créer deux commentaires identiques
+// visibles. FEED_INFLIGHT verrouille l'action en cours, quel que soit le
+// bouton réellement recréé à chaque re-rendu du fil (innerHTML), donc un
+// disabled=true posé sur le bouton ne survivrait pas au prochain rendu.
+const FEED_INFLIGHT = new Set();
+
 async function deleteFeedPost(postId){
-  if(!supa) return;
-  const { error } = await supa.from('feed_posts').delete().eq('id', postId);
-  if(error){ console.error('[feed] delete:', error); toast('❌ ' + error.message); return; }
-  await loadFeed();
+  if(!supa || FEED_INFLIGHT.has('del:'+postId)) return;
+  FEED_INFLIGHT.add('del:'+postId);
+  try{
+    const { error } = await supa.from('feed_posts').delete().eq('id', postId);
+    if(error){ console.error('[feed] delete:', error); toast('❌ ' + error.message); return; }
+    await loadFeed();
+  }finally{ FEED_INFLIGHT.delete('del:'+postId); }
 }
 
 async function toggleLike(postId){
-  if(!supa || !FEED_STATE.myUserId) return;
-  const likeUsers = FEED_STATE.likesByPost[postId] || [];
-  const alreadyLiked = likeUsers.includes(FEED_STATE.myUserId);
-  const { error } = alreadyLiked
-    ? await supa.from('feed_likes').delete().eq('post_id', postId).eq('user_id', FEED_STATE.myUserId)
-    : await supa.from('feed_likes').insert({ post_id: postId, user_id: FEED_STATE.myUserId });
-  if(error){ console.error('[feed] like toggle:', error); return; }
-  await loadFeed();
+  if(!supa || !FEED_STATE.myUserId || FEED_INFLIGHT.has('like:'+postId)) return;
+  FEED_INFLIGHT.add('like:'+postId);
+  try{
+    const likeUsers = FEED_STATE.likesByPost[postId] || [];
+    const alreadyLiked = likeUsers.includes(FEED_STATE.myUserId);
+    const { error } = alreadyLiked
+      ? await supa.from('feed_likes').delete().eq('post_id', postId).eq('user_id', FEED_STATE.myUserId)
+      : await supa.from('feed_likes').insert({ post_id: postId, user_id: FEED_STATE.myUserId });
+    if(error){ console.error('[feed] like toggle:', error); return; }
+    await loadFeed();
+  }finally{ FEED_INFLIGHT.delete('like:'+postId); }
 }
 
 async function addComment(postId){
   if(!supa) return authNotConfigured();
+  if(FEED_INFLIGHT.has('comment:'+postId)) return;
   const input = document.getElementById('comment-input-' + postId);
   const content = input?.value?.trim();
   if(!content) return;
-  const { data: { session } } = await supa.auth.getSession();
-  if(!session?.user) return authNotConfigured();
-  const { error } = await supa.from('feed_comments').insert({ post_id: postId, user_id: session.user.id, content });
-  if(error){ console.error('[feed] comment:', error); toast('❌ ' + error.message); return; }
-  await loadFeed();
+  if(content.length > 1000){ toast('⚠️ Commentaire trop long (1000 caractères max)'); return; }
+  FEED_INFLIGHT.add('comment:'+postId);
+  try{
+    const { data: { session } } = await supa.auth.getSession();
+    if(!session?.user) return authNotConfigured();
+    const { error } = await supa.from('feed_comments').insert({ post_id: postId, user_id: session.user.id, content });
+    if(error){ console.error('[feed] comment:', error); toast('❌ Impossible d\'envoyer le commentaire — réessaie'); return; }
+    input.value = '';
+    await loadFeed();
+  }finally{ FEED_INFLIGHT.delete('comment:'+postId); }
 }
 
 // FIX (audit production) : appelée à plusieurs endroits (dont le retour de
@@ -5153,6 +5182,14 @@ Réponds STRICTEMENT en JSON :
   }
 }
 
+// FIX (audit 2026-07-29 — pentest pass) : aucun champ n'était échappé ici.
+// Le contenu vient de la réponse IA, elle-même influencée par du texte libre
+// saisi par l'utilisateur (EV_STATE.objectifs.engagement, injecté dans le
+// prompt) — une injection de prompt qui ferait sortir du HTML/JS à l'IA
+// s'exécuterait tel quel via innerHTML. Sévérité limitée (auto-XSS, ce
+// contenu n'est jamais montré à quelqu'un d'autre que son auteur) mais
+// corrigé par principe : jamais de contenu non fiable dans innerHTML sans
+// échappement, qu'il vienne d'un humain ou d'un modèle IA.
 function renderPlanDuJour(plan){
   const el = document.getElementById('ev-plan-content');
   if(!el) return;
@@ -5160,22 +5197,22 @@ function renderPlanDuJour(plan){
   const typeIcons = {prospection:'📞',découverte:'🤝',relance:'🔁',admin:'📋'};
   el.innerHTML = `
     <div style="background:rgba(41,151,255,.06);border:1px solid rgba(41,151,255,.15);border-radius:12px;padding:16px 18px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:800;letter-spacing:-.2px;margin-bottom:6px">${plan.titre||'Jour de terrain'}</div>
-      <div style="font-size:12px;color:var(--t2)">🎯 ${plan.objectif_jour||''}</div>
+      <div style="font-size:14px;font-weight:800;letter-spacing:-.2px;margin-bottom:6px">${escapeHtml(plan.titre||'Jour de terrain')}</div>
+      <div style="font-size:12px;color:var(--t2)">🎯 ${escapeHtml(plan.objectif_jour||'')}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px">
       ${(plan.actions||[]).map((a,i)=>`
         <div class="step-item" style="padding:14px 16px">
-          <div style="font-size:11px;font-weight:700;color:${typeColors[a.type]||'var(--t3)'};width:46px;flex-shrink:0">${a.heure}</div>
+          <div style="font-size:11px;font-weight:700;color:${typeColors[a.type]||'var(--t3)'};width:46px;flex-shrink:0">${escapeHtml(a.heure||'')}</div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;margin-bottom:2px">${typeIcons[a.type]||'📌'} ${a.action}</div>
-            <div style="font-size:11.5px;color:var(--t3)">${a.detail}</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:2px">${typeIcons[a.type]||'📌'} ${escapeHtml(a.action||'')}</div>
+            <div style="font-size:11.5px;color:var(--t3)">${escapeHtml(a.detail||'')}</div>
           </div>
-          <span class="step-type" style="color:${typeColors[a.type]||'var(--t3)'}">${a.type}</span>
+          <span class="step-type" style="color:${typeColors[a.type]||'var(--t3)'}">${escapeHtml(a.type||'')}</span>
         </div>`).join('')}
     </div>
     <div style="background:rgba(255,255,255,.03);border:1px solid var(--b);border-radius:10px;padding:14px 16px;margin-top:14px;font-size:12.5px;color:var(--t2);line-height:1.6;font-style:italic">
-      🎙 "${plan.message_coach||''}"
+      🎙 "${escapeHtml(plan.message_coach||'')}"
     </div>`;
 }
 
@@ -5189,7 +5226,7 @@ function renderSuivi(){
   el.innerHTML = EV_STATE.planDuJour.map((a,i)=>`
     <div class="step-item ${(EV_STATE.suiviActions[i]?'done-step':'')}" onclick="toggleSuiviAction(${i})">
       <div class="step-num">${EV_STATE.suiviActions[i]?'✓':(i+1)}</div>
-      <div class="step-label" style="color:${EV_STATE.suiviActions[i]?'var(--t2)':'var(--t1)'};text-decoration:${EV_STATE.suiviActions[i]?'line-through':'none'}">${a.heure} — ${a.action}</div>
+      <div class="step-label" style="color:${EV_STATE.suiviActions[i]?'var(--t2)':'var(--t1)'};text-decoration:${EV_STATE.suiviActions[i]?'line-through':'none'}">${escapeHtml(a.heure||'')} — ${escapeHtml(a.action||'')}</div>
       ${EV_STATE.suiviActions[i]?'<span class="step-check">✓</span>':''}
     </div>`).join('');
 }
