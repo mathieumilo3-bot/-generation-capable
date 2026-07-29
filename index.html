@@ -116,11 +116,24 @@ function applyPaywallGates(){
 }
 
 
+// FIX (audit 2026-07-29) : ciblait #sb-member-name / #sb-member-level, deux
+// IDs QUI N'EXISTAIENT NULLE PART dans le HTML (les vrais éléments sont
+// .sb-un et #sb-status) — cette fonction ne faisait donc STRICTEMENT RIEN,
+// et absolument chaque utilisateur voyait "Enzo" / "E" / "Module 3" codés
+// en dur dans la barre latérale, quel que soit son vrai compte.
 function renderProfile(){
-  var el = document.getElementById('sb-member-name');
-  if(el) el.textContent = STATE.memberName || 'Membre';
-  var lv = document.getElementById('sb-member-level');
-  if(lv) lv.textContent = 'Certifié · Module ' + (STATE.currentModule||1);
+  var nameEl = document.getElementById('sb-member-name');
+  if(nameEl) nameEl.textContent = (typeof PROFILE !== 'undefined' && PROFILE.display_name) || STATE.memberName || 'Membre';
+  var avEl = document.getElementById('sb-member-avatar');
+  if(avEl) avEl.textContent = (typeof PROFILE !== 'undefined' && PROFILE.avatar_emoji) || '🙂';
+  var statusEl = document.getElementById('sb-status');
+  if(statusEl){
+    var info = (typeof computeNiveauInfo === 'function') ? computeNiveauInfo(typeof MY_REVENUE !== 'undefined' ? MY_REVENUE : 0) : null;
+    var modInfo = (typeof getCurrentModuleInfo === 'function') ? getCurrentModuleInfo() : null;
+    var label = info ? info.current.label : 'Débutant';
+    var moduleTxt = modInfo ? (modInfo.done ? modInfo.title : ('Module ' + String(modInfo.num).padStart(2,'0'))) : '';
+    statusEl.textContent = '🟢 ' + label + (moduleTxt ? ' · ' + moduleTxt : '');
+  }
 }
 
 function renderProfileSubBlock(){
@@ -129,14 +142,20 @@ function renderProfileSubBlock(){
 }
 
 function renderDashboard(){
-  // Stats dashboard — IDs réels : d-pros, d-rdv, d-prop, d-comm
-  var map = {'d-pros':'prospects','d-rdv':'rdv','d-prop':'propositions','d-comm':'commissions'};
+  // FIX (audit 2026-07-29) : "d-comm" lisait STATE.commissions, un champ
+  // localStorage que rien n'écrit jamais — toujours 0€. Affiche désormais le
+  // vrai chiffre d'affaires (MY_REVENUE, voir refreshMyRevenue()).
+  // d-pros/d-rdv/d-prop restent à 0 honnêtement : il n'existe pas encore de
+  // suivi CRM réel des prospects/RDV (page "CRM & Outils" — hors périmètre
+  // de ce correctif, nécessite un vrai modèle de données prospects).
+  var map = {'d-pros':'prospects','d-rdv':'rdv','d-prop':'propositions'};
   Object.keys(map).forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;
-    var val = STATE[map[id]] || 0;
-    el.textContent = (id==='d-comm') ? (val + ' €') : val;
+    el.textContent = STATE[map[id]] || 0;
   });
+  var commEl = document.getElementById('d-comm');
+  if(commEl) commEl.textContent = (MY_REVENUE || 0).toLocaleString('fr-FR') + ' €';
 }
 
 </script>
@@ -900,10 +919,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <span onclick="go('legal',null)" style="font-size:10px;color:var(--t3);cursor:pointer;text-decoration:underline;text-underline-offset:3px">Mentions légales · CGV · RGPD</span>
     </div>
     <div class="sb-user" onclick="go('profil',null)">
-      <div class="sb-av">E</div>
+      <div class="sb-av" id="sb-member-avatar">🙂</div>
       <div class="sb-info">
-        <div class="sb-un">Enzo</div>
-        <div class="sb-us" id="sb-status">🟢 Certifié · Module 3</div>
+        <div class="sb-un" id="sb-member-name">Membre</div>
+        <div class="sb-us" id="sb-status">🟢 Débutant</div>
       </div>
     </div>
   </div>
@@ -1202,21 +1221,15 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
           <div style="width:48px;height:48px;border-radius:14px;background:rgba(41,151,255,.12);border:1.5px solid rgba(41,151,255,.3);display:flex;align-items:center;justify-content:center;font-size:22px">⚡</div>
           <div>
-            <div style="font-size:16px;font-weight:800;letter-spacing:-.3px">Niveau 2 · Certifié</div>
-            <div style="font-size:11px;color:var(--t3);margin-top:2px">Module 03 en cours</div>
+            <div style="font-size:16px;font-weight:800;letter-spacing:-.3px" id="dash-niveau-label">Niveau 1 · Débutant</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px" id="dash-module-label">Chargement...</div>
           </div>
         </div>
-        <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between"><span>Progression niveau 3</span><span style="color:var(--orange)">62%</span></div>
+        <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between"><span id="dash-niveau-pct-label">Progression</span><span style="color:var(--orange)" id="dash-niveau-pct">0%</span></div>
         <div style="height:5px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden">
-          <div style="height:100%;width:62%;background:linear-gradient(90deg,var(--orange),#ffb43d);border-radius:5px"></div>
+          <div style="height:100%;width:0%;background:linear-gradient(90deg,var(--orange),#ffb43d);border-radius:5px" id="dash-niveau-bar"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;margin-top:18px">
-          <div style="text-align:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;margin:0 auto 4px">✓</div><div style="font-size:8px;color:var(--green)">N1</div></div>
-          <div style="text-align:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;margin:0 auto 4px">✓</div><div style="font-size:8px;color:var(--blue)">N2</div></div>
-          <div style="text-align:center"><div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--orange);font-weight:700;margin:0 auto 4px">3</div><div style="font-size:8px;color:var(--t3)">N3</div></div>
-          <div style="text-align:center;opacity:.4"><div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--t3);margin:0 auto 4px">4</div><div style="font-size:8px;color:var(--t3)">N4</div></div>
-          <div style="text-align:center;opacity:.4"><div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--t3);margin:0 auto 4px">5</div><div style="font-size:8px;color:var(--t3)">N5</div></div>
-        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;margin-top:18px" id="dash-niveau-dots"></div>
       </div>
 
       <!-- Activité récente (pleine largeur) -->
@@ -2447,8 +2460,8 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="ph-name" id="profil-name">Membre</div>
         <div class="ph-role" id="profil-objective">Aucun objectif défini pour l'instant</div>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <span class="tag tag-b">Niveau 2 · Certifié</span>
-          <span class="tag tag-o">Module 3 en cours</span>
+          <span class="tag tag-b" id="profil-niveau-tag">Niveau 1 · Débutant</span>
+          <span class="tag tag-o" id="profil-module-tag">Chargement...</span>
           <span class="tag tag-dim" id="profile-sub-tag">Abonnement Pro inactif</span>
         </div>
       </div>
@@ -2460,10 +2473,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <div class="card" style="padding:22px">
         <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Niveau & Progression</div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Niveau actuel</span><span style="font-weight:800;color:var(--blue)">Niveau 2 · Certifié</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Prochain niveau</span><span style="font-weight:700">Niveau 3 · Performer</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Bonus actuel</span><span>—</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Bonus Niveau 4 Elite</span><span style="color:var(--t3)">+10% commission</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Niveau actuel</span><span style="font-weight:800;color:var(--blue)" id="profil-niveau-current">Niveau 1 · Débutant</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Prochain niveau</span><span style="font-weight:700" id="profil-niveau-next">—</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Bonus actuel</span><span id="profil-niveau-bonus">—</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Chiffre d'affaires cumulé</span><span id="profil-niveau-revenue">0 €</span></div>
         </div>
         <div style="margin-top:16px">
           <button class="btn btn-p" style="width:100%;justify-content:center" onclick="go('niveaux',null)">Voir les niveaux →</button>
@@ -2484,12 +2497,14 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
     <div class="tb-sub" style="margin-left:6px">— Système de progression</div>
     <div class="tb-right">
       <div style="display:flex;align-items:center;gap:6px;background:rgba(41,151,255,.1);border:1px solid rgba(41,151,255,.2);border-radius:20px;padding:5px 12px">
-        <span style="font-size:11px;font-weight:800;color:var(--blue)">NIVEAU 2</span>
-        <span style="font-size:11px;color:var(--t3)">Certifié</span>
+        <span style="font-size:11px;font-weight:800;color:var(--blue)" id="niveaux-badge-num">NIVEAU 1</span>
+        <span style="font-size:11px;color:var(--t3)" id="niveaux-badge-label">Débutant</span>
       </div>
     </div>
   </div>
-  <div class="ct" id="niveaux-content"></div>
+  <div class="ct" id="niveaux-content">
+    <div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>
+  </div>
 </div>
 
 <!-- ══ ADMIN ══ -->
@@ -2522,10 +2537,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="hero-s">Gestion complète : utilisateurs, progressions, ventes, commissions, évaluations, contenus, abonnements.</div>
       </div>
       <div class="sg">
-        <div class="sc"><div class="sc-l">Membres actifs</div><div class="sc-v" id="adm-members">48</div><div class="sc-c">↑ 6 ce mois</div></div>
-        <div class="sc"><div class="sc-l">Abonnés Pro (67€/mois)</div><div class="sc-v" style="color:var(--gold)" id="adm-subs">31</div><div class="sc-c">1 567 €/mois récurrent</div></div>
-        <div class="sc"><div class="sc-l">Ventes totales</div><div class="sc-v" id="adm-sales">23</div><div class="sc-c">↑ 5 ce mois</div></div>
-        <div class="sc"><div class="sc-l">Commissions dues</div><div class="sc-v" style="color:var(--orange)" id="adm-comm">9 450 €</div><div class="sc-c m">À verser</div></div>
+        <div class="sc"><div class="sc-l">Membres inscrits</div><div class="sc-v" id="adm-members">—</div><div class="sc-c" id="adm-members-caption"></div></div>
+        <div class="sc"><div class="sc-l">Abonnés actifs (67€/mois)</div><div class="sc-v" style="color:var(--gold)" id="adm-subs">—</div><div class="sc-c" id="adm-subs-caption"></div></div>
+        <div class="sc"><div class="sc-l">Ventes totales</div><div class="sc-v" id="adm-sales">—</div><div class="sc-c" id="adm-sales-caption"></div></div>
+        <div class="sc"><div class="sc-l">Commissions dues</div><div class="sc-v" style="color:var(--orange)" id="adm-comm">—</div><div class="sc-c m">À verser</div></div>
       </div>
       <div class="tabs">
         <button class="tab on" onclick="switchTab(this)">Membres</button>
@@ -2879,6 +2894,8 @@ function go(id, el){
   if(id==='challenges'){ try{ renderMissions(); }catch(e){} }
   if(id==='communaute'){ try{ loadFeed(); }catch(e){} }
   if(id==='commissions'){ try{ renderCommissions(); }catch(e){} }
+  if(id==='niveaux'){ try{ renderNiveaux(); }catch(e){} }
+  if(id==='profil'){ try{ refreshMyRevenue(); }catch(e){} }
   if(id==='admin'){ checkAdminAccess(); }
   openTileForPage(id);
 }
@@ -3058,6 +3075,135 @@ async function loadModules(){
   MODULES = built;
 }
 const modNotes = {1:'',2:'',3:'',4:'',5:'',6:'',7:''};
+
+// ══════════════════════════════════════════════════════════
+//  NIVEAUX — FIX (audit 2026-07-29) : STATE.niveau/STATE.xp
+//  n'étaient JAMAIS écrits nulle part dans le code (confirmé par grep) —
+//  "Niveau 2 · Certifié" / "Module 03 en cours" étaient des textes codés en
+//  dur dans le Dashboard, le Profil ET la page "Mes niveaux", identiques
+//  pour tout le monde quels que soient ses vrais résultats. La page "Mes
+//  niveaux" elle-même (#niveaux-content) n'avait aucune fonction de rendu
+//  — exactement le même bug silencieux que renderGameMap() pour l'Académie.
+// Le niveau est maintenant calculé en direct depuis le chiffre d'affaires
+// réel (table "sales"), jamais un compteur stocké qui pourrait désynchroniser.
+// ══════════════════════════════════════════════════════════
+const NIVEAUX_DEFS = [
+  { n:1, label:'Débutant', min:0,     bonus:null },
+  { n:2, label:'Certifié', min:500,   bonus:null },
+  { n:3, label:'Performer', min:2000, bonus:null },
+  { n:4, label:'Elite', min:5000,     bonus:'+10% commission' },
+  { n:5, label:'Légende', min:15000,  bonus:'+20% commission' },
+];
+
+let MY_REVENUE = 0;
+
+async function getMyTotalRevenue(){
+  if(!supa) return 0;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return 0;
+  const { data, error } = await supa
+    .from('sales').select('amount')
+    .eq('seller_user_id', session.user.id).eq('status', 'completed');
+  if(error){ console.error('[niveau] revenue:', error); return 0; }
+  return (data || []).reduce((sum, r) => sum + (r.amount || 0), 0) / 100;
+}
+
+async function refreshMyRevenue(){
+  MY_REVENUE = await getMyTotalRevenue();
+  try{ renderNiveauWidgets(); }catch(e){}
+  return MY_REVENUE;
+}
+
+function computeNiveauInfo(revenue){
+  let current = NIVEAUX_DEFS[0];
+  for(const tier of NIVEAUX_DEFS){ if(revenue >= tier.min) current = tier; }
+  const next = NIVEAUX_DEFS.find(t => t.n === current.n + 1) || null;
+  const pct = next ? Math.max(0, Math.min(Math.round((revenue - current.min) / (next.min - current.min) * 100), 100)) : 100;
+  return { current, next, pct };
+}
+
+// Le "module en cours" réel vient des données Supabase (MODULES), pas d'un
+// champ STATE.currentModule qui n'était lui non plus jamais mis à jour.
+function getCurrentModuleInfo(){
+  const nums = Object.keys(MODULES).map(Number).sort((a,b)=>a-b);
+  if(!nums.length) return null;
+  let cur = nums.find(n => MODULES[n].status === 'cur');
+  if(!cur) cur = nums.find(n => MODULES[n].status !== 'done');
+  if(cur) return { num: cur, title: MODULES[cur].title, done:false };
+  return { num: nums[nums.length-1], title: 'Formation terminée', done: true };
+}
+
+// Widgets Dashboard + Profil (mêmes données, deux affichages)
+function renderNiveauWidgets(){
+  const info = computeNiveauInfo(MY_REVENUE);
+  const modInfo = getCurrentModuleInfo();
+  const niveauLabel = `Niveau ${info.current.n} · ${info.current.label}`;
+  const moduleLabel = modInfo ? (modInfo.done ? modInfo.title : `Module ${String(modInfo.num).padStart(2,'0')} en cours`) : 'Aucun module';
+
+  const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+
+  setText('dash-niveau-label', niveauLabel);
+  setText('dash-module-label', moduleLabel);
+  setText('dash-niveau-pct-label', info.next ? `Progression niveau ${info.next.n}` : 'Niveau maximum atteint');
+  setText('dash-niveau-pct', info.pct + '%');
+  const dashBar = document.getElementById('dash-niveau-bar'); if(dashBar) dashBar.style.width = info.pct + '%';
+
+  const dotsEl = document.getElementById('dash-niveau-dots');
+  if(dotsEl){
+    dotsEl.innerHTML = NIVEAUX_DEFS.map(tier => {
+      const state = tier.n < info.current.n ? 'done' : tier.n === info.current.n ? 'current' : 'locked';
+      const circleStyle = state==='done' ? 'background:var(--green)' : state==='current' ? 'border:1.5px solid var(--orange)' : 'border:1.5px solid var(--b)';
+      const numColor = state==='done' ? 'color:#fff;font-weight:700' : state==='current' ? 'color:var(--orange);font-weight:700' : 'color:var(--t3)';
+      const labelColor = state==='done' ? 'var(--green)' : state==='current' ? 'var(--orange)' : 'var(--t3)';
+      const opacity = state==='locked' ? 'opacity:.4' : '';
+      return `<div style="text-align:center;${opacity}"><div style="width:24px;height:24px;border-radius:50%;${circleStyle};display:flex;align-items:center;justify-content:center;font-size:10px;${numColor};margin:0 auto 4px">${state==='done'?'✓':tier.n}</div><div style="font-size:8px;color:${labelColor}">N${tier.n}</div></div>`;
+    }).join('');
+  }
+
+  setText('profil-niveau-tag', niveauLabel);
+  setText('profil-module-tag', moduleLabel);
+  setText('profil-niveau-current', niveauLabel);
+  setText('profil-niveau-next', info.next ? `Niveau ${info.next.n} · ${info.next.label}` : 'Niveau maximum atteint');
+  setText('profil-niveau-bonus', info.current.bonus || '—');
+  setText('profil-niveau-revenue', MY_REVENUE.toLocaleString('fr-FR') + ' €');
+
+  setText('niveaux-badge-num', 'NIVEAU ' + info.current.n);
+  setText('niveaux-badge-label', info.current.label);
+}
+
+// Page "Mes niveaux" — n'avait ABSOLUMENT AUCUNE fonction de rendu avant ce
+// correctif : #niveaux-content restait vide en permanence pour tout le monde.
+async function renderNiveaux(){
+  const el = document.getElementById('niveaux-content');
+  if(!el) return;
+  await refreshMyRevenue();
+  const info = computeNiveauInfo(MY_REVENUE);
+
+  el.innerHTML = `
+    <div class="card" style="padding:22px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:800;color:var(--t3);text-transform:uppercase;margin-bottom:8px">Chiffre d'affaires cumulé</div>
+      <div style="font-size:28px;font-weight:900">${MY_REVENUE.toLocaleString('fr-FR')} €</div>
+      ${info.next
+        ? `<div style="font-size:12px;color:var(--t3);margin-top:6px">Encore ${(info.next.min - MY_REVENUE).toLocaleString('fr-FR')} € pour atteindre le Niveau ${info.next.n} · ${info.next.label}</div>`
+        : `<div style="font-size:12px;color:var(--green);margin-top:6px">Niveau maximum atteint 🎉</div>`}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${NIVEAUX_DEFS.map(tier => {
+        const state = tier.n < info.current.n ? 'done' : tier.n === info.current.n ? 'current' : 'locked';
+        const border = state==='current' ? 'border:1.5px solid var(--orange)' : state==='done' ? 'border:1px solid rgba(48,209,88,.3)' : 'border:1px solid var(--b)';
+        const bg = state==='current' ? 'background:rgba(255,159,10,.06)' : '';
+        return `<div class="card" style="padding:18px 20px;${border};${bg}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div>
+              <div style="font-size:14px;font-weight:800">${state==='done'?'✅':state==='current'?'⚡':'🔒'} Niveau ${tier.n} · ${tier.label}</div>
+              <div style="font-size:12px;color:var(--t3);margin-top:3px">À partir de ${tier.min.toLocaleString('fr-FR')} € de chiffre d'affaires</div>
+            </div>
+            ${tier.bonus ? `<span class="tag tag-o">${tier.bonus}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
 
 function openModPage(num){
   // GARDE-FOU GLOBAL : tant que le Module 1 (lettre + paiement) n'est pas validé,
@@ -3442,23 +3588,14 @@ function renderChannelList(){
 // que RIEN dans le codebase n'écrit jamais (confirmé par grep) — cette page
 // affichait donc "0 € / 500 €" pour absolument tout le monde, en permanence.
 // Lit désormais le vrai total de ventes réalisées (table "sales", RLS scopée
-// à seller_user_id = moi).
+// à seller_user_id = moi) via refreshMyRevenue() (voir plus bas).
 async function renderRevenus(){
   const el = document.getElementById('revenus-content');
   if(!el) return;
   const goal = (EV_STATE.objectifs && EV_STATE.objectifs.revenu) || 500;
-
-  let current = 0;
-  if(supa){
-    const { data: { session } } = await supa.auth.getSession();
-    if(session?.user){
-      const { data, error } = await supa
-        .from('sales').select('amount')
-        .eq('seller_user_id', session.user.id).eq('status', 'completed');
-      if(error) console.error('[revenus] sales:', error);
-      else current = (data || []).reduce((sum, r) => sum + (r.amount || 0), 0) / 100;
-    }
-  }
+  await refreshMyRevenue();
+  const current = MY_REVENUE;
+  const info = computeNiveauInfo(current);
 
   const pct = goal > 0 ? Math.min(Math.round(current/goal*100), 100) : 0;
   el.innerHTML = `
@@ -3470,7 +3607,7 @@ async function renderRevenus(){
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="sc"><div class="sc-l">Ventes réalisées (total)</div><div class="sc-v" style="color:var(--green)">${current.toLocaleString('fr-FR')} €</div></div>
-      <div class="sc"><div class="sc-l">Niveau actuel</div><div class="sc-v">${STATE.niveau||1}</div></div>
+      <div class="sc"><div class="sc-l">Niveau actuel</div><div class="sc-v">Niveau ${info.current.n} · ${info.current.label}</div></div>
     </div>`;
 }
 
@@ -3825,6 +3962,9 @@ async function checkAdminAccess(){
     if(resp.ok && data.authorized === true){
       document.getElementById('admin-gate').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
+      try{ await renderAdminStats(); }catch(e){ console.error('[admin] stats:', e); }
+      try{ await renderRealMembers(); }catch(e){ console.error('[admin] members:', e); }
+      try{ await renderAdminCommissions(); }catch(e){ console.error('[admin] commissions list:', e); }
     } else {
       setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
     }
@@ -3840,11 +3980,155 @@ function lockAdmin(){
   toast('Back-office verrouillé');
 }
 
-// FIX #6 (audit 2026-07-20) : garde-fous pour éviter un ReferenceError au clic.
-// Implémentation réelle (table membres, export CSV, envoi groupé) à construire — décision produit, pas un bug.
-function renderRealMembers(){ /* TODO prochain sprint : lire gc_members et afficher le tableau admin */ }
-function exportMembersCSV(){ /* TODO prochain sprint : générer et télécharger le CSV depuis gc_members */ }
-function sendBroadcastEmail(){ /* TODO prochain sprint : nécessite EmailJS configuré (hors périmètre actuel) */ }
+// FIX (audit 2026-07-29) : la totalité de ce bloc était soit des nombres codés
+// en dur dans le HTML (48 membres, 31 abonnés, 23 ventes, 9 450€ — jamais mis
+// à jour), soit des fonctions vides marquées TODO qui laissaient
+// #admin-real-members bloqué sur "Chargement..." pour l'éternité. Le
+// back-office du fondateur affichait donc des chiffres 100% fictifs en
+// permanence. Remplacé par de vraies requêtes (admin_list_subscribers(),
+// "sales", "commissions" — RLS admin déjà en place, voir migrations 0003/0004).
+
+async function renderAdminStats(){
+  if(!supa) return;
+  try{
+    const [{ data: subs, error: subsErr }, { data: sales, error: salesErr }, { data: comms, error: commsErr }] = await Promise.all([
+      supa.rpc('admin_list_subscribers'),
+      supa.from('sales').select('amount,status,created_at'),
+      supa.from('commissions').select('amount,status'),
+    ]);
+    if(subsErr) console.error('[admin] subscribers:', subsErr);
+    if(salesErr) console.error('[admin] sales:', salesErr);
+    if(commsErr) console.error('[admin] commissions:', commsErr);
+
+    const subsList = subs || [];
+    const salesList = (sales || []).filter(s => s.status === 'completed');
+    const commsList = comms || [];
+    const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0);
+
+    const activeSubs = subsList.filter(s => s.is_active).length;
+    const newMembersMonth = subsList.filter(s => new Date(s.created_at) >= startOfMonth).length;
+    const salesMonth = salesList.filter(s => new Date(s.created_at) >= startOfMonth).length;
+    const commissionsDue = commsList.filter(c => ['pending','validated'].includes(c.status)).reduce((s,c) => s + c.amount, 0) / 100;
+    const mrr = activeSubs * 67;
+
+    const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+    setTxt('adm-members', subsList.length);
+    setTxt('adm-members-caption', `↑ ${newMembersMonth} ce mois`);
+    setTxt('adm-subs', activeSubs);
+    setTxt('adm-subs-caption', `${mrr.toLocaleString('fr-FR')} €/mois récurrent`);
+    setTxt('adm-sales', salesList.length);
+    setTxt('adm-sales-caption', `↑ ${salesMonth} ce mois`);
+    setTxt('adm-comm', commissionsDue.toLocaleString('fr-FR') + ' €');
+  }catch(e){ console.error('[admin] stats exception:', e); }
+}
+
+let ADMIN_MEMBERS_CACHE = [];
+
+async function renderRealMembers(){
+  const el = document.getElementById('admin-real-members');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('admin_list_subscribers');
+  if(error){
+    console.error('[admin] members:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement — réessaie.</div>`;
+    return;
+  }
+  ADMIN_MEMBERS_CACHE = data || [];
+  if(!ADMIN_MEMBERS_CACHE.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucun membre inscrit pour l'instant.</div>`;
+    return;
+  }
+  el.innerHTML = ADMIN_MEMBERS_CACHE.map(m => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
+      <div>
+        <div style="font-size:13px;font-weight:700">${escapeHtml(m.email)}</div>
+        <div style="font-size:11px;color:var(--t3)">Inscrit le ${new Date(m.created_at).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;font-weight:700;color:${m.is_active ? 'var(--green)' : 'var(--t3)'}">${m.is_active ? '● Actif' : '○ Inactif'}</span>
+        <button class="btn btn-g" style="padding:4px 10px;font-size:11px" onclick="toggleMemberActive('${m.user_id}', ${!m.is_active})">${m.is_active ? 'Désactiver' : 'Activer'}</button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleMemberActive(userId, newStatus){
+  if(!supa) return;
+  const { error } = await supa.rpc('admin_set_subscriber_active', { target_user_id: userId, new_status: newStatus });
+  if(error){ console.error('[admin] toggle active:', error); toast('❌ ' + error.message); return; }
+  toast(newStatus ? '✓ Membre activé' : '✓ Membre désactivé');
+  await renderRealMembers();
+  await renderAdminStats();
+}
+
+function exportMembersCSV(){
+  if(!ADMIN_MEMBERS_CACHE.length){ toast('Aucun membre à exporter'); return; }
+  const header = 'email,is_active,stripe_customer_id,created_at\n';
+  const csvEscape = v => `"${String(v == null ? '' : v).replace(/"/g,'""')}"`;
+  const rows = ADMIN_MEMBERS_CACHE.map(m => [m.email, m.is_active, m.stripe_customer_id, m.created_at].map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'membres_generation_capable_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✓ Export CSV téléchargé');
+}
+
+// "Commissions à verser" — était une div vide, aucune fonction ne l'avait
+// jamais touchée. Réutilise admin_mark_commission_paid() (RPC déjà présente
+// en base depuis la migration 0003 mais jamais appelée nulle part côté front).
+async function renderAdminCommissions(){
+  const el = document.getElementById('admin-comm-list');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data: comms, error } = await supa
+    .from('commissions').select('id,seller_id,amount,status,created_at')
+    .in('status', ['pending','validated']).order('created_at');
+  if(error){
+    console.error('[admin] commissions list:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
+    return;
+  }
+  if(!comms || !comms.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune commission en attente de versement.</div>`;
+    return;
+  }
+
+  const emailBySellerId = {};
+  ADMIN_MEMBERS_CACHE.forEach(m => emailBySellerId[m.user_id] = m.email);
+
+  el.innerHTML = comms.map(c => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--b)">
+      <div>
+        <div style="font-size:13px;font-weight:700">${escapeHtml(emailBySellerId[c.seller_id] || c.seller_id)}</div>
+        <div style="font-size:11px;color:var(--t3)">${(c.amount/100).toLocaleString('fr-FR')} € · ${new Date(c.created_at).toLocaleDateString('fr-FR')} · ${c.status === 'pending' ? 'En attente' : 'Validée'}</div>
+      </div>
+      <button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="markCommissionPaid('${c.id}')">Marquer payée</button>
+    </div>`).join('');
+}
+
+async function markCommissionPaid(commissionId){
+  if(!supa) return;
+  const { error } = await supa.rpc('admin_mark_commission_paid', { p_commission_id: commissionId });
+  if(error){ console.error('[admin] mark paid:', error); toast('❌ ' + error.message); return; }
+  toast('✓ Commission marquée comme payée');
+  await renderAdminCommissions();
+  await renderAdminStats();
+}
+
+// L'envoi groupé nécessite un vrai fournisseur email configuré (EmailJS ou
+// équivalent) — décision produit/infrastructure, pas quelque chose à
+// simuler silencieusement. Message honnête plutôt qu'un no-op invisible.
+function sendBroadcastEmail(){
+  if(typeof EMAILJS_CONFIG === 'undefined' || EMAILJS_CONFIG.publicKey === 'EMAILJS_PUBLIC_KEY'){
+    toast('⚠️ Envoi groupé non configuré — remplis EMAILJS_CONFIG en haut du fichier pour l\'activer.');
+    return;
+  }
+  toast('⚠️ Envoi groupé à tous les membres pas encore implémenté côté serveur.');
+}
 
 // Ouvre une fiche PDF. Les fichiers doivent être déposés dans un dossier /pdfs/
 // à la racine du site Netlify, avec exactement les mêmes noms que ceux passés ici.
@@ -4389,9 +4673,14 @@ async function sendResetEmail(){
 // Déconnexion
 async function signOutUser(){
   if(supa) await supa.auth.signOut();
-  STATE.module1Validated = false;
-  STATE.subscribed = false;
-  try{ localStorage.removeItem('gc_ok'); localStorage.removeItem('gc_code'); }catch(e){}
+  try{
+    localStorage.removeItem('gc_ok');
+    localStorage.removeItem('gc_code');
+    localStorage.removeItem('gc_site_state_v1');
+    localStorage.removeItem('gc_ev_state_v1');
+  }catch(e){}
+  resetLocalUserState();
+  _lastAuthSuccessToken = null;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById('page-accueil').classList.add('on');
   toast('À bientôt !');
@@ -4413,6 +4702,16 @@ async function onAuthSuccess(session){
   if(!session?.user) return;
   if(session.access_token && session.access_token === _lastAuthSuccessToken) return;
   _lastAuthSuccessToken = session.access_token || null;
+
+  // Sécurité multi-compte sur un même navigateur (voir resetLocalUserState) :
+  // si l'état local appartient à un email différent de celui qui vient de se
+  // connecter, on repart de zéro avant d'afficher quoi que ce soit — sinon ce
+  // compte hériterait du nom/niveau/notifications du compte précédemment
+  // utilisé sur cet appareil.
+  const incomingEmail = (session.user.email || '').toLowerCase();
+  if(STATE.memberEmail && STATE.memberEmail.toLowerCase() !== incomingEmail){
+    resetLocalUserState();
+  }
   STATE.memberEmail = session.user.email;
 
   if(!supa) return authNotConfigured();
@@ -4431,6 +4730,7 @@ async function onAuthSuccess(session){
     toast('Chargement de tes modules...');
     await loadModules();
     try{ await loadProfile(); }catch(e){ console.error('[profile] load:', e); }
+    try{ await refreshMyRevenue(); }catch(e){ console.error('[niveau] refresh:', e); }
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     document.getElementById('page-dashboard').classList.add('on');
     try{ renderAll(); }catch(e){}
@@ -4694,14 +4994,17 @@ async function handleCheckoutReturn(){
 // jour, suivi des actions) n'était JAMAIS persisté — un simple rafraîchissement
 // de page effaçait silencieusement tout ce que l'utilisateur venait de saisir.
 // Persisté maintenant dans localStorage, comme STATE.
-function loadEVState(){
-  const defaults = {
+function evStateDefaults(){
+  return {
     objectifs: { contacts:20, rdv:4, propositions:2, revenu:500, engagement:'' },
     semaine: { contacts:0, rdv:0, propositions:0, revenu:0 },
     jouractuel: { contacts:0, rdv:0, propositions:0, humeur:'', engagement:'', checkindone:false },
     planDuJour: [],
     suiviActions: [],
   };
+}
+function loadEVState(){
+  const defaults = evStateDefaults();
   try{
     const saved = JSON.parse(localStorage.getItem('gc_ev_state_v1') || '{}');
     return {
@@ -4716,6 +5019,50 @@ function loadEVState(){
 function saveEVState(){ try{ localStorage.setItem('gc_ev_state_v1', JSON.stringify(EV_STATE)); }catch(e){} }
 
 let EV_STATE = loadEVState();
+
+// FIX (audit 2026-07-29) : STATE/EV_STATE vivent dans localStorage, PAS liés
+// au compte Supabase. Si une deuxième personne se connecte sur le même
+// navigateur après une première (poste partagé, ou simplement l'appareil du
+// fondateur utilisé pour tester plusieurs comptes), elle héritait du nom, du
+// niveau, des notifications, etc. de la personne précédente tant qu'aucune
+// donnée réelle ne les écrasait. Remet tout à zéro : appelé à la
+// déconnexion ET automatiquement si l'email qui se connecte ne correspond
+// pas à celui déjà stocké localement (cas où la déconnexion n'a jamais été
+// cliquée : fermeture d'onglet, changement de compte direct...).
+function resetLocalUserState(){
+  STATE.module1Validated = false;
+  STATE.subscribed = false;
+  STATE.memberCode = '';
+  STATE.memberName = 'Membre';
+  STATE.memberEmail = '';
+  STATE.module1Letter = '';
+  STATE.prospects = 0;
+  STATE.reponses = 0;
+  STATE.rdv = 0;
+  STATE.propositions = 0;
+  STATE.commissions = 0;
+  STATE.niveau = 1;
+  STATE.xp = 0;
+  STATE.studioSubscribed = false;
+  STATE.videosVues = {};
+  STATE.currentModule = 1;
+  STATE.currentVideo = 0;
+  STATE.coachHistory = [];
+  STATE.scanResult = null;
+  STATE.streak = 0;
+  STATE.streakGoal = 7;
+  STATE.coaching = [];
+  STATE.notifications = [];
+  STATE.subPrice = 67;
+  saveState();
+
+  EV_STATE = evStateDefaults();
+  saveEVState();
+
+  PROFILE = { display_name: null, avatar_emoji: '🙂', objectives: {} };
+  MY_REVENUE = 0;
+  MODULES = {};
+}
 
 function initEspaceVendeur(){
   // Date du jour
