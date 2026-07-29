@@ -1235,17 +1235,17 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 <div class="page" id="page-academie">
   <div class="topbar">
     <div class="tb-title">Académie</div>
-    <div class="tb-sub" style="margin-left:6px">— Parcours principal · Gratuit</div>
-    <div class="tb-right"><span style="font-size:13px;color:var(--t3)">3 / 6 modules</span></div>
+    <div class="tb-sub" style="margin-left:6px">— Parcours principal</div>
+    <div class="tb-right"><span style="font-size:13px;color:var(--t3)" id="academie-modules-count">7 modules</span></div>
   </div>
   <div class="ct">
     <div class="hero">
       <div class="hero-ey">École d'exécution</div>
       <div class="hero-t">Ton parcours.</div>
-      <div class="hero-s">Le Module 01 est ta porte d'entrée — lettre d'engagement + accès fondateur. Une fois franchi, tout le reste s'ouvre librement.</div>
+      <div class="hero-s">Ton abonnement Génération Capable te donne l'accès complet et immédiat à l'ensemble des 7 modules.</div>
     </div>
 
-    <!-- CARTE DE JEU façon Mario : 6 modules, Module 01 stylé comme porte d'entrée -->
+    <!-- CARTE DE JEU façon Mario : 7 modules, accès complet et immédiat pour tout abonné actif -->
     <div id="game-map-mount"></div>
 
     <!-- Vue liste de secours, masquée par CSS, gardée pour cohérence interne -->
@@ -1715,7 +1715,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
         <div class="pw-body">
           <div class="pw-perks">
-            <div class="pw-perk"><span class="ico">✓</span><span>Toutes les fiches PDF des 6 modules réunies</span></div>
+            <div class="pw-perk"><span class="ico">✓</span><span>Toutes les fiches PDF des 7 modules réunies</span></div>
             <div class="pw-perk"><span class="ico">✓</span><span>Scripts de vente et d'objections additionnels</span></div>
             <div class="pw-perk"><span class="ico">✓</span><span>Mises à jour régulières</span></div>
           </div>
@@ -2973,6 +2973,89 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 // ══════════════════════════════════════════════════════════
 let MODULES = {};
 
+// FIX (audit 2026-07-29) : renderGameMap() et renderModGridFromGameModules()
+// étaient appelées à 3 endroits (renderAll(), go('academie')) mais n'ont
+// jamais été définies — la page Académie était donc TOUJOURS vide (le CSS de
+// secours ".mg" est en display:none à toutes les tailles d'écran). L'échec
+// était silencieux : renderAll() enveloppe chaque appel dans un try/catch qui
+// avale la ReferenceError. Cette fonction construit réellement la carte de
+// niveaux à partir de MODULES (chargé depuis Supabase par loadModules()) — un
+// abonné actif a accès immédiat et complet aux 7 modules, sans verrou.
+function renderGameMap(){
+  const mount = document.getElementById('game-map-mount');
+  if(!mount) return;
+
+  const nums = Object.keys(MODULES).map(Number).sort((a,b)=>a-b);
+  if(!nums.length){
+    mount.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--t3);font-size:13px">Chargement des modules...</div>`;
+    return;
+  }
+
+  const aligns = ['align-l','align-c','align-r'];
+  let doneCount = 0;
+
+  const rows = nums.map((num, i) => {
+    const m = MODULES[num];
+    const align = aligns[i % aligns.length];
+    // Un abonné actif (seule façon d'atteindre cette page, voir go()) a accès
+    // à tout immédiatement : aucun module n'est verrouillé par l'abonnement.
+    // Le statut ('done'/'cur'/'open') reste un indicateur de progression, pas
+    // un verrou d'accès.
+    const status = m.status === 'done' ? 'is-done' : m.status === 'cur' ? 'is-cur' : 'is-open';
+    if(m.status === 'done') doneCount++;
+
+    const pct = m.pct || 0;
+    const stars = [1,2,3].map(s => {
+      const filled = pct >= s * 33;
+      return `<span class="gm-star${filled?'':' empty'}">★</span>`;
+    }).join('');
+
+    const circleInner = m.status === 'done'
+      ? '<span class="gm-check-ico">✓</span>'
+      : `<span class="gm-circle-num">${m.num || num}</span>`;
+
+    const curBadge = m.status === 'cur' ? `<div class="gm-current-badge">En cours</div>` : '';
+    const pctColor = pct >= 100 ? 'var(--green)' : pct > 0 ? 'var(--orange)' : 'var(--t3)';
+
+    return `<div class="gm-row ${align}">
+      <div class="gm-node ${status}" onclick="openModPage(${num})">
+        ${curBadge}
+        <div class="gm-circle">${circleInner}<div class="gm-stars">${stars}</div></div>
+        <div class="gm-label-box">
+          <div class="gm-label-num">Module ${m.num || num}</div>
+          <div class="gm-label-title">${escapeHtml(m.title || '')}</div>
+          <div class="gm-label-pct" style="color:${pctColor}">${pct}%</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  mount.innerHTML = `<div class="gm-wrap"><div class="gm-nodes">${rows}</div></div>`;
+
+  const counter = document.getElementById('academie-modules-count');
+  if(counter) counter.textContent = `${doneCount} / ${nums.length} modules`;
+}
+
+// Vue liste de secours (".mg", masquée par CSS à toutes les tailles d'écran
+// — voir les media queries associées). Implémentée quand même pour qu'un
+// changement CSS futur qui la réactiverait affiche du contenu réel, jamais
+// une grille vide.
+function renderModGridFromGameModules(){
+  const grid = document.getElementById('mod-grid');
+  if(!grid) return;
+  const nums = Object.keys(MODULES).map(Number).sort((a,b)=>a-b);
+  grid.innerHTML = nums.map(num => {
+    const m = MODULES[num];
+    const badge = m.status === 'done' ? '✓ Validé' : m.status === 'cur' ? `En cours · ${m.pct||0}%` : 'À faire';
+    const badgeColor = m.status === 'done' ? 'var(--green)' : m.status === 'cur' ? 'var(--orange)' : 'var(--t3)';
+    return `<div class="mod-card" onclick="openModPage(${num})" style="cursor:pointer">
+      <div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Module ${m.num || num}</div>
+      <div style="font-size:14px;font-weight:700;margin:4px 0">${escapeHtml(m.title || '')}</div>
+      <div style="font-size:11.5px;font-weight:700;color:${badgeColor}">${badge}</div>
+    </div>`;
+  }).join('');
+}
+
 async function loadModules(){
   if(typeof supa === 'undefined' || !supa){
     console.warn('Supabase non configuré — contenu des modules indisponible.');
@@ -3072,12 +3155,16 @@ function openModPage(num){
     html += `</div>`;
   }
 
-  // Module 01 : CTA vers la lettre d'engagement + paiement, seul verrou vers la suite
+  // CTA d'abonnement : ne s'affiche que pour un visiteur qui a pu prévisualiser
+  // le Module 01 sans être encore abonné (aucun autre module n'est accessible
+  // sans abonnement actif, voir le garde-fou en haut d'openModPage()). Un
+  // abonné actif a un accès complet et immédiat aux 7 modules — pas de
+  // "Module 01 terminé" à valider, pas de palier intermédiaire.
   if(num===1 && !STATE.module1Validated){
     html += `<div class="m1-cta-box" style="margin-top:28px;background:linear-gradient(160deg,rgba(245,197,24,.1),rgba(245,197,24,.02));border:1.5px solid rgba(245,197,24,.28);border-radius:16px;padding:24px">
-      <div style="font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Étape suivante</div>
-      <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px">Prêt à passer à la suite ?</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">Le Module 01 est terminé. Pour débloquer les Modules 02 à 07 et tout le reste de Génération Capable : active ton accès Génération Capable — ${STATE.subPrice}€/mois.</div>
+      <div style="font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Accès complet</div>
+      <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px">Débloque toute l'Académie</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">Active ton abonnement Génération Capable pour accéder immédiatement aux 7 modules complets — ${STATE.subPrice}€/mois.</div>
       <button class="btn btn-gold" onclick="openGateModal()">🔑 Débloquer l'accès</button>
     </div>`;
   }
@@ -3605,7 +3692,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) avec ce format exact :
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await response.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
     const fb = JSON.parse(clean);
@@ -3614,7 +3701,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) avec ce format exact :
     renderNotifs();
   } catch(e) {
     console.error('[GC-IA] Échec:', e);
-    resultEl.innerHTML = renderApiError('submitEvalIA()');
+    resultEl.innerHTML = renderApiError('submitEvalIA()', e);
   }
   btn.disabled = false;
   btnTxt.textContent = '⚡ Analyser ma semaine';
@@ -3674,7 +3761,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) :
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await response.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
     const fb = JSON.parse(clean);
@@ -3682,7 +3769,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) :
     STATE.coaching.unshift({ico:'⚡', ico_bg:'rgba(41,151,255,.12)', t:`${cat} — Feedback IA reçu`, d:`Analyse instantanée · À l'instant`, status:'Feedbacké', stag:'tag-g', fb: fb.conseil_final});
   } catch(e) {
     console.error('[GC-IA] Échec:', e);
-    resultEl.innerHTML = renderApiError('submitCoachIA()');
+    resultEl.innerHTML = renderApiError('submitCoachIA()', e);
   }
   btn.disabled = false;
   btnTxt.textContent = '⚡ Analyser et recevoir mon feedback';
@@ -3731,13 +3818,31 @@ function toast(msg){
 // une analyse en échec plantait silencieusement au lieu d'afficher un message, laissant
 // le spinner "Génération en cours..." bloqué à l'infini. Cette fonction affiche un message
 // clair + un bouton Réessayer (relance la fonction d'origine quand son nom est fourni).
-function renderApiError(retryCall){
+// FIX (audit 2026-07-29) : le message était toujours "Analyse indisponible pour
+// le moment" quelle que soit la cause réelle (clé API absente/invalide, quota
+// dépassé, timeout, JSON tronqué...) — impossible à diagnostiquer sans fouiller
+// les logs Netlify. ai-proxy.js renvoie maintenant un code d'erreur typé
+// (NO_API_KEY/INVALID_API_KEY/RATE_LIMITED/TIMEOUT/PROVIDER_DOWN/...) : on
+// l'affiche pour de vrai, avec un message adapté à chaque cas.
+function renderApiError(retryCall, err){
   const retryBtn = retryCall
     ? `<button class="btn btn-g" style="margin-top:12px" onclick="${retryCall}">↻ Réessayer</button>`
     : '';
+  const messages = {
+    NO_API_KEY: "Aucune clé IA n'est configurée sur le serveur — contacte le support.",
+    INVALID_API_KEY: "La clé IA du serveur est invalide ou expirée — contacte le support.",
+    RATE_LIMITED: "Trop de demandes en ce moment — réessaie dans quelques instants.",
+    TIMEOUT: "Le service IA met trop de temps à répondre — réessaie.",
+    PROVIDER_DOWN: "Le service IA rencontre un incident — réessaie dans quelques instants.",
+    PAYLOAD_TOO_LARGE: "Ta demande est trop longue — raccourcis le texte et réessaie.",
+    TRUNCATED_RESPONSE: "La réponse a été coupée avant la fin — réessaie.",
+    EMPTY_RESPONSE: "Le service IA n'a rien renvoyé — réessaie.",
+  };
+  const code = err && err.code;
+  const detail = (code && messages[code]) || (err && err.message) || "Le service d'analyse IA n'a pas répondu. Réessaie dans quelques secondes.";
   return `<div style="padding:22px 18px;text-align:center;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:10px">
-    <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">⚠️ Analyse indisponible pour le moment</div>
-    <div style="font-size:12px;color:var(--t3);line-height:1.5">Le service d'analyse IA n'a pas répondu. Réessaie dans quelques secondes.</div>
+    <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">⚠️ Analyse indisponible</div>
+    <div style="font-size:12px;color:var(--t3);line-height:1.5">${escapeHtml(detail)}</div>
     ${retryBtn}
   </div>`;
 }
@@ -4103,7 +4208,7 @@ async function sendConfirmationEmail(toName, toEmail, type){
   const templates = {
     academie: {
       subject: 'Bienvenue dans Génération Capable 🔥',
-      message: `Bonjour ${toName},\n\nTon accès à l'Académie Génération Capable est activé.\n\nTu peux maintenant accéder à l'intégralité des 6 modules depuis ton espace membre.\n\nTon premier défi : terminer le Module 01 — Le Réveil aujourd'hui.\n\nÀ tout de suite sur la plateforme,\nEnzo — Génération Capable`
+      message: `Bonjour ${toName},\n\nTon accès à l'Académie Génération Capable est activé.\n\nTu peux maintenant accéder à l'intégralité des 7 modules depuis ton espace membre.\n\nTon premier défi : terminer le Module 01 — Le Réveil aujourd'hui.\n\nÀ tout de suite sur la plateforme,\nEnzo — Génération Capable`
     },
     ecosysteme: {
       subject: 'Écosystème Génération Capable activé ✅',
@@ -4319,7 +4424,7 @@ Réponds STRICTEMENT en JSON :
       body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const plan = JSON.parse(raw.replace(/```json|```/g,'').trim());
     EV_STATE.planDuJour = plan.actions||[];
@@ -4327,7 +4432,7 @@ Réponds STRICTEMENT en JSON :
     renderSuivi();
   } catch(e){
     console.error('[GC-IA] Échec:', e);
-    el.innerHTML = renderApiError('genererPlanDuJour()');
+    el.innerHTML = renderApiError('genererPlanDuJour()', e);
   }
 }
 
@@ -4443,14 +4548,14 @@ Réponds STRICTEMENT en JSON avec les 6 étapes de feedback :
       body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const fb = JSON.parse(raw.replace(/```json|```/g,'').trim());
     renderRapportSoirResult(fb);
   } catch(e){
     console.error('[GC-IA] Échec:', e);
     document.getElementById('rs-result').style.display='block';
-    document.getElementById('rs-result').innerHTML = renderApiError('soumettreRapportSoir()');
+    document.getElementById('rs-result').innerHTML = renderApiError('soumettreRapportSoir()', e);
   }
   btn.disabled = false;
   btnTxt.textContent = '⚡ Analyser ma journée';
@@ -4521,14 +4626,14 @@ Réponds STRICTEMENT en JSON :
       body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1200, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const scan = JSON.parse(raw.replace(/```json|```/g,'').trim());
     renderScanResult(scan, resultEl);
     document.getElementById('scan-form-block').style.display='none';
   } catch(e){
     console.error('[GC-IA] Échec:', e);
-    resultEl.innerHTML = renderApiError('submitScanVendeur()');
+    resultEl.innerHTML = renderApiError('submitScanVendeur()', e);
   }
   btn.disabled = false;
   btnTxt.textContent = '🔬 Lancer mon diagnostic complet';
