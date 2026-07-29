@@ -23,10 +23,19 @@ const OFFERS = {
 };
 
 function getOffer(offerKey) {
+  console.log('offerKey =', offerKey);
+  console.log('STRIPE_PRICE_GC_67 =', process.env.STRIPE_PRICE_GC_67);
+
   const offer = OFFERS[offerKey];
+  console.log('offer =', offer);
+
   if (!offer) return null;
+
   const priceId = process.env[offer.priceEnvVar];
+  console.log('priceId =', priceId);
+
   if (!priceId) return null;
+
   return { key: offerKey, ...offer, priceId };
 }
 
