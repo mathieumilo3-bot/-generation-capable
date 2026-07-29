@@ -2602,6 +2602,31 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
       </div>
 
+      <!-- PRODUCTION — commandes CRM (admin_get_orders_overview / admin_set_order_status) -->
+      <div class="sec-hd">
+        <div class="sec-t">Production — commandes CRM</div>
+        <button class="btn btn-g" onclick="renderAdminOrders()">🔄 Actualiser</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="admin-orders-filters">
+        <button class="btn btn-p" style="padding:5px 12px;font-size:11.5px" data-orderfilter="all" onclick="setAdminOrdersFilter('all')">Toutes</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="paid" onclick="setAdminOrdersFilter('paid')">À faire</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="production" onclick="setAdminOrdersFilter('production')">En cours</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="delivered" onclick="setAdminOrdersFilter('delivered')">Livré</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="done" onclick="setAdminOrdersFilter('done')">Terminé</button>
+      </div>
+      <div id="admin-orders-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
+        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
+      </div>
+
+      <!-- RETRAITS — demandes des vendeurs (admin_get_payouts_overview / admin_mark_payout_paid) -->
+      <div class="sec-hd">
+        <div class="sec-t">Retraits vendeurs</div>
+        <button class="btn btn-g" onclick="renderAdminPayouts()">🔄 Actualiser</button>
+      </div>
+      <div id="admin-payouts-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
+        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
+      </div>
+
       <!-- CONTACTER LES MEMBRES -->
       <div class="sec-hd"><div class="sec-t">Envoyer un message à tous les membres</div></div>
       <div style="background:var(--bg1);border:1px solid var(--b);border-radius:14px;padding:22px">
@@ -4587,6 +4612,8 @@ async function checkAdminAccess(){
       try{ await renderAdminStats(); }catch(e){ console.error('[admin] stats:', e); }
       try{ await renderRealMembers(); }catch(e){ console.error('[admin] members:', e); }
       try{ await renderAdminCommissions(); }catch(e){ console.error('[admin] commissions list:', e); }
+      try{ await renderAdminOrders(); }catch(e){ console.error('[admin] orders overview:', e); }
+      try{ await renderAdminPayouts(); }catch(e){ console.error('[admin] payouts overview:', e); }
     } else {
       setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
     }
@@ -4739,6 +4766,117 @@ async function markCommissionPaid(commissionId){
   toast('✓ Commission marquée comme payée');
   await renderAdminCommissions();
   await renderAdminStats();
+}
+
+// ── Tableau de bord production (commandes CRM) — admin_get_orders_overview()
+//    / admin_set_order_status() (migration 0006/0010). "paid" n'apparaît
+//    jamais comme action ici : c'est Stripe qui l'a déjà fait passer à
+//    "paid", et seul le vendeur peut ensuite l'envoyer en production
+//    (sign_and_lock_order()) — l'admin ne pilote que production→livré→terminé.
+let ADMIN_ORDERS_CACHE = [];
+let ADMIN_ORDERS_FILTER = 'all';
+
+function setAdminOrdersFilter(filter){
+  ADMIN_ORDERS_FILTER = filter;
+  document.querySelectorAll('#admin-orders-filters .btn').forEach(b => {
+    const active = b.dataset.orderfilter === filter;
+    b.classList.toggle('btn-p', active);
+    b.classList.toggle('btn-g', !active);
+  });
+  renderAdminOrdersList();
+}
+
+async function renderAdminOrders(){
+  const el = document.getElementById('admin-orders-list');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('admin_get_orders_overview');
+  if(error){
+    console.error('[admin] orders overview:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
+    return;
+  }
+  ADMIN_ORDERS_CACHE = data || [];
+  renderAdminOrdersList();
+}
+
+function renderAdminOrdersList(){
+  const el = document.getElementById('admin-orders-list');
+  if(!el) return;
+  const rows = ADMIN_ORDERS_FILTER === 'all'
+    ? ADMIN_ORDERS_CACHE
+    : ADMIN_ORDERS_CACHE.filter(o => o.status === ADMIN_ORDERS_FILTER);
+
+  if(!rows.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune commande${ADMIN_ORDERS_FILTER !== 'all' ? ' dans ce statut' : ''} pour l'instant.</div>`;
+    return;
+  }
+  const statusLabels = { draft:'Brouillon', awaiting_payment:'Paiement en attente', paid:'Payée', production:'En production', delivered:'Livrée', done:'Terminée', cancelled:'Annulée', refunded:'Remboursée' };
+  el.innerHTML = rows.map(o => {
+    let actionsHtml = '';
+    if(o.status === 'paid' && !o.locked){
+      actionsHtml = `<span style="font-size:11px;color:var(--t3)">En attente d'envoi au studio par le vendeur</span>`;
+    } else if(o.status === 'production'){
+      actionsHtml = `<button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminAdvanceOrderStatus('${o.id}','delivered')">Marquer livrée</button>`;
+    } else if(o.status === 'delivered'){
+      actionsHtml = `<button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminAdvanceOrderStatus('${o.id}','done')">Marquer terminée</button>`;
+    } else if(o.status === 'done'){
+      actionsHtml = `<span style="font-size:11px;font-weight:700;color:var(--green)">✓ Terminée</span>`;
+    }
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o.client_name)} · ${escapeHtml(CRM_PRODUCT_LABELS[o.product_type] || o.product_type)}</div>
+        <div style="font-size:11px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o.seller_email)} · ${Number(o.price).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · ${statusLabels[o.status] || o.status}</div>
+      </div>
+      <div style="flex-shrink:0">${actionsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+async function adminAdvanceOrderStatus(orderId, newStatus){
+  if(!supa) return;
+  const { error } = await supa.rpc('admin_set_order_status', { p_order_id: orderId, p_new_status: newStatus });
+  if(error){ console.error('[admin] set order status:', error); toast('❌ ' + error.message); return; }
+  toast('✓ Statut mis à jour');
+  await renderAdminOrders();
+}
+
+// ── Retraits vendeurs — admin_get_payouts_overview() / admin_mark_payout_paid() ──
+async function renderAdminPayouts(){
+  const el = document.getElementById('admin-payouts-list');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('admin_get_payouts_overview');
+  if(error){
+    console.error('[admin] payouts overview:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune demande de retrait pour l'instant.</div>`;
+    return;
+  }
+  const statusLabels = { requested:'Demandé', paid:'Versé', failed:'Échoué', cancelled:'Annulé' };
+  el.innerHTML = rows.map(p => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.seller_email)}</div>
+        <div style="font-size:11px;color:var(--t3)">${Number(p.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · Demandé le ${new Date(p.requested_at).toLocaleDateString('fr-FR')} · ${statusLabels[p.status] || p.status}</div>
+      </div>
+      ${p.status === 'requested' ? `<button class="btn btn-p" style="padding:5px 12px;font-size:11px;flex-shrink:0" onclick="adminMarkPayoutPaid('${p.id}')">Marquer versé</button>` : ''}
+    </div>`).join('');
+}
+
+async function adminMarkPayoutPaid(payoutId){
+  if(!supa) return;
+  if(!confirm('Confirmer que ce retrait a bien été viré au vendeur ? Cette action est définitive.')) return;
+  const { error } = await supa.rpc('admin_mark_payout_paid', { p_payout_id: payoutId });
+  if(error){ console.error('[admin] mark payout paid:', error); toast('❌ ' + error.message); return; }
+  toast('✓ Retrait marqué comme versé');
+  await renderAdminPayouts();
 }
 
 // L'envoi groupé nécessite un vrai fournisseur email configuré (EmailJS ou
