@@ -116,11 +116,24 @@ function applyPaywallGates(){
 }
 
 
+// FIX (audit 2026-07-29) : ciblait #sb-member-name / #sb-member-level, deux
+// IDs QUI N'EXISTAIENT NULLE PART dans le HTML (les vrais éléments sont
+// .sb-un et #sb-status) — cette fonction ne faisait donc STRICTEMENT RIEN,
+// et absolument chaque utilisateur voyait "Enzo" / "E" / "Module 3" codés
+// en dur dans la barre latérale, quel que soit son vrai compte.
 function renderProfile(){
-  var el = document.getElementById('sb-member-name');
-  if(el) el.textContent = STATE.memberName || 'Membre';
-  var lv = document.getElementById('sb-member-level');
-  if(lv) lv.textContent = 'Certifié · Module ' + (STATE.currentModule||1);
+  var nameEl = document.getElementById('sb-member-name');
+  if(nameEl) nameEl.textContent = (typeof PROFILE !== 'undefined' && PROFILE.display_name) || STATE.memberName || 'Membre';
+  var avEl = document.getElementById('sb-member-avatar');
+  if(avEl) avEl.textContent = (typeof PROFILE !== 'undefined' && PROFILE.avatar_emoji) || '🙂';
+  var statusEl = document.getElementById('sb-status');
+  if(statusEl){
+    var info = (typeof computeNiveauInfo === 'function') ? computeNiveauInfo(typeof MY_REVENUE !== 'undefined' ? MY_REVENUE : 0) : null;
+    var modInfo = (typeof getCurrentModuleInfo === 'function') ? getCurrentModuleInfo() : null;
+    var label = info ? info.current.label : 'Débutant';
+    var moduleTxt = modInfo ? (modInfo.done ? modInfo.title : ('Module ' + String(modInfo.num).padStart(2,'0'))) : '';
+    statusEl.textContent = '🟢 ' + label + (moduleTxt ? ' · ' + moduleTxt : '');
+  }
 }
 
 function renderProfileSubBlock(){
@@ -129,14 +142,20 @@ function renderProfileSubBlock(){
 }
 
 function renderDashboard(){
-  // Stats dashboard — IDs réels : d-pros, d-rdv, d-prop, d-comm
-  var map = {'d-pros':'prospects','d-rdv':'rdv','d-prop':'propositions','d-comm':'commissions'};
+  // FIX (audit 2026-07-29) : "d-comm" lisait STATE.commissions, un champ
+  // localStorage que rien n'écrit jamais — toujours 0€. Affiche désormais le
+  // vrai chiffre d'affaires (MY_REVENUE, voir refreshMyRevenue()).
+  // d-pros/d-rdv/d-prop restent à 0 honnêtement : il n'existe pas encore de
+  // suivi CRM réel des prospects/RDV (page "CRM & Outils" — hors périmètre
+  // de ce correctif, nécessite un vrai modèle de données prospects).
+  var map = {'d-pros':'prospects','d-rdv':'rdv','d-prop':'propositions'};
   Object.keys(map).forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;
-    var val = STATE[map[id]] || 0;
-    el.textContent = (id==='d-comm') ? (val + ' €') : val;
+    el.textContent = STATE[map[id]] || 0;
   });
+  var commEl = document.getElementById('d-comm');
+  if(commEl) commEl.textContent = (MY_REVENUE || 0).toLocaleString('fr-FR') + ' €';
 }
 
 </script>
@@ -871,7 +890,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
         <div class="nav-tile-body">
           <div class="ni" onclick="go('communaute',this);event.stopPropagation()"><span class="ni-ico">💬</span>Fil membres<span class="ni-lock-mini" id="sb-lock-eco-comm2">🔒</span></div>
-          <div class="ni" style="opacity:.5;pointer-events:none"><span class="ni-ico">🏅</span>Classement<span class="ni-lock-mini">🔒</span></div>
+          <div class="ni" onclick="go('opportunites',this);event.stopPropagation()"><span class="ni-ico">🏅</span>Classement</div>
         </div>
       </div>
 
@@ -882,7 +901,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <div style="font-size:12.5px;font-weight:800;letter-spacing:-.2px;margin-bottom:4px">🔒 Débloquer l'écosystème</div>
       <div style="font-size:10.5px;color:var(--t3);line-height:1.5;margin-bottom:8px">Vendre · Communauté · Ressources · Coaching privé</div>
       <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:12px">🎁 1 vente réalisée = ton mois offert</div>
-      <div style="font-size:9px;color:var(--t3);margin-bottom:8px;text-align:center">Engagement 6 mois</div>
+      <div style="font-size:9px;color:var(--t3);margin-bottom:8px;text-align:center">Engagement 3 mois</div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <button class="btn" style="width:100%;justify-content:center;font-size:14px;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;font-weight:800;border:none;padding:13px;border-radius:10px;cursor:pointer" onclick="openMo('mo-subscribe')">67 € / mois</button>
       </div>
@@ -900,10 +919,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <span onclick="go('legal',null)" style="font-size:10px;color:var(--t3);cursor:pointer;text-decoration:underline;text-underline-offset:3px">Mentions légales · CGV · RGPD</span>
     </div>
     <div class="sb-user" onclick="go('profil',null)">
-      <div class="sb-av">E</div>
+      <div class="sb-av" id="sb-member-avatar">🙂</div>
       <div class="sb-info">
-        <div class="sb-un">Enzo</div>
-        <div class="sb-us" id="sb-status">🟢 Certifié · Module 3</div>
+        <div class="sb-un" id="sb-member-name">Membre</div>
+        <div class="sb-us" id="sb-status">🟢 Débutant</div>
       </div>
     </div>
   </div>
@@ -1012,7 +1031,6 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 
     <div style="width:100%;max-width:360px;background:var(--bg1);border:1px solid rgba(229,185,74,.15);border-radius:24px;padding:40px 30px 32px;text-align:center;box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 40px 80px -35px rgba(0,0,0,.9), 0 0 60px -28px rgba(229,185,74,.22)">
       <div style="font-family:inherit;font-weight:600;color:var(--gold);font-size:2.6rem;line-height:1;text-shadow:0 0 40px rgba(229,185,74,.3)">67 € <span style="font-size:1rem;color:var(--t3);font-weight:400">/ mois</span></div>
-      <!-- ⚠️ TODO ENZO : le Hero disait auparavant "Engagement 6 mois", le brief dit "3 mois" — confirme le bon chiffre -->
       <div style="font-size:12px;color:var(--t3);margin:16px 0 26px;line-height:1.6">Engagement initial : 3 mois, afin d'assurer un véritable accompagnement et une progression cohérente.</div>
 
       <button class="btn btn-p" style="width:100%;justify-content:center;padding:15px;font-size:15px;font-weight:800;border-radius:999px;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;border:none" onclick="openMo('mo-subscribe')">Je rejoins — 67 € / mois →</button>
@@ -1202,21 +1220,15 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
           <div style="width:48px;height:48px;border-radius:14px;background:rgba(41,151,255,.12);border:1.5px solid rgba(41,151,255,.3);display:flex;align-items:center;justify-content:center;font-size:22px">⚡</div>
           <div>
-            <div style="font-size:16px;font-weight:800;letter-spacing:-.3px">Niveau 2 · Certifié</div>
-            <div style="font-size:11px;color:var(--t3);margin-top:2px">Module 03 en cours</div>
+            <div style="font-size:16px;font-weight:800;letter-spacing:-.3px" id="dash-niveau-label">Niveau 1 · Débutant</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px" id="dash-module-label">Chargement...</div>
           </div>
         </div>
-        <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between"><span>Progression niveau 3</span><span style="color:var(--orange)">62%</span></div>
+        <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;justify-content:space-between"><span id="dash-niveau-pct-label">Progression</span><span style="color:var(--orange)" id="dash-niveau-pct">0%</span></div>
         <div style="height:5px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden">
-          <div style="height:100%;width:62%;background:linear-gradient(90deg,var(--orange),#ffb43d);border-radius:5px"></div>
+          <div style="height:100%;width:0%;background:linear-gradient(90deg,var(--orange),#ffb43d);border-radius:5px" id="dash-niveau-bar"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;margin-top:18px">
-          <div style="text-align:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;margin:0 auto 4px">✓</div><div style="font-size:8px;color:var(--green)">N1</div></div>
-          <div style="text-align:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;margin:0 auto 4px">✓</div><div style="font-size:8px;color:var(--blue)">N2</div></div>
-          <div style="text-align:center"><div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--orange);font-weight:700;margin:0 auto 4px">3</div><div style="font-size:8px;color:var(--t3)">N3</div></div>
-          <div style="text-align:center;opacity:.4"><div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--t3);margin:0 auto 4px">4</div><div style="font-size:8px;color:var(--t3)">N4</div></div>
-          <div style="text-align:center;opacity:.4"><div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--t3);margin:0 auto 4px">5</div><div style="font-size:8px;color:var(--t3)">N5</div></div>
-        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;margin-top:18px" id="dash-niveau-dots"></div>
       </div>
 
       <!-- Activité récente (pleine largeur) -->
@@ -1235,17 +1247,17 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 <div class="page" id="page-academie">
   <div class="topbar">
     <div class="tb-title">Académie</div>
-    <div class="tb-sub" style="margin-left:6px">— Parcours principal · Gratuit</div>
-    <div class="tb-right"><span style="font-size:13px;color:var(--t3)">3 / 6 modules</span></div>
+    <div class="tb-sub" style="margin-left:6px">— Parcours principal</div>
+    <div class="tb-right"><span style="font-size:13px;color:var(--t3)" id="academie-modules-count">7 modules</span></div>
   </div>
   <div class="ct">
     <div class="hero">
       <div class="hero-ey">École d'exécution</div>
       <div class="hero-t">Ton parcours.</div>
-      <div class="hero-s">Le Module 01 est ta porte d'entrée — lettre d'engagement + accès fondateur. Une fois franchi, tout le reste s'ouvre librement.</div>
+      <div class="hero-s">Ton abonnement Génération Capable te donne l'accès complet et immédiat à l'ensemble des 7 modules.</div>
     </div>
 
-    <!-- CARTE DE JEU façon Mario : 6 modules, Module 01 stylé comme porte d'entrée -->
+    <!-- CARTE DE JEU façon Mario : 7 modules, accès complet et immédiat pour tout abonné actif -->
     <div id="game-map-mount"></div>
 
     <!-- Vue liste de secours, masquée par CSS, gardée pour cohérence interne -->
@@ -1341,7 +1353,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <div class="hero" style="margin-bottom:24px">
         <div class="hero-ey">Ce que gagnent les meilleurs</div>
         <div class="hero-t" style="font-size:26px">Voilà ce qui t'attend.</div>
-        <div class="hero-s" style="font-size:13.5px">Ces chiffres sont réels. Chaque vendeur ci-dessous a commencé exactement où tu es maintenant.</div>
+        <div class="hero-s" style="font-size:13.5px">Exemple illustratif de ce que peut représenter un classement de vendeurs actifs — chaque vendeur part exactement d'où tu es maintenant.</div>
       </div>
       <div class="preview-top5">
         <span class="preview-top5-badge">🔒 Classement complet en Pro</span>
@@ -1363,7 +1375,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
         <div class="pw-body">
           <div class="pw-price"><span class="pw-price-num">67 €</span><span class="pw-price-per">/ mois</span></div>
-          <div class="pw-price-note">Engagement 6 mois · 1 vente = ton mois offert 🎁</div>
+          <div class="pw-price-note">Engagement 3 mois · 1 vente = ton mois offert 🎁</div>
           <div class="pw-perks">
             <div class="pw-perk"><span class="ico">✓</span><span>Accès complet au <strong>Centre d'Opportunités</strong> — catalogue produits, commissions 40 à 50%</span></div>
             <div class="pw-perk"><span class="ico">✓</span><span>Espace <strong>Commissions</strong> — suivi des versements, historique, versement auto J+15</span></div>
@@ -1379,7 +1391,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   <div id="opp-content" style="display:none">
     <div class="topbar">
       <div class="tb-title">Centre d'Opportunités</div>
-      <div class="tb-right"><button class="btn btn-g" onclick="go('commissions',null)">Mes commissions →</button></div>
+      <div class="tb-right"><button class="btn btn-p" onclick="openMo('mo-prospect')">+ Nouveau prospect</button></div>
     </div>
     <div class="ct">
       <div class="hero">
@@ -1388,13 +1400,12 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="hero-s">Tu ne produis pas, tu ne livres pas. Tu vends. La production est 100% gérée par Génération Capable.</div>
       </div>
       <div class="og">
-        <div class="oc" onclick="toast('Bibliothèque formation ouverte')">
+        <div class="oc">
           <div class="oc-ico" style="background:rgba(41,151,255,.12)">🎓</div>
           <div class="oc-t">Formation Génération Capable</div>
           <div class="oc-p" style="color:var(--blue)">50%</div>
           <div class="oc-c">Commission par vente</div>
           <div class="oc-d">Le produit phare. Le plus puissant à vendre.</div>
-          <button class="btn btn-p" style="margin-top:14px;width:100%;justify-content:center" onclick="event.stopPropagation();toast('Ressources ouvertes')">Voir les ressources</button>
         </div>
         <div class="oc">
           <div class="oc-ico" style="background:rgba(191,90,242,.12)">🌐</div>
@@ -1429,12 +1440,32 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
       </div>
       <div class="div"></div>
-      <div class="sec-hd"><div class="sec-t">Classement vendeurs</div><span class="auto-badge">Mise à jour auto</span></div>
-      <div class="card" style="overflow:hidden">
-        <table class="at">
-          <thead><tr><th>#</th><th>Vendeur</th><th>Ventes / mois</th><th>Commissions</th><th>Niveau</th></tr></thead>
-          <tbody id="ranking-body"></tbody>
-        </table>
+
+      <!-- ══ CRM RÉEL — prospects, pipeline, commandes, commissions ══ -->
+      <div class="tabs" id="crm-tabs">
+        <button class="tab on" data-crmtab="prospects" onclick="switchCrmTab('prospects')">Mes prospects</button>
+        <button class="tab" data-crmtab="sales" onclick="switchCrmTab('sales')">Mes ventes</button>
+        <button class="tab" data-crmtab="commissions" onclick="switchCrmTab('commissions')">Mes commissions</button>
+        <button class="tab" data-crmtab="history" onclick="switchCrmTab('history')">Historique</button>
+        <button class="tab" data-crmtab="ranking" onclick="switchCrmTab('ranking')">Classement</button>
+      </div>
+
+      <div id="crm-panel-prospects" class="crm-panel"></div>
+
+      <div id="crm-panel-sales" class="crm-panel" style="display:none"></div>
+
+      <div id="crm-panel-commissions" class="crm-panel" style="display:none"></div>
+
+      <div id="crm-panel-history" class="crm-panel" style="display:none"></div>
+
+      <div id="crm-panel-ranking" class="crm-panel" style="display:none">
+        <div class="sec-hd"><div class="sec-t">Classement vendeurs</div><span class="auto-badge">Mise à jour auto</span></div>
+        <div class="card" style="overflow:hidden">
+          <table class="at">
+            <thead><tr><th>#</th><th>Vendeur</th><th>Ventes</th><th>Chiffre d'affaires</th></tr></thead>
+            <tbody id="ranking-body"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -1463,7 +1494,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
         <div class="pw-body">
           <div class="pw-price"><span class="pw-price-num">67 €</span><span class="pw-price-per">/ mois</span></div>
-          <div class="pw-price-note">Engagement 6 mois · 1 vente = ton mois offert 🎁</div>
+          <div class="pw-price-note">Engagement 3 mois · 1 vente = ton mois offert 🎁</div>
           <div class="pw-perks">
             <div class="pw-perk"><span class="ico">✓</span><span>Versement automatique de tes commissions <strong>J+15</strong></span></div>
             <div class="pw-perk"><span class="ico">✓</span><span>Historique complet et suivi en temps réel</span></div>
@@ -1477,29 +1508,40 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   </div>
   <div id="comm-content" style="display:none">
     <div class="topbar">
-      <div class="tb-title">Commissions</div>
-      <div class="tb-right"><span class="auto-badge">Versement auto J+15</span></div>
+      <div class="tb-title">Wallet</div>
+      <div class="tb-right"><span class="auto-badge">Maturation J+15 · Retraits ouverts à partir du 5</span></div>
     </div>
     <div class="ct">
       <div class="hero">
-        <div class="hero-ey">Centre des commissions</div>
-        <div class="hero-t" id="comm-hero">0 € disponibles.</div>
-        <div class="hero-s">Versement automatique 15 jours après chaque vente, après délai légal de rétractation.</div>
+        <div class="hero-ey">Mon Wallet</div>
+        <div class="hero-t" id="wallet-hero">0,00 € disponibles.</div>
+        <div class="hero-s">Chaque commission mûrit 15 jours après la vente (délai légal de rétractation). Les retraits sont ouverts à partir du 5 de chaque mois — la maturation continue indépendamment.</div>
       </div>
       <div class="sg">
-        <div class="sc"><div class="sc-l">Total généré</div><div class="sc-v" style="color:var(--green)" id="comm-total">0 €</div></div>
-        <div class="sc"><div class="sc-l">En attente</div><div class="sc-v" style="color:var(--orange)" id="comm-pend">0 €</div></div>
-        <div class="sc"><div class="sc-l">Versé ce mois</div><div class="sc-v" id="comm-paid">0 €</div></div>
-        <div class="sc"><div class="sc-l">Prochain versement</div><div class="sc-v" id="comm-next">—</div></div>
+        <div class="sc"><div class="sc-l">Disponible</div><div class="sc-v" style="color:var(--green)" id="wallet-available">0,00 €</div></div>
+        <div class="sc"><div class="sc-l">En attente (mûrit)</div><div class="sc-v" style="color:var(--orange)" id="wallet-pending">0,00 €</div></div>
+        <div class="sc"><div class="sc-l">Paiements en cours</div><div class="sc-v" id="wallet-inprogress">0,00 €</div></div>
+        <div class="sc"><div class="sc-l">Déjà retiré</div><div class="sc-v" id="wallet-withdrawn">0,00 €</div></div>
       </div>
-      <div class="sec-hd"><div class="sec-t">Historique</div></div>
-      <div class="card" style="padding:22px" id="comm-list">
+      <div id="wallet-debt-box" style="display:none;margin-bottom:16px"></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn btn-gold" id="wallet-withdraw-btn" onclick="requestWalletPayout()">💰 Retirer mes gains</button>
+      </div>
+      <div id="wallet-withdraw-msg" style="font-size:12px;color:var(--red);margin-bottom:24px"></div>
+
+      <div class="sec-hd"><div class="sec-t">Historique des commissions</div></div>
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:28px" id="comm-list">
         <div style="text-align:center;padding:36px 0">
           <div style="font-size:28px;margin-bottom:10px">💸</div>
           <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune commission pour l'instant</div>
           <div style="font-size:12px;color:var(--t3)">Ta première vente déclenchera ton premier versement automatique.</div>
-          <button class="btn btn-p" style="margin-top:16px" onclick="go('opportunites',null)">Voir les produits →</button>
+          <button class="btn btn-p" style="margin-top:16px" onclick="go('opportunites',null)">Voir mes prospects →</button>
         </div>
+      </div>
+
+      <div class="sec-hd"><div class="sec-t">Retraits</div></div>
+      <div class="card" style="padding:0;overflow:hidden" id="payouts-list">
+        <div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucun retrait pour l'instant.</div>
       </div>
     </div>
   </div>
@@ -1601,40 +1643,14 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="hero-t">Reste dans l'action.</div>
         <div class="hero-s">Chaque challenge complété rapporte une prime, en plus de tes commissions normales.</div>
       </div>
-      <div class="og">
-        <div class="oc" onclick="toast('Challenge rejoint ✓')">
-          <div class="oc-ico" style="background:rgba(255,159,10,.12)">⚡</div>
-          <div class="oc-t">5 RDV cette semaine</div>
-          <div class="oc-p" style="color:var(--orange)">+50 €</div>
-          <div class="oc-c">Prime bonus</div>
-          <div class="oc-d">2/5 RDV obtenus cette semaine.</div>
-        </div>
-        <div class="oc" onclick="toast('Challenge rejoint ✓')">
-          <div class="oc-ico" style="background:rgba(48,209,88,.12)">🎯</div>
-          <div class="oc-t">Première vente du mois</div>
-          <div class="oc-p" style="color:var(--green)">+100 €</div>
-          <div class="oc-c">Prime bonus</div>
-          <div class="oc-d">Sois le premier de ta cohorte à vendre ce mois-ci.</div>
-        </div>
-        <div class="oc" onclick="toast('Challenge rejoint ✓')">
-          <div class="oc-ico" style="background:rgba(191,90,242,.12)">🔥</div>
-          <div class="oc-t">7 jours de discipline</div>
-          <div class="oc-p" style="color:var(--purple)">Badge "Constant"</div>
-          <div class="oc-c">Récompense visuelle</div>
-          <div class="oc-d">Valide ta discipline 7 jours sans interruption.</div>
-        </div>
+      <div class="og" id="missions-grid">
+        <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement des missions...</div>
       </div>
       <div class="div"></div>
-      <div class="sec-hd"><div class="sec-t">Classement des challenges</div></div>
-      <div class="card" style="overflow:hidden">
-        <table class="at">
-          <thead><tr><th>#</th><th>Membre</th><th>Challenges complétés</th><th>Primes gagnées</th></tr></thead>
-          <tbody>
-            <tr><td>🥇</td><td style="font-weight:700">Camille R.</td><td>9</td><td style="color:var(--green);font-weight:700">680 €</td></tr>
-            <tr><td>🥈</td><td style="font-weight:700">Thomas M.</td><td>7</td><td style="color:var(--green);font-weight:700">510 €</td></tr>
-            <tr><td>🥉</td><td style="font-weight:700">Léa F.</td><td>6</td><td style="color:var(--green);font-weight:700">430 €</td></tr>
-          </tbody>
-        </table>
+      <div class="sec-hd"><div class="sec-t">Classement vendeurs</div></div>
+      <div class="card" style="padding:18px 20px">
+        <div style="font-size:12.5px;color:var(--t2);line-height:1.6">Le classement des challenges suit le même classement vendeurs que le Centre d'Opportunités — basé sur les ventes réelles, pas sur un score séparé.</div>
+        <button class="btn btn-g" style="margin-top:12px" onclick="go('opportunites',null)">Voir le classement complet →</button>
       </div>
     </div>
   </div>
@@ -1666,7 +1682,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   <div id="communaute-content" style="display:none">
     <div class="topbar">
       <div class="tb-title">Communauté</div>
-      <div class="tb-right"><button class="btn btn-p" onclick="toast('Publication créée')">+ Publier</button></div>
+      <div class="tb-right"><button class="btn btn-p" onclick="openMo('mo-new-post')">+ Publier</button></div>
     </div>
     <div class="ct">
       <div class="hero">
@@ -1674,28 +1690,8 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="hero-t">Tu n'es pas seul.</div>
         <div class="hero-s">Tous les membres actifs de Génération Capable, leurs victoires, leurs questions, leurs conseils.</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div class="card" style="padding:18px 20px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <div class="sb-av" style="width:34px;height:34px;font-size:13px">C</div>
-            <div><div style="font-size:13px;font-weight:700">Camille R.</div><div style="font-size:11px;color:var(--t3)">Il y a 2h</div></div>
-          </div>
-          <div style="font-size:13.5px;color:var(--t2);line-height:1.6">Première vente Pack Croissance bouclée ce matin 🔥 Le script de découverte du Module 6 a tout changé, merci Enzo.</div>
-        </div>
-        <div class="card" style="padding:18px 20px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <div class="sb-av" style="width:34px;height:34px;font-size:13px">K</div>
-            <div><div style="font-size:13px;font-weight:700">Kevin B.</div><div style="font-size:11px;color:var(--t3)">Hier</div></div>
-          </div>
-          <div style="font-size:13.5px;color:var(--t2);line-height:1.6">Quelqu'un a une astuce pour passer le barrage secrétaire en B2B ? Je bloque dessus depuis 3 jours.</div>
-        </div>
-        <div class="card" style="padding:18px 20px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <div class="sb-av" style="width:34px;height:34px;font-size:13px;background:linear-gradient(135deg,#f5c518,#e0a500);color:#1a1300">GC</div>
-            <div><div style="font-size:13px;font-weight:700">Génération Capable</div><div style="font-size:11px;color:var(--t3)">Il y a 3 jours</div></div>
-          </div>
-          <div style="font-size:13.5px;color:var(--t2);line-height:1.6">📣 Nouveau challenge cette semaine : 5 RDV = 50€ de bonus. Foncez.</div>
-        </div>
+      <div style="display:flex;flex-direction:column;gap:10px" id="feed-posts-list">
+        <div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement du fil...</div>
       </div>
     </div>
   </div>
@@ -1715,7 +1711,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
         <div class="pw-body">
           <div class="pw-perks">
-            <div class="pw-perk"><span class="ico">✓</span><span>Toutes les fiches PDF des 6 modules réunies</span></div>
+            <div class="pw-perk"><span class="ico">✓</span><span>Toutes les fiches PDF des 7 modules réunies</span></div>
             <div class="pw-perk"><span class="ico">✓</span><span>Scripts de vente et d'objections additionnels</span></div>
             <div class="pw-perk"><span class="ico">✓</span><span>Mises à jour régulières</span></div>
           </div>
@@ -2484,17 +2480,17 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 <div class="page" id="page-profil">
   <div class="topbar">
     <div class="tb-title">Mon profil</div>
-    <div class="tb-right"><button class="btn btn-g" onclick="toast('Profil mis à jour ✓')">Modifier</button></div>
+    <div class="tb-right"><button class="btn btn-g" onclick="openEditProfileModal()">Modifier</button></div>
   </div>
   <div class="ct">
     <div class="ph">
-      <div class="ph-av">E</div>
+      <div class="ph-av" id="profil-avatar">🙂</div>
       <div>
-        <div class="ph-name">Enzo</div>
-        <div class="ph-role">Fondateur · Génération Capable</div>
+        <div class="ph-name" id="profil-name">Membre</div>
+        <div class="ph-role" id="profil-objective">Aucun objectif défini pour l'instant</div>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <span class="tag tag-b">Niveau 2 · Certifié</span>
-          <span class="tag tag-o">Module 3 en cours</span>
+          <span class="tag tag-b" id="profil-niveau-tag">Niveau 1 · Débutant</span>
+          <span class="tag tag-o" id="profil-module-tag">Chargement...</span>
           <span class="tag tag-dim" id="profile-sub-tag">Abonnement Pro inactif</span>
         </div>
       </div>
@@ -2506,10 +2502,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <div class="card" style="padding:22px">
         <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Niveau & Progression</div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Niveau actuel</span><span style="font-weight:800;color:var(--blue)">Niveau 2 · Certifié</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Prochain niveau</span><span style="font-weight:700">Niveau 3 · Performer</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Bonus actuel</span><span>—</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Bonus Niveau 4 Elite</span><span style="color:var(--t3)">+10% commission</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Niveau actuel</span><span style="font-weight:800;color:var(--blue)" id="profil-niveau-current">Niveau 1 · Débutant</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Prochain niveau</span><span style="font-weight:700" id="profil-niveau-next">—</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Bonus actuel</span><span id="profil-niveau-bonus">—</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t2)">Chiffre d'affaires cumulé</span><span id="profil-niveau-revenue">0 €</span></div>
         </div>
         <div style="margin-top:16px">
           <button class="btn btn-p" style="width:100%;justify-content:center" onclick="go('niveaux',null)">Voir les niveaux →</button>
@@ -2530,12 +2526,14 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
     <div class="tb-sub" style="margin-left:6px">— Système de progression</div>
     <div class="tb-right">
       <div style="display:flex;align-items:center;gap:6px;background:rgba(41,151,255,.1);border:1px solid rgba(41,151,255,.2);border-radius:20px;padding:5px 12px">
-        <span style="font-size:11px;font-weight:800;color:var(--blue)">NIVEAU 2</span>
-        <span style="font-size:11px;color:var(--t3)">Certifié</span>
+        <span style="font-size:11px;font-weight:800;color:var(--blue)" id="niveaux-badge-num">NIVEAU 1</span>
+        <span style="font-size:11px;color:var(--t3)" id="niveaux-badge-label">Débutant</span>
       </div>
     </div>
   </div>
-  <div class="ct" id="niveaux-content"></div>
+  <div class="ct" id="niveaux-content">
+    <div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>
+  </div>
 </div>
 
 <!-- ══ ADMIN ══ -->
@@ -2568,10 +2566,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="hero-s">Gestion complète : utilisateurs, progressions, ventes, commissions, évaluations, contenus, abonnements.</div>
       </div>
       <div class="sg">
-        <div class="sc"><div class="sc-l">Membres actifs</div><div class="sc-v" id="adm-members">48</div><div class="sc-c">↑ 6 ce mois</div></div>
-        <div class="sc"><div class="sc-l">Abonnés Pro (67€/mois)</div><div class="sc-v" style="color:var(--gold)" id="adm-subs">31</div><div class="sc-c">1 567 €/mois récurrent</div></div>
-        <div class="sc"><div class="sc-l">Ventes totales</div><div class="sc-v" id="adm-sales">23</div><div class="sc-c">↑ 5 ce mois</div></div>
-        <div class="sc"><div class="sc-l">Commissions dues</div><div class="sc-v" style="color:var(--orange)" id="adm-comm">9 450 €</div><div class="sc-c m">À verser</div></div>
+        <div class="sc"><div class="sc-l">Membres inscrits</div><div class="sc-v" id="adm-members">—</div><div class="sc-c" id="adm-members-caption"></div></div>
+        <div class="sc"><div class="sc-l">Abonnés actifs (67€/mois)</div><div class="sc-v" style="color:var(--gold)" id="adm-subs">—</div><div class="sc-c" id="adm-subs-caption"></div></div>
+        <div class="sc"><div class="sc-l">Ventes totales</div><div class="sc-v" id="adm-sales">—</div><div class="sc-c" id="adm-sales-caption"></div></div>
+        <div class="sc"><div class="sc-l">Commissions dues</div><div class="sc-v" style="color:var(--orange)" id="adm-comm">—</div><div class="sc-c m">À verser</div></div>
       </div>
       <div class="tabs">
         <button class="tab on" onclick="switchTab(this)">Membres</button>
@@ -2601,6 +2599,40 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         </div>
       </div>
       <div id="admin-real-members" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
+        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
+      </div>
+
+      <!-- PRODUCTION — commandes CRM (admin_get_orders_overview / admin_set_order_status) -->
+      <div class="sec-hd">
+        <div class="sec-t">Production — commandes CRM</div>
+        <button class="btn btn-g" onclick="renderAdminOrders()">🔄 Actualiser</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="admin-orders-filters">
+        <button class="btn btn-p" style="padding:5px 12px;font-size:11.5px" data-orderfilter="all" onclick="setAdminOrdersFilter('all')">Toutes</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="paid" onclick="setAdminOrdersFilter('paid')">À faire</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="production" onclick="setAdminOrdersFilter('production')">En cours</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="delivered" onclick="setAdminOrdersFilter('delivered')">Livré</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="done" onclick="setAdminOrdersFilter('done')">Terminé</button>
+      </div>
+      <div id="admin-orders-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
+        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
+      </div>
+
+      <!-- RETRAITS — demandes des vendeurs (admin_get_payouts_overview / admin_mark_payout_paid) -->
+      <div class="sec-hd">
+        <div class="sec-t">Retraits vendeurs</div>
+        <button class="btn btn-g" onclick="renderAdminPayouts()">🔄 Actualiser</button>
+      </div>
+      <div id="admin-payouts-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
+        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
+      </div>
+
+      <!-- LITIGES — commissions gelées par un charge.dispute.created Stripe -->
+      <div class="sec-hd">
+        <div class="sec-t">Litiges Stripe en cours</div>
+        <button class="btn btn-g" onclick="renderAdminDisputes()">🔄 Actualiser</button>
+      </div>
+      <div id="admin-disputes-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
         <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
       </div>
 
@@ -2648,6 +2680,35 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   </div>
 </div>
 
+<div class="mo" id="mo-new-post">
+  <div class="md">
+    <div class="md-hd">
+      <div><div class="md-ey">Communauté</div><div class="md-t">Nouvelle publication</div></div>
+      <button class="md-cl" onclick="closeMo('mo-new-post')">✕</button>
+    </div>
+    <div class="md-bd">
+      <label>Ton message</label>
+      <textarea id="new-post-content" class="field" placeholder="Partage une victoire, une question, un conseil..." maxlength="2000" rows="5"></textarea>
+      <button class="btn btn-p" id="new-post-btn" style="width:100%;justify-content:center;margin-top:6px" onclick="createFeedPost()">Publier</button>
+    </div>
+  </div>
+</div>
+
+<div class="mo" id="mo-edit-profile">
+  <div class="md">
+    <div class="md-hd">
+      <div><div class="md-ey">Mon profil</div><div class="md-t">Modifier mes informations</div></div>
+      <button class="md-cl" onclick="closeMo('mo-edit-profile')">✕</button>
+    </div>
+    <div class="md-bd">
+      <label>Avatar (emoji)</label><input id="edit-profile-avatar" class="field" placeholder="🙂" maxlength="8">
+      <label>Pseudo affiché</label><input id="edit-profile-name" class="field" placeholder="Ton pseudo" maxlength="60">
+      <label>Objectif principal</label><textarea id="edit-profile-objective" class="field" placeholder="Ex: Décrocher 10 ventes ce mois-ci" maxlength="300"></textarea>
+      <button class="btn btn-p" id="edit-profile-btn" style="width:100%;justify-content:center;margin-top:6px" onclick="saveProfile()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="mo" id="mo-module">
   <div class="md">
     <div class="md-hd">
@@ -2671,22 +2732,42 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 <div class="mo" id="mo-prospect">
   <div class="md">
     <div class="md-hd">
-      <div><div class="md-ey">Pipeline</div><div class="md-t">Ajouter un prospect</div></div>
+      <div><div class="md-ey">Pipeline</div><div class="md-t">Nouveau prospect</div></div>
       <button class="md-cl" onclick="closeMo('mo-prospect')">✕</button>
     </div>
     <div class="md-bd">
-      <label>Nom / Entreprise</label><input class="field" placeholder="Ex: Restaurant Le Moulin">
-      <label>Canal de contact</label>
-      <select class="field"><option>Terrain</option><option>Téléphone</option><option>Instagram</option><option>LinkedIn</option><option>Email</option></select>
-      <label>Étape du pipeline</label>
-      <select class="field"><option>Contacté</option><option>Réponse obtenue</option><option>Qualifié</option><option>RDV obtenu</option><option>Proposition réalisée</option><option>Vendu</option></select>
+      <label>Prénom *</label><input class="field" id="pr-first-name" placeholder="Ex: Julie" maxlength="100">
+      <label>Nom *</label><input class="field" id="pr-last-name" placeholder="Ex: Martin" maxlength="100">
+      <label>Téléphone</label><input class="field" id="pr-phone" placeholder="Ex: 06 12 34 56 78" maxlength="30">
+      <label>Email</label><input class="field" id="pr-email" type="email" placeholder="Ex: julie@entreprise.fr" maxlength="200">
+      <label>Entreprise</label><input class="field" id="pr-company" placeholder="Ex: Restaurant Le Moulin" maxlength="200">
+      <label>SIRET</label><input class="field" id="pr-siret" placeholder="Ex: 123 456 789 00012" maxlength="20">
+      <label>Besoin(s)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="site_internet"> Site Internet</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="ia"> Solution IA</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="generation_capable"> Génération Capable</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="accompagnement"> Accompagnement</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;margin:0"><input type="checkbox" class="pr-need" value="autre"> Autre</label>
+      </div>
       <label>Notes</label>
-      <textarea class="field" placeholder="Besoins détectés, suite à donner..."></textarea>
+      <textarea class="field" id="pr-notes" maxlength="2000" placeholder="Besoins détectés, suite à donner..."></textarea>
+      <div id="pr-error" style="font-size:12px;color:var(--red);margin-bottom:8px"></div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-p" onclick="closeMo('mo-prospect');toast('Prospect ajouté au pipeline ✓')">Ajouter</button>
+        <button class="btn btn-p" id="pr-submit-btn" onclick="createProspect()">Ajouter</button>
         <button class="btn btn-g" onclick="closeMo('mo-prospect')">Annuler</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="mo" id="mo-prospect-detail">
+  <div class="md" style="max-width:640px">
+    <div class="md-hd">
+      <div><div class="md-ey">Prospect</div><div class="md-t" id="pd-title">—</div></div>
+      <button class="md-cl" onclick="closeMo('mo-prospect-detail')">✕</button>
+    </div>
+    <div class="md-bd" id="pd-body"></div>
   </div>
 </div>
 
@@ -2889,7 +2970,15 @@ function go(id, el){
   if(id==='espace-vendeur'){ initEspaceVendeur(); }
   if(id==='acquisition'){ try{ renderChannelList(); }catch(e){} }
   if(id==='revenus'){ try{ renderRevenus(); }catch(e){} }
-  if(id==='performance'){ try{ renderRanking(); }catch(e){} }
+  // FIX (audit 2026-07-29) : le tableau de classement (#ranking-body) est
+  // affiché sur la page "opportunites", pas "performance" — l'appel visait
+  // le mauvais onglet et ne remplissait jamais le tableau réellement visible.
+  if(id==='opportunites'){ try{ switchCrmTab('prospects'); }catch(e){} }
+  if(id==='challenges'){ try{ renderMissions(); }catch(e){} }
+  if(id==='communaute'){ try{ loadFeed(); }catch(e){} }
+  if(id==='commissions'){ try{ renderCommissions(); }catch(e){} }
+  if(id==='niveaux'){ try{ renderNiveaux(); }catch(e){} }
+  if(id==='profil'){ try{ refreshMyRevenue(); }catch(e){} }
   if(id==='admin'){ checkAdminAccess(); }
   openTileForPage(id);
 }
@@ -2973,6 +3062,89 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 // ══════════════════════════════════════════════════════════
 let MODULES = {};
 
+// FIX (audit 2026-07-29) : renderGameMap() et renderModGridFromGameModules()
+// étaient appelées à 3 endroits (renderAll(), go('academie')) mais n'ont
+// jamais été définies — la page Académie était donc TOUJOURS vide (le CSS de
+// secours ".mg" est en display:none à toutes les tailles d'écran). L'échec
+// était silencieux : renderAll() enveloppe chaque appel dans un try/catch qui
+// avale la ReferenceError. Cette fonction construit réellement la carte de
+// niveaux à partir de MODULES (chargé depuis Supabase par loadModules()) — un
+// abonné actif a accès immédiat et complet aux 7 modules, sans verrou.
+function renderGameMap(){
+  const mount = document.getElementById('game-map-mount');
+  if(!mount) return;
+
+  const nums = Object.keys(MODULES).map(Number).sort((a,b)=>a-b);
+  if(!nums.length){
+    mount.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--t3);font-size:13px">Chargement des modules...</div>`;
+    return;
+  }
+
+  const aligns = ['align-l','align-c','align-r'];
+  let doneCount = 0;
+
+  const rows = nums.map((num, i) => {
+    const m = MODULES[num];
+    const align = aligns[i % aligns.length];
+    // Un abonné actif (seule façon d'atteindre cette page, voir go()) a accès
+    // à tout immédiatement : aucun module n'est verrouillé par l'abonnement.
+    // Le statut ('done'/'cur'/'open') reste un indicateur de progression, pas
+    // un verrou d'accès.
+    const status = m.status === 'done' ? 'is-done' : m.status === 'cur' ? 'is-cur' : 'is-open';
+    if(m.status === 'done') doneCount++;
+
+    const pct = m.pct || 0;
+    const stars = [1,2,3].map(s => {
+      const filled = pct >= s * 33;
+      return `<span class="gm-star${filled?'':' empty'}">★</span>`;
+    }).join('');
+
+    const circleInner = m.status === 'done'
+      ? '<span class="gm-check-ico">✓</span>'
+      : `<span class="gm-circle-num">${m.num || num}</span>`;
+
+    const curBadge = m.status === 'cur' ? `<div class="gm-current-badge">En cours</div>` : '';
+    const pctColor = pct >= 100 ? 'var(--green)' : pct > 0 ? 'var(--orange)' : 'var(--t3)';
+
+    return `<div class="gm-row ${align}">
+      <div class="gm-node ${status}" onclick="openModPage(${num})">
+        ${curBadge}
+        <div class="gm-circle">${circleInner}<div class="gm-stars">${stars}</div></div>
+        <div class="gm-label-box">
+          <div class="gm-label-num">Module ${m.num || num}</div>
+          <div class="gm-label-title">${escapeHtml(m.title || '')}</div>
+          <div class="gm-label-pct" style="color:${pctColor}">${pct}%</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  mount.innerHTML = `<div class="gm-wrap"><div class="gm-nodes">${rows}</div></div>`;
+
+  const counter = document.getElementById('academie-modules-count');
+  if(counter) counter.textContent = `${doneCount} / ${nums.length} modules`;
+}
+
+// Vue liste de secours (".mg", masquée par CSS à toutes les tailles d'écran
+// — voir les media queries associées). Implémentée quand même pour qu'un
+// changement CSS futur qui la réactiverait affiche du contenu réel, jamais
+// une grille vide.
+function renderModGridFromGameModules(){
+  const grid = document.getElementById('mod-grid');
+  if(!grid) return;
+  const nums = Object.keys(MODULES).map(Number).sort((a,b)=>a-b);
+  grid.innerHTML = nums.map(num => {
+    const m = MODULES[num];
+    const badge = m.status === 'done' ? '✓ Validé' : m.status === 'cur' ? `En cours · ${m.pct||0}%` : 'À faire';
+    const badgeColor = m.status === 'done' ? 'var(--green)' : m.status === 'cur' ? 'var(--orange)' : 'var(--t3)';
+    return `<div class="mod-card" onclick="openModPage(${num})" style="cursor:pointer">
+      <div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.6px">Module ${m.num || num}</div>
+      <div style="font-size:14px;font-weight:700;margin:4px 0">${escapeHtml(m.title || '')}</div>
+      <div style="font-size:11.5px;font-weight:700;color:${badgeColor}">${badge}</div>
+    </div>`;
+  }).join('');
+}
+
 async function loadModules(){
   if(typeof supa === 'undefined' || !supa){
     console.warn('Supabase non configuré — contenu des modules indisponible.');
@@ -2986,6 +3158,135 @@ async function loadModules(){
   MODULES = built;
 }
 const modNotes = {1:'',2:'',3:'',4:'',5:'',6:'',7:''};
+
+// ══════════════════════════════════════════════════════════
+//  NIVEAUX — FIX (audit 2026-07-29) : STATE.niveau/STATE.xp
+//  n'étaient JAMAIS écrits nulle part dans le code (confirmé par grep) —
+//  "Niveau 2 · Certifié" / "Module 03 en cours" étaient des textes codés en
+//  dur dans le Dashboard, le Profil ET la page "Mes niveaux", identiques
+//  pour tout le monde quels que soient ses vrais résultats. La page "Mes
+//  niveaux" elle-même (#niveaux-content) n'avait aucune fonction de rendu
+//  — exactement le même bug silencieux que renderGameMap() pour l'Académie.
+// Le niveau est maintenant calculé en direct depuis le chiffre d'affaires
+// réel (table "sales"), jamais un compteur stocké qui pourrait désynchroniser.
+// ══════════════════════════════════════════════════════════
+const NIVEAUX_DEFS = [
+  { n:1, label:'Débutant', min:0,     bonus:null },
+  { n:2, label:'Certifié', min:500,   bonus:null },
+  { n:3, label:'Performer', min:2000, bonus:null },
+  { n:4, label:'Elite', min:5000,     bonus:'+10% commission' },
+  { n:5, label:'Légende', min:15000,  bonus:'+20% commission' },
+];
+
+let MY_REVENUE = 0;
+
+async function getMyTotalRevenue(){
+  if(!supa) return 0;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return 0;
+  const { data, error } = await supa
+    .from('sales').select('amount')
+    .eq('seller_user_id', session.user.id).eq('status', 'completed');
+  if(error){ console.error('[niveau] revenue:', error); return 0; }
+  return (data || []).reduce((sum, r) => sum + (r.amount || 0), 0) / 100;
+}
+
+async function refreshMyRevenue(){
+  MY_REVENUE = await getMyTotalRevenue();
+  try{ renderNiveauWidgets(); }catch(e){}
+  return MY_REVENUE;
+}
+
+function computeNiveauInfo(revenue){
+  let current = NIVEAUX_DEFS[0];
+  for(const tier of NIVEAUX_DEFS){ if(revenue >= tier.min) current = tier; }
+  const next = NIVEAUX_DEFS.find(t => t.n === current.n + 1) || null;
+  const pct = next ? Math.max(0, Math.min(Math.round((revenue - current.min) / (next.min - current.min) * 100), 100)) : 100;
+  return { current, next, pct };
+}
+
+// Le "module en cours" réel vient des données Supabase (MODULES), pas d'un
+// champ STATE.currentModule qui n'était lui non plus jamais mis à jour.
+function getCurrentModuleInfo(){
+  const nums = Object.keys(MODULES).map(Number).sort((a,b)=>a-b);
+  if(!nums.length) return null;
+  let cur = nums.find(n => MODULES[n].status === 'cur');
+  if(!cur) cur = nums.find(n => MODULES[n].status !== 'done');
+  if(cur) return { num: cur, title: MODULES[cur].title, done:false };
+  return { num: nums[nums.length-1], title: 'Formation terminée', done: true };
+}
+
+// Widgets Dashboard + Profil (mêmes données, deux affichages)
+function renderNiveauWidgets(){
+  const info = computeNiveauInfo(MY_REVENUE);
+  const modInfo = getCurrentModuleInfo();
+  const niveauLabel = `Niveau ${info.current.n} · ${info.current.label}`;
+  const moduleLabel = modInfo ? (modInfo.done ? modInfo.title : `Module ${String(modInfo.num).padStart(2,'0')} en cours`) : 'Aucun module';
+
+  const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+
+  setText('dash-niveau-label', niveauLabel);
+  setText('dash-module-label', moduleLabel);
+  setText('dash-niveau-pct-label', info.next ? `Progression niveau ${info.next.n}` : 'Niveau maximum atteint');
+  setText('dash-niveau-pct', info.pct + '%');
+  const dashBar = document.getElementById('dash-niveau-bar'); if(dashBar) dashBar.style.width = info.pct + '%';
+
+  const dotsEl = document.getElementById('dash-niveau-dots');
+  if(dotsEl){
+    dotsEl.innerHTML = NIVEAUX_DEFS.map(tier => {
+      const state = tier.n < info.current.n ? 'done' : tier.n === info.current.n ? 'current' : 'locked';
+      const circleStyle = state==='done' ? 'background:var(--green)' : state==='current' ? 'border:1.5px solid var(--orange)' : 'border:1.5px solid var(--b)';
+      const numColor = state==='done' ? 'color:#fff;font-weight:700' : state==='current' ? 'color:var(--orange);font-weight:700' : 'color:var(--t3)';
+      const labelColor = state==='done' ? 'var(--green)' : state==='current' ? 'var(--orange)' : 'var(--t3)';
+      const opacity = state==='locked' ? 'opacity:.4' : '';
+      return `<div style="text-align:center;${opacity}"><div style="width:24px;height:24px;border-radius:50%;${circleStyle};display:flex;align-items:center;justify-content:center;font-size:10px;${numColor};margin:0 auto 4px">${state==='done'?'✓':tier.n}</div><div style="font-size:8px;color:${labelColor}">N${tier.n}</div></div>`;
+    }).join('');
+  }
+
+  setText('profil-niveau-tag', niveauLabel);
+  setText('profil-module-tag', moduleLabel);
+  setText('profil-niveau-current', niveauLabel);
+  setText('profil-niveau-next', info.next ? `Niveau ${info.next.n} · ${info.next.label}` : 'Niveau maximum atteint');
+  setText('profil-niveau-bonus', info.current.bonus || '—');
+  setText('profil-niveau-revenue', MY_REVENUE.toLocaleString('fr-FR') + ' €');
+
+  setText('niveaux-badge-num', 'NIVEAU ' + info.current.n);
+  setText('niveaux-badge-label', info.current.label);
+}
+
+// Page "Mes niveaux" — n'avait ABSOLUMENT AUCUNE fonction de rendu avant ce
+// correctif : #niveaux-content restait vide en permanence pour tout le monde.
+async function renderNiveaux(){
+  const el = document.getElementById('niveaux-content');
+  if(!el) return;
+  await refreshMyRevenue();
+  const info = computeNiveauInfo(MY_REVENUE);
+
+  el.innerHTML = `
+    <div class="card" style="padding:22px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:800;color:var(--t3);text-transform:uppercase;margin-bottom:8px">Chiffre d'affaires cumulé</div>
+      <div style="font-size:28px;font-weight:900">${MY_REVENUE.toLocaleString('fr-FR')} €</div>
+      ${info.next
+        ? `<div style="font-size:12px;color:var(--t3);margin-top:6px">Encore ${(info.next.min - MY_REVENUE).toLocaleString('fr-FR')} € pour atteindre le Niveau ${info.next.n} · ${info.next.label}</div>`
+        : `<div style="font-size:12px;color:var(--green);margin-top:6px">Niveau maximum atteint 🎉</div>`}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${NIVEAUX_DEFS.map(tier => {
+        const state = tier.n < info.current.n ? 'done' : tier.n === info.current.n ? 'current' : 'locked';
+        const border = state==='current' ? 'border:1.5px solid var(--orange)' : state==='done' ? 'border:1px solid rgba(48,209,88,.3)' : 'border:1px solid var(--b)';
+        const bg = state==='current' ? 'background:rgba(255,159,10,.06)' : '';
+        return `<div class="card" style="padding:18px 20px;${border};${bg}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div>
+              <div style="font-size:14px;font-weight:800">${state==='done'?'✅':state==='current'?'⚡':'🔒'} Niveau ${tier.n} · ${tier.label}</div>
+              <div style="font-size:12px;color:var(--t3);margin-top:3px">À partir de ${tier.min.toLocaleString('fr-FR')} € de chiffre d'affaires</div>
+            </div>
+            ${tier.bonus ? `<span class="tag tag-o">${tier.bonus}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
 
 function openModPage(num){
   // GARDE-FOU GLOBAL : tant que le Module 1 (lettre + paiement) n'est pas validé,
@@ -3072,12 +3373,16 @@ function openModPage(num){
     html += `</div>`;
   }
 
-  // Module 01 : CTA vers la lettre d'engagement + paiement, seul verrou vers la suite
+  // CTA d'abonnement : ne s'affiche que pour un visiteur qui a pu prévisualiser
+  // le Module 01 sans être encore abonné (aucun autre module n'est accessible
+  // sans abonnement actif, voir le garde-fou en haut d'openModPage()). Un
+  // abonné actif a un accès complet et immédiat aux 7 modules — pas de
+  // "Module 01 terminé" à valider, pas de palier intermédiaire.
   if(num===1 && !STATE.module1Validated){
     html += `<div class="m1-cta-box" style="margin-top:28px;background:linear-gradient(160deg,rgba(245,197,24,.1),rgba(245,197,24,.02));border:1.5px solid rgba(245,197,24,.28);border-radius:16px;padding:24px">
-      <div style="font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Étape suivante</div>
-      <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px">Prêt à passer à la suite ?</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">Le Module 01 est terminé. Pour débloquer les Modules 02 à 07 et tout le reste de Génération Capable : active ton accès Génération Capable — ${STATE.subPrice}€/mois.</div>
+      <div style="font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Accès complet</div>
+      <div style="font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px">Débloque toute l'Académie</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:18px">Active ton abonnement Génération Capable pour accéder immédiatement aux 7 modules complets — ${STATE.subPrice}€/mois.</div>
       <button class="btn btn-gold" onclick="openGateModal()">🔑 Débloquer l'accès</button>
     </div>`;
   }
@@ -3362,29 +3667,888 @@ function renderChannelList(){
   el.innerHTML = CANAUX.map(c=>`<div class="ch-i" onclick="openChannel('${c.n}')"><span class="ch-ico">${c.ico}</span><div><div class="ch-n">${c.n}</div><div class="ch-d">${c.d}</div></div><span class="ch-arr">›</span></div>`).join('');
 }
 
-function renderRevenus(){
+// FIX (audit 2026-07-29) : lisait STATE.commissions, un champ localStorage
+// que RIEN dans le codebase n'écrit jamais (confirmé par grep) — cette page
+// affichait donc "0 € / 500 €" pour absolument tout le monde, en permanence.
+// Lit désormais le vrai total de ventes réalisées (table "sales", RLS scopée
+// à seller_user_id = moi) via refreshMyRevenue() (voir plus bas).
+async function renderRevenus(){
   const el = document.getElementById('revenus-content');
   if(!el) return;
   const goal = (EV_STATE.objectifs && EV_STATE.objectifs.revenu) || 500;
-  const current = STATE.commissions || 0;
+  await refreshMyRevenue();
+  const current = MY_REVENUE;
+  const info = computeNiveauInfo(current);
+
   const pct = goal > 0 ? Math.min(Math.round(current/goal*100), 100) : 0;
   el.innerHTML = `
     <div class="card" style="padding:20px 18px;margin-bottom:16px">
       <div style="font-size:11px;font-weight:800;color:var(--t3);text-transform:uppercase;margin-bottom:8px">Objectif de la semaine</div>
-      <div style="font-size:32px;font-weight:900">${current} €<span style="font-size:16px;color:var(--t3);font-weight:400"> / ${goal} €</span></div>
+      <div style="font-size:32px;font-weight:900">${current.toLocaleString('fr-FR')} €<span style="font-size:16px;color:var(--t3);font-weight:400"> / ${goal} €</span></div>
       <div style="height:6px;background:var(--b);border-radius:6px;margin-top:12px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--green);border-radius:6px"></div></div>
       <div style="font-size:11.5px;color:var(--t3);margin-top:6px">${pct}% de l'objectif atteint</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="sc"><div class="sc-l">Commissions totales</div><div class="sc-v" style="color:var(--green)">${current} €</div></div>
-      <div class="sc"><div class="sc-l">Niveau actuel</div><div class="sc-v">${STATE.niveau||1}</div></div>
+      <div class="sc"><div class="sc-l">Ventes réalisées (total)</div><div class="sc-v" style="color:var(--green)">${current.toLocaleString('fr-FR')} €</div></div>
+      <div class="sc"><div class="sc-l">Niveau actuel</div><div class="sc-v">Niveau ${info.current.n} · ${info.current.label}</div></div>
     </div>`;
 }
 
-function renderRanking(){
+// FIX (audit 2026-07-29 puis reconstruit — voir migration 0006/0008) : cette
+// page lisait directement "commissions" avec les anciens statuts
+// (pending/validated/paid/cancelled/refunded) et n'avait aucune notion de
+// maturation J+15, de dette suite remboursement, ni de retrait — devenue
+// obsolète dès que le moteur financier réel (get_my_wallet(),
+// get_my_commissions(), get_my_payouts(), request_payout()) a été construit.
+// Reconstruite comme un vrai Wallet : soldes TOUJOURS recalculés en direct
+// côté base (jamais un compteur stocké qui pourrait désynchroniser).
+const COMMISSION_STATUS_LABELS = { available:'Disponible', pending:'En attente (mûrit)', validated:'Validée', cancelled:'Annulée', refunded:'Remboursée', debt:'Dette', withdrawn:'Retirée', disputed:'En litige' };
+const COMMISSION_STATUS_COLORS = { available:'var(--green)', pending:'var(--orange)', validated:'var(--blue)', cancelled:'var(--t3)', refunded:'var(--red)', debt:'var(--red)', withdrawn:'var(--t3)', disputed:'var(--red)' };
+
+function buildCommissionRowsHtml(rows){
+  return rows.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b)">
+    <div>
+      <div style="font-size:13.5px;font-weight:700">${Number(r.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
+      <div style="font-size:11.5px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')}${r.effective_status==='pending' && r.available_at ? ' · dispo le '+new Date(r.available_at).toLocaleDateString('fr-FR') : ''}</div>
+    </div>
+    <span style="font-size:11px;font-weight:700;color:${COMMISSION_STATUS_COLORS[r.effective_status]||'var(--t3)'}">${COMMISSION_STATUS_LABELS[r.effective_status]||r.effective_status}</span>
+  </div>`).join('');
+}
+
+async function renderCommissions(){
+  if(!supa) return;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const { data: walletRows, error: walletErr } = await supa.rpc('get_my_wallet');
+  if(walletErr) console.error('[wallet] get_my_wallet:', walletErr);
+  const w = (walletRows && walletRows[0]) || { pending_balance:0, available_balance:0, in_progress_balance:0, withdrawn_total:0, debt_total:0 };
+  const fmt = n => Number(n||0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const heroEl = document.getElementById('wallet-hero'); if(heroEl) heroEl.textContent = `${fmt(w.available_balance)} € disponibles.`;
+  const availEl = document.getElementById('wallet-available'); if(availEl) availEl.textContent = fmt(w.available_balance) + ' €';
+  const pendEl = document.getElementById('wallet-pending'); if(pendEl) pendEl.textContent = fmt(w.pending_balance) + ' €';
+  const inprogEl = document.getElementById('wallet-inprogress'); if(inprogEl) inprogEl.textContent = fmt(w.in_progress_balance) + ' €';
+  const withEl = document.getElementById('wallet-withdrawn'); if(withEl) withEl.textContent = fmt(w.withdrawn_total) + ' €';
+
+  const debtBox = document.getElementById('wallet-debt-box');
+  if(debtBox){
+    if(Number(w.debt_total) < 0){
+      debtBox.style.display = 'block';
+      debtBox.innerHTML = `<div style="padding:12px 14px;background:rgba(255,69,58,.08);border:1px solid rgba(255,69,58,.25);border-radius:10px;font-size:12.5px;color:var(--red)">⚠️ Tu as une dette de ${fmt(Math.abs(w.debt_total))} € suite à un remboursement client — elle sera automatiquement déduite de ton prochain retrait.</div>`;
+    } else {
+      debtBox.style.display = 'none';
+      debtBox.innerHTML = '';
+    }
+  }
+
+  const listEl = document.getElementById('comm-list');
+  if(listEl){
+    const { data, error } = await supa.rpc('get_my_commissions');
+    if(error){
+      console.error('[wallet] get_my_commissions:', error);
+      listEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement.</div>`;
+    } else if(!data || !data.length){
+      listEl.innerHTML = `<div style="text-align:center;padding:36px 0">
+        <div style="font-size:28px;margin-bottom:10px">💸</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune commission pour l'instant</div>
+        <div style="font-size:12px;color:var(--t3)">Ta première vente déclenchera ton premier versement automatique.</div>
+        <button class="btn btn-p" style="margin-top:16px" onclick="go('opportunites',null)">Voir mes prospects →</button>
+      </div>`;
+    } else {
+      listEl.innerHTML = buildCommissionRowsHtml(data);
+    }
+  }
+
+  const payoutsEl = document.getElementById('payouts-list');
+  if(payoutsEl){
+    const { data: payouts, error: payoutsErr } = await supa.rpc('get_my_payouts');
+    if(payoutsErr){
+      console.error('[wallet] get_my_payouts:', payoutsErr);
+      payoutsEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement.</div>`;
+    } else if(!payouts || !payouts.length){
+      payoutsEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucun retrait pour l'instant.</div>`;
+    } else {
+      const payoutStatusLabels = { requested:'Demandé', paid:'Versé', failed:'Échoué', cancelled:'Annulé' };
+      const payoutStatusColors = { requested:'var(--orange)', paid:'var(--green)', failed:'var(--red)', cancelled:'var(--t3)' };
+      payoutsEl.innerHTML = payouts.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b)">
+        <div>
+          <div style="font-size:13.5px;font-weight:700">${fmt(p.amount)} €</div>
+          <div style="font-size:11.5px;color:var(--t3)">Demandé le ${new Date(p.requested_at).toLocaleDateString('fr-FR')}${p.paid_at ? ' · versé le '+new Date(p.paid_at).toLocaleDateString('fr-FR') : ''}</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${payoutStatusColors[p.status]||'var(--t3)'}">${payoutStatusLabels[p.status]||p.status}</span>
+      </div>`).join('');
+    }
+  }
+}
+
+let WALLET_WITHDRAW_INFLIGHT = false;
+async function requestWalletPayout(){
+  if(WALLET_WITHDRAW_INFLIGHT || !supa) return;
+  const msgEl = document.getElementById('wallet-withdraw-msg');
+  if(msgEl) msgEl.textContent = '';
+  if(!confirm('Confirmer la demande de retrait de la totalité de ton solde disponible ?')) return;
+
+  WALLET_WITHDRAW_INFLIGHT = true;
+  const btn = document.getElementById('wallet-withdraw-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Demande en cours...'; }
+  try{
+    const { error } = await supa.rpc('request_payout');
+    if(error){
+      console.error('[wallet] request_payout:', error);
+      if(msgEl) msgEl.textContent = error.message || "Impossible de demander un retrait pour le moment.";
+      return;
+    }
+    toast('✓ Retrait demandé');
+    await renderCommissions();
+  } finally {
+    WALLET_WITHDRAW_INFLIGHT = false;
+    if(btn){ btn.disabled = false; btn.textContent = '💰 Retirer mes gains'; }
+  }
+}
+
+// FIX (audit 2026-07-29) : ce tableau affichait TOUJOURS le même message de
+// placeholder, sans jamais interroger la base — le classement n'a jamais été
+// réel. Appelle désormais get_leaderboard() (voir migration
+// 0004_profiles_leaderboard_missions_feed.sql), qui calcule le classement en
+// direct depuis les vraies ventes ("sales"), jamais un compteur figé.
+async function renderRanking(){
   const el = document.getElementById('ranking-body');
   if(!el) return;
-  el.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement disponible dès que plusieurs vendeurs seront actifs sur la plateforme.</td></tr>`;
+  el.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement du classement...</td></tr>`;
+
+  if(!supa) { el.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement indisponible pour le moment.</td></tr>`; return; }
+
+  const { data, error } = await supa.rpc('get_leaderboard', { p_limit: 20 });
+  if(error){
+    console.error('[ranking] get_leaderboard:', error);
+    el.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement indisponible pour le moment.</td></tr>`;
+    return;
+  }
+  if(!data || !data.length){
+    el.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Classement disponible dès que plusieurs vendeurs seront actifs sur la plateforme.</td></tr>`;
+    return;
+  }
+
+  el.innerHTML = data.map(row => `<tr>
+    <td style="font-weight:800">${row.rank_pos}</td>
+    <td>${row.avatar_emoji || '🙂'} ${escapeHtml(row.display_name || 'Vendeur Génération Capable')}</td>
+    <td>${row.sales_count}</td>
+    <td style="color:var(--green);font-weight:700">${Number(row.total_amount).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})} €</td>
+  </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  CRM RÉEL — prospects, pipeline (8 étapes), commandes, ventes,
+//  commissions, historique. Voir migrations 0006/0009/0010.
+//  "paid"/"production"/"delivered"/"done" ne sont JAMAIS déclarables à la
+//  main par le vendeur — advance_prospect_stage() (base) les bloque déjà,
+//  mais cette UI ne propose même pas ces choix pour ne jamais y exposer
+//  un vendeur (défense en profondeur : UI + base, pas l'un ou l'autre).
+// ══════════════════════════════════════════════════════════
+const PROSPECT_STAGES = ['created','contacted','rdv','quote_sent','paid','production','delivered','done'];
+const PROSPECT_STAGE_LABELS = {
+  created:'Créé', contacted:'Contacté', rdv:'RDV programmé', quote_sent:'Devis envoyé',
+  paid:'Payé', production:'En production', delivered:'Livré', done:'Terminé',
+};
+const PROSPECT_STAGE_COLORS = {
+  created:'var(--t3)', contacted:'var(--blue)', rdv:'var(--purple)', quote_sent:'var(--orange)',
+  paid:'var(--green)', production:'var(--blue)', delivered:'var(--green)', done:'var(--green)',
+};
+const CRM_PRODUCT_LABELS = {
+  site_internet:'Site Internet', ia:'Solution IA', generation_capable:'Génération Capable',
+  accompagnement:'Accompagnement', autre:'Prestation',
+};
+const eurFromCents = c => (Number(c||0)/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+let CRM_PROSPECTS_CACHE = [];
+
+function switchCrmTab(tabName){
+  document.querySelectorAll('#crm-tabs .tab').forEach(t => t.classList.toggle('on', t.dataset.crmtab === tabName));
+  ['prospects','sales','commissions','history','ranking'].forEach(t => {
+    const el = document.getElementById('crm-panel-'+t);
+    if(el) el.style.display = (t === tabName) ? 'block' : 'none';
+  });
+  if(tabName === 'prospects') renderProspectsList();
+  else if(tabName === 'sales') renderMySales();
+  else if(tabName === 'commissions') renderMyCommissionsList();
+  else if(tabName === 'history') renderProspectHistory();
+  else if(tabName === 'ranking') renderRanking();
+}
+
+async function renderProspectsList(){
+  const el = document.getElementById('crm-panel-prospects');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const { data, error } = await supa.from('prospects')
+    .select('id,first_name,last_name,phone,email,company,siret,needs,notes,stage,created_at')
+    .eq('seller_user_id', session.user.id)
+    .order('created_at', { ascending: false });
+  if(error){
+    console.error('[crm] prospects load:', error);
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement des prospects.</div>`;
+    return;
+  }
+  CRM_PROSPECTS_CACHE = data || [];
+  if(!CRM_PROSPECTS_CACHE.length){
+    el.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">🗂️</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucun prospect pour l'instant</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:16px">Ajoute ton premier prospect pour démarrer ton pipeline de vente.</div>
+      <button class="btn btn-p" onclick="openMo('mo-prospect')">+ Nouveau prospect</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + CRM_PROSPECTS_CACHE.map(p => `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--b);cursor:pointer" onclick="openProspectDetail('${p.id}')">
+      <div style="min-width:0">
+        <div style="font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}${p.company ? ' · '+escapeHtml(p.company) : ''}</div>
+        <div style="font-size:11.5px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.email || p.phone || '—')} · ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <span style="flex-shrink:0;font-size:11px;font-weight:700;color:${PROSPECT_STAGE_COLORS[p.stage]||'var(--t3)'};background:rgba(255,255,255,.06);padding:4px 10px;border-radius:20px">${PROSPECT_STAGE_LABELS[p.stage]||p.stage}</span>
+    </div>`).join('') + `</div>`;
+}
+
+async function renderMySales(){
+  const el = document.getElementById('crm-panel-sales');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const { data, error } = await supa.from('sales')
+    .select('id,product_name,amount,status,created_at')
+    .eq('seller_user_id', session.user.id)
+    .order('created_at', { ascending: false });
+  if(error){
+    console.error('[crm] sales load:', error);
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement des ventes.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">💰</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune vente pour l'instant</div>
+      <div style="font-size:12px;color:var(--t3)">Chaque commande payée par un client apparaîtra ici automatiquement.</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + rows.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b)">
+      <div>
+        <div style="font-size:13.5px;font-weight:700">${escapeHtml(r.product_name)}</div>
+        <div style="font-size:11.5px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <div style="font-size:13.5px;font-weight:800;color:var(--green)">${eurFromCents(r.amount)} €</div>
+    </div>`).join('') + `</div>`;
+}
+
+async function renderMyCommissionsList(){
+  const el = document.getElementById('crm-panel-commissions');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('get_my_commissions');
+  if(error){
+    console.error('[crm] get_my_commissions:', error);
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement des commissions.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">💸</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucune commission pour l'instant</div>
+      <div style="font-size:12px;color:var(--t3)">Ta première vente déclenchera ta première commission (versée 15 jours après, hors litige).</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + buildCommissionRowsHtml(rows) + `</div>`;
+}
+
+async function renderProspectHistory(){
+  const el = document.getElementById('crm-panel-history');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+
+  const { data, error } = await supa.from('prospect_stage_history')
+    .select('id,from_stage,to_stage,justification,created_at,prospects(first_name,last_name)')
+    .eq('seller_user_id', session.user.id)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if(error){
+    console.error('[crm] history load:', error);
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red);font-size:12.5px">Erreur de chargement de l'historique.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="text-align:center;padding:36px 0">
+      <div style="font-size:28px;margin-bottom:10px">🕓</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px">Aucun historique pour l'instant</div>
+      <div style="font-size:12px;color:var(--t3)">Chaque changement d'étape de tes prospects sera tracé ici.</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">` + rows.map(r => {
+    const name = r.prospects ? `${r.prospects.first_name} ${r.prospects.last_name}` : 'Prospect supprimé';
+    const fromLabel = r.from_stage ? (PROSPECT_STAGE_LABELS[r.from_stage] || r.from_stage) : '—';
+    const toLabel = PROSPECT_STAGE_LABELS[r.to_stage] || r.to_stage;
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--b)">
+      <div style="font-size:12.5px;font-weight:700">${escapeHtml(name)} — ${escapeHtml(fromLabel)} → ${escapeHtml(toLabel)}</div>
+      <div style="font-size:11px;color:var(--t3)">${new Date(r.created_at).toLocaleDateString('fr-FR')} à ${new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}${r.justification ? ' · '+escapeHtml(r.justification) : ''}</div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+// ── Création d'un prospect (modal "mo-prospect", ouvert depuis Opportunités,
+//    Pipeline et CRM & Outils) ──
+let PROSPECT_SUBMIT_INFLIGHT = false;
+async function createProspect(){
+  if(PROSPECT_SUBMIT_INFLIGHT) return;
+  const errEl = document.getElementById('pr-error');
+  if(errEl) errEl.textContent = '';
+
+  const firstName = document.getElementById('pr-first-name')?.value?.trim();
+  const lastName = document.getElementById('pr-last-name')?.value?.trim();
+  const phone = document.getElementById('pr-phone')?.value?.trim();
+  const email = document.getElementById('pr-email')?.value?.trim();
+  const company = document.getElementById('pr-company')?.value?.trim();
+  const siret = document.getElementById('pr-siret')?.value?.trim();
+  const notes = document.getElementById('pr-notes')?.value?.trim();
+  const needs = Array.from(document.querySelectorAll('.pr-need:checked')).map(c => c.value);
+
+  if(!firstName || !lastName){
+    if(errEl) errEl.textContent = 'Le prénom et le nom sont obligatoires.';
+    return;
+  }
+  if(!supa) return;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user){ toast('Connecte-toi pour ajouter un prospect'); return; }
+
+  PROSPECT_SUBMIT_INFLIGHT = true;
+  const btn = document.getElementById('pr-submit-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Ajout...'; }
+  try{
+    const { error } = await supa.from('prospects').insert({
+      seller_user_id: session.user.id,
+      first_name: firstName, last_name: lastName,
+      phone: phone || null, email: email || null,
+      company: company || null, siret: siret || null,
+      needs, notes: notes || null,
+    });
+    if(error){
+      console.error('[crm] createProspect:', error);
+      if(errEl) errEl.textContent = "Impossible d'ajouter ce prospect pour le moment.";
+      return;
+    }
+    closeMo('mo-prospect');
+    toast('✓ Prospect ajouté');
+    ['pr-first-name','pr-last-name','pr-phone','pr-email','pr-company','pr-siret','pr-notes'].forEach(id => {
+      const f = document.getElementById(id); if(f) f.value = '';
+    });
+    document.querySelectorAll('.pr-need').forEach(c => c.checked = false);
+    try{ renderProspectsList(); }catch(e){}
+  } finally {
+    PROSPECT_SUBMIT_INFLIGHT = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Ajouter'; }
+  }
+}
+
+// ── Détail d'un prospect : pipeline, commande, paiement, envoi studio ──
+let PD_CURRENT_PROSPECT = null;
+let PD_CURRENT_ORDER = null;
+let ORDER_ACTION_INFLIGHT = false;
+
+async function openProspectDetail(id){
+  const bodyEl = document.getElementById('pd-body');
+  const titleEl = document.getElementById('pd-title');
+  if(bodyEl) bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement...</div>`;
+  if(titleEl) titleEl.textContent = '—';
+  openMo('mo-prospect-detail');
+  if(!supa) return;
+
+  const { data: prospect, error: pErr } = await supa.from('prospects').select('*').eq('id', id).maybeSingle();
+  if(pErr || !prospect){
+    console.error('[crm] openProspectDetail:', pErr);
+    if(bodyEl) bodyEl.innerHTML = `<div style="color:var(--red);font-size:12.5px">Prospect introuvable.</div>`;
+    return;
+  }
+  PD_CURRENT_PROSPECT = prospect;
+  if(titleEl) titleEl.textContent = `${prospect.first_name} ${prospect.last_name}`;
+
+  const { data: orders, error: oErr } = await supa.from('orders').select('*').eq('prospect_id', id).order('created_at', { ascending: false });
+  if(oErr) console.error('[crm] orders load:', oErr);
+  PD_CURRENT_ORDER = (orders && orders[0]) || null;
+
+  renderProspectDetailBody();
+}
+
+function renderNewOrderForm(){
+  return `
+    <label style="font-size:11.5px;color:var(--t3);font-weight:700;text-transform:uppercase">Type de prestation</label>
+    <select class="field" id="pd-order-type">
+      <option value="site_internet">Site Internet</option>
+      <option value="ia">Solution IA</option>
+      <option value="generation_capable">Génération Capable</option>
+      <option value="accompagnement">Accompagnement</option>
+      <option value="autre">Prestation</option>
+    </select>
+    <label style="font-size:11.5px;color:var(--t3);font-weight:700;text-transform:uppercase">Prix TTC (€)</label>
+    <input class="field" type="number" min="0" step="0.01" id="pd-order-price" placeholder="Ex: 995">
+    <label style="font-size:11.5px;color:var(--t3);font-weight:700;text-transform:uppercase">Détails de la commande</label>
+    <textarea class="field" id="pd-order-details" maxlength="4000" placeholder="Cahier des charges, options choisies, délais convenus..."></textarea>
+    <div id="pd-order-error" style="font-size:12px;color:var(--red);margin-bottom:8px"></div>
+    <button class="btn btn-p" id="pd-order-create-btn" onclick="createOrderForCurrentProspect()">Créer la commande</button>
+  `;
+}
+
+function renderOrderStatusBlock(o){
+  const statusLabels = { draft:'Brouillon', awaiting_payment:'En attente de paiement', paid:'Payée', production:'En production', delivered:'Livrée', done:'Terminée', cancelled:'Annulée', refunded:'Remboursée' };
+  let actionHtml = '';
+  if(o.status === 'draft'){
+    actionHtml = `<button class="btn btn-gold" id="pd-pay-btn" onclick="createOrderPayment('${o.id}')">💳 Créer le lien de paiement</button>`;
+  } else if(o.status === 'awaiting_payment'){
+    actionHtml = `<div style="font-size:12px;color:var(--t3);margin-bottom:8px">Lien de paiement envoyé au client, en attente de confirmation Stripe.</div>
+      <div id="pd-order-link-box" style="display:none;gap:6px;margin-bottom:8px">
+        <input class="field" id="pd-order-link-input" style="margin-bottom:0;font-size:11px" readonly onclick="this.select()">
+        <button class="btn btn-g" type="button" onclick="copyOrderLink()">Copier</button>
+      </div>
+      <button class="btn btn-g" id="pd-pay-btn" onclick="createOrderPayment('${o.id}')">↻ Régénérer le lien</button>`;
+  } else if(o.status === 'paid' && !o.locked){
+    actionHtml = `<button class="btn btn-p" onclick="signAndLockCurrentOrder('${o.id}')">✓ Envoyer au studio</button>`;
+  } else if(o.locked){
+    actionHtml = `<div style="font-size:12px;color:var(--green);font-weight:700">✓ Envoyée au studio — verrouillée</div>`;
+  }
+  return `
+    <div class="sc" style="margin-bottom:10px">
+      <div class="sc-l">${statusLabels[o.status] || o.status}</div>
+      <div class="sc-v">${eurFromCents(o.price)} €</div>
+    </div>
+    ${actionHtml}
+  `;
+}
+
+function renderProspectDetailBody(){
+  const p = PD_CURRENT_PROSPECT, o = PD_CURRENT_ORDER;
+  const bodyEl = document.getElementById('pd-body');
+  if(!bodyEl || !p) return;
+
+  const stageIdx = PROSPECT_STAGES.indexOf(p.stage);
+  const paidIdx = PROSPECT_STAGES.indexOf('paid');
+  const sellerCanAdvance = stageIdx < paidIdx;
+
+  const stageHtml = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">` +
+    PROSPECT_STAGES.map((s,i) => `<span style="font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;background:${i===stageIdx?'var(--blue)':'rgba(255,255,255,.06)'};color:${i===stageIdx?'#fff':'var(--t3)'}">${PROSPECT_STAGE_LABELS[s]}</span>`).join('')
+  + `</div>`;
+
+  let advanceHtml = '';
+  if(sellerCanAdvance){
+    const nextStage = PROSPECT_STAGES[stageIdx+1];
+    advanceHtml = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">`;
+    if(nextStage && nextStage !== 'paid'){
+      advanceHtml += `<button class="btn btn-p" onclick="doAdvanceStage('${nextStage}')">→ ${PROSPECT_STAGE_LABELS[nextStage]}</button>`;
+    }
+    advanceHtml += `<button class="btn btn-g" onclick="promptAdvanceStage()">Changer d'étape...</button>`;
+    advanceHtml += `</div>`;
+  }
+
+  let orderHtml;
+  if(!o){
+    orderHtml = (stageIdx >= PROSPECT_STAGES.indexOf('quote_sent'))
+      ? renderNewOrderForm()
+      : `<div style="font-size:12px;color:var(--t3)">Passe le prospect à l'étape "Devis envoyé" pour pouvoir créer une commande.</div>`;
+  } else {
+    orderHtml = renderOrderStatusBlock(o);
+  }
+
+  bodyEl.innerHTML = `
+    <div style="font-size:11px;color:var(--t3);text-transform:uppercase;font-weight:700;margin-bottom:6px">Étape actuelle</div>
+    ${stageHtml}
+    ${advanceHtml}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div class="sc"><div class="sc-l">Téléphone</div><div class="sc-v" style="font-size:13px">${escapeHtml(p.phone || '—')}</div></div>
+      <div class="sc"><div class="sc-l">Email</div><div class="sc-v" style="font-size:13px">${escapeHtml(p.email || '—')}</div></div>
+      <div class="sc"><div class="sc-l">Entreprise</div><div class="sc-v" style="font-size:13px">${escapeHtml(p.company || '—')}</div></div>
+      <div class="sc"><div class="sc-l">SIRET</div><div class="sc-v" style="font-size:13px">${escapeHtml(p.siret || '—')}</div></div>
+    </div>
+    ${p.notes ? `<div style="font-size:12px;color:var(--t3);margin-bottom:14px"><strong>Notes :</strong> ${escapeHtml(p.notes)}</div>` : ''}
+    <div class="div"></div>
+    <div class="sec-hd" style="margin-top:0"><div class="sec-t">Commande</div></div>
+    <div id="pd-order-zone">${orderHtml}</div>
+  `;
+
+  if(o && o.status === 'awaiting_payment' && o._checkoutUrl){
+    const linkBox = document.getElementById('pd-order-link-box');
+    const linkInput = document.getElementById('pd-order-link-input');
+    if(linkBox && linkInput){ linkBox.style.display = 'flex'; linkInput.value = o._checkoutUrl; }
+  }
+}
+
+function copyOrderLink(){
+  if(!PD_CURRENT_ORDER?._checkoutUrl) return;
+  navigator.clipboard.writeText(PD_CURRENT_ORDER._checkoutUrl)
+    .then(() => toast('✓ Lien copié'))
+    .catch(() => toast('Impossible de copier — sélectionne le champ et copie manuellement'));
+}
+
+async function createOrderForCurrentProspect(){
+  if(ORDER_ACTION_INFLIGHT || !PD_CURRENT_PROSPECT) return;
+  const errEl = document.getElementById('pd-order-error');
+  if(errEl) errEl.textContent = '';
+
+  const productType = document.getElementById('pd-order-type')?.value;
+  const priceEur = parseFloat(document.getElementById('pd-order-price')?.value);
+  const details = document.getElementById('pd-order-details')?.value?.trim();
+
+  if(!priceEur || priceEur <= 0 || !isFinite(priceEur)){
+    if(errEl) errEl.textContent = 'Indique un prix valide.';
+    return;
+  }
+  if(!supa) return;
+
+  ORDER_ACTION_INFLIGHT = true;
+  const btn = document.getElementById('pd-order-create-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Création...'; }
+  try{
+    const priceCents = Math.round(priceEur * 100);
+    const { error } = await supa.rpc('create_order_for_prospect', {
+      p_prospect_id: PD_CURRENT_PROSPECT.id,
+      p_product_type: productType,
+      p_price: priceCents,
+      p_commande_details: details ? { notes: details } : {},
+    });
+    if(error){
+      console.error('[crm] create_order_for_prospect:', error);
+      if(errEl) errEl.textContent = "Impossible de créer la commande pour le moment.";
+      return;
+    }
+    toast('✓ Commande créée');
+    await openProspectDetail(PD_CURRENT_PROSPECT.id);
+    try{ renderProspectsList(); }catch(e){}
+  } finally {
+    ORDER_ACTION_INFLIGHT = false;
+  }
+}
+
+async function createOrderPayment(orderId){
+  if(ORDER_ACTION_INFLIGHT) return;
+  ORDER_ACTION_INFLIGHT = true;
+  const btn = document.getElementById('pd-pay-btn');
+  if(btn) btn.disabled = true;
+  toast('Génération du lien de paiement...');
+  try{
+    const { data: { session } } = await supa.auth.getSession();
+    if(!session?.access_token){ toast('Connecte-toi pour continuer'); return; }
+    const res = await fetch('/.netlify/functions/create-order-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ order_id: orderId }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if(!res.ok || json.error){
+      console.error('[crm] createOrderPayment:', json);
+      toast(json.message || "Impossible de générer le lien de paiement pour le moment.");
+      return;
+    }
+    if(json.url && PD_CURRENT_ORDER){
+      PD_CURRENT_ORDER.status = 'awaiting_payment';
+      PD_CURRENT_ORDER._checkoutUrl = json.url;
+      renderProspectDetailBody();
+      try{ await navigator.clipboard.writeText(json.url); toast('✓ Lien copié — envoie-le à ton client'); }
+      catch(e){ toast('✓ Lien de paiement créé'); }
+      try{ renderProspectsList(); }catch(e){}
+    }
+  } catch(e){
+    console.error('[crm] createOrderPayment network:', e);
+    toast('Erreur réseau — réessaie dans quelques instants.');
+  } finally {
+    ORDER_ACTION_INFLIGHT = false;
+  }
+}
+
+async function signAndLockCurrentOrder(orderId){
+  if(ORDER_ACTION_INFLIGHT) return;
+  if(!confirm('Envoyer cette commande au studio ? Les détails seront verrouillés définitivement.')) return;
+  ORDER_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('sign_and_lock_order', { p_order_id: orderId });
+    if(error){
+      console.error('[crm] sign_and_lock_order:', error);
+      toast(error.message || "Impossible d'envoyer au studio pour le moment.");
+      return;
+    }
+    toast('✓ Commande envoyée au studio');
+    await openProspectDetail(PD_CURRENT_PROSPECT.id);
+    try{ renderProspectsList(); }catch(e){}
+  } finally {
+    ORDER_ACTION_INFLIGHT = false;
+  }
+}
+
+async function doAdvanceStage(newStage, justification){
+  if(!PD_CURRENT_PROSPECT) return;
+  const { error } = await supa.rpc('advance_prospect_stage', {
+    p_prospect_id: PD_CURRENT_PROSPECT.id, p_new_stage: newStage, p_justification: justification || null,
+  });
+  if(error){
+    console.error('[crm] advance_prospect_stage:', error);
+    toast(error.message || "Impossible de changer l'étape pour le moment.");
+    return;
+  }
+  toast('✓ Étape mise à jour');
+  await openProspectDetail(PD_CURRENT_PROSPECT.id);
+  try{ renderProspectsList(); }catch(e){}
+}
+
+function promptAdvanceStage(){
+  if(!PD_CURRENT_PROSPECT) return;
+  const manualStages = PROSPECT_STAGES.slice(0, PROSPECT_STAGES.indexOf('paid'));
+  const options = manualStages.map((s,i) => `${i+1}. ${PROSPECT_STAGE_LABELS[s]}`).join('\n');
+  const choice = prompt(`Choisis la nouvelle étape (entre le numéro) :\n${options}`);
+  if(!choice) return;
+  const idx = parseInt(choice, 10) - 1;
+  const newStage = manualStages[idx];
+  if(!newStage){ toast('Étape invalide'); return; }
+
+  const currentIdx = PROSPECT_STAGES.indexOf(PD_CURRENT_PROSPECT.stage);
+  const newIdx = PROSPECT_STAGES.indexOf(newStage);
+  if(Math.abs(newIdx - currentIdx) > 1){
+    const justification = prompt(`Tu sautes de "${PROSPECT_STAGE_LABELS[PD_CURRENT_PROSPECT.stage]}" à "${PROSPECT_STAGE_LABELS[newStage]}" — indique pourquoi :`);
+    if(!justification || !justification.trim()){ toast('Justification requise pour sauter une étape'); return; }
+    doAdvanceStage(newStage, justification.trim());
+  } else {
+    doAdvanceStage(newStage, null);
+  }
+}
+
+// FIX (audit 2026-07-29) : les 3 cartes "challenges" étaient 100% codées en
+// dur (progression, montants) et "Rejoindre" ne faisait qu'un toast sans
+// aucun effet. Remplacé par get_my_missions() (voir migration
+// 0004_profiles_leaderboard_missions_feed.sql) : la progression est calculée
+// en direct depuis les vraies ventes, jamais un compteur qui pourrait
+// désynchroniser de la réalité.
+function missionUnitLabel(targetType){
+  return (targetType === 'revenue_total' || targetType === 'revenue_month') ? '€' : '';
+}
+
+async function renderMissions(){
+  const el = document.getElementById('missions-grid');
+  if(!el) return;
+  if(!supa){ el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Missions indisponibles pour le moment.</div>`; return; }
+
+  const { data, error } = await supa.rpc('get_my_missions');
+  if(error){
+    console.error('[missions] get_my_missions:', error);
+    el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Missions indisponibles pour le moment.</div>`;
+    return;
+  }
+  if(!data || !data.length){
+    el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucune mission active pour l'instant.</div>`;
+    return;
+  }
+
+  el.innerHTML = data.map(m => {
+    const unit = missionUnitLabel(m.target_type);
+    const progress = Number(m.progress);
+    const target = Number(m.target_value);
+    const pct = target > 0 ? Math.min(Math.round(progress / target * 100), 100) : 0;
+    const color = m.completed ? 'var(--green)' : 'var(--orange)';
+    return `<div class="oc">
+      <div class="oc-ico" style="background:${m.completed ? 'rgba(48,209,88,.12)' : 'rgba(255,159,10,.12)'}">${m.completed ? '✅' : '🎯'}</div>
+      <div class="oc-t">${escapeHtml(m.title)}</div>
+      <div class="oc-p" style="color:${color}">${m.reward_label || ''}</div>
+      <div class="oc-c">${m.completed ? 'Mission complétée' : 'En cours'}</div>
+      <div class="oc-d">${escapeHtml(m.description)}</div>
+      <div style="height:5px;background:var(--b);border-radius:5px;overflow:hidden;margin-top:10px">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:5px;transition:width .6s"></div>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:5px">${unit==='€' ? progress.toFixed(0) : Math.floor(progress)}${unit} / ${target.toFixed(0)}${unit}</div>
+    </div>`;
+  }).join('');
+}
+
+// FIX (audit 2026-07-29) : le fil communautaire affichait 3 posts codés en
+// dur et "+ Publier" ne faisait qu'un toast, sans jamais rien écrire nulle
+// part. Remplacé par un vrai fil basé sur feed_posts/feed_likes/
+// feed_comments (voir migration 0004_...sql), RLS-scopé aux abonnés actifs.
+function timeAgo(dateStr){
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if(mins < 1) return 'À l\'instant';
+  if(mins < 60) return `Il y a ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if(hours < 24) return `Il y a ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if(days === 1) return 'Hier';
+  if(days < 7) return `Il y a ${days} jours`;
+  return new Date(dateStr).toLocaleDateString('fr-FR');
+}
+
+let FEED_STATE = { myUserId: null, posts: [], profileByUser: {}, likesByPost: {}, commentsByPost: {} };
+
+function feedAuthor(userId){
+  const p = FEED_STATE.profileByUser[userId];
+  return { name: (p && p.display_name) || 'Membre Génération Capable', avatar: (p && p.avatar_emoji) || '🙂' };
+}
+
+async function loadFeed(){
+  const el = document.getElementById('feed-posts-list');
+  if(!el) return;
+  if(!supa){ el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Fil indisponible pour le moment.</div>`; return; }
+
+  const { data: { session } } = await supa.auth.getSession();
+  FEED_STATE.myUserId = session?.user?.id || null;
+
+  const { data: posts, error } = await supa
+    .from('feed_posts').select('id,user_id,content,created_at')
+    .order('created_at', { ascending: false }).limit(50);
+  if(error){ console.error('[feed] posts:', error); el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Fil indisponible pour le moment.</div>`; return; }
+  if(!posts || !posts.length){
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucune publication pour l'instant — sois le premier à partager quelque chose !</div>`;
+    return;
+  }
+
+  const postIds = posts.map(p => p.id);
+  const [{ data: likes }, { data: comments }] = await Promise.all([
+    supa.from('feed_likes').select('post_id,user_id').in('post_id', postIds),
+    supa.from('feed_comments').select('id,post_id,user_id,content,created_at').in('post_id', postIds).order('created_at')
+  ]);
+
+  const userIds = [...new Set([...posts.map(p => p.user_id), ...(comments || []).map(c => c.user_id)])];
+  const { data: profiles } = await supa.from('profiles').select('user_id,display_name,avatar_emoji').in('user_id', userIds);
+  const profileByUser = {};
+  (profiles || []).forEach(p => profileByUser[p.user_id] = p);
+
+  const likesByPost = {};
+  (likes || []).forEach(l => { (likesByPost[l.post_id] = likesByPost[l.post_id] || []).push(l.user_id); });
+  const commentsByPost = {};
+  (comments || []).forEach(c => { (commentsByPost[c.post_id] = commentsByPost[c.post_id] || []).push(c); });
+
+  FEED_STATE.posts = posts;
+  FEED_STATE.profileByUser = profileByUser;
+  FEED_STATE.likesByPost = likesByPost;
+  FEED_STATE.commentsByPost = commentsByPost;
+  renderFeed();
+}
+
+function renderFeed(){
+  const el = document.getElementById('feed-posts-list');
+  if(!el) return;
+  el.innerHTML = FEED_STATE.posts.map(post => {
+    const author = feedAuthor(post.user_id);
+    const likeUsers = FEED_STATE.likesByPost[post.id] || [];
+    const iLiked = FEED_STATE.myUserId && likeUsers.includes(FEED_STATE.myUserId);
+    const comments = FEED_STATE.commentsByPost[post.id] || [];
+    const isMine = post.user_id === FEED_STATE.myUserId;
+    const commentsHtml = comments.map(c => {
+      const ca = feedAuthor(c.user_id);
+      return `<div style="display:flex;gap:8px;margin-top:8px">
+        <div class="sb-av" style="width:26px;height:26px;font-size:12px;flex-shrink:0">${ca.avatar}</div>
+        <div style="flex:1;font-size:12px"><span style="font-weight:700">${escapeHtml(ca.name)}</span> <span style="color:var(--t2)">${escapeHtml(c.content)}</span></div>
+      </div>`;
+    }).join('');
+    return `<div class="card" style="padding:18px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div class="sb-av" style="width:34px;height:34px;font-size:15px">${author.avatar}</div>
+        <div><div style="font-size:13px;font-weight:700">${escapeHtml(author.name)}</div><div style="font-size:11px;color:var(--t3)">${timeAgo(post.created_at)}</div></div>
+        ${isMine ? `<button class="btn btn-g" style="margin-left:auto;padding:4px 10px;font-size:11px" onclick="deleteFeedPost('${post.id}')">Supprimer</button>` : ''}
+      </div>
+      <div style="font-size:13.5px;color:var(--t2);line-height:1.6;white-space:pre-wrap">${escapeHtml(post.content)}</div>
+      <div style="display:flex;gap:16px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--b)">
+        <button class="btn btn-g" style="padding:5px 12px;font-size:12px" onclick="toggleLike('${post.id}')">${iLiked ? '❤️' : '🤍'} ${likeUsers.length}</button>
+        <span style="font-size:12px;color:var(--t3)">💬 ${comments.length}</span>
+      </div>
+      ${commentsHtml}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input class="field" style="margin:0" id="comment-input-${post.id}" placeholder="Ajouter un commentaire..." maxlength="1000" onkeydown="if(event.key==='Enter'){addComment('${post.id}')}">
+        <button class="btn btn-g" style="flex-shrink:0" onclick="addComment('${post.id}')">Envoyer</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function createFeedPost(){
+  if(!supa) return authNotConfigured();
+  const input = document.getElementById('new-post-content');
+  const content = input?.value?.trim();
+  if(!content){ toast('Écris quelque chose avant de publier'); return; }
+  // FIX (audit 2026-07-29 — pentest pass, "10000 caractères") : le
+  // maxlength="2000" HTML limite la saisie/collage normal, mais rien ne
+  // validait côté client avant l'envoi — un contournement (devtools, ou
+  // simplement si la contrainte HTML venait à être retirée) atterrissait
+  // tel quel sur la contrainte SQL et affichait le message Postgres brut
+  // ("new row ... violates check constraint ...") dans un toast.
+  if(content.length > 2000){ toast('⚠️ Ton message est trop long (2000 caractères max)'); return; }
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return authNotConfigured();
+  const btn = document.getElementById('new-post-btn');
+  if(btn) btn.disabled = true;
+  const { error } = await supa.from('feed_posts').insert({ user_id: session.user.id, content });
+  if(btn) btn.disabled = false;
+  if(error){ console.error('[feed] create:', error); toast('❌ Impossible de publier — réessaie'); return; }
+  input.value = '';
+  closeMo('mo-new-post');
+  toast('✓ Publication créée');
+  await loadFeed();
+}
+
+// FIX (audit 2026-07-29 — pentest pass, double-clic) : ni toggleLike() ni
+// addComment() n'avaient de garde contre un double-clic/double-tap rapide.
+// toggleLike() était protégé par la contrainte PK de "feed_likes" (un doublon
+// échoue proprement en base) mais addComment() n'a aucune contrainte
+// d'unicité — un double-clic pouvait créer deux commentaires identiques
+// visibles. FEED_INFLIGHT verrouille l'action en cours, quel que soit le
+// bouton réellement recréé à chaque re-rendu du fil (innerHTML), donc un
+// disabled=true posé sur le bouton ne survivrait pas au prochain rendu.
+const FEED_INFLIGHT = new Set();
+
+async function deleteFeedPost(postId){
+  if(!supa || FEED_INFLIGHT.has('del:'+postId)) return;
+  FEED_INFLIGHT.add('del:'+postId);
+  try{
+    const { error } = await supa.from('feed_posts').delete().eq('id', postId);
+    if(error){ console.error('[feed] delete:', error); toast('❌ ' + error.message); return; }
+    await loadFeed();
+  }finally{ FEED_INFLIGHT.delete('del:'+postId); }
+}
+
+async function toggleLike(postId){
+  if(!supa || !FEED_STATE.myUserId || FEED_INFLIGHT.has('like:'+postId)) return;
+  FEED_INFLIGHT.add('like:'+postId);
+  try{
+    const likeUsers = FEED_STATE.likesByPost[postId] || [];
+    const alreadyLiked = likeUsers.includes(FEED_STATE.myUserId);
+    const { error } = alreadyLiked
+      ? await supa.from('feed_likes').delete().eq('post_id', postId).eq('user_id', FEED_STATE.myUserId)
+      : await supa.from('feed_likes').insert({ post_id: postId, user_id: FEED_STATE.myUserId });
+    if(error){ console.error('[feed] like toggle:', error); return; }
+    await loadFeed();
+  }finally{ FEED_INFLIGHT.delete('like:'+postId); }
+}
+
+async function addComment(postId){
+  if(!supa) return authNotConfigured();
+  if(FEED_INFLIGHT.has('comment:'+postId)) return;
+  const input = document.getElementById('comment-input-' + postId);
+  const content = input?.value?.trim();
+  if(!content) return;
+  if(content.length > 1000){ toast('⚠️ Commentaire trop long (1000 caractères max)'); return; }
+  FEED_INFLIGHT.add('comment:'+postId);
+  try{
+    const { data: { session } } = await supa.auth.getSession();
+    if(!session?.user) return authNotConfigured();
+    const { error } = await supa.from('feed_comments').insert({ post_id: postId, user_id: session.user.id, content });
+    if(error){ console.error('[feed] comment:', error); toast('❌ Impossible d\'envoyer le commentaire — réessaie'); return; }
+    input.value = '';
+    await loadFeed();
+  }finally{ FEED_INFLIGHT.delete('comment:'+postId); }
 }
 
 // FIX (audit production) : appelée à plusieurs endroits (dont le retour de
@@ -3454,6 +4618,12 @@ async function checkAdminAccess(){
     if(resp.ok && data.authorized === true){
       document.getElementById('admin-gate').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
+      try{ await renderAdminStats(); }catch(e){ console.error('[admin] stats:', e); }
+      try{ await renderRealMembers(); }catch(e){ console.error('[admin] members:', e); }
+      try{ await renderAdminCommissions(); }catch(e){ console.error('[admin] commissions list:', e); }
+      try{ await renderAdminOrders(); }catch(e){ console.error('[admin] orders overview:', e); }
+      try{ await renderAdminPayouts(); }catch(e){ console.error('[admin] payouts overview:', e); }
+      try{ await renderAdminDisputes(); }catch(e){ console.error('[admin] disputes overview:', e); }
     } else {
       setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
     }
@@ -3469,11 +4639,309 @@ function lockAdmin(){
   toast('Back-office verrouillé');
 }
 
-// FIX #6 (audit 2026-07-20) : garde-fous pour éviter un ReferenceError au clic.
-// Implémentation réelle (table membres, export CSV, envoi groupé) à construire — décision produit, pas un bug.
-function renderRealMembers(){ /* TODO prochain sprint : lire gc_members et afficher le tableau admin */ }
-function exportMembersCSV(){ /* TODO prochain sprint : générer et télécharger le CSV depuis gc_members */ }
-function sendBroadcastEmail(){ /* TODO prochain sprint : nécessite EmailJS configuré (hors périmètre actuel) */ }
+// FIX (audit 2026-07-29) : la totalité de ce bloc était soit des nombres codés
+// en dur dans le HTML (48 membres, 31 abonnés, 23 ventes, 9 450€ — jamais mis
+// à jour), soit des fonctions vides marquées TODO qui laissaient
+// #admin-real-members bloqué sur "Chargement..." pour l'éternité. Le
+// back-office du fondateur affichait donc des chiffres 100% fictifs en
+// permanence. Remplacé par de vraies requêtes (admin_list_subscribers(),
+// "sales", "commissions" — RLS admin déjà en place, voir migrations 0003/0004).
+
+async function renderAdminStats(){
+  if(!supa) return;
+  try{
+    const [{ data: subs, error: subsErr }, { data: sales, error: salesErr }, { data: comms, error: commsErr }] = await Promise.all([
+      supa.rpc('admin_list_subscribers'),
+      supa.from('sales').select('amount,status,created_at'),
+      supa.from('commissions').select('amount,status'),
+    ]);
+    if(subsErr) console.error('[admin] subscribers:', subsErr);
+    if(salesErr) console.error('[admin] sales:', salesErr);
+    if(commsErr) console.error('[admin] commissions:', commsErr);
+
+    const subsList = subs || [];
+    const salesList = (sales || []).filter(s => s.status === 'completed');
+    const commsList = comms || [];
+    const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0);
+
+    const activeSubs = subsList.filter(s => s.is_active).length;
+    const newMembersMonth = subsList.filter(s => new Date(s.created_at) >= startOfMonth).length;
+    const salesMonth = salesList.filter(s => new Date(s.created_at) >= startOfMonth).length;
+    const commissionsDue = commsList.filter(c => ['pending','validated'].includes(c.status)).reduce((s,c) => s + c.amount, 0) / 100;
+    const mrr = activeSubs * 67;
+
+    const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+    setTxt('adm-members', subsList.length);
+    setTxt('adm-members-caption', `↑ ${newMembersMonth} ce mois`);
+    setTxt('adm-subs', activeSubs);
+    setTxt('adm-subs-caption', `${mrr.toLocaleString('fr-FR')} €/mois récurrent`);
+    setTxt('adm-sales', salesList.length);
+    setTxt('adm-sales-caption', `↑ ${salesMonth} ce mois`);
+    setTxt('adm-comm', commissionsDue.toLocaleString('fr-FR') + ' €');
+  }catch(e){ console.error('[admin] stats exception:', e); }
+}
+
+let ADMIN_MEMBERS_CACHE = [];
+
+async function renderRealMembers(){
+  const el = document.getElementById('admin-real-members');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('admin_list_subscribers');
+  if(error){
+    console.error('[admin] members:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement — réessaie.</div>`;
+    return;
+  }
+  ADMIN_MEMBERS_CACHE = data || [];
+  if(!ADMIN_MEMBERS_CACHE.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucun membre inscrit pour l'instant.</div>`;
+    return;
+  }
+  el.innerHTML = ADMIN_MEMBERS_CACHE.map(m => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
+      <div>
+        <div style="font-size:13px;font-weight:700">${escapeHtml(m.email)}</div>
+        <div style="font-size:11px;color:var(--t3)">Inscrit le ${new Date(m.created_at).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;font-weight:700;color:${m.is_active ? 'var(--green)' : 'var(--t3)'}">${m.is_active ? '● Actif' : '○ Inactif'}</span>
+        <button class="btn btn-g" style="padding:4px 10px;font-size:11px" onclick="toggleMemberActive('${m.user_id}', ${!m.is_active})">${m.is_active ? 'Désactiver' : 'Activer'}</button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleMemberActive(userId, newStatus){
+  if(!supa) return;
+  const { error } = await supa.rpc('admin_set_subscriber_active', { target_user_id: userId, new_status: newStatus });
+  if(error){ console.error('[admin] toggle active:', error); toast('❌ ' + error.message); return; }
+  toast(newStatus ? '✓ Membre activé' : '✓ Membre désactivé');
+  await renderRealMembers();
+  await renderAdminStats();
+}
+
+function exportMembersCSV(){
+  if(!ADMIN_MEMBERS_CACHE.length){ toast('Aucun membre à exporter'); return; }
+  const header = 'email,is_active,stripe_customer_id,created_at\n';
+  const csvEscape = v => `"${String(v == null ? '' : v).replace(/"/g,'""')}"`;
+  const rows = ADMIN_MEMBERS_CACHE.map(m => [m.email, m.is_active, m.stripe_customer_id, m.created_at].map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'membres_generation_capable_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✓ Export CSV téléchargé');
+}
+
+// "Commissions à verser" — était une div vide, aucune fonction ne l'avait
+// jamais touchée. Réutilise admin_mark_commission_paid() (RPC déjà présente
+// en base depuis la migration 0003 mais jamais appelée nulle part côté front).
+async function renderAdminCommissions(){
+  const el = document.getElementById('admin-comm-list');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data: comms, error } = await supa
+    .from('commissions').select('id,seller_id,amount,status,created_at')
+    .in('status', ['pending','validated']).order('created_at');
+  if(error){
+    console.error('[admin] commissions list:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
+    return;
+  }
+  if(!comms || !comms.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune commission en attente de versement.</div>`;
+    return;
+  }
+
+  const emailBySellerId = {};
+  ADMIN_MEMBERS_CACHE.forEach(m => emailBySellerId[m.user_id] = m.email);
+
+  el.innerHTML = comms.map(c => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--b)">
+      <div>
+        <div style="font-size:13px;font-weight:700">${escapeHtml(emailBySellerId[c.seller_id] || c.seller_id)}</div>
+        <div style="font-size:11px;color:var(--t3)">${(c.amount/100).toLocaleString('fr-FR')} € · ${new Date(c.created_at).toLocaleDateString('fr-FR')} · ${c.status === 'pending' ? 'En attente' : 'Validée'}</div>
+      </div>
+      <button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="markCommissionPaid('${c.id}')">Marquer payée</button>
+    </div>`).join('');
+}
+
+async function markCommissionPaid(commissionId){
+  if(!supa) return;
+  const { error } = await supa.rpc('admin_mark_commission_paid', { p_commission_id: commissionId });
+  if(error){ console.error('[admin] mark paid:', error); toast('❌ ' + error.message); return; }
+  toast('✓ Commission marquée comme payée');
+  await renderAdminCommissions();
+  await renderAdminStats();
+}
+
+// ── Tableau de bord production (commandes CRM) — admin_get_orders_overview()
+//    / admin_set_order_status() (migration 0006/0010). "paid" n'apparaît
+//    jamais comme action ici : c'est Stripe qui l'a déjà fait passer à
+//    "paid", et seul le vendeur peut ensuite l'envoyer en production
+//    (sign_and_lock_order()) — l'admin ne pilote que production→livré→terminé.
+let ADMIN_ORDERS_CACHE = [];
+let ADMIN_ORDERS_FILTER = 'all';
+
+function setAdminOrdersFilter(filter){
+  ADMIN_ORDERS_FILTER = filter;
+  document.querySelectorAll('#admin-orders-filters .btn').forEach(b => {
+    const active = b.dataset.orderfilter === filter;
+    b.classList.toggle('btn-p', active);
+    b.classList.toggle('btn-g', !active);
+  });
+  renderAdminOrdersList();
+}
+
+async function renderAdminOrders(){
+  const el = document.getElementById('admin-orders-list');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('admin_get_orders_overview');
+  if(error){
+    console.error('[admin] orders overview:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
+    return;
+  }
+  ADMIN_ORDERS_CACHE = data || [];
+  renderAdminOrdersList();
+}
+
+function renderAdminOrdersList(){
+  const el = document.getElementById('admin-orders-list');
+  if(!el) return;
+  const rows = ADMIN_ORDERS_FILTER === 'all'
+    ? ADMIN_ORDERS_CACHE
+    : ADMIN_ORDERS_CACHE.filter(o => o.status === ADMIN_ORDERS_FILTER);
+
+  if(!rows.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune commande${ADMIN_ORDERS_FILTER !== 'all' ? ' dans ce statut' : ''} pour l'instant.</div>`;
+    return;
+  }
+  const statusLabels = { draft:'Brouillon', awaiting_payment:'Paiement en attente', paid:'Payée', production:'En production', delivered:'Livrée', done:'Terminée', cancelled:'Annulée', refunded:'Remboursée' };
+  el.innerHTML = rows.map(o => {
+    let actionsHtml = '';
+    if(o.status === 'paid' && !o.locked){
+      actionsHtml = `<span style="font-size:11px;color:var(--t3)">En attente d'envoi au studio par le vendeur</span>`;
+    } else if(o.status === 'production'){
+      actionsHtml = `<button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminAdvanceOrderStatus('${o.id}','delivered')">Marquer livrée</button>`;
+    } else if(o.status === 'delivered'){
+      actionsHtml = `<button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminAdvanceOrderStatus('${o.id}','done')">Marquer terminée</button>`;
+    } else if(o.status === 'done'){
+      actionsHtml = `<span style="font-size:11px;font-weight:700;color:var(--green)">✓ Terminée</span>`;
+    }
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o.client_name)} · ${escapeHtml(CRM_PRODUCT_LABELS[o.product_type] || o.product_type)}</div>
+        <div style="font-size:11px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o.seller_email)} · ${Number(o.price).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · ${statusLabels[o.status] || o.status}</div>
+      </div>
+      <div style="flex-shrink:0">${actionsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+async function adminAdvanceOrderStatus(orderId, newStatus){
+  if(!supa) return;
+  const { error } = await supa.rpc('admin_set_order_status', { p_order_id: orderId, p_new_status: newStatus });
+  if(error){ console.error('[admin] set order status:', error); toast('❌ ' + error.message); return; }
+  toast('✓ Statut mis à jour');
+  await renderAdminOrders();
+}
+
+// ── Retraits vendeurs — admin_get_payouts_overview() / admin_mark_payout_paid() ──
+async function renderAdminPayouts(){
+  const el = document.getElementById('admin-payouts-list');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('admin_get_payouts_overview');
+  if(error){
+    console.error('[admin] payouts overview:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune demande de retrait pour l'instant.</div>`;
+    return;
+  }
+  const statusLabels = { requested:'Demandé', paid:'Versé', failed:'Échoué', cancelled:'Annulé' };
+  el.innerHTML = rows.map(p => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.seller_email)}</div>
+        <div style="font-size:11px;color:var(--t3)">${Number(p.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · Demandé le ${new Date(p.requested_at).toLocaleDateString('fr-FR')} · ${statusLabels[p.status] || p.status}</div>
+      </div>
+      ${p.status === 'requested' ? `<button class="btn btn-p" style="padding:5px 12px;font-size:11px;flex-shrink:0" onclick="adminMarkPayoutPaid('${p.id}')">Marquer versé</button>` : ''}
+    </div>`).join('');
+}
+
+async function adminMarkPayoutPaid(payoutId){
+  if(!supa) return;
+  if(!confirm('Confirmer que ce retrait a bien été viré au vendeur ? Cette action est définitive.')) return;
+  const { error } = await supa.rpc('admin_mark_payout_paid', { p_payout_id: payoutId });
+  if(error){ console.error('[admin] mark payout paid:', error); toast('❌ ' + error.message); return; }
+  toast('✓ Retrait marqué comme versé');
+  await renderAdminPayouts();
+}
+
+// ── Litiges Stripe — admin_get_disputed_commissions() / admin_resolve_dispute()
+//    (migration 0011). Une commission gelée par charge.dispute.created reste
+//    "disputed" jusqu'à résolution manuelle ici — Stripe ne notifie pas
+//    l'issue d'un litige de façon fiable/automatisable.
+async function renderAdminDisputes(){
+  const el = document.getElementById('admin-disputes-list');
+  if(!el || !supa) return;
+  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
+
+  const { data, error } = await supa.rpc('admin_get_disputed_commissions');
+  if(error){
+    console.error('[admin] disputes overview:', error);
+    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
+    return;
+  }
+  const rows = data || [];
+  if(!rows.length){
+    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucun litige en cours.</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(d => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:10px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.seller_email)} · ${escapeHtml(d.product_name || 'Vente')}</div>
+        <div style="font-size:11px;color:var(--t3)">${Number(d.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · Gelée le ${new Date(d.created_at).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminResolveDispute('${d.id}', true)">✓ Vendeur gagne</button>
+        <button class="btn btn-g" style="padding:5px 12px;font-size:11px" onclick="adminResolveDispute('${d.id}', false)">✗ Vendeur perd</button>
+      </div>
+    </div>`).join('');
+}
+
+async function adminResolveDispute(commissionId, sellerWins){
+  if(!supa) return;
+  const label = sellerWins ? 'le vendeur a gagné ce litige (commission restaurée)' : 'le vendeur a perdu ce litige (commission annulée)';
+  if(!confirm(`Confirmer que ${label} ? Vérifie d'abord l'issue réelle dans le Dashboard Stripe.`)) return;
+  const { error } = await supa.rpc('admin_resolve_dispute', { p_commission_id: commissionId, p_seller_wins: sellerWins });
+  if(error){ console.error('[admin] resolve dispute:', error); toast('❌ ' + error.message); return; }
+  toast('✓ Litige résolu');
+  await renderAdminDisputes();
+}
+
+// L'envoi groupé nécessite un vrai fournisseur email configuré (EmailJS ou
+// équivalent) — décision produit/infrastructure, pas quelque chose à
+// simuler silencieusement. Message honnête plutôt qu'un no-op invisible.
+function sendBroadcastEmail(){
+  if(typeof EMAILJS_CONFIG === 'undefined' || EMAILJS_CONFIG.publicKey === 'EMAILJS_PUBLIC_KEY'){
+    toast('⚠️ Envoi groupé non configuré — remplis EMAILJS_CONFIG en haut du fichier pour l\'activer.');
+    return;
+  }
+  toast('⚠️ Envoi groupé à tous les membres pas encore implémenté côté serveur.');
+}
 
 // Ouvre une fiche PDF. Les fichiers doivent être déposés dans un dossier /pdfs/
 // à la racine du site Netlify, avec exactement les mêmes noms que ceux passés ici.
@@ -3605,7 +5073,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) avec ce format exact :
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await response.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
     const fb = JSON.parse(clean);
@@ -3614,7 +5082,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) avec ce format exact :
     renderNotifs();
   } catch(e) {
     console.error('[GC-IA] Échec:', e);
-    resultEl.innerHTML = renderApiError('submitEvalIA()');
+    resultEl.innerHTML = renderApiError('submitEvalIA()', e);
   }
   btn.disabled = false;
   btnTxt.textContent = '⚡ Analyser ma semaine';
@@ -3674,7 +5142,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) :
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await response.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
     const fb = JSON.parse(clean);
@@ -3682,7 +5150,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) :
     STATE.coaching.unshift({ico:'⚡', ico_bg:'rgba(41,151,255,.12)', t:`${cat} — Feedback IA reçu`, d:`Analyse instantanée · À l'instant`, status:'Feedbacké', stag:'tag-g', fb: fb.conseil_final});
   } catch(e) {
     console.error('[GC-IA] Échec:', e);
-    resultEl.innerHTML = renderApiError('submitCoachIA()');
+    resultEl.innerHTML = renderApiError('submitCoachIA()', e);
   }
   btn.disabled = false;
   btnTxt.textContent = '⚡ Analyser et recevoir mon feedback';
@@ -3731,13 +5199,31 @@ function toast(msg){
 // une analyse en échec plantait silencieusement au lieu d'afficher un message, laissant
 // le spinner "Génération en cours..." bloqué à l'infini. Cette fonction affiche un message
 // clair + un bouton Réessayer (relance la fonction d'origine quand son nom est fourni).
-function renderApiError(retryCall){
+// FIX (audit 2026-07-29) : le message était toujours "Analyse indisponible pour
+// le moment" quelle que soit la cause réelle (clé API absente/invalide, quota
+// dépassé, timeout, JSON tronqué...) — impossible à diagnostiquer sans fouiller
+// les logs Netlify. ai-proxy.js renvoie maintenant un code d'erreur typé
+// (NO_API_KEY/INVALID_API_KEY/RATE_LIMITED/TIMEOUT/PROVIDER_DOWN/...) : on
+// l'affiche pour de vrai, avec un message adapté à chaque cas.
+function renderApiError(retryCall, err){
   const retryBtn = retryCall
     ? `<button class="btn btn-g" style="margin-top:12px" onclick="${retryCall}">↻ Réessayer</button>`
     : '';
+  const messages = {
+    NO_API_KEY: "Aucune clé IA n'est configurée sur le serveur — contacte le support.",
+    INVALID_API_KEY: "La clé IA du serveur est invalide ou expirée — contacte le support.",
+    RATE_LIMITED: "Trop de demandes en ce moment — réessaie dans quelques instants.",
+    TIMEOUT: "Le service IA met trop de temps à répondre — réessaie.",
+    PROVIDER_DOWN: "Le service IA rencontre un incident — réessaie dans quelques instants.",
+    PAYLOAD_TOO_LARGE: "Ta demande est trop longue — raccourcis le texte et réessaie.",
+    TRUNCATED_RESPONSE: "La réponse a été coupée avant la fin — réessaie.",
+    EMPTY_RESPONSE: "Le service IA n'a rien renvoyé — réessaie.",
+  };
+  const code = err && err.code;
+  const detail = (code && messages[code]) || (err && err.message) || "Le service d'analyse IA n'a pas répondu. Réessaie dans quelques secondes.";
   return `<div style="padding:22px 18px;text-align:center;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:10px">
-    <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">⚠️ Analyse indisponible pour le moment</div>
-    <div style="font-size:12px;color:var(--t3);line-height:1.5">Le service d'analyse IA n'a pas répondu. Réessaie dans quelques secondes.</div>
+    <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">⚠️ Analyse indisponible</div>
+    <div style="font-size:12px;color:var(--t3);line-height:1.5">${escapeHtml(detail)}</div>
     ${retryBtn}
   </div>`;
 }
@@ -4000,9 +5486,14 @@ async function sendResetEmail(){
 // Déconnexion
 async function signOutUser(){
   if(supa) await supa.auth.signOut();
-  STATE.module1Validated = false;
-  STATE.subscribed = false;
-  try{ localStorage.removeItem('gc_ok'); localStorage.removeItem('gc_code'); }catch(e){}
+  try{
+    localStorage.removeItem('gc_ok');
+    localStorage.removeItem('gc_code');
+    localStorage.removeItem('gc_site_state_v1');
+    localStorage.removeItem('gc_ev_state_v1');
+  }catch(e){}
+  resetLocalUserState();
+  _lastAuthSuccessToken = null;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById('page-accueil').classList.add('on');
   toast('À bientôt !');
@@ -4024,6 +5515,16 @@ async function onAuthSuccess(session){
   if(!session?.user) return;
   if(session.access_token && session.access_token === _lastAuthSuccessToken) return;
   _lastAuthSuccessToken = session.access_token || null;
+
+  // Sécurité multi-compte sur un même navigateur (voir resetLocalUserState) :
+  // si l'état local appartient à un email différent de celui qui vient de se
+  // connecter, on repart de zéro avant d'afficher quoi que ce soit — sinon ce
+  // compte hériterait du nom/niveau/notifications du compte précédemment
+  // utilisé sur cet appareil.
+  const incomingEmail = (session.user.email || '').toLowerCase();
+  if(STATE.memberEmail && STATE.memberEmail.toLowerCase() !== incomingEmail){
+    resetLocalUserState();
+  }
   STATE.memberEmail = session.user.email;
 
   if(!supa) return authNotConfigured();
@@ -4041,6 +5542,8 @@ async function onAuthSuccess(session){
     STATE.subscribed = true;
     toast('Chargement de tes modules...');
     await loadModules();
+    try{ await loadProfile(); }catch(e){ console.error('[profile] load:', e); }
+    try{ await refreshMyRevenue(); }catch(e){ console.error('[niveau] refresh:', e); }
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     document.getElementById('page-dashboard').classList.add('on');
     try{ renderAll(); }catch(e){}
@@ -4049,6 +5552,70 @@ async function onAuthSuccess(session){
     toast('Ton compte existe mais aucun abonnement actif n\'y est rattaché.');
     go('rejoindre', null);
   }
+}
+
+// ══════════════════════════════════════════════════════════
+//  PROFIL — informations publiques réelles (table "profiles",
+//  distincte de "subscribers" qui reste privée). Voir migration
+//  0004_profiles_leaderboard_missions_feed.sql.
+// ══════════════════════════════════════════════════════════
+let PROFILE = { display_name: null, avatar_emoji: '🙂', objectives: {} };
+
+async function loadProfile(){
+  if(!supa) return;
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return;
+  const { data, error } = await supa
+    .from('profiles')
+    .select('display_name,avatar_emoji,objectives')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+  if(error){ console.error('[profile] load:', error); return; }
+  PROFILE = data || { display_name: null, avatar_emoji: '🙂', objectives: {} };
+  renderProfilePage();
+}
+
+function renderProfilePage(){
+  const nameEl = document.getElementById('profil-name');
+  const avEl = document.getElementById('profil-avatar');
+  const objEl = document.getElementById('profil-objective');
+  const displayName = PROFILE.display_name || STATE.memberName || 'Membre';
+  if(nameEl) nameEl.textContent = displayName;
+  if(avEl) avEl.textContent = PROFILE.avatar_emoji || '🙂';
+  if(objEl) objEl.textContent = (PROFILE.objectives && PROFILE.objectives.main) || 'Aucun objectif défini pour l\'instant';
+}
+
+function openEditProfileModal(){
+  const nameInput = document.getElementById('edit-profile-name');
+  const avInput = document.getElementById('edit-profile-avatar');
+  const objInput = document.getElementById('edit-profile-objective');
+  if(nameInput) nameInput.value = PROFILE.display_name || STATE.memberName || '';
+  if(avInput) avInput.value = PROFILE.avatar_emoji || '🙂';
+  if(objInput) objInput.value = (PROFILE.objectives && PROFILE.objectives.main) || '';
+  openMo('mo-edit-profile');
+}
+
+async function saveProfile(){
+  if(!supa) return authNotConfigured();
+  const name = document.getElementById('edit-profile-name')?.value?.trim() || null;
+  const avatar = document.getElementById('edit-profile-avatar')?.value?.trim() || '🙂';
+  const objective = document.getElementById('edit-profile-objective')?.value?.trim() || '';
+  const btn = document.getElementById('edit-profile-btn');
+  if(btn) btn.disabled = true;
+  const { error } = await supa.rpc('update_my_profile', {
+    p_display_name: name,
+    p_avatar_emoji: avatar,
+    p_objectives: { main: objective }
+  });
+  if(btn) btn.disabled = false;
+  if(error){ console.error('[profile] save:', error); toast('❌ ' + error.message); return; }
+  PROFILE = { display_name: name, avatar_emoji: avatar, objectives: { main: objective } };
+  if(name) STATE.memberName = name;
+  saveState();
+  renderProfilePage();
+  try{ renderProfile(); }catch(e){}
+  closeMo('mo-edit-profile');
+  toast('✓ Profil mis à jour');
 }
 
 // Vérifie automatiquement, au chargement de la page, si l'utilisateur a
@@ -4103,7 +5670,7 @@ async function sendConfirmationEmail(toName, toEmail, type){
   const templates = {
     academie: {
       subject: 'Bienvenue dans Génération Capable 🔥',
-      message: `Bonjour ${toName},\n\nTon accès à l'Académie Génération Capable est activé.\n\nTu peux maintenant accéder à l'intégralité des 6 modules depuis ton espace membre.\n\nTon premier défi : terminer le Module 01 — Le Réveil aujourd'hui.\n\nÀ tout de suite sur la plateforme,\nEnzo — Génération Capable`
+      message: `Bonjour ${toName},\n\nTon accès à l'Académie Génération Capable est activé.\n\nTu peux maintenant accéder à l'intégralité des 7 modules depuis ton espace membre.\n\nTon premier défi : terminer le Module 01 — Le Réveil aujourd'hui.\n\nÀ tout de suite sur la plateforme,\nEnzo — Génération Capable`
     },
     ecosysteme: {
       subject: 'Écosystème Génération Capable activé ✅',
@@ -4236,13 +5803,79 @@ async function handleCheckoutReturn(){
 }
 
 
-const EV_STATE = {
-  objectifs: { contacts:20, rdv:4, propositions:2, revenu:500, engagement:'' },
-  semaine: { contacts:0, rdv:0, propositions:0, revenu:0 },
-  jouractuel: { contacts:0, rdv:0, propositions:0, humeur:'', engagement:'', checkindone:false },
-  planDuJour: [],
-  suiviActions: [],
-};
+// FIX (audit 2026-07-29) : EV_STATE (objectifs de la semaine, check-in du
+// jour, suivi des actions) n'était JAMAIS persisté — un simple rafraîchissement
+// de page effaçait silencieusement tout ce que l'utilisateur venait de saisir.
+// Persisté maintenant dans localStorage, comme STATE.
+function evStateDefaults(){
+  return {
+    objectifs: { contacts:20, rdv:4, propositions:2, revenu:500, engagement:'' },
+    semaine: { contacts:0, rdv:0, propositions:0, revenu:0 },
+    jouractuel: { contacts:0, rdv:0, propositions:0, humeur:'', engagement:'', checkindone:false },
+    planDuJour: [],
+    suiviActions: [],
+  };
+}
+function loadEVState(){
+  const defaults = evStateDefaults();
+  try{
+    const saved = JSON.parse(localStorage.getItem('gc_ev_state_v1') || '{}');
+    return {
+      objectifs: { ...defaults.objectifs, ...(saved.objectifs||{}) },
+      semaine: { ...defaults.semaine, ...(saved.semaine||{}) },
+      jouractuel: { ...defaults.jouractuel, ...(saved.jouractuel||{}) },
+      planDuJour: saved.planDuJour || defaults.planDuJour,
+      suiviActions: saved.suiviActions || defaults.suiviActions,
+    };
+  }catch(e){ return defaults; }
+}
+function saveEVState(){ try{ localStorage.setItem('gc_ev_state_v1', JSON.stringify(EV_STATE)); }catch(e){} }
+
+let EV_STATE = loadEVState();
+
+// FIX (audit 2026-07-29) : STATE/EV_STATE vivent dans localStorage, PAS liés
+// au compte Supabase. Si une deuxième personne se connecte sur le même
+// navigateur après une première (poste partagé, ou simplement l'appareil du
+// fondateur utilisé pour tester plusieurs comptes), elle héritait du nom, du
+// niveau, des notifications, etc. de la personne précédente tant qu'aucune
+// donnée réelle ne les écrasait. Remet tout à zéro : appelé à la
+// déconnexion ET automatiquement si l'email qui se connecte ne correspond
+// pas à celui déjà stocké localement (cas où la déconnexion n'a jamais été
+// cliquée : fermeture d'onglet, changement de compte direct...).
+function resetLocalUserState(){
+  STATE.module1Validated = false;
+  STATE.subscribed = false;
+  STATE.memberCode = '';
+  STATE.memberName = 'Membre';
+  STATE.memberEmail = '';
+  STATE.module1Letter = '';
+  STATE.prospects = 0;
+  STATE.reponses = 0;
+  STATE.rdv = 0;
+  STATE.propositions = 0;
+  STATE.commissions = 0;
+  STATE.niveau = 1;
+  STATE.xp = 0;
+  STATE.studioSubscribed = false;
+  STATE.videosVues = {};
+  STATE.currentModule = 1;
+  STATE.currentVideo = 0;
+  STATE.coachHistory = [];
+  STATE.scanResult = null;
+  STATE.streak = 0;
+  STATE.streakGoal = 7;
+  STATE.coaching = [];
+  STATE.notifications = [];
+  STATE.subPrice = 67;
+  saveState();
+
+  EV_STATE = evStateDefaults();
+  saveEVState();
+
+  PROFILE = { display_name: null, avatar_emoji: '🙂', objectives: {} };
+  MY_REVENUE = 0;
+  MODULES = {};
+}
 
 function initEspaceVendeur(){
   // Date du jour
@@ -4287,6 +5920,7 @@ function sauvegarderObjectifs(){
   EV_STATE.objectifs.propositions = parseInt(document.getElementById('obj-propositions')?.value)||2;
   EV_STATE.objectifs.revenu = parseInt(document.getElementById('obj-revenu')?.value)||500;
   EV_STATE.objectifs.engagement = document.getElementById('obj-engagement')?.value||'';
+  saveEVState();
   closeMo('mo-objectifs-semaine');
   renderEvStats();
   genererPlanDuJour();
@@ -4319,18 +5953,28 @@ Réponds STRICTEMENT en JSON :
       body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const plan = JSON.parse(raw.replace(/```json|```/g,'').trim());
     EV_STATE.planDuJour = plan.actions||[];
+    EV_STATE.suiviActions = [];
+    saveEVState();
     renderPlanDuJour(plan);
     renderSuivi();
   } catch(e){
     console.error('[GC-IA] Échec:', e);
-    el.innerHTML = renderApiError('genererPlanDuJour()');
+    el.innerHTML = renderApiError('genererPlanDuJour()', e);
   }
 }
 
+// FIX (audit 2026-07-29 — pentest pass) : aucun champ n'était échappé ici.
+// Le contenu vient de la réponse IA, elle-même influencée par du texte libre
+// saisi par l'utilisateur (EV_STATE.objectifs.engagement, injecté dans le
+// prompt) — une injection de prompt qui ferait sortir du HTML/JS à l'IA
+// s'exécuterait tel quel via innerHTML. Sévérité limitée (auto-XSS, ce
+// contenu n'est jamais montré à quelqu'un d'autre que son auteur) mais
+// corrigé par principe : jamais de contenu non fiable dans innerHTML sans
+// échappement, qu'il vienne d'un humain ou d'un modèle IA.
 function renderPlanDuJour(plan){
   const el = document.getElementById('ev-plan-content');
   if(!el) return;
@@ -4338,22 +5982,22 @@ function renderPlanDuJour(plan){
   const typeIcons = {prospection:'📞',découverte:'🤝',relance:'🔁',admin:'📋'};
   el.innerHTML = `
     <div style="background:rgba(41,151,255,.06);border:1px solid rgba(41,151,255,.15);border-radius:12px;padding:16px 18px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:800;letter-spacing:-.2px;margin-bottom:6px">${plan.titre||'Jour de terrain'}</div>
-      <div style="font-size:12px;color:var(--t2)">🎯 ${plan.objectif_jour||''}</div>
+      <div style="font-size:14px;font-weight:800;letter-spacing:-.2px;margin-bottom:6px">${escapeHtml(plan.titre||'Jour de terrain')}</div>
+      <div style="font-size:12px;color:var(--t2)">🎯 ${escapeHtml(plan.objectif_jour||'')}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px">
       ${(plan.actions||[]).map((a,i)=>`
         <div class="step-item" style="padding:14px 16px">
-          <div style="font-size:11px;font-weight:700;color:${typeColors[a.type]||'var(--t3)'};width:46px;flex-shrink:0">${a.heure}</div>
+          <div style="font-size:11px;font-weight:700;color:${typeColors[a.type]||'var(--t3)'};width:46px;flex-shrink:0">${escapeHtml(a.heure||'')}</div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;margin-bottom:2px">${typeIcons[a.type]||'📌'} ${a.action}</div>
-            <div style="font-size:11.5px;color:var(--t3)">${a.detail}</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:2px">${typeIcons[a.type]||'📌'} ${escapeHtml(a.action||'')}</div>
+            <div style="font-size:11.5px;color:var(--t3)">${escapeHtml(a.detail||'')}</div>
           </div>
-          <span class="step-type" style="color:${typeColors[a.type]||'var(--t3)'}">${a.type}</span>
+          <span class="step-type" style="color:${typeColors[a.type]||'var(--t3)'}">${escapeHtml(a.type||'')}</span>
         </div>`).join('')}
     </div>
     <div style="background:rgba(255,255,255,.03);border:1px solid var(--b);border-radius:10px;padding:14px 16px;margin-top:14px;font-size:12.5px;color:var(--t2);line-height:1.6;font-style:italic">
-      🎙 "${plan.message_coach||''}"
+      🎙 "${escapeHtml(plan.message_coach||'')}"
     </div>`;
 }
 
@@ -4367,13 +6011,14 @@ function renderSuivi(){
   el.innerHTML = EV_STATE.planDuJour.map((a,i)=>`
     <div class="step-item ${(EV_STATE.suiviActions[i]?'done-step':'')}" onclick="toggleSuiviAction(${i})">
       <div class="step-num">${EV_STATE.suiviActions[i]?'✓':(i+1)}</div>
-      <div class="step-label" style="color:${EV_STATE.suiviActions[i]?'var(--t2)':'var(--t1)'};text-decoration:${EV_STATE.suiviActions[i]?'line-through':'none'}">${a.heure} — ${a.action}</div>
+      <div class="step-label" style="color:${EV_STATE.suiviActions[i]?'var(--t2)':'var(--t1)'};text-decoration:${EV_STATE.suiviActions[i]?'line-through':'none'}">${escapeHtml(a.heure||'')} — ${escapeHtml(a.action||'')}</div>
       ${EV_STATE.suiviActions[i]?'<span class="step-check">✓</span>':''}
     </div>`).join('');
 }
 
 function toggleSuiviAction(i){
   EV_STATE.suiviActions[i] = !EV_STATE.suiviActions[i];
+  saveEVState();
   const done = EV_STATE.suiviActions.filter(Boolean).length;
   renderSuivi();
   if(done === EV_STATE.planDuJour.length) toast('🔥 Toutes les actions du jour complétées !');
@@ -4383,6 +6028,7 @@ function validerAction(){
   const nextIdx = EV_STATE.suiviActions.findIndex(v=>!v);
   if(nextIdx === -1){ toast('Toutes les actions sont déjà validées ✓'); return; }
   EV_STATE.suiviActions[nextIdx] = true;
+  saveEVState();
   renderSuivi();
   toast(`✓ Action ${nextIdx+1} validée`);
 }
@@ -4392,6 +6038,7 @@ function setHumeur(btn, emoji){
   btn.style.background='rgba(41,151,255,0.15)';
   btn.style.transform='scale(1.15)';
   EV_STATE.jouractuel.humeur = emoji;
+  saveEVState();
 }
 
 function validerCheckin(){
@@ -4399,6 +6046,7 @@ function validerCheckin(){
   if(!engagement){ toast('⚠️ Écris ton engagement du jour avant de valider'); return; }
   EV_STATE.jouractuel.engagement = engagement;
   EV_STATE.jouractuel.checkindone = true;
+  saveEVState();
   toast('✓ Check-in validé — bonne journée !');
 }
 
@@ -4443,14 +6091,14 @@ Réponds STRICTEMENT en JSON avec les 6 étapes de feedback :
       body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const fb = JSON.parse(raw.replace(/```json|```/g,'').trim());
     renderRapportSoirResult(fb);
   } catch(e){
     console.error('[GC-IA] Échec:', e);
     document.getElementById('rs-result').style.display='block';
-    document.getElementById('rs-result').innerHTML = renderApiError('soumettreRapportSoir()');
+    document.getElementById('rs-result').innerHTML = renderApiError('soumettreRapportSoir()', e);
   }
   btn.disabled = false;
   btnTxt.textContent = '⚡ Analyser ma journée';
@@ -4521,14 +6169,14 @@ Réponds STRICTEMENT en JSON :
       body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1200, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
     });
     const data = await resp.json();
-    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw new Error(data.message || data.error); }
+    if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const scan = JSON.parse(raw.replace(/```json|```/g,'').trim());
     renderScanResult(scan, resultEl);
     document.getElementById('scan-form-block').style.display='none';
   } catch(e){
     console.error('[GC-IA] Échec:', e);
-    resultEl.innerHTML = renderApiError('submitScanVendeur()');
+    resultEl.innerHTML = renderApiError('submitScanVendeur()', e);
   }
   btn.disabled = false;
   btnTxt.textContent = '🔬 Lancer mon diagnostic complet';

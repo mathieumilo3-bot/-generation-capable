@@ -106,62 +106,121 @@ exports.handler = async (event) => {
     });
   }
 
+  if (anthropicKey) {
+    const result = await callAnthropic({ anthropicKey, model: payload.model, max_tokens, system, messages });
+    if (result.ok) return ok(result.data);
+    console.error('[ai-proxy] Anthropic a échoué', result.error);
+    // Si une clé OpenAI existe aussi, on tente le fournisseur de secours plutôt
+    // que de renvoyer un échec sec — l'utilisateur n'a pas à savoir qu'un des
+    // deux fournisseurs a un problème tant qu'un autre peut répondre.
+    if (!openaiKey) return ok(result.error);
+  }
+
+  const result = await callOpenAI({ openaiKey, system, messages, max_tokens });
+  if (result.ok) return ok(result.data);
+  console.error('[ai-proxy] OpenAI a échoué', result.error);
+  return ok(result.error);
+};
+
+// Timeout explicite : sans lui, un fournisseur qui traîne fait tomber la
+// fonction Netlify sur SON PROPRE timeout (10-26s selon le plan), qui renvoie
+// une erreur 502 générique et illisible au lieu d'un message clair.
+const PROVIDER_TIMEOUT_MS = 20_000;
+
+async function fetchWithTimeout(url, opts) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
   try {
-    if (anthropicKey) {
-      const anthropicBody = {
-        model: payload.model || 'claude-sonnet-4-6',
-        max_tokens,
-        messages
-      };
-      // Anthropic attend le system prompt comme paramètre top-level dédié,
-      // jamais mélangé dans le tableau messages.
-      if (system) anthropicBody.system = system;
+    return await fetch(url, { ...opts, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify(anthropicBody)
-      });
-      const data = await r.json();
-      if (!r.ok) {
-        console.error('[ai-proxy] Erreur Anthropic', r.status, JSON.stringify(data));
-        return ok({ error: 'ANTHROPIC_API_ERROR', status: r.status, detail: data });
-      }
-      return ok(data); // déjà au bon format {content:[{type:'text',text:...}]}
+// Classe une réponse HTTP en échec en une erreur typée et un message clair
+// pour l'utilisateur — au lieu du même "Analyse indisponible" générique quel
+// que soit le problème réel (clé invalide, quota dépassé, panne fournisseur).
+function classifyHttpError(provider, status, data) {
+  if (status === 401 || status === 403) {
+    return { error: 'INVALID_API_KEY', provider, status, message: `Clé API ${provider} invalide ou révoquée — vérifie la variable d'environnement sur Netlify.` };
+  }
+  if (status === 429) {
+    return { error: 'RATE_LIMITED', provider, status, message: `Quota ${provider} dépassé pour le moment — réessaie dans quelques instants.` };
+  }
+  if (status >= 500) {
+    return { error: 'PROVIDER_DOWN', provider, status, message: `${provider} rencontre un incident — réessaie dans quelques instants.`, detail: data };
+  }
+  return { error: `${provider.toUpperCase()}_API_ERROR`, provider, status, message: data?.error?.message || data?.error?.type || `Erreur ${provider}`, detail: data };
+}
+
+async function callAnthropic({ anthropicKey, model, max_tokens, system, messages }) {
+  const anthropicBody = {
+    // "claude-sonnet-4-6" n'a jamais été un identifiant de modèle Anthropic
+    // valide — si une clé Anthropic est un jour configurée sans ce correctif,
+    // 100% des appels échouent avec "model not found", explication la plus
+    // probable d'un échec total et silencieux de l'IA en production.
+    model: model || 'claude-sonnet-5',
+    max_tokens,
+    messages
+  };
+  // Anthropic attend le system prompt comme paramètre top-level dédié,
+  // jamais mélangé dans le tableau messages.
+  if (system) anthropicBody.system = system;
+
+  try {
+    const r = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(anthropicBody)
+    });
+    const data = await r.json();
+    if (!r.ok) return { ok: false, error: classifyHttpError('anthropic', r.status, data) };
+    return { ok: true, data }; // déjà au bon format {content:[{type:'text',text:...}]}
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      return { ok: false, error: { error: 'TIMEOUT', provider: 'anthropic', message: 'Anthropic n\'a pas répondu à temps.' } };
     }
+    return { ok: false, error: { error: 'NETWORK_ERROR', provider: 'anthropic', message: String(e) } };
+  }
+}
 
-    // Pas de clé Anthropic pour l'instant : on utilise la clé OpenAI déjà configurée sur ce site.
-    // OpenAI n'a pas de paramètre `system` séparé : on le préfixe comme premier
-    // message role:'system'. On ne fait jamais confiance à ce que le front met dans
-    // `messages` pour ce rôle — c'est reconstruit ici de façon déterministe.
-    const openaiMessages = system
-      ? [{ role: 'system', content: system }, ...messages]
-      : messages;
+async function callOpenAI({ openaiKey, system, messages, max_tokens }) {
+  if (!openaiKey) {
+    return { ok: false, error: { error: 'NO_API_KEY', message: 'Aucune clé OpenAI configurée sur Netlify.' } };
+  }
 
-    // FIX 2026-07-23 : n'active response_format:json_object que si "json" apparaît
-    // réellement dans le contenu envoyé (exigence stricte de l'API OpenAI). Sinon
-    // l'appel échoue en 400 pour tout chat conversationnel normal (ex: IA Coach
-    // Ambassadeur) qui ne demande pas explicitement du JSON.
-    const combinedText = [
-      system || '',
-      ...openaiMessages.map(m => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content || '')))
-    ].join(' ').toLowerCase();
-    const wantsJson = combinedText.includes('json');
+  // OpenAI n'a pas de paramètre `system` séparé : on le préfixe comme premier
+  // message role:'system'. On ne fait jamais confiance à ce que le front met dans
+  // `messages` pour ce rôle — c'est reconstruit ici de façon déterministe.
+  const openaiMessages = system
+    ? [{ role: 'system', content: system }, ...messages]
+    : messages;
 
-    const openaiBody = {
-      model: 'gpt-4o-mini',
-      max_tokens,
-      messages: openaiMessages
-    };
-    if (wantsJson) {
-      openaiBody.response_format = { type: 'json_object' };
-    }
+  // FIX 2026-07-23 : n'active response_format:json_object que si "json" apparaît
+  // réellement dans le contenu envoyé (exigence stricte de l'API OpenAI). Sinon
+  // l'appel échoue en 400 pour tout chat conversationnel normal (ex: IA Coach
+  // Ambassadeur) qui ne demande pas explicitement du JSON.
+  const combinedText = [
+    system || '',
+    ...openaiMessages.map(m => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content || '')))
+  ].join(' ').toLowerCase();
+  const wantsJson = combinedText.includes('json');
 
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+  const openaiBody = {
+    model: 'gpt-4o-mini',
+    max_tokens,
+    messages: openaiMessages
+  };
+  if (wantsJson) {
+    openaiBody.response_format = { type: 'json_object' };
+  }
+
+  try {
+    const r = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -170,22 +229,30 @@ exports.handler = async (event) => {
       body: JSON.stringify(openaiBody)
     });
     const data = await r.json();
-    if (!r.ok) {
-      console.error('[ai-proxy] Erreur OpenAI', r.status, JSON.stringify(data));
-      return ok({ error: 'OPENAI_API_ERROR', status: r.status, detail: data });
-    }
+    if (!r.ok) return { ok: false, error: classifyHttpError('openai', r.status, data) };
+
     const text = data.choices?.[0]?.message?.content || '';
+    const finishReason = data.choices?.[0]?.finish_reason;
     if (!text) {
       console.error('[ai-proxy] Réponse OpenAI vide ou tronquée:', JSON.stringify(data));
+      return { ok: false, error: { error: 'EMPTY_RESPONSE', message: 'Le modèle IA a renvoyé une réponse vide.', detail: data } };
+    }
+    if (finishReason === 'length') {
+      // La réponse a été coupée avant la fin du JSON demandé : mieux vaut le
+      // signaler clairement que de laisser index.html échouer sur un
+      // JSON.parse() invalide avec un message d'erreur générique.
+      console.error('[ai-proxy] Réponse OpenAI tronquée (max_tokens atteint).');
+      return { ok: false, error: { error: 'TRUNCATED_RESPONSE', message: 'La réponse IA a été coupée avant la fin — réessaie.' } };
     }
     // Normalisé à la forme Anthropic pour que index.html n'ait besoin d'aucun changement.
-    return ok({ content: [{ type: 'text', text }] });
-
+    return { ok: true, data: { content: [{ type: 'text', text }] } };
   } catch (e) {
-    console.error('[ai-proxy] NETWORK_ERROR', e);
-    return ok({ error: 'NETWORK_ERROR', message: String(e) });
+    if (e.name === 'AbortError') {
+      return { ok: false, error: { error: 'TIMEOUT', provider: 'openai', message: 'OpenAI n\'a pas répondu à temps.' } };
+    }
+    return { ok: false, error: { error: 'NETWORK_ERROR', provider: 'openai', message: String(e) } };
   }
-};
+}
 
 function ok(data) {
   return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) };
