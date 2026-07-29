@@ -1,0 +1,32 @@
+-- ══════════════════════════════════════════════════════════════════════════
+-- Verrouille la colonne "stage" (et les colonnes structurelles) de prospects
+-- ══════════════════════════════════════════════════════════════════════════
+-- Faille trouvée en TESTANT réellement (pas en relisant) la policy RLS
+-- prospects_update_own (migration 0006) : "for update using (auth.uid() =
+-- seller_user_id) with check (auth.uid() = seller_user_id)" autorise le
+-- vendeur à modifier N'IMPORTE QUELLE colonne de sa propre ligne — RLS ne
+-- sait filtrer que des LIGNES, jamais des COLONNES. Reproduit : un vendeur
+-- authentifié peut faire, via un simple appel PostgREST direct depuis le
+-- client (supabase.from('prospects').update({stage:'paid'})...), exactement
+-- ce que advance_prospect_stage() a été écrite pour empêcher :
+--   - déclarer 'paid' manuellement (interdit explicitement par la fonction),
+--   - sauter des étapes du pipeline sans justification obligatoire,
+--   - falsifier l'historique visible côté admin (aucune ligne n'est ajoutée
+--     à prospect_stage_history quand la colonne est modifiée directement).
+--
+-- Supabase accorde par défaut un GRANT UPDATE sur TOUTES les colonnes à
+-- authenticated (et anon) au niveau du schéma — RLS ne fait que filtrer les
+-- lignes visées, pas les colonnes touchées. Correction : grants au niveau
+-- colonne. Le vendeur ne garde UPDATE que sur les champs réellement éditables
+-- à la main (coordonnées du prospect, besoins, notes) ; "stage" ne peut plus
+-- être modifié que par advance_prospect_stage()/webhook Stripe/
+-- admin_set_order_status() — toutes des fonctions SECURITY DEFINER qui
+-- contournent volontairement les grants de table (comportement normal et
+-- voulu d'une fonction SECURITY DEFINER).
+revoke update on public.prospects from authenticated, anon, public;
+grant update (first_name, last_name, phone, email, company, siret, needs, notes)
+  on public.prospects to authenticated;
+-- anon n'a de toute façon aucune policy RLS qui le laisse passer sur cette
+-- table (select/insert/update exigent tous auth.uid() = seller_user_id, or
+-- auth.uid() est toujours null pour anon) — grant retiré par défense en
+-- profondeur, pas parce qu'une faille RLS a été trouvée côté anon ici.
