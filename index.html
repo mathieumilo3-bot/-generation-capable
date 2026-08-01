@@ -1781,7 +1781,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       </div>
       <div class="sec-hd"><div class="sec-t">Ressources additionnelles</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="fiche-card" onclick="toast('Disponible prochainement')"><div class="fiche-ico">🛡</div><div class="fiche-info"><div class="fiche-t">20 réponses aux objections</div><div class="fiche-d">PDF · Bonus exclusif</div></div><div class="fiche-dl" style="color:var(--t3)">↓</div></div>
+        <div class="fiche-card" onclick="openPDF('objections','GC_Fiche_Objections.pdf')" style="cursor:pointer"><div class="fiche-ico">🛡</div><div class="fiche-info"><div class="fiche-t">Les Objections</div><div class="fiche-d">PDF · Bonus exclusif</div></div><div class="fiche-dl" style="color:var(--gold)">↓ Télécharger</div></div>
         <div class="fiche-card" onclick="toast('Disponible prochainement')"><div class="fiche-ico">📞</div><div class="fiche-info"><div class="fiche-t">Scripts d'appels B2B</div><div class="fiche-d">PDF · Bonus exclusif</div></div><div class="fiche-dl" style="color:var(--t3)">↓</div></div>
       </div>
     </div>
@@ -2160,7 +2160,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 <div class="page" id="page-mes-fiches">
   <div class="topbar">
     <div class="tb-title">Mes fiches PDF</div>
-    <div class="tb-right"><span class="auto-badge">6 fiches disponibles</span></div>
+    <div class="tb-right"><span class="auto-badge">7 fiches disponibles</span></div>
   </div>
   <div class="ct">
     <div class="hero">
@@ -2259,6 +2259,18 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div style="text-align:right;flex-shrink:0">
           <div style="color:var(--gold);font-size:13px;font-weight:700">↓ PDF</div>
           <div style="font-size:10px;color:var(--t3);margin-top:4px">3 pages</div>
+        </div>
+      </div>
+
+      <div class="fiche-card" onclick="openPDF('objections','GC_Fiche_Objections.pdf')" style="cursor:pointer;padding:20px">
+        <div class="fiche-ico" style="font-size:24px">🛡</div>
+        <div class="fiche-info">
+          <div class="fiche-t" style="font-size:15px">Les Objections — Fiche Terrain</div>
+          <div style="font-size:11px;color:var(--gold);font-weight:700;margin:3px 0">Ressource Bonus</div>
+          <div class="fiche-d">Traiter et retourner les objections en rendez-vous</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="color:var(--gold);font-size:13px;font-weight:700">↓ PDF</div>
         </div>
       </div>
 
