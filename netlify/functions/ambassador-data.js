@@ -30,6 +30,7 @@
 //        → écrit l'état de l'ambassadeur authentifié
 
 const { verifySessionToken, supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
+const { notifyAdmins, safeNotify } = require('./_lib/notifications/send');
 
 const MAX_STATE_BYTES = 200_000; // large marge au-dessus d'un usage normal, évite l'abus
 
@@ -94,6 +95,11 @@ exports.handler = async (event) => {
         console.error('[ambassador-data] Erreur création Supabase', createR.status, JSON.stringify(created));
         return jsonResponse(200, { error: 'SUPABASE_CREATE_ERROR', detail: created });
       }
+      await safeNotify(() => notifyAdmins({
+        category: 'admin.business.new_ambassador',
+        eventKey: `new_ambassador:${email}`,
+        ctx: { email },
+      }));
       return jsonResponse(200, { state: initial });
     }
 

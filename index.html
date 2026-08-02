@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Génération Capable</title>
+<!-- PWA : requis pour que les notifications Push fonctionnent sur iOS (Safari
+     16.4+ n'autorise le Web Push que pour un site ajouté à l'écran d'accueil).
+     Sans effet néfaste sur les autres navigateurs. -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b0b12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gén. Capable">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- FIX #1 (audit 2026-07-20) : cette balise avait un attribut src= ET du code inline.
@@ -32,6 +40,12 @@ async function activateSubscription(){
 
   STATE.memberName = nameVal;
   STATE.memberEmail = emailVal;
+
+  // Capture "prospect" (mission notifications section 3) : si l'inscription
+  // n'est jamais finalisée côté Stripe, une séquence email de relance prend
+  // le relais (voir notify-cron-leads-background.js). Best-effort, ne doit
+  // jamais bloquer l'inscription.
+  if(window.GCNotif) window.GCNotif.captureLead(emailVal, nameVal, 'gc_subscribe_modal');
 
   // Crée le compte Supabase AVANT le paiement, avec le même email que sur Stripe.
   // Le webhook Stripe (netlify/functions/stripe-webhook.js) retrouvera ce
@@ -6400,5 +6414,6 @@ renderAll();
 handleCheckoutReturn();
 </script>
 
+<script src="/notifications-client.js" defer></script>
 </body>
 </html>

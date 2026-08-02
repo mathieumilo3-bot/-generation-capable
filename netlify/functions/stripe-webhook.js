@@ -31,8 +31,27 @@
 
 const crypto = require('crypto');
 const { supabaseAdminRequest, jsonResponse, ensureAuthUserForEmail } = require('./_lib/supabase-admin');
+const { notifyAdmins, sendToUser, safeNotify, startOfLocalDayUTC, localDateKey } = require('./_lib/notifications/send');
 
 const TOLERANCE_SECONDS = 5 * 60; // rejette les événements trop vieux (anti-rejeu)
+const BIG_SALE_THRESHOLD_CENTS = Number(process.env.BIG_SALE_THRESHOLD_CENTS || 100000); // 1000€
+const DAILY_SALES_GOAL_CENTS = Number(process.env.DAILY_SALES_GOAL_CENTS || 0); // 0 = désactivé
+
+function formatEuros(amountCents) {
+  return ((amountCents || 0) / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
+}
+
+// Best-effort, jamais bloquant : voir safeNotify() dans _lib/notifications/send.js.
+async function getEmailByUserId(userId) {
+  try {
+    const r = await supabaseAdminRequest(`/auth/v1/admin/users/${userId}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data && data.email ? data.email : null;
+  } catch (e) {
+    return null;
+  }
+}
 
 function verifyStripeSignature(rawBody, signatureHeader, secret) {
   if (!signatureHeader) return { valid: false, reason: 'MISSING_SIGNATURE' };
@@ -104,6 +123,15 @@ exports.handler = async (event) => {
     return jsonResponse(200, { received: true });
   } catch (e) {
     console.error('[stripe-webhook] Erreur de traitement', stripeEvent?.type, e);
+    // Alerte admin "Erreur serveur" — le webhook Stripe est le flux le plus
+    // critique du site, une erreur ici mérite une alerte immédiate. Best
+    // effort : ne doit jamais empêcher la réponse 500 (qui déclenche le
+    // retry Stripe) de partir.
+    await safeNotify(() => notifyAdmins({
+      category: 'admin.technical.server_error',
+      eventKey: `server_error:${stripeEvent?.id || Date.now()}`,
+      ctx: { contexte: `stripe-webhook (${stripeEvent?.type || 'type inconnu'})`, message: String(e && e.message || e).slice(0, 200) },
+    }));
     // 500 → Stripe réessaiera automatiquement cet événement plus tard.
     return jsonResponse(500, { error: 'PROCESSING_ERROR' });
   }
@@ -149,6 +177,14 @@ async function recordAndProcess(stripeEvent) {
         // email — Stripe ne connaissant que l'email du payeur, on retrouve
         // (ou crée) le compte Supabase Auth correspondant avant d'écrire.
         const user = await ensureAuthUserForEmail(email);
+
+        // Lu AVANT l'upsert : seule façon de savoir si c'est une toute
+        // première activation ("Nouveau vendeur inscrit") ou une simple
+        // réactivation d'un abonnement déjà connu.
+        const existingResp = await supabaseAdminRequest(`/rest/v1/subscribers?user_id=eq.${user.id}&select=is_active`);
+        const existingRows = existingResp.ok ? await existingResp.json() : [];
+        const wasActiveBefore = !!(existingRows && existingRows[0] && existingRows[0].is_active);
+
         await upsertSubscriberByUserId(user.id, {
           is_active: true,
           stripe_customer_id: obj.customer || null,
@@ -170,6 +206,29 @@ async function recordAndProcess(stripeEvent) {
             source: 'stripe_webhook',
           })
         });
+
+        // Notifications — jamais bloquantes pour le flux paiement (voir
+        // safeNotify). Le lead marketing correspondant (s'il existe, capturé
+        // par capture-lead.js au moment de l'inscription) sort de la
+        // séquence de relance email dès la conversion.
+        await safeNotify(async () => {
+          await supabaseAdminRequest(`/rest/v1/marketing_leads?email=eq.${encodeURIComponent(email)}&converted=eq.false`, {
+            method: 'PATCH', headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ converted: true, converted_at: new Date().toISOString() }),
+          });
+        });
+        if (!wasActiveBefore) {
+          await safeNotify(() => notifyAdmins({
+            category: 'admin.business.new_seller',
+            eventKey: `new_seller:${user.id}`,
+            ctx: { email },
+          }));
+        }
+        await safeNotify(() => notifyAdmins({
+          category: 'admin.business.stripe_payment_received',
+          eventKey: `payment_received:${stripeEvent.id}`,
+          ctx: { montant: formatEuros(obj.amount_total) },
+        }));
       }
       break;
     }
@@ -194,6 +253,11 @@ async function recordAndProcess(stripeEvent) {
       // automatiquement plusieurs fois — "dunning") : c'est
       // customer.subscription.updated qui déclenchera la désactivation si
       // Stripe finit par marquer l'abonnement past_due/unpaid/canceled.
+      await safeNotify(() => notifyAdmins({
+        category: 'admin.business.payment_failed',
+        eventKey: `payment_failed:${stripeEvent.id}`,
+        ctx: {},
+      }));
       break;
     }
 
@@ -207,6 +271,11 @@ async function recordAndProcess(stripeEvent) {
       if (!handledAsOrder && obj.customer) {
         await updateSubscriberByCustomerId(obj.customer, { is_active: false });
       }
+      await safeNotify(() => notifyAdmins({
+        category: 'admin.business.refund_processed',
+        eventKey: `refund_processed:${stripeEvent.id}`,
+        ctx: { montant: formatEuros(obj.amount_refunded ?? obj.amount) },
+      }));
       break;
     }
 
@@ -217,6 +286,14 @@ async function recordAndProcess(stripeEvent) {
       // manuelle par l'admin ensuite (hors automatisation Stripe : Stripe ne
       // notifie pas de façon fiable et automatisable une résolution positive).
       await freezeCommissionForDispute(obj);
+      // Un litige est, du point de vue de l'admin, une demande de
+      // remboursement contestée par le client — c'est le signal le plus
+      // proche disponible côté Stripe (voir docs/notifications-system.md).
+      await safeNotify(() => notifyAdmins({
+        category: 'admin.business.refund_requested',
+        eventKey: `dispute:${stripeEvent.id}`,
+        ctx: { montant: formatEuros(obj.amount) },
+      }));
       break;
     }
 
@@ -364,6 +441,103 @@ async function handleOrderPaid(session, stripeEvent) {
     })
   });
   await assertOk(historyResp, `handleOrderPaid: historique de stage pour prospect ${order.prospect_id}`);
+
+  // Notifications — strictement après que tout ce qui précède a réussi
+  // (sale/commission/order/prospect), et entièrement best-effort : voir
+  // safeNotify(). Un souci ici ne doit jamais transformer une vente
+  // correctement enregistrée en 500 (qui ferait rejouer tout handleOrderPaid
+  // par Stripe alors que la commande est déjà 'paid' — protégé plus haut,
+  // mais autant ne pas en dépendre).
+  await safeNotify(() => runSaleNotifications(sale, order, productLabels[order.product_type] || 'Prestation'));
+}
+
+// Notifications déclenchées par une vente CRM confirmée : jalons vendeur
+// (première vente / vente / record personnel) et alertes admin (vente,
+// grosse vente, record plateforme, objectif journalier).
+async function runSaleNotifications(sale, order, productLabel) {
+  const montant = formatEuros(sale.amount);
+  const sellerEmail = await getEmailByUserId(order.seller_user_id);
+
+  const countResp = await supabaseAdminRequest(
+    `/rest/v1/sales?seller_user_id=eq.${order.seller_user_id}&status=eq.completed&select=id`,
+    { headers: { Prefer: 'count=exact', Range: '0-0' } }
+  );
+  const contentRange = countResp.headers.get('content-range') || '';
+  const totalSalesForSeller = Number(contentRange.split('/')[1]) || 1;
+  const isFirstSale = totalSalesForSeller <= 1;
+
+  await sendToUser({
+    userId: order.seller_user_id,
+    category: isFirstSale ? 'seller.milestone.first_sale' : 'seller.milestone.sale',
+    eventKey: `sale:${sale.id}`,
+    ctx: { montant },
+  });
+
+  await notifyAdmins({
+    category: isFirstSale ? 'admin.business.first_sale' : 'admin.business.sale',
+    eventKey: `sale:${sale.id}`,
+    ctx: { montant, produit: productLabel, email: sellerEmail },
+  });
+
+  if (sale.amount >= BIG_SALE_THRESHOLD_CENTS) {
+    await notifyAdmins({
+      category: 'admin.business.big_sale',
+      eventKey: `big_sale:${sale.id}`,
+      ctx: { montant, email: sellerEmail },
+    });
+  }
+
+  // Record personnel du vendeur (comparé à ses ventes précédentes, jamais
+  // stocké séparément — calculé en direct comme le reste du schéma financier).
+  const priorMaxResp = await supabaseAdminRequest(
+    `/rest/v1/sales?seller_user_id=eq.${order.seller_user_id}&status=eq.completed&id=neq.${sale.id}&select=amount&order=amount.desc&limit=1`
+  );
+  const priorMaxRows = priorMaxResp.ok ? await priorMaxResp.json() : [];
+  const priorMax = priorMaxRows && priorMaxRows[0] ? priorMaxRows[0].amount : 0;
+  if (sale.amount > priorMax && !isFirstSale) {
+    await sendToUser({
+      userId: order.seller_user_id,
+      category: 'seller.milestone.record',
+      eventKey: `record:${sale.id}`,
+      ctx: { montant },
+    });
+  }
+
+  // Record plateforme "plus grosse vente" — table platform_records.
+  const recordResp = await supabaseAdminRequest(`/rest/v1/platform_records?metric=eq.single_sale_amount&select=value`);
+  const recordRows = recordResp.ok ? await recordResp.json() : [];
+  const currentRecord = recordRows && recordRows[0] ? Number(recordRows[0].value) : 0;
+  if (sale.amount > currentRecord) {
+    await supabaseAdminRequest('/rest/v1/platform_records?on_conflict=metric', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ metric: 'single_sale_amount', value: sale.amount, achieved_at: new Date().toISOString() }),
+    });
+    await notifyAdmins({
+      category: 'admin.business.sales_record',
+      eventKey: `platform_record:single:${sale.id}`,
+      ctx: { record: `Plus grosse vente : ${montant}` },
+    });
+  }
+
+  // CA du jour vs objectif fixé (DAILY_SALES_GOAL_CENTS) — une seule alerte
+  // par jour même si plusieurs ventes le franchissent successivement.
+  if (DAILY_SALES_GOAL_CENTS > 0) {
+    const today = localDateKey('Europe/Paris');
+    const startOfDayIso = startOfLocalDayUTC('Europe/Paris').toISOString();
+    const startOfDayResp = await supabaseAdminRequest(
+      `/rest/v1/sales?status=eq.completed&created_at=gte.${startOfDayIso}&select=amount`
+    );
+    const todaySales = startOfDayResp.ok ? await startOfDayResp.json() : [];
+    const todayTotal = (todaySales || []).reduce((sum, s) => sum + (s.amount || 0), 0);
+    if (todayTotal >= DAILY_SALES_GOAL_CENTS) {
+      await notifyAdmins({
+        category: 'admin.business.daily_goal_reached',
+        eventKey: `daily_goal:${today}`,
+        ctx: { objectif: formatEuros(DAILY_SALES_GOAL_CENTS) },
+      });
+    }
+  }
 }
 
 // Remboursement d'une commande CRM : retrouve la vente via le
