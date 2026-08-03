@@ -1,11 +1,14 @@
 // netlify/functions/compliance-sign-contract.js
 //
 // Signature électronique du contrat (Vendeur ou Ambassadeur) : remplit le
-// texte du contrat avec les informations du dossier, génère le PDF signé,
-// archive la signature (image) et le PDF dans Supabase Storage, enregistre
-// la preuve (date, heure, IP, identifiant, version) — jamais réécrite
-// ensuite (voir 0015_compliance_contracts.sql, contract_signatures est
-// append-only et immuable après création).
+// texte du contrat (version courante publiée, voir contract_templates) avec
+// les informations du dossier ET l'identité légale de la Société (voir
+// company_legal_info), génère le PDF signé, archive la signature (image) et
+// le PDF dans Supabase Storage, enregistre la preuve complète — date, heure,
+// IP, navigateur, identifiant utilisateur, version du contrat, empreinte
+// SHA-256 de la signature — jamais réécrite ensuite (voir
+// 0015_compliance_contracts.sql, contract_signatures est append-only et
+// immuable après création).
 //
 // POST /.netlify/functions/compliance-sign-contract
 //   Authorization: Bearer <session_token>
@@ -13,10 +16,11 @@
 //     signatureImageDataUrl: 'data:image/png;base64,...' }
 //   → { ok: true, signatureId, pdfUrl }
 
+const crypto = require('crypto');
 const { verifySessionToken, supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
 const { renderContract } = require('./_lib/compliance/contracts');
 const { generateContractPdf } = require('./_lib/compliance/pdf');
-const { uploadObject, signedUrl } = require('./_lib/compliance/storage');
+const { uploadObject, downloadObject, signedUrl } = require('./_lib/compliance/storage');
 const { notifyAdmins, safeNotify } = require('./_lib/notifications/send');
 
 const ROLES = new Set(['vendeur', 'ambassadeur']);
@@ -78,7 +82,7 @@ exports.handler = async (event) => {
     });
   }
 
-  const { text, filledFields, version } = renderContract(role, profile, email, new Date());
+  const { text, filledFields, version, companySignaturePath } = await renderContract(role, profile, email, new Date());
 
   // Une re-signature de la MÊME version est bloquée en amont (message clair)
   // plutôt que de laisser remonter l'erreur brute de contrainte unique.
@@ -95,12 +99,26 @@ exports.handler = async (event) => {
   const userAgent = (event.headers['user-agent'] || '').slice(0, 300);
   const timestamp = now.getTime();
 
+  // Empreinte SHA-256 de l'image de signature réellement reçue — calculée
+  // ici, jamais fournie par le client (voir 0015, colonne signature_hash).
+  const signatureHash = crypto.createHash('sha256').update(signatureBytes).digest('hex');
+
+  // Signature officielle de la Société, si configurée (Administration →
+  // Informations légales) — best-effort, un logo/signature manquant ne doit
+  // jamais empêcher un contrat vendeur/ambassadeur d'être signé.
+  const companySignatureBytes = companySignaturePath
+    ? await downloadObject(companySignaturePath).catch(() => null)
+    : null;
+
   let pdfBuffer;
   try {
     pdfBuffer = await generateContractPdf({
       title: role === 'vendeur' ? 'CONTRAT DE VENDEUR — Génération Capable' : "CONTRAT D'AMBASSADEUR — Génération Capable",
       contractText: text,
-      proof: { signedAt: now.toISOString(), ipAddress: ip, userId, version, signatureImageBytes: signatureBytes },
+      proof: {
+        signedAt: now.toISOString(), ipAddress: ip, userAgent, userId, version,
+        signatureHash, signatureImageBytes: signatureBytes, companySignatureBytes,
+      },
     });
   } catch (e) {
     console.error('[compliance-sign-contract] Échec génération PDF', e);
@@ -128,6 +146,7 @@ exports.handler = async (event) => {
       signed_at: now.toISOString(),
       ip_address: ip,
       user_agent: userAgent,
+      signature_hash: signatureHash,
       filled_fields: filledFields,
       signature_image_path: signaturePath,
       contract_pdf_path: pdfPath,

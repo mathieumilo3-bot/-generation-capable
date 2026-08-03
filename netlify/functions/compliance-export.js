@@ -15,14 +15,10 @@
 
 const { verifySessionToken, supabaseAdminRequest, jsonResponse, SUPABASE_URL } = require('./_lib/supabase-admin');
 const { signedUrl } = require('./_lib/compliance/storage');
+const { isAdminEmail } = require('./_lib/admin-check');
+const { isUuid } = require('./_lib/compliance/validate');
 
 const ROLES = new Set(['vendeur', 'ambassadeur']);
-
-async function isAdmin(email) {
-  const r = await supabaseAdminRequest(`/rest/v1/admins?email=eq.${encodeURIComponent(email)}&select=email`);
-  const rows = r.ok ? await r.json() : [];
-  return Array.isArray(rows) && rows.length > 0;
-}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') return jsonResponse(405, { error: 'Method not allowed' });
@@ -41,7 +37,8 @@ exports.handler = async (event) => {
 
   let targetUserId = callerId;
   if (qs.userId && qs.userId !== callerId) {
-    if (!(await isAdmin(callerEmail))) return jsonResponse(403, { error: 'ADMIN_REQUIRED' });
+    if (!isUuid(qs.userId)) return jsonResponse(400, { error: 'INVALID_USER_ID' });
+    if (!(await isAdminEmail(callerEmail))) return jsonResponse(403, { error: 'ADMIN_REQUIRED' });
     targetUserId = qs.userId;
   }
 

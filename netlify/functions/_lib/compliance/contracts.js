@@ -1,36 +1,59 @@
 // netlify/functions/_lib/compliance/contracts.js
 //
-// Texte intégral des deux contrats (Vendeur / Ambassadeur), transcrit tel
-// quel depuis les documents fournis (GCContratVendeur.docx /
-// GCContratAmbassadeur.docx), avec :
-//   1. Les blancs du document original (".........") remplacés par des
-//      jetons {{PLACEHOLDER}} remplis à partir du dossier administratif
-//      (voir render()).
-//   2. Deux articles supplémentaires ajoutés avant le bloc de signature —
-//      Article 16 (sécurité / lutte contre la fraude / CGU-Confidentialité-
-//      Plan de rémunération) et Article 17 (valeur juridique de la
-//      signature électronique) — demandés explicitement par Génération
-//      Capable, absents du document original.
+// Le texte des contrats et l'identité légale de la Société sont désormais
+// des DONNÉES (tables `contract_templates` et `company_legal_info`, voir
+// migration 0016), modifiables depuis Administration → Informations
+// légales / Conformité → Contrats sans déploiement de code. Ce fichier ne
+// contient plus que :
+//   1. Le texte de la version "v1" en dur (VENDEUR_TEMPLATE /
+//      AMBASSADEUR_TEMPLATE, plus bas dans ce fichier) — transcrit tel quel
+//      depuis les documents fournis (GCContratVendeur.docx /
+//      GCContratAmbassadeur.docx), avec
+//      Article 16 (sécurité/fraude/CGU) et Article 17 (valeur juridique de
+//      la signature électronique) ajoutés. Ce texte a été inséré tel quel
+//      dans `contract_templates` par la migration 0016 (seed "v1") ; il ne
+//      sert plus ici que de FILET DE SÉCURITÉ si la table est vide ou
+//      injoignable — jamais la source de vérité une fois la base peuplée.
+//   2. Le moteur de remplissage (renderContract), qui va chercher la
+//      version courante (is_current = true) et l'identité légale en base.
 //
 // ⚠️ Ce texte reste, comme l'indique le document original, un PROJET rédigé
 // avec assistance IA : il doit être relu et validé par un avocat ou juriste
-// avant toute signature ayant une valeur contractuelle réelle. Rien ici ne
-// remplace cette validation.
-//
-// L'identité légale de la Société (SIRET, adresse, représentant) n'est PAS
-// connue avec certitude par ce code — elle est injectée via des variables
-// d'environnement Netlify (COMPANY_LEGAL_REP_NAME, COMPANY_LEGAL_REP_TITLE,
-// COMPANY_SIRET, COMPANY_ADDRESS) plutôt que fabriquée : tant qu'elles ne
-// sont pas configurées, le contrat généré l'indique EXPLICITEMENT en toutes
-// lettres plutôt que d'afficher une valeur inventée qui aurait l'air correcte.
+// avant toute signature ayant une valeur contractuelle réelle. Publier une
+// nouvelle version validée se fait désormais depuis l'admin (voir
+// admin-contract-templates.js), sans toucher au code.
 
-function companyInfo() {
-  return {
-    repName: process.env.COMPANY_LEGAL_REP_NAME || '[NOM DU REPRÉSENTANT LÉGAL — À CONFIGURER : variable Netlify COMPANY_LEGAL_REP_NAME]',
-    repTitle: process.env.COMPANY_LEGAL_REP_TITLE || '[QUALITÉ DU REPRÉSENTANT — À CONFIGURER : variable Netlify COMPANY_LEGAL_REP_TITLE]',
-    siret: process.env.COMPANY_SIRET || '[SIRET GÉNÉRATION CAPABLE — À CONFIGURER : variable Netlify COMPANY_SIRET]',
-    address: process.env.COMPANY_ADDRESS || '[ADRESSE DU SIÈGE — À CONFIGURER : variable Netlify COMPANY_ADDRESS]',
-  };
+const { supabaseAdminRequest } = require('../supabase-admin');
+
+const LEGAL_INFO_PLACEHOLDER = (label, envVar) =>
+  `[${label} — À CONFIGURER dans Administration → Informations légales${envVar ? ` (ou variable Netlify ${envVar})` : ''}]`;
+
+// Identité légale : DB (company_legal_info, id=1) en priorité, variables
+// d'environnement en repli (compatibilité avec un déploiement qui n'aurait
+// pas encore rempli la page admin), marqueur explicite en dernier recours —
+// jamais une valeur inventée qui aurait l'air correcte.
+async function getCompanyInfo() {
+  let row = null;
+  try {
+    const r = await supabaseAdminRequest('/rest/v1/company_legal_info?id=eq.1&select=*');
+    if (r.ok) {
+      const rows = await r.json();
+      row = rows && rows[0];
+    }
+  } catch (e) {
+    console.error('[contracts] Lecture company_legal_info échouée, repli sur les variables d\'environnement:', e);
+  }
+
+  const pick = (dbValue, envVar, label) =>
+    (dbValue && String(dbValue).trim()) || (envVar && process.env[envVar]) || LEGAL_INFO_PLACEHOLDER(label, envVar);
+
+  const repName = pick(row && row.legal_rep_name, 'COMPANY_LEGAL_REP_NAME', 'NOM DU REPRÉSENTANT LÉGAL');
+  const repTitle = pick(row && row.legal_rep_title, 'COMPANY_LEGAL_REP_TITLE', 'QUALITÉ DU REPRÉSENTANT');
+  const siret = pick(row && row.siret, 'COMPANY_SIRET', 'SIRET GÉNÉRATION CAPABLE');
+  const addressParts = [row && row.address, row && row.postal_code, row && row.city, row && row.country].filter(Boolean).join(', ');
+  const address = addressParts || pick(null, 'COMPANY_ADDRESS', 'ADRESSE DU SIÈGE');
+
+  return { repName, repTitle, siret, address, raw: row };
 }
 
 function fmtDate(d) {
@@ -256,28 +279,45 @@ Signature électronique certifiée                       Signature électronique
 ---
 Projet de contrat établi à titre indicatif par assistance IA, sur la base des éléments fournis par Génération Capable. Ce document ne constitue pas un avis juridique et doit impérativement être relu, complété et validé par un avocat ou juriste avant toute signature.`;
 
-// Version courante — change dès que le texte du contrat change. Une
-// modification du texte doit toujours créer une NOUVELLE version (jamais
-// réutiliser un identifiant déjà signé par quelqu'un) : contract_signatures
-// est unique sur (user_id, role, contract_version), et le PDF signé doit
-// toujours pouvoir être retracé jusqu'au texte exact qui a été accepté.
-const CONTRACT_VERSIONS = {
-  vendeur: 'vendeur-v1.0',
-  ambassadeur: 'ambassadeur-v1.0',
-};
-
-const TEMPLATES = {
+// Filet de sécurité uniquement — voir l'en-tête de fichier. La vraie
+// version "courante" vient de `contract_templates` (is_current = true).
+const FALLBACK_VERSION = 'v1';
+const FALLBACK_TEMPLATES = {
   vendeur: VENDEUR_TEMPLATE,
   ambassadeur: AMBASSADEUR_TEMPLATE,
 };
 
-// Construit le texte final à partir du profil (compliance_profiles),
-// de l'email du compte et de la date de signature. Renvoie aussi
-// filled_fields (snapshot exact à journaliser avec la signature).
-function renderContract(role, profile, email, signedAt = new Date()) {
-  const tpl = TEMPLATES[role];
-  if (!tpl) throw new Error(`Rôle de contrat inconnu: ${role}`);
-  const company = companyInfo();
+// Va chercher la version actuellement publiée (contract_templates,
+// is_current = true) pour ce rôle. Repli sur le texte en dur de ce fichier
+// si la table est vide/injoignable — un chantier de conformité ne doit
+// jamais tomber en panne totale à cause d'une base momentanément
+// indisponible, mais ce repli est journalisé bruyamment pour ne jamais
+// passer inaperçu.
+async function getCurrentTemplate(role) {
+  try {
+    const r = await supabaseAdminRequest(`/rest/v1/contract_templates?role=eq.${role}&is_current=eq.true&select=version,body&limit=1`);
+    if (r.ok) {
+      const rows = await r.json();
+      if (rows && rows[0]) return { version: rows[0].version, body: rows[0].body };
+    }
+  } catch (e) {
+    console.error('[contracts] Lecture contract_templates échouée:', e);
+  }
+  console.error(`[contracts] Aucune version courante en base pour le rôle "${role}" — repli sur le texte codé en dur (${FALLBACK_VERSION}).`);
+  return { version: FALLBACK_VERSION, body: FALLBACK_TEMPLATES[role] };
+}
+
+// Construit le texte final à partir du profil (compliance_profiles), de
+// l'identité légale (company_legal_info), de l'email du compte et de la
+// date de signature. Renvoie aussi filled_fields (snapshot exact à
+// journaliser avec la signature) et la version réellement utilisée.
+async function renderContract(role, profile, email, signedAt = new Date()) {
+  if (!FALLBACK_TEMPLATES[role]) throw new Error(`Rôle de contrat inconnu: ${role}`);
+
+  const [{ version, body }, company] = await Promise.all([
+    getCurrentTemplate(role),
+    getCompanyInfo(),
+  ]);
 
   const fields = {
     COMPANY_REP_NAME: company.repName,
@@ -294,12 +334,12 @@ function renderContract(role, profile, email, signedAt = new Date()) {
     SIGNATURE_DATE: fmtDate(signedAt),
   };
 
-  let text = tpl;
+  let text = body;
   for (const [key, value] of Object.entries(fields)) {
     text = text.split(`{{${key}}}`).join(value);
   }
 
-  return { text, filledFields: fields, version: CONTRACT_VERSIONS[role], email };
+  return { text, filledFields: fields, version, email, companyLogoPath: company.raw && company.raw.logo_path, companySignaturePath: company.raw && company.raw.signature_path };
 }
 
-module.exports = { renderContract, CONTRACT_VERSIONS, TEMPLATES, companyInfo };
+module.exports = { renderContract, getCurrentTemplate, getCompanyInfo, FALLBACK_TEMPLATES, FALLBACK_VERSION };

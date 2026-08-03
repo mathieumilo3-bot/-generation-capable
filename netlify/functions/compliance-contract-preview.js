@@ -36,7 +36,7 @@ exports.handler = async (event) => {
   const profile = (profileRows && profileRows[0]) || {};
   const missingFields = REQUIRED_PROFILE_FIELDS.filter(f => !profile[f] || String(profile[f]).trim().length === 0);
 
-  const { text, version } = renderContract(role, profile, email, new Date());
+  const { text, version } = await renderContract(role, profile, email, new Date());
 
   return jsonResponse(200, { text, version, missingFields });
 };

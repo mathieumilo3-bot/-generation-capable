@@ -17,6 +17,7 @@
 
 const { verifySessionToken, supabaseAdminRequest, jsonResponse, SUPABASE_URL } = require('./_lib/supabase-admin');
 const { signedUrl } = require('./_lib/compliance/storage');
+const { notifyAdmins, safeNotify } = require('./_lib/notifications/send');
 
 const ROLES = new Set(['vendeur', 'ambassadeur']);
 
@@ -26,7 +27,7 @@ exports.handler = async (event) => {
     return jsonResponse(500, { error: 'SERVER_NOT_CONFIGURED' });
   }
 
-  const { id: userId, error: authError } = await verifySessionToken(event, anonKey);
+  const { id: userId, email, error: authError } = await verifySessionToken(event, anonKey);
   if (authError) return jsonResponse(401, { error: authError });
 
   if (event.httpMethod === 'GET') {
@@ -88,6 +89,13 @@ exports.handler = async (event) => {
       updated_at: new Date().toISOString(),
     };
 
+    // Lu AVANT l'écriture : seul moyen de savoir si le SIRET change
+    // réellement (et pas juste réenregistré à l'identique) — "je veux une
+    // notification quand le SIRET est modifié", pas à chaque sauvegarde.
+    const previousResp = await supabaseAdminRequest(`/rest/v1/compliance_profiles?user_id=eq.${userId}&role=eq.${role}&select=siret`);
+    const previousRows = previousResp.ok ? await previousResp.json() : [];
+    const previousSiret = previousRows && previousRows[0] ? previousRows[0].siret : null;
+
     const r = await supabaseAdminRequest('/rest/v1/compliance_profiles?on_conflict=user_id,role', {
       method: 'POST',
       headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -104,6 +112,14 @@ exports.handler = async (event) => {
       headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ user_id: userId, role, actor: `user:${userId}`, action: 'profile_updated', details: {} }),
     });
+
+    if (fields.siret && fields.siret !== previousSiret) {
+      await safeNotify(() => notifyAdmins({
+        category: 'admin.compliance.siret_changed',
+        eventKey: `siret_changed:${userId}:${role}:${Date.now()}`,
+        ctx: { email, oldValue: previousSiret, newValue: fields.siret },
+      }));
+    }
 
     return jsonResponse(200, { ok: true });
   }

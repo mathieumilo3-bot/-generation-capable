@@ -32,6 +32,32 @@ async function uploadObject(path, buffer, contentType) {
   return path;
 }
 
+// Téléchargement direct (service_role) — utilisé côté serveur uniquement,
+// par exemple pour ré-embarquer une image déjà archivée (logo/signature de
+// la Société) dans un PDF généré à la volée.
+async function downloadObject(path) {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY absente');
+
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  });
+  if (!r.ok) return null;
+  const arrayBuffer = await r.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+async function deleteObject(path) {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY absente');
+
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+    method: 'DELETE',
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  });
+  return r.ok;
+}
+
 // URL signée à durée limitée (secondes) — jamais d'URL publique pour des
 // pièces d'identité/RIB/contrats.
 async function signedUrl(path, expiresInSeconds = 300) {
@@ -52,4 +78,4 @@ async function signedUrl(path, expiresInSeconds = 300) {
   return data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null;
 }
 
-module.exports = { uploadObject, signedUrl, BUCKET };
+module.exports = { uploadObject, downloadObject, deleteObject, signedUrl, BUCKET };

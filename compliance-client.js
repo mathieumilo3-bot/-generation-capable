@@ -420,6 +420,8 @@
                   </div>
                   <span class="gcc-badge ${d.admin_status}">${statusLabel(d.admin_status)}</span>
                   ${d.url ? `<a href="${d.url}" target="_blank" rel="noopener" style="color:#F0D080;font-size:12px;text-decoration:none;margin-left:8px">Voir</a>` : ''}
+                  <button type="button" class="gcc-doc-replace" data-id="${d.id}" style="background:none;border:none;color:#a8a090;font-size:12px;cursor:pointer;margin-left:8px">Remplacer</button>
+                  <button type="button" class="gcc-doc-delete" data-id="${d.id}" style="background:none;border:none;color:#ff6b6b;font-size:12px;cursor:pointer;margin-left:4px">Supprimer</button>
                 </div>
               `).join('')}
             </div>
@@ -435,6 +437,7 @@
             </div>
             <div class="gcc-upload-zone" id="gcc-upload-zone">📤 Cliquer pour choisir un fichier (PDF, JPG, PNG — 8 Mo max)</div>
             <input type="file" id="gcc-file-input" accept="application/pdf,image/png,image/jpeg" style="display:none">
+            <input type="file" id="gcc-replace-input" accept="application/pdf,image/png,image/jpeg" style="display:none">
           </div>
         `;
         const docTypeSel = el.querySelector('#gcc-doc-type');
@@ -470,6 +473,36 @@
           zone.textContent = '📤 Cliquer pour choisir un fichier (PDF, JPG, PNG — 8 Mo max)';
           input.value = '';
         };
+
+        const replaceInput = el.querySelector('#gcc-replace-input');
+        el.querySelectorAll('.gcc-doc-replace').forEach(btn => {
+          btn.onclick = () => {
+            replaceInput.onchange = async () => {
+              const file = replaceInput.files[0];
+              if (!file) return;
+              if (file.size > 8 * 1024 * 1024) { toast('❌ Fichier trop volumineux (8 Mo max)'); return; }
+              try {
+                const dataUrl = await fileToDataUrl(file);
+                const resp = await apiCall('compliance-documents', session, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ documentId: btn.getAttribute('data-id'), file_name: file.name, fileDataUrl: dataUrl }),
+                });
+                if (resp.ok && resp.data && resp.data.ok) { toast('✅ Document remplacé'); await refresh(); renderDocumentsTab(el); }
+                else toast('❌ ' + (resp.data && resp.data.message || 'Erreur lors du remplacement'));
+              } catch (e) { toast('❌ Erreur lors de la lecture du fichier'); }
+              replaceInput.value = '';
+            };
+            replaceInput.click();
+          };
+        });
+        el.querySelectorAll('.gcc-doc-delete').forEach(btn => {
+          btn.onclick = async () => {
+            if (!confirm('Supprimer définitivement ce document ?')) return;
+            const resp = await apiCall('compliance-documents', session, { method: 'DELETE', body: JSON.stringify({ documentId: btn.getAttribute('data-id') }) });
+            if (resp.ok && resp.data && resp.data.ok) { toast('✅ Document supprimé'); await refresh(); renderDocumentsTab(el); }
+            else toast('❌ Erreur lors de la suppression');
+          };
+        });
       });
     }
 
@@ -629,43 +662,128 @@
   //  ADMIN — "Contrats à valider"
   // ══════════════════════════════════════════════════════════════════════
 
+  const ADMIN_TABS = ['verifications', 'contrats', 'documents', 'paiements', 'historique'];
+  const ADMIN_TAB_LABELS = { verifications: '👤 Vérifications', contrats: '📄 Contrats', documents: '📎 Documents', paiements: '💳 Paiements', historique: '🕒 Historique' };
+  const QUEUE_ACTIONS = { contrats: 'pending_contracts', documents: 'pending_documents', paiements: 'pending_payments' };
+  const QUEUE_STATUS_ACTION = { contrats: 'set_contract_status', documents: 'set_document_status', paiements: 'set_payment_status' };
+
   function AdminPanel(container, opts) {
     const getSession = opts.getSession;
     const apiCall = opts.apiCall || defaultApiCall;
     let session = null;
+    let activeTab = 'verifications';
 
     async function init() {
       injectStyle();
       session = await getSession();
       if (!session) { container.innerHTML = '<div class="gcc-root gcc-empty">Connexion requise.</div>'; return; }
-      await renderList();
+      render();
     }
 
-    async function renderList() {
-      container.innerHTML = `<div class="gcc-root"><div class="gcc-h1">📋 Contrats & dossiers à valider</div><div class="gcc-card"><div class="gcc-empty">Chargement…</div></div></div>`;
-      const r = await apiCall('admin-compliance?action=list', session, { method: 'GET' });
-      const rows = (r.data && r.data.dossiers) || [];
+    function render() {
       container.innerHTML = `
         <div class="gcc-root">
-          <div class="gcc-h1">📋 Contrats & dossiers à valider</div>
-          <div class="gcc-sub">${rows.length} dossier(s)</div>
-          <div class="gcc-card">
-            ${rows.length === 0 ? '<div class="gcc-empty">Aucun dossier pour le moment.</div>' : rows.map(row => `
-              <div class="gcc-admin-row" data-user="${esc(row.user_id)}" data-role="${esc(row.role)}">
-                <div class="gcc-admin-avatar">${esc((row.first_name || row.email || '?')[0] || '?').toUpperCase()}</div>
-                <div class="gcc-admin-info">
-                  <div class="gcc-admin-name">${esc(row.first_name || '')} ${esc(row.last_name || '')} ${!row.first_name ? esc(row.email || '') : ''}</div>
-                  <div class="gcc-admin-meta">${row.role === 'vendeur' ? 'Vendeur' : 'Ambassadeur'} · ${esc(row.email || '')} · score ${row.score}%</div>
-                </div>
-                <span class="gcc-badge ${row.contract_status || 'pending'}">${statusLabel(row.contract_status)}</span>
-              </div>
-            `).join('')}
-          </div>
+          <div class="gcc-h1">📋 Conformité</div>
+          <div class="gcc-sub">Contrats, documents, paiements et historique — vendeurs &amp; ambassadeurs.</div>
+          <div class="gcc-tabs">${ADMIN_TABS.map(t => `<div class="gcc-tab ${activeTab === t ? 'on' : ''}" data-tab="${t}">${ADMIN_TAB_LABELS[t]}</div>`).join('')}</div>
+          <div id="gcc-admin-tab-content"><div class="gcc-card"><div class="gcc-empty">Chargement…</div></div></div>
         </div>
       `;
-      container.querySelectorAll('.gcc-admin-row').forEach(rowEl => {
+      container.querySelectorAll('.gcc-tab').forEach(el => { el.onclick = () => { activeTab = el.getAttribute('data-tab'); render(); }; });
+      const contentEl = container.querySelector('#gcc-admin-tab-content');
+      if (activeTab === 'verifications') renderVerificationsTab(contentEl);
+      else if (activeTab === 'historique') renderHistoriqueTabAdmin(contentEl);
+      else renderQueueTab(contentEl, activeTab);
+    }
+
+    async function renderVerificationsTab(el) {
+      const r = await apiCall('admin-compliance?action=list', session, { method: 'GET' });
+      const rows = (r.data && r.data.dossiers) || [];
+      el.innerHTML = `
+        <div class="gcc-sub">${rows.length} dossier(s)</div>
+        <div class="gcc-card">
+          ${rows.length === 0 ? '<div class="gcc-empty">Aucun dossier pour le moment.</div>' : rows.map(row => `
+            <div class="gcc-admin-row" data-user="${esc(row.user_id)}" data-role="${esc(row.role)}">
+              <div class="gcc-admin-avatar">${esc((row.first_name || row.email || '?')[0] || '?').toUpperCase()}</div>
+              <div class="gcc-admin-info">
+                <div class="gcc-admin-name">${esc(row.first_name || '')} ${esc(row.last_name || '')} ${!row.first_name ? esc(row.email || '') : ''}</div>
+                <div class="gcc-admin-meta">${row.role === 'vendeur' ? 'Vendeur' : 'Ambassadeur'} · ${esc(row.email || '')} · score ${row.score}%</div>
+              </div>
+              <span class="gcc-badge ${row.dossier_status === 'conforme' ? 'validated' : 'pending'}">${row.dossier_status === 'conforme' ? '🟢 Dossier validé' : '🟡 Dossier incomplet'}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      el.querySelectorAll('.gcc-admin-row').forEach(rowEl => {
         rowEl.onclick = () => openDetail(rowEl.getAttribute('data-user'), rowEl.getAttribute('data-role'));
       });
+    }
+
+    async function renderQueueTab(el, tab) {
+      const r = await apiCall(`admin-compliance?action=${QUEUE_ACTIONS[tab]}`, session, { method: 'GET' });
+      const items = (r.data && r.data.items) || [];
+      el.innerHTML = `
+        <div class="gcc-sub">${items.length} en attente de validation</div>
+        <div class="gcc-card">
+          ${items.length === 0 ? '<div class="gcc-empty">Rien à valider pour le moment. 🎉</div>' : items.map(item => queueRowHtml(tab, item)).join('')}
+        </div>
+      `;
+      el.querySelectorAll('.gcc-queue-open').forEach(btn => {
+        btn.onclick = () => openDetail(btn.getAttribute('data-user'), btn.getAttribute('data-role'));
+      });
+      el.querySelectorAll('.gcc-queue-action').forEach(btn => {
+        btn.onclick = async () => {
+          btn.disabled = true;
+          const resp = await apiCall('admin-compliance', session, {
+            method: 'POST',
+            body: JSON.stringify({ action: QUEUE_STATUS_ACTION[tab], id: btn.getAttribute('data-id'), status: btn.getAttribute('data-status') }),
+          });
+          if (resp.ok && resp.data && resp.data.ok) { toast('✅ Mis à jour'); renderQueueTab(el, tab); }
+          else { toast('❌ Erreur'); btn.disabled = false; }
+        };
+      });
+    }
+
+    function queueRowHtml(tab, item) {
+      const name = item.first_name ? `${esc(item.first_name)} ${esc(item.last_name || '')}` : esc(item.email || 'Utilisateur');
+      const roleLabel = item.role === 'vendeur' ? 'Vendeur' : 'Ambassadeur';
+      let detail = '';
+      if (tab === 'contrats') detail = `${esc(item.contract_version)} · signé le ${new Date(item.signed_at).toLocaleString('fr-FR')}`;
+      else if (tab === 'documents') detail = `${docTypeLabel(item.doc_type)} · ${esc(item.file_name)}`;
+      else if (tab === 'paiements') detail = `${esc(item.iban)} · ${esc(item.account_holder)}`;
+      const link = item.pdf_url ? `<a href="${item.pdf_url}" target="_blank" rel="noopener" style="color:#F0D080;font-size:12px;margin-right:8px">PDF</a>`
+        : item.url ? `<a href="${item.url}" target="_blank" rel="noopener" style="color:#F0D080;font-size:12px;margin-right:8px">Voir</a>` : '';
+      return `
+        <div class="gcc-admin-row">
+          <div class="gcc-admin-avatar">${esc((item.first_name || item.email || '?')[0] || '?').toUpperCase()}</div>
+          <div class="gcc-admin-info">
+            <div class="gcc-admin-name">${name} <span style="color:#6e6860;font-weight:400">· ${roleLabel}</span></div>
+            <div class="gcc-admin-meta">${detail}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin:0 0 14px 46px">
+          ${link}
+          <button type="button" class="gcc-btn gcc-btn-gold gcc-queue-action" data-id="${item.id}" data-status="validated" style="padding:7px 12px;width:auto">Valider</button>
+          <button type="button" class="gcc-btn gcc-btn-ghost gcc-queue-action" data-id="${item.id}" data-status="refused" style="padding:7px 12px;width:auto">Refuser</button>
+          <button type="button" class="gcc-btn gcc-btn-ghost gcc-queue-open" data-user="${esc(item.user_id)}" data-role="${esc(item.role)}" style="padding:7px 12px;width:auto">Voir la fiche</button>
+        </div>
+      `;
+    }
+
+    async function renderHistoriqueTabAdmin(el) {
+      const r = await apiCall('admin-compliance?action=global_history', session, { method: 'GET' });
+      const items = (r.data && r.data.items) || [];
+      el.innerHTML = `
+        <div class="gcc-sub">${items.length} évènement(s) récents</div>
+        <div class="gcc-card">
+          ${items.length === 0 ? '<div class="gcc-empty">Aucun évènement.</div>' : items.map(a => `
+            <div class="gcc-hist-row">
+              <div class="gcc-hist-date">${new Date(a.created_at).toLocaleString('fr-FR')}</div>
+              <div class="gcc-hist-txt">${actionLabel(a.action)} — ${esc(a.first_name || a.email || 'Utilisateur')} (${a.role === 'vendeur' ? 'Vendeur' : 'Ambassadeur'})</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
     }
 
     async function openDetail(userId, role) {
@@ -682,10 +800,28 @@
       if (!d) { modal.innerHTML = '<button class="gcc-modal-close">✕</button><div class="gcc-empty">Dossier introuvable.</div>'; overlay.querySelector('.gcc-modal-close').onclick = () => overlay.remove(); return; }
 
       const p = d.profile || {};
+      // "Date de validation" — pas un champ stocké séparément (le dossier
+      // devient conforme dès que le dernier item requis est validé) : on la
+      // déduit du plus récent admin_reviewed_at parmi les éléments requis,
+      // uniquement affichée si le dossier est effectivement conforme.
+      let validatedAt = null;
+      if (d.status === 'conforme') {
+        const dates = [
+          ...(d.signatures || []).map(s => s.admin_reviewed_at),
+          ...(d.payment_history || []).map(pay => pay.admin_reviewed_at),
+        ].filter(Boolean).map(x => new Date(x).getTime());
+        if (dates.length > 0) validatedAt = new Date(Math.max(...dates));
+      }
       modal.innerHTML = `
         <button class="gcc-modal-close">✕</button>
-        <h3 style="font-size:17px;margin-bottom:4px">${esc(p.first_name || '')} ${esc(p.last_name || '')}</h3>
-        <div style="font-size:12px;color:#a8a090;margin-bottom:16px">${role === 'vendeur' ? 'Vendeur' : 'Ambassadeur'} · score ${d.score}% · ${d.status === 'conforme' ? '✅ conforme' : 'incomplet'}</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+          <div class="gcc-admin-avatar" style="width:44px;height:44px;font-size:16px">${esc((p.first_name || 'U')[0] || 'U').toUpperCase()}</div>
+          <div>
+            <h3 style="font-size:17px">${esc(p.first_name || '')} ${esc(p.last_name || '')}</h3>
+            <div style="font-size:12px;color:#a8a090">${role === 'vendeur' ? 'Vendeur' : 'Ambassadeur'} · score ${d.score}% · ${d.status === 'conforme' ? '🟢 Dossier validé' : '🟡 Dossier incomplet'}</div>
+          </div>
+        </div>
+        ${validatedAt ? `<div style="font-size:11.5px;color:#30d158;margin-bottom:12px">Conforme depuis le ${validatedAt.toLocaleString('fr-FR')}</div>` : ''}
 
         <div style="font-size:12.5px;color:#c8c2b8;line-height:1.9;margin-bottom:16px">
           Né(e) le ${p.birth_date ? new Date(p.birth_date).toLocaleDateString('fr-FR') : '—'} à ${esc(p.birth_place || '—')}<br>
@@ -743,7 +879,6 @@
             toast('✅ Mis à jour');
             overlay.remove();
             openDetail(userId, role);
-            renderList();
           } else {
             toast('❌ Erreur');
             btn.disabled = false;
@@ -755,8 +890,190 @@
     init();
   }
 
+  // ══════════════════════════════════════════════════════════════════════
+  //  ADMIN — "Informations légales" (Administration → Informations légales)
+  //  Remplit automatiquement tous les contrats générés (voir
+  //  _lib/compliance/contracts.js) — c'est ici qu'on fait disparaître les
+  //  marqueurs "[À CONFIGURER]". Inclut aussi la gestion des versions de
+  //  contrat (v1, v2, v3... — "publier une nouvelle version validée").
+  // ══════════════════════════════════════════════════════════════════════
+
+  function LegalInfoPage(container, opts) {
+    const getSession = opts.getSession;
+    const apiCall = opts.apiCall || defaultApiCall;
+    let session = null;
+    let templateRole = 'vendeur';
+
+    async function init() {
+      injectStyle();
+      session = await getSession();
+      if (!session) { container.innerHTML = '<div class="gcc-root gcc-empty">Connexion requise.</div>'; return; }
+      await renderAll();
+    }
+
+    async function renderAll() {
+      container.innerHTML = `
+        <div class="gcc-root">
+          <div class="gcc-h1">⚖️ Informations légales</div>
+          <div class="gcc-sub">Remplit automatiquement tous les contrats générés — aucune valeur codée en dur.</div>
+          <div id="gcc-legal-form"></div>
+          <div class="gcc-h1" style="margin-top:28px;font-size:18px">📄 Versions de contrat</div>
+          <div class="gcc-sub">Publier une nouvelle version validée par un juriste, sans déploiement.</div>
+          <div id="gcc-template-manager"></div>
+        </div>
+      `;
+      await renderLegalForm(container.querySelector('#gcc-legal-form'));
+      await renderTemplateManager(container.querySelector('#gcc-template-manager'));
+    }
+
+    async function renderLegalForm(el) {
+      el.innerHTML = `<div class="gcc-card"><div class="gcc-empty">Chargement…</div></div>`;
+      const r = await apiCall('admin-legal-info', session, { method: 'GET' });
+      const info = (r.data && r.data.info) || {};
+      const logoUrl = r.data && r.data.logoUrl;
+      const signatureUrl = r.data && r.data.signatureUrl;
+
+      el.innerHTML = `
+        <div class="gcc-card">
+          <h3>Identité de la Société</h3>
+          <div class="gcc-row2">
+            <div class="gcc-field"><label>Nom de la société</label><input id="gli-company-name" value="${esc(info.company_name || '')}"></div>
+            <div class="gcc-field"><label>Nom du représentant légal</label><input id="gli-rep-name" value="${esc(info.legal_rep_name || '')}"></div>
+          </div>
+          <div class="gcc-row2">
+            <div class="gcc-field"><label>Qualité du représentant</label><input id="gli-rep-title" placeholder="Fondateur, Président..." value="${esc(info.legal_rep_title || '')}"></div>
+            <div class="gcc-field"><label>SIRET</label><input id="gli-siret" value="${esc(info.siret || '')}"></div>
+          </div>
+          <div class="gcc-field"><label>Adresse complète</label><input id="gli-address" value="${esc(info.address || '')}"></div>
+          <div class="gcc-row2">
+            <div class="gcc-field"><label>Code postal</label><input id="gli-postal" value="${esc(info.postal_code || '')}"></div>
+            <div class="gcc-field"><label>Ville</label><input id="gli-city" value="${esc(info.city || '')}"></div>
+          </div>
+          <div class="gcc-row2">
+            <div class="gcc-field"><label>Pays</label><input id="gli-country" value="${esc(info.country || 'France')}"></div>
+            <div class="gcc-field"><label>Numéro de TVA</label><input id="gli-vat" value="${esc(info.vat_number || '')}"></div>
+          </div>
+          <div class="gcc-row2">
+            <div class="gcc-field"><label>Email</label><input id="gli-email" type="email" value="${esc(info.email || '')}"></div>
+            <div class="gcc-field"><label>Téléphone</label><input id="gli-phone" value="${esc(info.phone || '')}"></div>
+          </div>
+
+          <div class="gcc-row2">
+            <div>
+              <label style="display:block;font-size:11.5px;color:#a8a090;margin-bottom:5px;font-weight:600;text-transform:uppercase">Logo</label>
+              ${logoUrl ? `<img src="${logoUrl}" style="max-width:120px;max-height:60px;display:block;margin-bottom:8px;border-radius:6px">` : ''}
+              <div class="gcc-upload-zone" id="gli-logo-zone" style="padding:14px">📤 ${logoUrl ? 'Remplacer le logo' : 'Ajouter un logo'}</div>
+              <input type="file" id="gli-logo-input" accept="image/png,image/jpeg,image/svg+xml" style="display:none">
+            </div>
+            <div>
+              <label style="display:block;font-size:11.5px;color:#a8a090;margin-bottom:5px;font-weight:600;text-transform:uppercase">Signature officielle</label>
+              ${signatureUrl ? `<img src="${signatureUrl}" style="max-width:120px;max-height:60px;display:block;margin-bottom:8px;border-radius:6px;background:#fff">` : ''}
+              <div class="gcc-upload-zone" id="gli-sig-zone" style="padding:14px">📤 ${signatureUrl ? 'Remplacer la signature' : 'Ajouter une signature'}</div>
+              <input type="file" id="gli-sig-input" accept="image/png,image/jpeg" style="display:none">
+            </div>
+          </div>
+
+          <button class="gcc-btn gcc-btn-gold" id="gli-save" style="margin-top:14px">Enregistrer</button>
+        </div>
+      `;
+
+      let pendingLogoDataUrl = null;
+      let pendingSignatureDataUrl = null;
+      const logoZone = el.querySelector('#gli-logo-zone');
+      const logoInput = el.querySelector('#gli-logo-input');
+      logoZone.onclick = () => logoInput.click();
+      logoInput.onchange = async () => {
+        const file = logoInput.files[0];
+        if (!file) return;
+        pendingLogoDataUrl = await fileToDataUrl(file);
+        logoZone.textContent = `✓ ${file.name} (sera enregistré)`;
+      };
+      const sigZone = el.querySelector('#gli-sig-zone');
+      const sigInput = el.querySelector('#gli-sig-input');
+      sigZone.onclick = () => sigInput.click();
+      sigInput.onchange = async () => {
+        const file = sigInput.files[0];
+        if (!file) return;
+        pendingSignatureDataUrl = await fileToDataUrl(file);
+        sigZone.textContent = `✓ ${file.name} (sera enregistrée)`;
+      };
+
+      el.querySelector('#gli-save').onclick = async () => {
+        const body = {
+          company_name: el.querySelector('#gli-company-name').value,
+          legal_rep_name: el.querySelector('#gli-rep-name').value,
+          legal_rep_title: el.querySelector('#gli-rep-title').value,
+          siret: el.querySelector('#gli-siret').value,
+          address: el.querySelector('#gli-address').value,
+          postal_code: el.querySelector('#gli-postal').value,
+          city: el.querySelector('#gli-city').value,
+          country: el.querySelector('#gli-country').value,
+          vat_number: el.querySelector('#gli-vat').value,
+          email: el.querySelector('#gli-email').value,
+          phone: el.querySelector('#gli-phone').value,
+        };
+        if (pendingLogoDataUrl) body.logoDataUrl = pendingLogoDataUrl;
+        if (pendingSignatureDataUrl) body.signatureDataUrl = pendingSignatureDataUrl;
+        const resp = await apiCall('admin-legal-info', session, { method: 'POST', body: JSON.stringify(body) });
+        if (resp.ok && resp.data && resp.data.ok) { toast('✅ Informations légales enregistrées'); await renderLegalForm(el); }
+        else toast('❌ Erreur lors de l\'enregistrement');
+      };
+    }
+
+    async function renderTemplateManager(el) {
+      el.innerHTML = `<div class="gcc-card"><div class="gcc-empty">Chargement…</div></div>`;
+      const r = await apiCall(`admin-contract-templates?role=${templateRole}`, session, { method: 'GET' });
+      const templates = (r.data && r.data.templates) || [];
+      const current = templates.find(t => t.is_current) || templates[0];
+
+      el.innerHTML = `
+        <div class="gcc-card">
+          <div class="gcc-tabs">
+            <div class="gcc-tab ${templateRole === 'vendeur' ? 'on' : ''}" data-role="vendeur">Vendeur</div>
+            <div class="gcc-tab ${templateRole === 'ambassadeur' ? 'on' : ''}" data-role="ambassadeur">Ambassadeur</div>
+          </div>
+          <h3>Historique des versions</h3>
+          ${templates.length === 0 ? '<div class="gcc-empty">Aucune version publiée.</div>' : templates.map(t => `
+            <div class="gcc-doc-row">
+              <div class="gcc-doc-info">
+                <div class="gcc-doc-name">${esc(t.version)} ${t.is_current ? '· en vigueur' : ''}</div>
+                <div class="gcc-doc-meta">Publiée le ${new Date(t.published_at).toLocaleString('fr-FR')}${t.change_notes ? ' — ' + esc(t.change_notes) : ''}</div>
+              </div>
+              ${t.is_current ? '<span class="gcc-badge validated">Courante</span>' : ''}
+            </div>
+          `).join('')}
+
+          <h3 style="margin-top:18px">Publier une nouvelle version</h3>
+          <div style="font-size:12px;color:#a8a090;margin-bottom:10px">⚠️ Comme l'exige le document original, toute nouvelle version doit être relue et validée par un avocat/juriste avant publication.</div>
+          <textarea id="gcc-template-body" style="width:100%;min-height:260px;background:#161616;border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:12px;color:#f5f0e8;font-size:12px;font-family:monospace;margin-bottom:10px">${esc((current && current.body) || '')}</textarea>
+          <div class="gcc-field"><label>Notes de version (visibles en interne uniquement)</label><input id="gcc-template-notes" placeholder="Ex: clause de résiliation mise à jour suite à relecture juridique"></div>
+          <button class="gcc-btn gcc-btn-gold" id="gcc-template-publish">Publier comme nouvelle version</button>
+        </div>
+      `;
+
+      el.querySelectorAll('.gcc-tab').forEach(tab => {
+        tab.onclick = () => { templateRole = tab.getAttribute('data-role'); renderTemplateManager(el); };
+      });
+
+      el.querySelector('#gcc-template-publish').onclick = async () => {
+        const body = el.querySelector('#gcc-template-body').value;
+        const notes = el.querySelector('#gcc-template-notes').value;
+        if (!confirm(`Publier une nouvelle version du contrat ${templateRole} ? Elle s'appliquera immédiatement à toute nouvelle signature.`)) return;
+        const resp = await apiCall('admin-contract-templates', session, {
+          method: 'POST',
+          body: JSON.stringify({ role: templateRole, body, change_notes: notes }),
+        });
+        if (resp.ok && resp.data && resp.data.ok) { toast(`✅ Version ${resp.data.version} publiée`); await renderTemplateManager(el); }
+        else toast('❌ ' + (resp.data && resp.data.message || 'Erreur lors de la publication'));
+      };
+    }
+
+    init();
+  }
+
   window.GCCompliance = {
     mount: (container, opts) => Dossier(container, opts),
     mountAdmin: (container, opts) => AdminPanel(container, opts),
+    mountLegalInfo: (container, opts) => LegalInfoPage(container, opts),
   };
 })();

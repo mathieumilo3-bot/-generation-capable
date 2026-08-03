@@ -2652,9 +2652,13 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
       </div>
 
-      <!-- CONTRATS & DOSSIERS — signature électronique, pièces, RIB (voir compliance-client.js) -->
-      <div class="sec-hd"><div class="sec-t">Contrats & dossiers à valider</div></div>
+      <!-- CONFORMITÉ — signature électronique, pièces, RIB (voir compliance-client.js) -->
+      <div class="sec-hd"><div class="sec-t">Conformité</div></div>
       <div id="admin-compliance-mount" style="margin-bottom:28px"></div>
+
+      <!-- INFORMATIONS LÉGALES — remplit automatiquement tous les contrats -->
+      <div class="sec-hd"><div class="sec-t">Informations légales</div></div>
+      <div id="admin-legal-info-mount" style="margin-bottom:28px"></div>
 
       <!-- CONTACTER LES MEMBRES -->
       <div class="sec-hd"><div class="sec-t">Envoyer un message à tous les membres</div></div>
@@ -4795,6 +4799,7 @@ async function checkAdminAccess(){
       try{ await renderAdminPayouts(); }catch(e){ console.error('[admin] payouts overview:', e); }
       try{ await renderAdminDisputes(); }catch(e){ console.error('[admin] disputes overview:', e); }
       try{ mountAdminCompliance(session); }catch(e){ console.error('[admin] compliance panel:', e); }
+      try{ mountAdminLegalInfo(session); }catch(e){ console.error('[admin] legal info page:', e); }
     } else {
       setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
     }
@@ -6457,6 +6462,17 @@ function mountAdminCompliance(session){
   if(!mountEl) return;
   _adminComplianceMounted = true;
   window.GCCompliance.mountAdmin(mountEl, {
+    getSession: async function(){ return session; }
+  });
+}
+
+let _adminLegalInfoMounted = false;
+function mountAdminLegalInfo(session){
+  if(_adminLegalInfoMounted || !window.GCCompliance) return;
+  var mountEl = document.getElementById('admin-legal-info-mount');
+  if(!mountEl) return;
+  _adminLegalInfoMounted = true;
+  window.GCCompliance.mountLegalInfo(mountEl, {
     getSession: async function(){ return session; }
   });
 }

@@ -83,6 +83,33 @@ async function scanPendingOrders() {
   }
 }
 
+function formatEuros(amountCents) {
+  return ((amountCents || 0) / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' €';
+}
+
+// "Nouvelle demande de paiement" (mission conformité, section 9) — scan
+// plutôt qu'interception synchrone : le retrait est demandé via un appel
+// RPC direct du navigateur (supa.rpc('request_payout')), pas via une
+// Netlify Function, pour ne rien changer au chemin de retrait qui
+// fonctionne déjà en production (voir 0015_compliance_contracts.sql,
+// section 9 — le verrou de conformité est un trigger, pas un changement de
+// ce flux).
+async function scanNewPayouts(sinceIso, nowIso) {
+  const r = await supabaseAdminRequest(
+    `/rest/v1/payouts?requested_at=gt.${sinceIso}&requested_at=lte.${nowIso}&select=id,seller_user_id,amount,requested_at&limit=200`
+  );
+  const rows = r.ok ? await r.json() : [];
+  for (const row of rows || []) {
+    const userResp = await supabaseAdminRequest(`/auth/v1/admin/users/${row.seller_user_id}`);
+    const userData = userResp.ok ? await userResp.json() : null;
+    await safeNotify(() => notifyAdmins({
+      category: 'admin.compliance.payout_requested',
+      eventKey: `payout_requested:${row.id}`,
+      ctx: { email: userData && userData.email, montant: formatEuros(row.amount) },
+    }));
+  }
+}
+
 async function scanStaleProspects() {
   const staleBefore = new Date(Date.now() - STALE_PROSPECT_HOURS * 3600 * 1000).toISOString();
   const week = isoWeekKey(new Date());
@@ -106,6 +133,7 @@ exports.handler = async () => {
   await scanStageTransitions(since, now);
   await scanPendingOrders();
   await scanStaleProspects();
+  await scanNewPayouts(since, now);
 
   await setCursor(now);
   return jsonResponse(200, { ok: true, since, now });

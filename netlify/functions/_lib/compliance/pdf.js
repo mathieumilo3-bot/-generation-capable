@@ -86,25 +86,33 @@ async function generateContractPdf({ title, contractText, proof }) {
   drawParagraph('PREUVE DE SIGNATURE ÉLECTRONIQUE', { bold: true, size: 11, spacingAfter: 8 });
   drawParagraph(`Date et heure : ${new Date(proof.signedAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })} (heure de Paris)`, { spacingAfter: 4 });
   drawParagraph(`Adresse IP : ${proof.ipAddress || 'non disponible'}`, { spacingAfter: 4 });
+  drawParagraph(`Navigateur : ${proof.userAgent || 'non disponible'}`, { spacingAfter: 4 });
   drawParagraph(`Identifiant utilisateur : ${proof.userId}`, { spacingAfter: 4 });
-  drawParagraph(`Version du contrat signée : ${proof.version}`, { spacingAfter: 12 });
+  drawParagraph(`Version du contrat signée : ${proof.version}`, { spacingAfter: 4 });
+  if (proof.signatureHash) {
+    drawParagraph(`Empreinte de la signature (SHA-256) : ${proof.signatureHash}`, { spacingAfter: 12, size: 8 });
+  }
 
-  if (proof.signatureImageBytes) {
+  async function drawSignatureImage(bytes, label) {
+    if (!bytes) return;
     try {
-      const png = await doc.embedPng(proof.signatureImageBytes);
+      const png = await doc.embedPng(bytes);
       const maxW = 220, maxH = 90;
       const scale = Math.min(maxW / png.width, maxH / png.height, 1);
       const w = png.width * scale, h = png.height * scale;
-      ensureSpace(h + 20);
-      page.drawText('Signature manuscrite électronique :', { x: MARGIN, y, size: FONT_SIZE, font, color: rgb(0.1, 0.1, 0.1) });
+      ensureSpace(h + 24);
+      page.drawText(label, { x: MARGIN, y, size: FONT_SIZE, font, color: rgb(0.1, 0.1, 0.1) });
       y -= h + 6;
       page.drawImage(png, { x: MARGIN, y, width: w, height: h });
       page.drawRectangle({ x: MARGIN, y, width: w, height: h, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.5 });
-      y -= 14;
+      y -= 18;
     } catch (e) {
-      drawParagraph('[Image de signature illisible — voir le fichier PNG archivé séparément]', {});
+      drawParagraph(`[${label} illisible — voir le fichier archivé séparément]`, {});
     }
   }
+
+  await drawSignatureImage(proof.signatureImageBytes, 'Signature manuscrite électronique du signataire :');
+  await drawSignatureImage(proof.companySignatureBytes, 'Signature officielle de Génération Capable :');
 
   const bytes = await doc.save();
   return Buffer.from(bytes);

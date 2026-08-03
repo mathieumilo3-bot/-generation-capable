@@ -59,6 +59,11 @@ create table if not exists public.contract_signatures (
   signed_at         timestamptz not null default now(),
   ip_address        inet,
   user_agent        text,
+  -- Empreinte SHA-256 (hex) de l'image de signature réellement capturée —
+  -- preuve d'intégrité indépendante du fichier lui-même : toute altération,
+  -- même minime, du PNG archivé changerait ce hash. Calculée côté serveur
+  -- à partir des octets reçus, jamais fournie par le client.
+  signature_hash    text,
   -- Snapshot des informations utilisées pour remplir le contrat au moment de
   -- la signature — figé même si le profil est modifié ensuite (le PDF signé
   -- doit toujours correspondre à ce qui a réellement été signé).
@@ -92,6 +97,7 @@ begin
   -- Seules les colonnes de revue admin peuvent changer après création.
   if OLD.signed_at is distinct from NEW.signed_at
      or OLD.ip_address is distinct from NEW.ip_address
+     or OLD.signature_hash is distinct from NEW.signature_hash
      or OLD.filled_fields is distinct from NEW.filled_fields
      or OLD.signature_image_path is distinct from NEW.signature_image_path
      or OLD.contract_pdf_path is distinct from NEW.contract_pdf_path
@@ -496,9 +502,21 @@ grant execute on function public.admin_set_payment_info_status(uuid, text, text)
 -- ──────────────────────────────────────────────────────────────────────────
 -- 9. VERROU COMMISSIONS — "le vendeur peut alors recevoir ses commissions"
 --    implique la réciproque : PAS de retrait tant que le dossier vendeur
---    n'est pas conforme. request_payout() (0006) est modifiée pour vérifier
---    la conformité AVANT tout calcul de solde — jamais un blocage qu'on
---    pourrait contourner en appelant une autre fonction.
+--    n'est pas conforme.
+--
+-- CHOIX DE CONCEPTION (révisé) : plutôt que de redéfinir request_payout()
+-- (0006) — ce qui obligerait à recopier intégralement sa logique financière
+-- et ferait courir un risque de régression si cette logique change plus
+-- tard sans que quelqu'un pense à répercuter la copie ici — le verrou est
+-- posé comme un trigger BEFORE INSERT sur "payouts" lui-même :
+--   - Aucune ligne de request_payout() n'est touchée : la fonction reste
+--     EXACTEMENT celle de la migration 0006, telle quelle.
+--   - Le verrou s'applique à TOUTE insertion dans "payouts", quel que soit
+--     le chemin de code qui la déclenche (défense en profondeur : même un
+--     futur second point d'entrée pour les retraits serait automatiquement
+--     couvert, sans y penser explicitement).
+--   - Zéro risque de divergence entre "la copie ici" et "l'original" : il
+--     n'y a plus de copie.
 -- ──────────────────────────────────────────────────────────────────────────
 create or replace function public.is_seller_compliance_conforme(p_user_id uuid)
 returns boolean
@@ -524,56 +542,29 @@ end;
 $$;
 revoke all on function public.is_seller_compliance_conforme(uuid) from public;
 revoke all on function public.is_seller_compliance_conforme(uuid) from anon;
+comment on function public.is_seller_compliance_conforme(uuid) is
+  'Score de conformité du dossier vendeur (contrat + identité + RIB validé + SIRET + justificatif SIRET), utilisée par le trigger trg_payouts_require_compliance sur public.payouts.';
 
--- Redéfinition qui préserve EXACTEMENT la logique financière existante
--- (récupérée en direct depuis la base de production via pg_get_functiondef
--- avant modification — jamais réécrite de mémoire) : seule une garde de
--- conformité est ajoutée tout en haut, avant le calcul du solde.
-create or replace function public.request_payout()
-returns uuid
+create or replace function public.enforce_seller_compliance_before_payout()
+returns trigger
 language plpgsql
 security definer
 set search_path to 'public'
-as $function$
-declare
-  v_available integer;
-  v_wallet_id uuid;
-  v_payout_id uuid;
+as $$
 begin
-  if auth.uid() is null then raise exception 'Authentification requise'; end if;
-
-  if not public.is_seller_compliance_conforme(auth.uid()) then
+  if not public.is_seller_compliance_conforme(NEW.seller_user_id) then
     raise exception 'Dossier administratif incomplet : signe ton contrat et complète ton dossier (identité, RIB validé, SIRET) avant de pouvoir retirer tes commissions.';
   end if;
-
-  if extract(day from now()) < 5 then
-    raise exception 'Les retraits ne sont ouverts qu''à partir du 5 de chaque mois.';
-  end if;
-
-  select coalesce(sum(amount),0) into v_available
-    from public.commissions
-    where seller_id = auth.uid() and status = 'pending' and available_at <= now();
-  v_available := v_available - coalesce((select sum(amount) from public.commissions where seller_id = auth.uid() and status = 'debt'), 0);
-
-  if v_available <= 0 then raise exception 'Aucun solde disponible à retirer.'; end if;
-
-  v_wallet_id := ensure_wallet(auth.uid());
-
-  insert into public.payouts (wallet_id, seller_user_id, amount, status)
-  values (v_wallet_id, auth.uid(), v_available, 'requested')
-  returning id into v_payout_id;
-
-  update public.commissions set status = 'withdrawn', paid_at = now(), payout_id = v_payout_id
-  where seller_id = auth.uid() and status = 'pending' and available_at <= now();
-  update public.commissions set status = 'withdrawn', paid_at = now(), payout_id = v_payout_id
-  where seller_id = auth.uid() and status = 'debt';
-
-  return v_payout_id;
+  return NEW;
 end;
-$function$;
+$$;
+comment on function public.enforce_seller_compliance_before_payout() is
+  'Trigger BEFORE INSERT sur public.payouts — bloque toute création de retrait pour un vendeur dont le dossier administratif n''est pas conforme à 100%, quel que soit le code appelant.';
 
-comment on function public.is_seller_compliance_conforme(uuid) is
-  'Utilisée par request_payout() pour bloquer les retraits tant que le dossier administratif du vendeur (contrat + identité + RIB validé + SIRET + justificatif) n''est pas complet à 100%.';
+drop trigger if exists trg_payouts_require_compliance on public.payouts;
+create trigger trg_payouts_require_compliance
+  before insert on public.payouts
+  for each row execute function public.enforce_seller_compliance_before_payout();
 
 
 -- ──────────────────────────────────────────────────────────────────────────

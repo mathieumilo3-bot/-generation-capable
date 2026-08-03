@@ -188,6 +188,12 @@ const adminPaymentInfoChanged = [
 const adminDossierComplete = [
   ctx => ({ title: `Dossier conforme ✅`, body: `Le dossier de ${ctx.email || 'un utilisateur'} est désormais complet à 100%.` }),
 ];
+const adminSiretChanged = [
+  ctx => ({ title: `SIRET modifié`, body: `${ctx.email || 'Un utilisateur'} a modifié son numéro SIRET (${ctx.oldValue || 'vide'} → ${ctx.newValue || 'vide'}).` }),
+];
+const adminPayoutRequested = [
+  ctx => ({ title: `Nouvelle demande de paiement`, body: `${ctx.email || 'Un vendeur'} a demandé un retrait${ctx.montant ? ' de ' + ctx.montant : ''}.` }),
+];
 const sellerDocumentExpiring = [
   ctx => ({ title: `Un document arrive à expiration`, body: `${ctx.docLabel || 'Un justificatif'} de ton dossier administratif expire bientôt — pense à le renouveler.` }),
 ];
@@ -282,6 +288,8 @@ const TEMPLATES = {
   'admin.compliance.document_uploaded': adminDocumentUploaded,
   'admin.compliance.payment_info_changed': adminPaymentInfoChanged,
   'admin.compliance.dossier_complete': adminDossierComplete,
+  'admin.compliance.siret_changed': adminSiretChanged,
+  'admin.compliance.payout_requested': adminPayoutRequested,
   'seller.compliance.document_expiring': sellerDocumentExpiring,
 };
 
@@ -334,6 +342,8 @@ const CATEGORY_LABELS = {
   'admin.compliance.document_uploaded': 'Nouveau document déposé',
   'admin.compliance.payment_info_changed': 'RIB modifié',
   'admin.compliance.dossier_complete': 'Dossier devenu conforme',
+  'admin.compliance.siret_changed': 'SIRET modifié',
+  'admin.compliance.payout_requested': 'Nouvelle demande de paiement',
   'seller.compliance.document_expiring': 'Document arrivant à expiration',
 };
 
@@ -352,6 +362,8 @@ const CRITICAL_CATEGORIES = new Set([
   'admin.technical.server_error',
   'admin.compliance.new_signature',
   'admin.compliance.payment_info_changed',
+  'admin.compliance.siret_changed',
+  'admin.compliance.payout_requested',
 ]);
 
 module.exports = {

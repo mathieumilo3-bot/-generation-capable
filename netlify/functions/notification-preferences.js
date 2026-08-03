@@ -17,6 +17,7 @@
 
 const { verifySessionToken, supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
 const { CATEGORY_LABELS, SELLER_CATEGORIES, ADMIN_CATEGORIES } = require('./_lib/notifications/templates');
+const { isAdminEmail } = require('./_lib/admin-check');
 
 const DEFAULT_PREFS = {
   enabled: true,
@@ -28,13 +29,6 @@ const DEFAULT_PREFS = {
 };
 
 const VALID_FREQUENCIES = new Set(['normal', 'reduced', 'minimal']);
-
-async function isAdminEmail(email) {
-  const r = await supabaseAdminRequest(`/rest/v1/admins?email=eq.${encodeURIComponent(email)}&select=email`);
-  if (!r.ok) return false;
-  const rows = await r.json();
-  return Array.isArray(rows) && rows.length > 0;
-}
 
 exports.handler = async (event) => {
   const anonKey = process.env.SUPABASE_ANON_KEY;

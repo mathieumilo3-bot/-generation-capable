@@ -17,6 +17,32 @@
 const { verifySessionToken, supabaseAdminRequest, jsonResponse, SUPABASE_URL } = require('./_lib/supabase-admin');
 const { notifyAdmins, safeNotify } = require('./_lib/notifications/send');
 const { signedUrl } = require('./_lib/compliance/storage');
+const { isAdminEmail } = require('./_lib/admin-check');
+const { isUuid } = require('./_lib/compliance/validate');
+
+// Enrichit une liste de lignes (contract_signatures / compliance_documents /
+// payment_info) avec l'email + nom du compte concerné — utilisé par les
+// files d'attente "à valider" (Conformité → Contrats/Documents/Paiements),
+// qui listent des évènements CROISÉS entre utilisateurs (pas le dossier
+// d'un seul), donc pas couvertes par admin_get_compliance_dossier().
+async function enrichWithIdentity(rows) {
+  const uniqueUserIds = [...new Set(rows.map(r => r.user_id))];
+  const identities = {};
+  await Promise.all(uniqueUserIds.map(async (uid) => {
+    const [userResp, profileResp] = await Promise.all([
+      supabaseAdminRequest(`/auth/v1/admin/users/${uid}`),
+      supabaseAdminRequest(`/rest/v1/compliance_profiles?user_id=eq.${uid}&select=role,first_name,last_name`),
+    ]);
+    const userData = userResp.ok ? await userResp.json() : null;
+    const profileRows = profileResp.ok ? await profileResp.json() : [];
+    identities[uid] = { email: userData && userData.email, profiles: profileRows || [] };
+  }));
+  return rows.map(r => {
+    const identity = identities[r.user_id] || {};
+    const profile = (identity.profiles || []).find(p => p.role === r.role);
+    return { ...r, email: identity.email, first_name: profile && profile.first_name, last_name: profile && profile.last_name };
+  });
+}
 
 const STATUS_ACTIONS = {
   set_contract_status: 'admin_set_contract_status',
@@ -45,8 +71,14 @@ exports.handler = async (event) => {
     return jsonResponse(500, { error: 'SERVER_NOT_CONFIGURED' });
   }
 
-  const { error: authError } = await verifySessionToken(event, anonKey);
+  const { email: callerEmail, error: authError } = await verifySessionToken(event, anonKey);
   if (authError) return jsonResponse(401, { error: authError });
+  // Garde explicite pour CE endpoint entier : les actions "pending_*"/
+  // "global_history" ci-dessous lisent directement en service_role (elles
+  // traversent plusieurs utilisateurs, donc pas couvertes par les RPC
+  // is_current_user_admin() prévues pour un seul dossier à la fois) — cette
+  // vérification est donc leur SEULE porte, pas une redondance cosmétique.
+  if (!(await isAdminEmail(callerEmail))) return jsonResponse(403, { error: 'ADMIN_REQUIRED' });
   const authHeader = event.headers.authorization || event.headers.Authorization;
 
   if (event.httpMethod === 'GET') {
@@ -59,7 +91,7 @@ exports.handler = async (event) => {
     }
 
     if (qs.action === 'detail') {
-      if (!qs.userId || !qs.role) return jsonResponse(400, { error: 'MISSING_PARAMS' });
+      if (!isUuid(qs.userId) || !qs.role) return jsonResponse(400, { error: 'MISSING_PARAMS' });
       const { ok, status, data } = await callRpc(authHeader, anonKey, 'admin_get_compliance_dossier', {
         p_user_id: qs.userId, p_role: qs.role,
       });
@@ -81,6 +113,36 @@ exports.handler = async (event) => {
       return jsonResponse(200, { dossier: data });
     }
 
+    if (qs.action === 'pending_contracts') {
+      const r = await supabaseAdminRequest('/rest/v1/contract_signatures?admin_status=eq.pending&select=id,user_id,role,contract_version,signed_at,ip_address,contract_pdf_path&order=signed_at.asc');
+      const rows = r.ok ? await r.json() : [];
+      const enriched = await enrichWithIdentity(rows || []);
+      for (const row of enriched) row.pdf_url = await signedUrl(row.contract_pdf_path, 600).catch(() => null);
+      return jsonResponse(200, { items: enriched });
+    }
+
+    if (qs.action === 'pending_documents') {
+      const r = await supabaseAdminRequest('/rest/v1/compliance_documents?admin_status=eq.pending&select=id,user_id,role,doc_type,file_name,uploaded_at,storage_path&order=uploaded_at.asc');
+      const rows = r.ok ? await r.json() : [];
+      const enriched = await enrichWithIdentity(rows || []);
+      for (const row of enriched) row.url = await signedUrl(row.storage_path, 600).catch(() => null);
+      return jsonResponse(200, { items: enriched });
+    }
+
+    if (qs.action === 'pending_payments') {
+      const r = await supabaseAdminRequest('/rest/v1/payment_info?admin_status=eq.pending&select=id,user_id,role,iban,bic,account_holder,created_at&order=created_at.asc');
+      const rows = r.ok ? await r.json() : [];
+      const enriched = await enrichWithIdentity(rows || []);
+      return jsonResponse(200, { items: enriched });
+    }
+
+    if (qs.action === 'global_history') {
+      const r = await supabaseAdminRequest('/rest/v1/compliance_audit_log?select=id,created_at,user_id,role,actor,action,details&order=created_at.desc&limit=300');
+      const rows = r.ok ? await r.json() : [];
+      const enriched = await enrichWithIdentity(rows || []);
+      return jsonResponse(200, { items: enriched });
+    }
+
     return jsonResponse(400, { error: 'UNKNOWN_ACTION' });
   }
 
@@ -97,7 +159,7 @@ exports.handler = async (event) => {
     if (!['validated', 'refused', 'pending'].includes(payload.status)) {
       return jsonResponse(400, { error: 'INVALID_STATUS' });
     }
-    if (!payload.id) return jsonResponse(400, { error: 'MISSING_ID' });
+    if (!isUuid(payload.id)) return jsonResponse(400, { error: 'MISSING_ID' });
 
     const params = {
       [RPC_PARAM_NAMES[payload.action]]: payload.id,
