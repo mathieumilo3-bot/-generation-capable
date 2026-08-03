@@ -648,9 +648,12 @@ async function sendChat(){
   box.appendChild(loadingEl);
 
   try{
+    // FIX CRITIQUE (audit 2026-08-03) : ai-proxy.js exige maintenant un token de
+    // session Supabase valide (voir index.html) — sans ce header, cet appel
+    // échouerait désormais avec AUTH_REQUIRED pour tout ambassadeur pourtant connecté.
     const resp = await fetch('/.netlify/functions/ai-proxy', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type':'application/json', 'Authorization': 'Bearer ' + SESSION.access_token},
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 800,

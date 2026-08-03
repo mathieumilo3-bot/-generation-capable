@@ -59,9 +59,27 @@
 //      déjà (insensible à la casse) dans le system prompt ou les messages envoyés.
 //      Sinon, l'appel se fait en texte libre normal, comme pour un vrai chat.
 
+// FIX CRITIQUE (audit 2026-08-03) : cette fonction n'exigeait AUCUNE
+// authentification — n'importe qui sur Internet pouvait l'appeler directement
+// (curl, script) et consommer sans aucune limite le quota payant
+// OpenAI/Anthropic du site, sans même avoir de compte Génération Capable.
+// Comme ambassador-data.js, on exige maintenant un token de session Supabase
+// valide (Authorization: Bearer) avant de dépenser le moindre appel IA payant.
+const { verifySessionToken } = require('./_lib/supabase-admin');
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  if (!anonKey) {
+    console.error('[ai-proxy] SUPABASE_ANON_KEY absente sur Netlify.');
+    return ok({ error: 'NO_SUPABASE_KEY', message: "Clé Supabase non configurée sur Netlify (SUPABASE_ANON_KEY)." });
+  }
+  const { error: authError } = await verifySessionToken(event, anonKey);
+  if (authError) {
+    return { statusCode: 401, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'AUTH_REQUIRED', message: 'Connecte-toi pour utiliser cette fonctionnalité.' }) };
   }
 
   let payload;

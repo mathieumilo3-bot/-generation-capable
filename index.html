@@ -25,7 +25,16 @@ function openGateModal(){
   openMo('mo-subscribe');
 }
 
+// FIX (audit 2026-08-03) : cette fonction ne désactivait le bouton "Continuer
+// vers le paiement" qu'à l'intérieur de redirectToStripeCheckout(), c'est-à-
+// dire APRÈS le premier signUp() déjà résolu — un double-clic avant cet
+// instant déclenchait deux appels signUp() concurrents avec les mêmes
+// identifiants. Garde-fou explicite en plus du disable, comme pour les
+// autres actions à effet unique du fichier (ORDER_ACTION_INFLIGHT, etc.).
+let _subscribeInFlight = false;
 async function activateSubscription(){
+  if(_subscribeInFlight) return;
+
   var name = document.getElementById('sub-name');
   var email = document.getElementById('sub-email');
   var password = document.getElementById('sub-password');
@@ -37,6 +46,11 @@ async function activateSubscription(){
     toast('Entre un email et un mot de passe de 8 caractères minimum');
     return;
   }
+
+  _subscribeInFlight = true;
+  const subBtn = document.getElementById('sub-confirm-btn');
+  if(subBtn) subBtn.disabled = true;
+  try{
 
   STATE.memberName = nameVal;
   STATE.memberEmail = emailVal;
@@ -53,20 +67,81 @@ async function activateSubscription(){
   // paiement confirmé — jamais avant.
   if(typeof supa !== 'undefined' && supa){
     try{
-      const { error } = await supa.auth.signUp({
+      const { data, error } = await supa.auth.signUp({
         email: emailVal,
         password: pwVal,
         options: { data: { full_name: nameVal } }
       });
-      if(error && error.message && !error.message.includes('already registered')){
+      if(error){
+        // Anciennes versions de l'API Supabase pouvaient renvoyer cette
+        // erreur explicite pour un email déjà enregistré — traité comme le
+        // cas "identities: []" ci-dessous : compte existant, mot de passe
+        // JAMAIS modifié par cet appel.
+        if(error.message && error.message.includes('already registered')){
+          toast('Un compte existe déjà avec cet email — connecte-toi avec ton mot de passe, ou utilise "Mot de passe oublié".');
+          closeMo('mo-subscribe');
+          go('login', null);
+          var loginEmailEl1 = document.getElementById('login-email');
+          if(loginEmailEl1) loginEmailEl1.value = emailVal;
+          return;
+        }
         toast('❌ ' + error.message);
         return;
       }
-    }catch(e){ console.warn('Compte Supabase non créé (Supabase pas encore configuré) :', e); }
+      // BUG CRITIQUE CORRIGÉ (audit 2026-08-03) : depuis Supabase Auth v2,
+      // signUp() sur un email déjà enregistré ET confirmé ne renvoie PAS
+      // d'erreur — par protection anti-énumération, il renvoie un succès
+      // factice (data.user.identities === []) SANS jamais toucher au mot de
+      // passe existant. Sans cette vérification, quelqu'un qui rouvrait ce
+      // formulaire (paiement abandonné puis repris, second essai...) avec un
+      // mot de passe différent du tout premier croyait l'avoir "changé",
+      // payait, puis ne pouvait plus jamais se connecter avec CE mot de
+      // passe : Supabase refusait à juste titre ("Email ou mot de passe
+      // incorrect"), le vrai mot de passe restant l'ORIGINAL, jamais mis à
+      // jour par ce second appel silencieusement sans effet.
+      if(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
+        toast('Un compte existe déjà avec cet email — connecte-toi avec ton mot de passe, ou utilise "Mot de passe oublié".');
+        closeMo('mo-subscribe');
+        go('login', null);
+        var loginEmailEl2 = document.getElementById('login-email');
+        if(loginEmailEl2) loginEmailEl2.value = emailVal;
+        return;
+      }
+    }catch(e){
+      // FIX (audit 2026-08-03) : cette exception était seulement journalisée
+      // (console.warn) puis IGNORÉE — le code continuait vers Stripe comme
+      // si le compte avait été créé avec pwVal. Si signUp() échouait
+      // vraiment (réseau, Supabase indisponible...), le paiement passait
+      // quand même et le webhook/verify-checkout-session créait alors un
+      // compte SANS mot de passe (voir ensureAuthUserForEmail) : la personne
+      // payait, puis ne pouvait plus jamais se connecter avec le mot de
+      // passe qu'elle avait tapé ici, qui n'avait jamais été enregistré nulle
+      // part. On bloque maintenant explicitement plutôt que de continuer
+      // vers un paiement sur un compte dans un état inconnu.
+      console.error('[activateSubscription] signUp:', e);
+      toast('❌ Impossible de créer le compte — réessaie dans un instant');
+      return;
+    }
   }
+
+  // Filet de sécurité pour le seul cas restant où le mot de passe choisi ici
+  // pourrait ne pas être celui du compte activé après paiement : si
+  // ensureAuthUserForEmail() (verify-checkout-session.js) doit créer le
+  // compte de zéro côté serveur — parce qu'au moment du paiement il ne
+  // trouve encore aucune trace du compte tout juste créé ci-dessus — ce
+  // compte serveur est créé SANS mot de passe. handleCheckoutReturn()
+  // relit cette valeur une seule fois juste après la connexion automatique
+  // post-paiement pour (ré)appliquer ce mot de passe, puis la supprime
+  // immédiatement (voir plus bas) : jamais conservée au-delà de cet aller-retour.
+  try{ sessionStorage.setItem('gc_pending_pw', pwVal); }catch(e){}
 
   await redirectToStripeCheckout('gc_67', emailVal, 'sub-confirm-btn');
   closeMo('mo-subscribe');
+
+  }finally{
+    _subscribeInFlight = false;
+    if(subBtn) subBtn.disabled = false;
+  }
 }
 
 // Crée une session Stripe Checkout côté serveur et redirige vers Stripe.
@@ -527,13 +602,6 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 .notif-d{font-size:11.5px;color:var(--t3)}
 .notif-time{margin-left:auto;font-size:10.5px;color:var(--t3);white-space:nowrap}
 
-/* ─── ADMIN LOGIN ─── */
-.admin-gate{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px);padding:24px}
-.admin-card{background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);padding:40px;width:100%;max-width:380px;text-align:center}
-.admin-lock{font-size:40px;margin-bottom:16px}
-.admin-t{font-size:20px;font-weight:800;letter-spacing:-0.4px;margin-bottom:6px}
-.admin-s{font-size:13px;color:var(--t2);margin-bottom:28px}
-
 /* ─── COMMISSION ROW ─── */
 .cr{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--b);gap:12px}
 .cr:last-child{border-bottom:none}
@@ -926,7 +994,6 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   <div class="sb-foot">
     <div style="display:flex;gap:8px;padding:0 10px;margin-bottom:10px">
       <div class="ni" style="flex:1;justify-content:center" onclick="go('profil',null)"><span class="ni-ico">👤</span>Profil</div>
-      <div class="ni" style="flex:1;justify-content:center" onclick="go('admin',null)"><span class="ni-ico">⚙️</span>Admin</div>
     </div>
     <div style="text-align:center;padding:0 10px 8px">
       <span onclick="signOutUser()" style="font-size:10px;color:var(--t3);cursor:pointer;text-decoration:underline;text-underline-offset:3px">Déconnexion</span>
@@ -1107,7 +1174,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
           <a onclick="showForgotPassword()" style="font-size:12px;color:var(--t3);cursor:pointer">Mot de passe oublié ?</a>
         </div>
 
-        <button onclick="authWithEmail()" style="width:100%;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;border:none;padding:14px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">Connexion</button>
+        <button id="login-submit-btn" onclick="authWithEmail()" style="width:100%;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;border:none;padding:14px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">Connexion</button>
 
         <div style="font-size:12px;color:var(--t3);margin-top:24px">
           Pas encore de compte ? <a onclick="go('rejoindre',null)" style="color:var(--gold);cursor:pointer">Rejoindre Génération Capable</a>
@@ -1662,22 +1729,26 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
 </div>
 
 <!-- ══ COMMUNAUTÉ — écosystème ══ -->
+<!-- FIX (audit 2026-08-03) : remplace l'ancien fil "Communauté" (posts/likes/
+     commentaires entre vendeurs) par un Centre de Support — les vendeurs ne
+     discutent plus jamais entre eux, ils envoient un ticket qui n'arrive
+     QUE dans l'espace admin (site séparé). Voir migration 0015_support_center.sql. -->
 <div class="page" id="page-communaute">
   <div id="communaute-gate">
-    <div class="topbar"><div class="tb-title">Communauté</div></div>
+    <div class="topbar"><div class="tb-title">Support</div></div>
     <div class="pw-gate">
       <div class="pw-card">
         <div class="pw-top">
-          <div class="pw-ico">👥</div>
+          <div class="pw-ico">🎧</div>
           <div class="pw-eyebrow">Écosystème requis</div>
-          <div class="pw-title">Débloque la Communauté</div>
-          <div class="pw-sub">Échange avec les autres membres, partage tes victoires, trouve du soutien dans les moments difficiles.</div>
+          <div class="pw-title">Débloque le Centre de Support</div>
+          <div class="pw-sub">Signale un bug, pose une question, fais une demande ou une suggestion — directement suivi par l'équipe.</div>
         </div>
         <div class="pw-body">
           <div class="pw-perks">
-            <div class="pw-perk"><span class="ico">✓</span><span>Fil d'actualité des membres actifs</span></div>
-            <div class="pw-perk"><span class="ico">✓</span><span>Espace d'entraide et de questions</span></div>
-            <div class="pw-perk"><span class="ico">✓</span><span>Annonces exclusives du fondateur</span></div>
+            <div class="pw-perk"><span class="ico">✓</span><span>Réponse directe de l'équipe, en privé</span></div>
+            <div class="pw-perk"><span class="ico">✓</span><span>Suivi de tes tickets (nouveau / en cours / résolu)</span></div>
+            <div class="pw-perk"><span class="ico">✓</span><span>Pièces jointes / captures d'écran</span></div>
           </div>
           <button class="btn btn-gold" style="width:100%;justify-content:center;padding:11px" onclick="openMo('mo-subscribe')">Débloquer l'écosystème →</button>
         </div>
@@ -1686,17 +1757,17 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   </div>
   <div id="communaute-content" style="display:none">
     <div class="topbar">
-      <div class="tb-title">Communauté</div>
-      <div class="tb-right"><button class="btn btn-p" onclick="openMo('mo-new-post')">+ Publier</button></div>
+      <div class="tb-title">Centre de Support</div>
+      <div class="tb-right"><button class="btn btn-p" onclick="openMo('mo-new-ticket')">+ Nouveau ticket</button></div>
     </div>
     <div class="ct">
       <div class="hero">
-        <div class="hero-ey">Fil de la communauté</div>
-        <div class="hero-t">Tu n'es pas seul.</div>
-        <div class="hero-s">Tous les membres actifs de Génération Capable, leurs victoires, leurs questions, leurs conseils.</div>
+        <div class="hero-ey">Support Génération Capable</div>
+        <div class="hero-t">Une question, un bug ?</div>
+        <div class="hero-s">Envoie un ticket privé à l'équipe — signale un bug, pose une question, fais une demande ou une suggestion. Tu es le seul à voir tes échanges.</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px" id="feed-posts-list">
-        <div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement du fil...</div>
+      <div style="display:flex;flex-direction:column;gap:10px" id="support-tickets-list">
+        <div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Chargement de tes tickets...</div>
       </div>
     </div>
   </div>
@@ -2499,9 +2570,6 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
           <span class="tag tag-dim" id="profile-sub-tag">Abonnement Pro inactif</span>
         </div>
       </div>
-      <div style="margin-left:auto;display:flex;gap:8px">
-        <button class="btn btn-g" onclick="go('admin',null)">⚙️ Admin</button>
-      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card" style="padding:22px">
@@ -2552,134 +2620,12 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   </div>
 </div>
 
-<!-- ══ ADMIN ══ -->
-<div class="page" id="page-admin">
-  <div id="admin-gate">
-    <div class="topbar"><div class="tb-title">Administration</div></div>
-    <div class="admin-gate">
-      <div class="admin-card">
-        <div class="admin-lock" id="admin-gate-icon">🔐</div>
-        <div class="admin-t" id="admin-gate-title">Vérification en cours...</div>
-        <div class="admin-s" id="admin-gate-sub">Confirmation de ton accès administrateur auprès du serveur.</div>
-        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:4px;display:none" id="admin-gate-action">Se connecter →</button>
-      </div>
-    </div>
-  </div>
-  <div id="admin-panel" style="display:none">
-    <div class="topbar">
-      <div class="tb-title">Administration</div>
-      <div class="tb-sub" style="margin-left:6px">— Back-office fondateur</div>
-      <div class="tb-right">
-        <span class="auto-badge">Données · 3h</span>
-        <button class="btn btn-g" onclick="lockAdmin()">Verrouiller</button>
-        <button class="btn btn-p" onclick="toast('Utilisateur invité')">+ Inviter</button>
-      </div>
-    </div>
-    <div class="ct">
-      <div class="hero">
-        <div class="hero-ey">Vue globale · Fondateur</div>
-        <div class="hero-t">Back-office.</div>
-        <div class="hero-s">Gestion complète : utilisateurs, progressions, ventes, commissions, évaluations, contenus, abonnements.</div>
-      </div>
-      <div class="sg">
-        <div class="sc"><div class="sc-l">Membres inscrits</div><div class="sc-v" id="adm-members">—</div><div class="sc-c" id="adm-members-caption"></div></div>
-        <div class="sc"><div class="sc-l">Abonnés actifs (67€/mois)</div><div class="sc-v" style="color:var(--gold)" id="adm-subs">—</div><div class="sc-c" id="adm-subs-caption"></div></div>
-        <div class="sc"><div class="sc-l">Ventes totales</div><div class="sc-v" id="adm-sales">—</div><div class="sc-c" id="adm-sales-caption"></div></div>
-        <div class="sc"><div class="sc-l">Commissions dues</div><div class="sc-v" style="color:var(--orange)" id="adm-comm">—</div><div class="sc-c m">À verser</div></div>
-      </div>
-      <div class="tabs">
-        <button class="tab on" onclick="switchTab(this)">Membres</button>
-        <button class="tab" onclick="switchTab(this)">Ventes</button>
-        <button class="tab" onclick="switchTab(this)">Commissions</button>
-        <button class="tab" onclick="switchTab(this)">Évaluations</button>
-        <button class="tab" onclick="switchTab(this)">Contenus</button>
-      </div>
-      <div class="card" style="overflow:hidden">
-        <table class="at">
-          <thead><tr><th>Membre</th><th>Module</th><th>Niveau</th><th>Abonnement</th><th>Ventes</th><th>Score</th><th>Action</th></tr></thead>
-          <tbody id="admin-body"></tbody>
-        </table>
-      </div>
-      <div class="div"></div>
-      <div class="sec-hd"><div class="sec-t">Commissions à verser</div><span class="auto-badge">Auto J+15</span></div>
-      <div class="card" style="padding:22px" id="admin-comm-list"></div>
-    </div>
-
-    <!-- VRAIS MEMBRES — enregistrés via Stripe -->
-    <div style="padding:0 32px 32px">
-      <div class="sec-hd">
-        <div class="sec-t">Membres inscrits</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-g" onclick="renderRealMembers()">🔄 Actualiser</button>
-          <button class="btn btn-p" onclick="exportMembersCSV()">📥 Exporter CSV</button>
-        </div>
-      </div>
-      <div id="admin-real-members" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
-        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
-      </div>
-
-      <!-- PRODUCTION — commandes CRM (admin_get_orders_overview / admin_set_order_status) -->
-      <div class="sec-hd">
-        <div class="sec-t">Production — commandes CRM</div>
-        <button class="btn btn-g" onclick="renderAdminOrders()">🔄 Actualiser</button>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="admin-orders-filters">
-        <button class="btn btn-p" style="padding:5px 12px;font-size:11.5px" data-orderfilter="all" onclick="setAdminOrdersFilter('all')">Toutes</button>
-        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="paid" onclick="setAdminOrdersFilter('paid')">À faire</button>
-        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="production" onclick="setAdminOrdersFilter('production')">En cours</button>
-        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="delivered" onclick="setAdminOrdersFilter('delivered')">Livré</button>
-        <button class="btn btn-g" style="padding:5px 12px;font-size:11.5px" data-orderfilter="done" onclick="setAdminOrdersFilter('done')">Terminé</button>
-      </div>
-      <div id="admin-orders-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
-        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
-      </div>
-
-      <!-- RETRAITS — demandes des vendeurs (admin_get_payouts_overview / admin_mark_payout_paid) -->
-      <div class="sec-hd">
-        <div class="sec-t">Retraits vendeurs</div>
-        <button class="btn btn-g" onclick="renderAdminPayouts()">🔄 Actualiser</button>
-      </div>
-      <div id="admin-payouts-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
-        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
-      </div>
-
-      <!-- LITIGES — commissions gelées par un charge.dispute.created Stripe -->
-      <div class="sec-hd">
-        <div class="sec-t">Litiges Stripe en cours</div>
-        <button class="btn btn-g" onclick="renderAdminDisputes()">🔄 Actualiser</button>
-      </div>
-      <div id="admin-disputes-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
-        <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
-      </div>
-
-      <!-- CONFORMITÉ — signature électronique, pièces, RIB (voir compliance-client.js) -->
-      <div class="sec-hd"><div class="sec-t">Conformité</div></div>
-      <div id="admin-compliance-mount" style="margin-bottom:28px"></div>
-
-      <!-- INFORMATIONS LÉGALES — remplit automatiquement tous les contrats -->
-      <div class="sec-hd"><div class="sec-t">Informations légales</div></div>
-      <div id="admin-legal-info-mount" style="margin-bottom:28px"></div>
-
-      <!-- CONTACTER LES MEMBRES -->
-      <div class="sec-hd"><div class="sec-t">Envoyer un message à tous les membres</div></div>
-      <div style="background:var(--bg1);border:1px solid var(--b);border-radius:14px;padding:22px">
-        <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Ce message sera envoyé par email à tous les membres enregistrés. Nécessite EmailJS configuré.</div>
-        <label>Objet du message</label>
-        <input class="field" id="broadcast-subject" placeholder="Ex: Nouveau module disponible 🔥">
-        <label>Ton message</label>
-        <textarea class="field" id="broadcast-msg" style="min-height:100px" placeholder="Écris ton message ici...&#10;&#10;Il sera envoyé avec ton nom (Enzo — Génération Capable) comme expéditeur."></textarea>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-p" style="flex:1;justify-content:center" onclick="sendBroadcastEmail()">📨 Envoyer à tous les membres</button>
-          <button class="btn btn-g" onclick="document.getElementById('broadcast-msg').value=''">Effacer</button>
-        </div>
-        <div style="margin-top:12px;padding:10px 14px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);border-radius:8px;font-size:11.5px;color:var(--t3)">
-          ⚠ Pour activer l'envoi réel : crée un compte sur <strong style="color:var(--t2)">emailjs.com</strong> et remplis les 3 valeurs dans <code style="color:var(--gold)">EMAILJS_CONFIG</code> au début du code JS.
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
+<!-- L'administration (membres, ventes, commissions, retraits, litiges,
+     conformité, informations légales, support) vit désormais exclusivement
+     sur le site admin dissocié (admin-panel/, déployé séparément sur
+     generationcapable-admin.netlify.app) — plus aucune page/mount admin ici,
+     par design : ce site public ne doit jamais exposer de chemin vers le
+     back-office, même derrière une vérification serveur. -->
 </main>
 <!-- ═══════════════════ MODALS ═══════════════════ -->
 
@@ -2704,16 +2650,51 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   </div>
 </div>
 
-<div class="mo" id="mo-new-post">
+<div class="mo" id="mo-new-ticket">
   <div class="md">
     <div class="md-hd">
-      <div><div class="md-ey">Communauté</div><div class="md-t">Nouvelle publication</div></div>
-      <button class="md-cl" onclick="closeMo('mo-new-post')">✕</button>
+      <div><div class="md-ey">Centre de Support</div><div class="md-t">Nouveau ticket</div></div>
+      <button class="md-cl" onclick="closeMo('mo-new-ticket')">✕</button>
     </div>
     <div class="md-bd">
+      <label>Catégorie</label>
+      <select id="ticket-category" class="field">
+        <option value="bug">🐞 Signaler un bug</option>
+        <option value="question">❓ Poser une question</option>
+        <option value="demande">📝 Faire une demande</option>
+        <option value="suggestion">💡 Envoyer une suggestion</option>
+        <option value="probleme">⚠️ Remonter un problème</option>
+      </select>
+      <label>Priorité</label>
+      <select id="ticket-priority" class="field">
+        <option value="basse">Basse</option>
+        <option value="normale" selected>Normale</option>
+        <option value="haute">Haute</option>
+        <option value="urgente">Urgente</option>
+      </select>
+      <label>Sujet</label>
+      <input id="ticket-subject" class="field" placeholder="En une phrase..." maxlength="200">
       <label>Ton message</label>
-      <textarea id="new-post-content" class="field" placeholder="Partage une victoire, une question, un conseil..." maxlength="2000" rows="5"></textarea>
-      <button class="btn btn-p" id="new-post-btn" style="width:100%;justify-content:center;margin-top:6px" onclick="createFeedPost()">Publier</button>
+      <textarea id="ticket-message" class="field" placeholder="Décris ta demande le plus précisément possible..." maxlength="4000" rows="5"></textarea>
+      <label>Pièce jointe / capture d'écran (optionnel)</label>
+      <input id="ticket-attachment" class="field" type="file" accept="image/*,.pdf">
+      <button class="btn btn-p" id="new-ticket-btn" style="width:100%;justify-content:center;margin-top:6px" onclick="submitSupportTicket()">Envoyer le ticket</button>
+    </div>
+  </div>
+</div>
+
+<div class="mo" id="mo-ticket-thread">
+  <div class="md">
+    <div class="md-hd">
+      <div><div class="md-ey" id="ticket-thread-cat">Ticket</div><div class="md-t" id="ticket-thread-subject">—</div></div>
+      <button class="md-cl" onclick="closeMo('mo-ticket-thread')">✕</button>
+    </div>
+    <div class="md-bd">
+      <div id="ticket-thread-status" style="margin-bottom:14px"></div>
+      <div id="ticket-thread-events" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+      <label>Ajouter un message à ce ticket</label>
+      <textarea id="ticket-reply-message" class="field" placeholder="Ajoute une précision..." maxlength="4000" rows="3"></textarea>
+      <button class="btn btn-p" id="ticket-reply-btn" style="width:100%;justify-content:center;margin-top:6px" onclick="sendTicketMessage()">Envoyer</button>
     </div>
   </div>
 </div>
@@ -2973,12 +2954,7 @@ var STATE = {
 };
 
 function go(id, el){
-  // 'admin' est exempté de ce garde-fou payant : l'accès admin est décidé
-  // exclusivement par checkAdminAccess() (vérification serveur du rôle),
-  // pas par un abonnement actif. Sans cette exception, un compte fondateur
-  // qui n'est pas lui-même abonné ne pouvait jamais atteindre la page admin
-  // — trouvé en testant le parcours administrateur de bout en bout.
-  if(id !== 'accueil' && id !== 'login' && id !== 'rejoindre' && id !== 'admin' && typeof STATE !== 'undefined' && !STATE.module1Validated){
+  if(id !== 'accueil' && id !== 'login' && id !== 'rejoindre' && typeof STATE !== 'undefined' && !STATE.module1Validated){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     document.getElementById('page-accueil').classList.add('on');
     toast('🔑 Entre ton code d\'accès pour continuer');
@@ -3002,11 +2978,10 @@ function go(id, el){
   if(id==='crm-outils'){ try{ renderCrmOutilsPage(); }catch(e){} }
   if(id==='dossier'){ try{ mountDossierPage(); }catch(e){} }
   if(id==='challenges'){ try{ renderMissions(); }catch(e){} }
-  if(id==='communaute'){ try{ loadFeed(); }catch(e){} }
+  if(id==='communaute'){ try{ loadMySupportTickets(); }catch(e){} }
   if(id==='commissions'){ try{ renderCommissions(); }catch(e){} }
   if(id==='niveaux'){ try{ renderNiveaux(); }catch(e){} }
   if(id==='profil'){ try{ refreshMyRevenue(); }catch(e){} }
-  if(id==='admin'){ checkAdminAccess(); }
   openTileForPage(id);
 }
 
@@ -3330,7 +3305,7 @@ function openModPage(num){
   if(m.locked){
     document.getElementById('mod-ey').textContent = 'Module ' + m.num + ' · Verrouillé';
     document.getElementById('mod-t').textContent = m.title;
-    document.getElementById('mod-body').innerHTML = `<div style="text-align:center;padding:28px 0"><div style="font-size:40px;margin-bottom:14px">🔒</div><div style="font-size:15px;font-weight:700;margin-bottom:8px">${m.title}</div><div style="font-size:13px;color:var(--t3);line-height:1.6">${m.unlockMsg}</div></div>`;
+    document.getElementById('mod-body').innerHTML = `<div style="text-align:center;padding:28px 0"><div style="font-size:40px;margin-bottom:14px">🔒</div><div style="font-size:15px;font-weight:700;margin-bottom:8px">${escapeHtml(m.title)}</div><div style="font-size:13px;color:var(--t3);line-height:1.6">${escapeHtml(m.unlockMsg)}</div></div>`;
     openMo('mo-module');
     return;
   }
@@ -4466,19 +4441,28 @@ async function signAndLockCurrentOrder(orderId){
   }
 }
 
+// FIX (audit 2026-08-03) : contrairement aux autres actions prospect/commande
+// de ce bloc, cette fonction n'utilisait pas ORDER_ACTION_INFLIGHT — un
+// double-clic pouvait déclencher deux appels advance_prospect_stage()
+// concurrents pour le même prospect.
 async function doAdvanceStage(newStage, justification){
-  if(!PD_CURRENT_PROSPECT) return;
-  const { error } = await supa.rpc('advance_prospect_stage', {
-    p_prospect_id: PD_CURRENT_PROSPECT.id, p_new_stage: newStage, p_justification: justification || null,
-  });
-  if(error){
-    console.error('[crm] advance_prospect_stage:', error);
-    toast(error.message || "Impossible de changer l'étape pour le moment.");
-    return;
+  if(!PD_CURRENT_PROSPECT || ORDER_ACTION_INFLIGHT) return;
+  ORDER_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('advance_prospect_stage', {
+      p_prospect_id: PD_CURRENT_PROSPECT.id, p_new_stage: newStage, p_justification: justification || null,
+    });
+    if(error){
+      console.error('[crm] advance_prospect_stage:', error);
+      toast(error.message || "Impossible de changer l'étape pour le moment.");
+      return;
+    }
+    toast('✓ Étape mise à jour');
+    await openProspectDetail(PD_CURRENT_PROSPECT.id);
+    try{ renderProspectsList(); }catch(e){}
+  }finally{
+    ORDER_ACTION_INFLIGHT = false;
   }
-  toast('✓ Étape mise à jour');
-  await openProspectDetail(PD_CURRENT_PROSPECT.id);
-  try{ renderProspectsList(); }catch(e){}
 }
 
 function promptAdvanceStage(){
@@ -4548,10 +4532,7 @@ async function renderMissions(){
   }).join('');
 }
 
-// FIX (audit 2026-07-29) : le fil communautaire affichait 3 posts codés en
-// dur et "+ Publier" ne faisait qu'un toast, sans jamais rien écrire nulle
-// part. Remplacé par un vrai fil basé sur feed_posts/feed_likes/
-// feed_comments (voir migration 0004_...sql), RLS-scopé aux abonnés actifs.
+// Utilisé par le Centre de Support (voir loadMySupportTickets()/openTicketThread()).
 function timeAgo(dateStr){
   const diffMs = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diffMs / 60000);
@@ -4565,164 +4546,149 @@ function timeAgo(dateStr){
   return new Date(dateStr).toLocaleDateString('fr-FR');
 }
 
-let FEED_STATE = { myUserId: null, posts: [], profileByUser: {}, likesByPost: {}, commentsByPost: {} };
+// FIX (audit 2026-08-03) : remplace l'ancien fil communautaire (posts publics
+// entre vendeurs) par le Centre de Support — chaque vendeur ne voit que ses
+// propres tickets (RLS, voir migration 0015_support_center.sql), aucune
+// discussion entre vendeurs n'est possible. Les tickets arrivent dans
+// l'espace admin (site séparé, admin_list_support_tickets()).
+let SUPPORT_TICKETS_CACHE = [];
+const SUPPORT_CATEGORY_LABELS = { bug:'🐞 Bug', question:'❓ Question', demande:'📝 Demande', suggestion:'💡 Suggestion', probleme:'⚠️ Problème' };
+const SUPPORT_STATUS_LABELS = { nouveau:'🆕 Nouveau', en_cours:'🔧 En cours', resolu:'✅ Résolu', ferme:'🔒 Fermé' };
+const SUPPORT_INFLIGHT = new Set();
 
-function feedAuthor(userId){
-  const p = FEED_STATE.profileByUser[userId];
-  return { name: (p && p.display_name) || 'Membre Génération Capable', avatar: (p && p.avatar_emoji) || '🙂' };
+async function loadMySupportTickets(){
+  const el = document.getElementById('support-tickets-list');
+  if(!el) return;
+  if(!supa){ el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Support indisponible pour le moment.</div>`; return; }
+
+  const { data, error } = await supa.rpc('get_my_support_tickets');
+  if(error){ console.error('[support] tickets:', error); el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Support indisponible pour le moment.</div>`; return; }
+  SUPPORT_TICKETS_CACHE = data || [];
+  renderMySupportTickets();
 }
 
-async function loadFeed(){
-  const el = document.getElementById('feed-posts-list');
+function renderMySupportTickets(){
+  const el = document.getElementById('support-tickets-list');
   if(!el) return;
-  if(!supa){ el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Fil indisponible pour le moment.</div>`; return; }
-
-  const { data: { session } } = await supa.auth.getSession();
-  FEED_STATE.myUserId = session?.user?.id || null;
-
-  const { data: posts, error } = await supa
-    .from('feed_posts').select('id,user_id,content,created_at')
-    .order('created_at', { ascending: false }).limit(50);
-  if(error){ console.error('[feed] posts:', error); el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Fil indisponible pour le moment.</div>`; return; }
-  if(!posts || !posts.length){
-    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucune publication pour l'instant — sois le premier à partager quelque chose !</div>`;
+  if(!SUPPORT_TICKETS_CACHE.length){
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:12.5px">Aucun ticket pour l'instant — clique sur "Nouveau ticket" si tu as une question ou un problème.</div>`;
     return;
   }
-
-  const postIds = posts.map(p => p.id);
-  const [{ data: likes }, { data: comments }] = await Promise.all([
-    supa.from('feed_likes').select('post_id,user_id').in('post_id', postIds),
-    supa.from('feed_comments').select('id,post_id,user_id,content,created_at').in('post_id', postIds).order('created_at')
-  ]);
-
-  const userIds = [...new Set([...posts.map(p => p.user_id), ...(comments || []).map(c => c.user_id)])];
-  const { data: profiles } = await supa.from('profiles').select('user_id,display_name,avatar_emoji').in('user_id', userIds);
-  const profileByUser = {};
-  (profiles || []).forEach(p => profileByUser[p.user_id] = p);
-
-  const likesByPost = {};
-  (likes || []).forEach(l => { (likesByPost[l.post_id] = likesByPost[l.post_id] || []).push(l.user_id); });
-  const commentsByPost = {};
-  (comments || []).forEach(c => { (commentsByPost[c.post_id] = commentsByPost[c.post_id] || []).push(c); });
-
-  FEED_STATE.posts = posts;
-  FEED_STATE.profileByUser = profileByUser;
-  FEED_STATE.likesByPost = likesByPost;
-  FEED_STATE.commentsByPost = commentsByPost;
-  renderFeed();
+  el.innerHTML = SUPPORT_TICKETS_CACHE.map(t => `
+    <div class="card" style="padding:16px 20px;cursor:pointer" onclick="openTicketThread('${t.id}')">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:700">${SUPPORT_CATEGORY_LABELS[t.category] || t.category}</span>
+        <span style="margin-left:auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.06)">${SUPPORT_STATUS_LABELS[t.status] || t.status}</span>
+      </div>
+      <div style="font-size:13.5px;font-weight:700;color:var(--t1);margin-bottom:4px">${escapeHtml(t.subject)}</div>
+      <div style="font-size:12px;color:var(--t3);white-space:pre-wrap;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(t.message)}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:8px">${timeAgo(t.created_at)}</div>
+    </div>`).join('');
 }
 
-function renderFeed(){
-  const el = document.getElementById('feed-posts-list');
-  if(!el) return;
-  el.innerHTML = FEED_STATE.posts.map(post => {
-    const author = feedAuthor(post.user_id);
-    const likeUsers = FEED_STATE.likesByPost[post.id] || [];
-    const iLiked = FEED_STATE.myUserId && likeUsers.includes(FEED_STATE.myUserId);
-    const comments = FEED_STATE.commentsByPost[post.id] || [];
-    const isMine = post.user_id === FEED_STATE.myUserId;
-    const commentsHtml = comments.map(c => {
-      const ca = feedAuthor(c.user_id);
-      return `<div style="display:flex;gap:8px;margin-top:8px">
-        <div class="sb-av" style="width:26px;height:26px;font-size:12px;flex-shrink:0">${ca.avatar}</div>
-        <div style="flex:1;font-size:12px"><span style="font-weight:700">${escapeHtml(ca.name)}</span> <span style="color:var(--t2)">${escapeHtml(c.content)}</span></div>
-      </div>`;
-    }).join('');
-    return `<div class="card" style="padding:18px 20px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div class="sb-av" style="width:34px;height:34px;font-size:15px">${author.avatar}</div>
-        <div><div style="font-size:13px;font-weight:700">${escapeHtml(author.name)}</div><div style="font-size:11px;color:var(--t3)">${timeAgo(post.created_at)}</div></div>
-        ${isMine ? `<button class="btn btn-g" style="margin-left:auto;padding:4px 10px;font-size:11px" onclick="deleteFeedPost('${post.id}')">Supprimer</button>` : ''}
-      </div>
-      <div style="font-size:13.5px;color:var(--t2);line-height:1.6;white-space:pre-wrap">${escapeHtml(post.content)}</div>
-      <div style="display:flex;gap:16px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--b)">
-        <button class="btn btn-g" style="padding:5px 12px;font-size:12px" onclick="toggleLike('${post.id}')">${iLiked ? '❤️' : '🤍'} ${likeUsers.length}</button>
-        <span style="font-size:12px;color:var(--t3)">💬 ${comments.length}</span>
-      </div>
-      ${commentsHtml}
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="field" style="margin:0" id="comment-input-${post.id}" placeholder="Ajouter un commentaire..." maxlength="1000" onkeydown="if(event.key==='Enter'){addComment('${post.id}')}">
-        <button class="btn btn-g" style="flex-shrink:0" onclick="addComment('${post.id}')">Envoyer</button>
-      </div>
+async function uploadSupportAttachment(file){
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session?.user) return null;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100);
+  const path = `${session.user.id}/${crypto.randomUUID()}-${safeName}`;
+  const { error } = await supa.storage.from('support-attachments').upload(path, file);
+  if(error){ console.error('[support] upload:', error); toast('⚠️ Pièce jointe non envoyée — le ticket part sans elle'); return null; }
+  return path;
+}
+
+async function submitSupportTicket(){
+  if(!supa) return authNotConfigured();
+  if(SUPPORT_INFLIGHT.has('create')) return;
+  const category = document.getElementById('ticket-category')?.value;
+  const priority = document.getElementById('ticket-priority')?.value;
+  const subject = document.getElementById('ticket-subject')?.value?.trim();
+  const message = document.getElementById('ticket-message')?.value?.trim();
+  const fileInput = document.getElementById('ticket-attachment');
+  const file = fileInput?.files?.[0] || null;
+
+  if(!subject || !message){ toast('Renseigne un sujet et un message'); return; }
+  if(subject.length > 200){ toast('⚠️ Sujet trop long (200 caractères max)'); return; }
+  if(message.length > 4000){ toast('⚠️ Message trop long (4000 caractères max)'); return; }
+
+  SUPPORT_INFLIGHT.add('create');
+  const btn = document.getElementById('new-ticket-btn');
+  if(btn) btn.disabled = true;
+  try{
+    let attachmentPath = null;
+    if(file) attachmentPath = await uploadSupportAttachment(file);
+
+    const { error } = await supa.rpc('create_support_ticket', {
+      p_category: category, p_priority: priority, p_subject: subject, p_message: message, p_attachment_path: attachmentPath
+    });
+    if(error){ console.error('[support] create:', error); toast('❌ ' + error.message); return; }
+
+    document.getElementById('ticket-subject').value = '';
+    document.getElementById('ticket-message').value = '';
+    if(fileInput) fileInput.value = '';
+    closeMo('mo-new-ticket');
+    toast('✓ Ticket envoyé — l\'équipe va te répondre');
+    await loadMySupportTickets();
+  }finally{
+    SUPPORT_INFLIGHT.delete('create');
+    if(btn) btn.disabled = false;
+  }
+}
+
+let TICKET_THREAD_CURRENT_ID = null;
+
+async function openTicketThread(ticketId){
+  if(!supa) return authNotConfigured();
+  TICKET_THREAD_CURRENT_ID = ticketId;
+  const ticket = SUPPORT_TICKETS_CACHE.find(t => t.id === ticketId);
+  if(!ticket) return;
+
+  document.getElementById('ticket-thread-cat').textContent = SUPPORT_CATEGORY_LABELS[ticket.category] || ticket.category;
+  document.getElementById('ticket-thread-subject').textContent = ticket.subject;
+  document.getElementById('ticket-thread-status').innerHTML = `<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.06)">${SUPPORT_STATUS_LABELS[ticket.status] || ticket.status}</span>`;
+
+  const eventsEl = document.getElementById('ticket-thread-events');
+  eventsEl.innerHTML = `<div style="font-size:12px;color:var(--t3);text-align:center;padding:10px">Chargement...</div>`;
+  openMo('mo-ticket-thread');
+
+  // Message initial du ticket, affiché comme premier élément du fil.
+  const initialHtml = `<div style="font-size:12px;color:var(--t2);background:var(--bg1);border:1px solid var(--b);border-radius:10px;padding:10px 12px;white-space:pre-wrap">${escapeHtml(ticket.message)}<div style="font-size:10.5px;color:var(--t3);margin-top:6px">${timeAgo(ticket.created_at)}</div></div>`;
+
+  const { data, error } = await supa.rpc('get_my_support_ticket_events', { p_ticket_id: ticketId });
+  if(error){ console.error('[support] events:', error); eventsEl.innerHTML = initialHtml; return; }
+
+  const eventsHtml = (data || []).map(ev => {
+    const isAdmin = ev.author === 'admin';
+    const label = isAdmin ? '🎧 Support' : 'Toi';
+    return `<div style="font-size:12px;color:var(--t2);background:${isAdmin ? 'rgba(201,168,76,.08)' : 'var(--bg1)'};border:1px solid ${isAdmin ? 'rgba(201,168,76,.2)' : 'var(--b)'};border-radius:10px;padding:10px 12px;white-space:pre-wrap">
+      <div style="font-size:11px;font-weight:700;margin-bottom:4px">${label}</div>
+      ${ev.note ? escapeHtml(ev.note) : ''}
+      ${ev.new_status ? `<div style="font-size:10.5px;color:var(--t3);margin-top:4px">Statut → ${SUPPORT_STATUS_LABELS[ev.new_status] || ev.new_status}</div>` : ''}
+      <div style="font-size:10.5px;color:var(--t3);margin-top:6px">${timeAgo(ev.created_at)}</div>
     </div>`;
   }).join('');
+
+  eventsEl.innerHTML = initialHtml + eventsHtml;
 }
 
-async function createFeedPost(){
-  if(!supa) return authNotConfigured();
-  const input = document.getElementById('new-post-content');
-  const content = input?.value?.trim();
-  if(!content){ toast('Écris quelque chose avant de publier'); return; }
-  // FIX (audit 2026-07-29 — pentest pass, "10000 caractères") : le
-  // maxlength="2000" HTML limite la saisie/collage normal, mais rien ne
-  // validait côté client avant l'envoi — un contournement (devtools, ou
-  // simplement si la contrainte HTML venait à être retirée) atterrissait
-  // tel quel sur la contrainte SQL et affichait le message Postgres brut
-  // ("new row ... violates check constraint ...") dans un toast.
-  if(content.length > 2000){ toast('⚠️ Ton message est trop long (2000 caractères max)'); return; }
-  const { data: { session } } = await supa.auth.getSession();
-  if(!session?.user) return authNotConfigured();
-  const btn = document.getElementById('new-post-btn');
+async function sendTicketMessage(){
+  if(!supa || !TICKET_THREAD_CURRENT_ID || SUPPORT_INFLIGHT.has('reply')) return;
+  const input = document.getElementById('ticket-reply-message');
+  const message = input?.value?.trim();
+  if(!message) return;
+  if(message.length > 4000){ toast('⚠️ Message trop long (4000 caractères max)'); return; }
+
+  SUPPORT_INFLIGHT.add('reply');
+  const btn = document.getElementById('ticket-reply-btn');
   if(btn) btn.disabled = true;
-  const { error } = await supa.from('feed_posts').insert({ user_id: session.user.id, content });
-  if(btn) btn.disabled = false;
-  if(error){ console.error('[feed] create:', error); toast('❌ Impossible de publier — réessaie'); return; }
-  input.value = '';
-  closeMo('mo-new-post');
-  toast('✓ Publication créée');
-  await loadFeed();
-}
-
-// FIX (audit 2026-07-29 — pentest pass, double-clic) : ni toggleLike() ni
-// addComment() n'avaient de garde contre un double-clic/double-tap rapide.
-// toggleLike() était protégé par la contrainte PK de "feed_likes" (un doublon
-// échoue proprement en base) mais addComment() n'a aucune contrainte
-// d'unicité — un double-clic pouvait créer deux commentaires identiques
-// visibles. FEED_INFLIGHT verrouille l'action en cours, quel que soit le
-// bouton réellement recréé à chaque re-rendu du fil (innerHTML), donc un
-// disabled=true posé sur le bouton ne survivrait pas au prochain rendu.
-const FEED_INFLIGHT = new Set();
-
-async function deleteFeedPost(postId){
-  if(!supa || FEED_INFLIGHT.has('del:'+postId)) return;
-  FEED_INFLIGHT.add('del:'+postId);
   try{
-    const { error } = await supa.from('feed_posts').delete().eq('id', postId);
-    if(error){ console.error('[feed] delete:', error); toast('❌ ' + error.message); return; }
-    await loadFeed();
-  }finally{ FEED_INFLIGHT.delete('del:'+postId); }
-}
-
-async function toggleLike(postId){
-  if(!supa || !FEED_STATE.myUserId || FEED_INFLIGHT.has('like:'+postId)) return;
-  FEED_INFLIGHT.add('like:'+postId);
-  try{
-    const likeUsers = FEED_STATE.likesByPost[postId] || [];
-    const alreadyLiked = likeUsers.includes(FEED_STATE.myUserId);
-    const { error } = alreadyLiked
-      ? await supa.from('feed_likes').delete().eq('post_id', postId).eq('user_id', FEED_STATE.myUserId)
-      : await supa.from('feed_likes').insert({ post_id: postId, user_id: FEED_STATE.myUserId });
-    if(error){ console.error('[feed] like toggle:', error); return; }
-    await loadFeed();
-  }finally{ FEED_INFLIGHT.delete('like:'+postId); }
-}
-
-async function addComment(postId){
-  if(!supa) return authNotConfigured();
-  if(FEED_INFLIGHT.has('comment:'+postId)) return;
-  const input = document.getElementById('comment-input-' + postId);
-  const content = input?.value?.trim();
-  if(!content) return;
-  if(content.length > 1000){ toast('⚠️ Commentaire trop long (1000 caractères max)'); return; }
-  FEED_INFLIGHT.add('comment:'+postId);
-  try{
-    const { data: { session } } = await supa.auth.getSession();
-    if(!session?.user) return authNotConfigured();
-    const { error } = await supa.from('feed_comments').insert({ post_id: postId, user_id: session.user.id, content });
-    if(error){ console.error('[feed] comment:', error); toast('❌ Impossible d\'envoyer le commentaire — réessaie'); return; }
+    const { error } = await supa.rpc('add_support_ticket_message', { p_ticket_id: TICKET_THREAD_CURRENT_ID, p_message: message });
+    if(error){ console.error('[support] reply:', error); toast('❌ ' + error.message); return; }
     input.value = '';
-    await loadFeed();
-  }finally{ FEED_INFLIGHT.delete('comment:'+postId); }
+    await openTicketThread(TICKET_THREAD_CURRENT_ID);
+  }finally{
+    SUPPORT_INFLIGHT.delete('reply');
+    if(btn) btn.disabled = false;
+  }
 }
 
 // FIX (audit production) : appelée à plusieurs endroits (dont le retour de
@@ -4747,376 +4713,6 @@ function renderNotifs(){
       </div>
       <div class="notif-time">${escapeHtml(n.time||'')}</div>
     </div>`).join('');
-}
-
-// Vérification serveur du rôle admin (netlify/functions/admin-verify.js).
-// Aucune sécurité ne repose ici sur le JavaScript du navigateur : ce code ne
-// fait qu'afficher le résultat renvoyé par le serveur, qui seul décide.
-// L'ancien système (mot de passe 'GC2025' en clair dans ce fichier, lisible
-// par n'importe qui via "Afficher le code source") est supprimé.
-function setAdminGateUI(icon, title, sub, actionLabel, actionFn){
-  document.getElementById('admin-gate-icon').textContent = icon;
-  document.getElementById('admin-gate-title').textContent = title;
-  document.getElementById('admin-gate-sub').textContent = sub;
-  const actionEl = document.getElementById('admin-gate-action');
-  if(actionLabel){
-    actionEl.textContent = actionLabel;
-    actionEl.style.display = 'block';
-    actionEl.onclick = actionFn;
-  } else {
-    actionEl.style.display = 'none';
-  }
-}
-
-async function checkAdminAccess(){
-  document.getElementById('admin-panel').style.display = 'none';
-  document.getElementById('admin-gate').style.display = 'block';
-  setAdminGateUI('🔐', 'Vérification en cours...', 'Confirmation de ton accès administrateur auprès du serveur.', null);
-
-  if(!supa){
-    setAdminGateUI('⚠️', 'Service indisponible', 'Connexion au serveur impossible — réessaie dans un instant.', null);
-    return;
-  }
-
-  const { data: { session } } = await supa.auth.getSession();
-  if(!session){
-    setAdminGateUI('🔐', 'Connexion requise', 'Connecte-toi avec ton compte pour accéder à l\'administration.', 'Se connecter →', ()=>go('login', null));
-    return;
-  }
-
-  try{
-    const resp = await fetch('/.netlify/functions/admin-verify', {
-      headers: { 'Authorization': 'Bearer ' + session.access_token }
-    });
-    const data = await resp.json();
-    if(resp.ok && data.authorized === true){
-      document.getElementById('admin-gate').style.display = 'none';
-      document.getElementById('admin-panel').style.display = 'block';
-      try{ await renderAdminStats(); }catch(e){ console.error('[admin] stats:', e); }
-      try{ await renderRealMembers(); }catch(e){ console.error('[admin] members:', e); }
-      try{ await renderAdminCommissions(); }catch(e){ console.error('[admin] commissions list:', e); }
-      try{ await renderAdminOrders(); }catch(e){ console.error('[admin] orders overview:', e); }
-      try{ await renderAdminPayouts(); }catch(e){ console.error('[admin] payouts overview:', e); }
-      try{ await renderAdminDisputes(); }catch(e){ console.error('[admin] disputes overview:', e); }
-      try{ mountAdminCompliance(session); }catch(e){ console.error('[admin] compliance panel:', e); }
-      try{ mountAdminLegalInfo(session); }catch(e){ console.error('[admin] legal info page:', e); }
-    } else {
-      setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
-    }
-  }catch(e){
-    console.error('[admin-verify] échec', e);
-    setAdminGateUI('⚠️', 'Erreur de vérification', 'Réessaie dans un instant.', null);
-  }
-}
-
-function lockAdmin(){
-  document.getElementById('admin-panel').style.display='none';
-  checkAdminAccess();
-  toast('Back-office verrouillé');
-}
-
-// FIX (audit 2026-07-29) : la totalité de ce bloc était soit des nombres codés
-// en dur dans le HTML (48 membres, 31 abonnés, 23 ventes, 9 450€ — jamais mis
-// à jour), soit des fonctions vides marquées TODO qui laissaient
-// #admin-real-members bloqué sur "Chargement..." pour l'éternité. Le
-// back-office du fondateur affichait donc des chiffres 100% fictifs en
-// permanence. Remplacé par de vraies requêtes (admin_list_subscribers(),
-// "sales", "commissions" — RLS admin déjà en place, voir migrations 0003/0004).
-
-async function renderAdminStats(){
-  if(!supa) return;
-  try{
-    const [{ data: subs, error: subsErr }, { data: sales, error: salesErr }, { data: comms, error: commsErr }] = await Promise.all([
-      supa.rpc('admin_list_subscribers'),
-      supa.from('sales').select('amount,status,created_at'),
-      supa.from('commissions').select('amount,status'),
-    ]);
-    if(subsErr) console.error('[admin] subscribers:', subsErr);
-    if(salesErr) console.error('[admin] sales:', salesErr);
-    if(commsErr) console.error('[admin] commissions:', commsErr);
-
-    const subsList = subs || [];
-    const salesList = (sales || []).filter(s => s.status === 'completed');
-    const commsList = comms || [];
-    const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0);
-
-    const activeSubs = subsList.filter(s => s.is_active).length;
-    const newMembersMonth = subsList.filter(s => new Date(s.created_at) >= startOfMonth).length;
-    const salesMonth = salesList.filter(s => new Date(s.created_at) >= startOfMonth).length;
-    const commissionsDue = commsList.filter(c => ['pending','validated'].includes(c.status)).reduce((s,c) => s + c.amount, 0) / 100;
-    const mrr = activeSubs * 67;
-
-    const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
-    setTxt('adm-members', subsList.length);
-    setTxt('adm-members-caption', `↑ ${newMembersMonth} ce mois`);
-    setTxt('adm-subs', activeSubs);
-    setTxt('adm-subs-caption', `${mrr.toLocaleString('fr-FR')} €/mois récurrent`);
-    setTxt('adm-sales', salesList.length);
-    setTxt('adm-sales-caption', `↑ ${salesMonth} ce mois`);
-    setTxt('adm-comm', commissionsDue.toLocaleString('fr-FR') + ' €');
-  }catch(e){ console.error('[admin] stats exception:', e); }
-}
-
-let ADMIN_MEMBERS_CACHE = [];
-
-async function renderRealMembers(){
-  const el = document.getElementById('admin-real-members');
-  if(!el || !supa) return;
-  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
-
-  const { data, error } = await supa.rpc('admin_list_subscribers');
-  if(error){
-    console.error('[admin] members:', error);
-    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement — réessaie.</div>`;
-    return;
-  }
-  ADMIN_MEMBERS_CACHE = data || [];
-  if(!ADMIN_MEMBERS_CACHE.length){
-    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucun membre inscrit pour l'instant.</div>`;
-    return;
-  }
-  el.innerHTML = ADMIN_MEMBERS_CACHE.map(m => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
-      <div>
-        <div style="font-size:13px;font-weight:700">${escapeHtml(m.email)}</div>
-        <div style="font-size:11px;color:var(--t3)">Inscrit le ${new Date(m.created_at).toLocaleDateString('fr-FR')}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:11px;font-weight:700;color:${m.is_active ? 'var(--green)' : 'var(--t3)'}">${m.is_active ? '● Actif' : '○ Inactif'}</span>
-        <button class="btn btn-g" style="padding:4px 10px;font-size:11px" onclick="toggleMemberActive('${m.user_id}', ${!m.is_active})">${m.is_active ? 'Désactiver' : 'Activer'}</button>
-      </div>
-    </div>`).join('');
-}
-
-async function toggleMemberActive(userId, newStatus){
-  if(!supa) return;
-  const { error } = await supa.rpc('admin_set_subscriber_active', { target_user_id: userId, new_status: newStatus });
-  if(error){ console.error('[admin] toggle active:', error); toast('❌ ' + error.message); return; }
-  toast(newStatus ? '✓ Membre activé' : '✓ Membre désactivé');
-  await renderRealMembers();
-  await renderAdminStats();
-}
-
-function exportMembersCSV(){
-  if(!ADMIN_MEMBERS_CACHE.length){ toast('Aucun membre à exporter'); return; }
-  const header = 'email,is_active,stripe_customer_id,created_at\n';
-  const csvEscape = v => `"${String(v == null ? '' : v).replace(/"/g,'""')}"`;
-  const rows = ADMIN_MEMBERS_CACHE.map(m => [m.email, m.is_active, m.stripe_customer_id, m.created_at].map(csvEscape).join(',')).join('\n');
-  const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'membres_generation_capable_' + new Date().toISOString().slice(0,10) + '.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast('✓ Export CSV téléchargé');
-}
-
-// "Commissions à verser" — était une div vide, aucune fonction ne l'avait
-// jamais touchée. Réutilise admin_mark_commission_paid() (RPC déjà présente
-// en base depuis la migration 0003 mais jamais appelée nulle part côté front).
-async function renderAdminCommissions(){
-  const el = document.getElementById('admin-comm-list');
-  if(!el || !supa) return;
-  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
-
-  const { data: comms, error } = await supa
-    .from('commissions').select('id,seller_id,amount,status,created_at')
-    .in('status', ['pending','validated']).order('created_at');
-  if(error){
-    console.error('[admin] commissions list:', error);
-    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
-    return;
-  }
-  if(!comms || !comms.length){
-    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune commission en attente de versement.</div>`;
-    return;
-  }
-
-  const emailBySellerId = {};
-  ADMIN_MEMBERS_CACHE.forEach(m => emailBySellerId[m.user_id] = m.email);
-
-  el.innerHTML = comms.map(c => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--b)">
-      <div>
-        <div style="font-size:13px;font-weight:700">${escapeHtml(emailBySellerId[c.seller_id] || c.seller_id)}</div>
-        <div style="font-size:11px;color:var(--t3)">${(c.amount/100).toLocaleString('fr-FR')} € · ${new Date(c.created_at).toLocaleDateString('fr-FR')} · ${c.status === 'pending' ? 'En attente' : 'Validée'}</div>
-      </div>
-      <button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="markCommissionPaid('${c.id}')">Marquer payée</button>
-    </div>`).join('');
-}
-
-async function markCommissionPaid(commissionId){
-  if(!supa) return;
-  const { error } = await supa.rpc('admin_mark_commission_paid', { p_commission_id: commissionId });
-  if(error){ console.error('[admin] mark paid:', error); toast('❌ ' + error.message); return; }
-  toast('✓ Commission marquée comme payée');
-  await renderAdminCommissions();
-  await renderAdminStats();
-}
-
-// ── Tableau de bord production (commandes CRM) — admin_get_orders_overview()
-//    / admin_set_order_status() (migration 0006/0010). "paid" n'apparaît
-//    jamais comme action ici : c'est Stripe qui l'a déjà fait passer à
-//    "paid", et seul le vendeur peut ensuite l'envoyer en production
-//    (sign_and_lock_order()) — l'admin ne pilote que production→livré→terminé.
-let ADMIN_ORDERS_CACHE = [];
-let ADMIN_ORDERS_FILTER = 'all';
-
-function setAdminOrdersFilter(filter){
-  ADMIN_ORDERS_FILTER = filter;
-  document.querySelectorAll('#admin-orders-filters .btn').forEach(b => {
-    const active = b.dataset.orderfilter === filter;
-    b.classList.toggle('btn-p', active);
-    b.classList.toggle('btn-g', !active);
-  });
-  renderAdminOrdersList();
-}
-
-async function renderAdminOrders(){
-  const el = document.getElementById('admin-orders-list');
-  if(!el || !supa) return;
-  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
-
-  const { data, error } = await supa.rpc('admin_get_orders_overview');
-  if(error){
-    console.error('[admin] orders overview:', error);
-    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
-    return;
-  }
-  ADMIN_ORDERS_CACHE = data || [];
-  renderAdminOrdersList();
-}
-
-function renderAdminOrdersList(){
-  const el = document.getElementById('admin-orders-list');
-  if(!el) return;
-  const rows = ADMIN_ORDERS_FILTER === 'all'
-    ? ADMIN_ORDERS_CACHE
-    : ADMIN_ORDERS_CACHE.filter(o => o.status === ADMIN_ORDERS_FILTER);
-
-  if(!rows.length){
-    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune commande${ADMIN_ORDERS_FILTER !== 'all' ? ' dans ce statut' : ''} pour l'instant.</div>`;
-    return;
-  }
-  const statusLabels = { draft:'Brouillon', awaiting_payment:'Paiement en attente', paid:'Payée', production:'En production', delivered:'Livrée', done:'Terminée', cancelled:'Annulée', refunded:'Remboursée' };
-  el.innerHTML = rows.map(o => {
-    let actionsHtml = '';
-    if(o.status === 'paid' && !o.locked){
-      actionsHtml = `<span style="font-size:11px;color:var(--t3)">En attente d'envoi au studio par le vendeur</span>`;
-    } else if(o.status === 'production'){
-      actionsHtml = `<button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminAdvanceOrderStatus('${o.id}','delivered')">Marquer livrée</button>`;
-    } else if(o.status === 'delivered'){
-      actionsHtml = `<button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminAdvanceOrderStatus('${o.id}','done')">Marquer terminée</button>`;
-    } else if(o.status === 'done'){
-      actionsHtml = `<span style="font-size:11px;font-weight:700;color:var(--green)">✓ Terminée</span>`;
-    }
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
-      <div style="min-width:0">
-        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o.client_name)} · ${escapeHtml(CRM_PRODUCT_LABELS[o.product_type] || o.product_type)}</div>
-        <div style="font-size:11px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o.seller_email)} · ${Number(o.price).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · ${statusLabels[o.status] || o.status}</div>
-      </div>
-      <div style="flex-shrink:0">${actionsHtml}</div>
-    </div>`;
-  }).join('');
-}
-
-async function adminAdvanceOrderStatus(orderId, newStatus){
-  if(!supa) return;
-  const { error } = await supa.rpc('admin_set_order_status', { p_order_id: orderId, p_new_status: newStatus });
-  if(error){ console.error('[admin] set order status:', error); toast('❌ ' + error.message); return; }
-  toast('✓ Statut mis à jour');
-  await renderAdminOrders();
-}
-
-// ── Retraits vendeurs — admin_get_payouts_overview() / admin_mark_payout_paid() ──
-async function renderAdminPayouts(){
-  const el = document.getElementById('admin-payouts-list');
-  if(!el || !supa) return;
-  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
-
-  const { data, error } = await supa.rpc('admin_get_payouts_overview');
-  if(error){
-    console.error('[admin] payouts overview:', error);
-    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
-    return;
-  }
-  const rows = data || [];
-  if(!rows.length){
-    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucune demande de retrait pour l'instant.</div>`;
-    return;
-  }
-  const statusLabels = { requested:'Demandé', paid:'Versé', failed:'Échoué', cancelled:'Annulé' };
-  el.innerHTML = rows.map(p => `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px">
-      <div style="min-width:0">
-        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.seller_email)}</div>
-        <div style="font-size:11px;color:var(--t3)">${Number(p.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · Demandé le ${new Date(p.requested_at).toLocaleDateString('fr-FR')} · ${statusLabels[p.status] || p.status}</div>
-      </div>
-      ${p.status === 'requested' ? `<button class="btn btn-p" style="padding:5px 12px;font-size:11px;flex-shrink:0" onclick="adminMarkPayoutPaid('${p.id}')">Marquer versé</button>` : ''}
-    </div>`).join('');
-}
-
-async function adminMarkPayoutPaid(payoutId){
-  if(!supa) return;
-  if(!confirm('Confirmer que ce retrait a bien été viré au vendeur ? Cette action est définitive.')) return;
-  const { error } = await supa.rpc('admin_mark_payout_paid', { p_payout_id: payoutId });
-  if(error){ console.error('[admin] mark payout paid:', error); toast('❌ ' + error.message); return; }
-  toast('✓ Retrait marqué comme versé');
-  await renderAdminPayouts();
-}
-
-// ── Litiges Stripe — admin_get_disputed_commissions() / admin_resolve_dispute()
-//    (migration 0011). Une commission gelée par charge.dispute.created reste
-//    "disputed" jusqu'à résolution manuelle ici — Stripe ne notifie pas
-//    l'issue d'un litige de façon fiable/automatisable.
-async function renderAdminDisputes(){
-  const el = document.getElementById('admin-disputes-list');
-  if(!el || !supa) return;
-  el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>`;
-
-  const { data, error } = await supa.rpc('admin_get_disputed_commissions');
-  if(error){
-    console.error('[admin] disputes overview:', error);
-    el.innerHTML = `<div style="font-size:13px;color:var(--red);text-align:center;padding:20px">Erreur de chargement.</div>`;
-    return;
-  }
-  const rows = data || [];
-  if(!rows.length){
-    el.innerHTML = `<div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Aucun litige en cours.</div>`;
-    return;
-  }
-  el.innerHTML = rows.map(d => `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:10px">
-      <div style="min-width:0">
-        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.seller_email)} · ${escapeHtml(d.product_name || 'Vente')}</div>
-        <div style="font-size:11px;color:var(--t3)">${Number(d.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · Gelée le ${new Date(d.created_at).toLocaleDateString('fr-FR')}</div>
-      </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
-        <button class="btn btn-p" style="padding:5px 12px;font-size:11px" onclick="adminResolveDispute('${d.id}', true)">✓ Vendeur gagne</button>
-        <button class="btn btn-g" style="padding:5px 12px;font-size:11px" onclick="adminResolveDispute('${d.id}', false)">✗ Vendeur perd</button>
-      </div>
-    </div>`).join('');
-}
-
-async function adminResolveDispute(commissionId, sellerWins){
-  if(!supa) return;
-  const label = sellerWins ? 'le vendeur a gagné ce litige (commission restaurée)' : 'le vendeur a perdu ce litige (commission annulée)';
-  if(!confirm(`Confirmer que ${label} ? Vérifie d'abord l'issue réelle dans le Dashboard Stripe.`)) return;
-  const { error } = await supa.rpc('admin_resolve_dispute', { p_commission_id: commissionId, p_seller_wins: sellerWins });
-  if(error){ console.error('[admin] resolve dispute:', error); toast('❌ ' + error.message); return; }
-  toast('✓ Litige résolu');
-  await renderAdminDisputes();
-}
-
-// L'envoi groupé nécessite un vrai fournisseur email configuré (EmailJS ou
-// équivalent) — décision produit/infrastructure, pas quelque chose à
-// simuler silencieusement. Message honnête plutôt qu'un no-op invisible.
-function sendBroadcastEmail(){
-  if(typeof EMAILJS_CONFIG === 'undefined' || EMAILJS_CONFIG.publicKey === 'EMAILJS_PUBLIC_KEY'){
-    toast('⚠️ Envoi groupé non configuré — remplis EMAILJS_CONFIG en haut du fichier pour l\'activer.');
-    return;
-  }
-  toast('⚠️ Envoi groupé à tous les membres pas encore implémenté côté serveur.');
 }
 
 // Ouvre une fiche PDF. Les fichiers doivent être déposés dans un dossier /pdfs/
@@ -5208,6 +4804,31 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+// FIX CRITIQUE (audit 2026-08-03) : ai-proxy.js n'exigeait AUCUNE authentification
+// — n'importe qui sur Internet pouvait l'appeler directement (curl, script) et
+// consommer sans limite le quota payant OpenAI/Anthropic du site, sans même avoir
+// de compte. La fonction exige désormais un token de session Supabase valide
+// (Authorization: Bearer) ; ce helper centralise l'ajout de ce header pour les 5
+// fonctions IA du site, au lieu de dupliquer cette logique 5 fois.
+async function callAiProxy(body){
+  let accessToken = null;
+  try{
+    const { data:{ session } } = supa ? await supa.auth.getSession() : { data:{ session:null } };
+    accessToken = session?.access_token || null;
+  }catch(e){ console.error('[callAiProxy] getSession:', e); }
+
+  if(!accessToken){
+    return { error: 'AUTH_REQUIRED', message: 'Connecte-toi pour utiliser cette fonctionnalité.' };
+  }
+
+  const resp = await fetch('/.netlify/functions/ai-proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+    body: JSON.stringify(body)
+  });
+  return await resp.json();
+}
+
 // ══════════════════════════════════════════════════════════
 //  ÉVALUATION IA — NOTATION AUTOMATIQUE
 // ══════════════════════════════════════════════════════════
@@ -5244,11 +4865,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) avec ce format exact :
 {"scores":{"discipline":0,"communication":0,"prospection":0,"decouverte":0,"vente":0},"total":0,"verdict":"...","points_forts":["...","...","..."],"axes_amelioration":[{"titre":"...","detail":"..."},{"titre":"...","detail":"..."},{"titre":"...","detail":"..."}],"analyse_script":"...","script_suggere":"...","action_prioritaire":"...","message_coach":"..."}`;
 
   try {
-    const response = await fetch('/.netlify/functions/ai-proxy', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
-    });
-    const data = await response.json();
+    const data = await callAiProxy({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] });
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
@@ -5313,11 +4930,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) :
 {"diagnostic":"...","analyse_psychologique":"...","ce_qui_cloche":["...","...","..."],"script_corrige":"...","technique_recommandee":"...","reponse_objection":"...","action_immediate":"...","niveau_urgence":"faible|moyen|élevé","conseil_final":"..."}`;
 
   try {
-    const response = await fetch('/.netlify/functions/ai-proxy', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
-    });
-    const data = await response.json();
+    const data = await callAiProxy({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] });
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
@@ -5386,6 +4999,7 @@ function renderApiError(retryCall, err){
     ? `<button class="btn btn-g" style="margin-top:12px" onclick="${retryCall}">↻ Réessayer</button>`
     : '';
   const messages = {
+    AUTH_REQUIRED: "Connecte-toi pour utiliser cette fonctionnalité.",
     NO_API_KEY: "Aucune clé IA n'est configurée sur le serveur — contacte le support.",
     INVALID_API_KEY: "La clé IA du serveur est invalide ou expirée — contacte le support.",
     RATE_LIMITED: "Trop de demandes en ce moment — réessaie dans quelques instants.",
@@ -5451,7 +5065,7 @@ async function testStudioConnection(){
     if(msg) msg.innerHTML = '<div style="font-size:12px;color:var(--green);font-weight:700">✓ Connexion HeyGen réussie</div>';
     toast('✓ HeyGen connecté');
   }catch(err){
-    if(msg) msg.innerHTML = `<div style="font-size:12px;color:var(--red)">✗ ${err.message} — vérifie ta clé API</div>`;
+    if(msg) msg.innerHTML = `<div style="font-size:12px;color:var(--red)">✗ ${escapeHtml(err.message)} — vérifie ta clé API</div>`;
   }
 }
 
@@ -5551,7 +5165,7 @@ async function studioGenerate(){
 
   }catch(err){
     if(statusEl) statusEl.style.display = 'none';
-    if(errorEl) errorEl.innerHTML = `<div style="padding:14px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:8px;font-size:12.5px;color:var(--red);margin-top:10px;line-height:1.6">${err.message}</div>`;
+    if(errorEl) errorEl.innerHTML = `<div style="padding:14px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:8px;font-size:12.5px;color:var(--red);margin-top:10px;line-height:1.6">${escapeHtml(err.message)}</div>`;
   }finally{
     if(genBtn) genBtn.disabled = false;
   }
@@ -5614,15 +5228,28 @@ function authNotConfigured(){
 }
 
 // Connexion email + mot de passe
+// FIX (audit 2026-08-03) : aucun garde contre le double-clic — deux appels
+// signInWithPassword() concurrents pour les mêmes identifiants (sans impact
+// de sécurité, mais source de courses inutiles côté auth).
+let _loginInFlight = false;
 async function authWithEmail(){
+  if(_loginInFlight) return;
   var email = document.getElementById('login-email')?.value?.trim();
   var pw = document.getElementById('login-password')?.value;
   if(!email || !pw){ toast('Entre ton email et ton mot de passe'); return; }
   if(!supa) return authNotConfigured();
 
-  const { data, error } = await supa.auth.signInWithPassword({ email, password: pw });
-  if(error){ toast('❌ ' + (error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect' : error.message)); return; }
-  await onAuthSuccess(data.session);
+  _loginInFlight = true;
+  const loginBtn = document.getElementById('login-submit-btn');
+  if(loginBtn) loginBtn.disabled = true;
+  try{
+    const { data, error } = await supa.auth.signInWithPassword({ email, password: pw });
+    if(error){ toast('❌ ' + (error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect' : error.message)); return; }
+    await onAuthSuccess(data.session);
+  }finally{
+    _loginInFlight = false;
+    if(loginBtn) loginBtn.disabled = false;
+  }
 }
 
 // OAuth Google
@@ -5667,6 +5294,11 @@ async function signOutUser(){
     localStorage.removeItem('gc_code');
     localStorage.removeItem('gc_site_state_v1');
     localStorage.removeItem('gc_ev_state_v1');
+    // Nettoyage d'une clé historique (audit 2026-08-03) : registerMember()
+    // accumulait indéfiniment nom+email de chaque personne ayant payé sur cet
+    // appareil, sans jamais être relue nulle part (fonction supprimée) — sur
+    // un appareil partagé, purge les données résiduelles d'anciennes visites.
+    localStorage.removeItem('gc_members');
   }catch(e){}
   resetLocalUserState();
   _lastAuthSuccessToken = null;
@@ -5794,9 +5426,32 @@ async function saveProfile(){
   toast('✓ Profil mis à jour');
 }
 
+// FIX (audit 2026-08-03) : quand Google/Apple OAuth échoue (provider pas
+// activé côté Supabase, redirect URI non autorisée côté Google Cloud/Apple
+// Developer, utilisateur qui refuse l'accès...), Supabase redirige quand
+// même vers ce site, avec ?error=...&error_description=... (flux code) ou
+// #error=...&error_description=... (flux implicite) dans l'URL — mais rien
+// ne lisait jamais ces paramètres. Résultat pour l'utilisateur : il clique
+// sur "Continuer avec Google", revient sur la page de connexion, et RIEN ne
+// semble s'être passé (aucun message) — vu comme "le bouton ne marche pas"
+// alors qu'une vraie cause précise (souvent une simple mauvaise config
+// Supabase/Google) était disponible mais jamais affichée.
+function reportOAuthErrorIfAny(){
+  const search = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const err = search.get('error') || hash.get('error');
+  const desc = search.get('error_description') || hash.get('error_description');
+  if(!err) return false;
+  console.error('[oauth] Échec retour fournisseur:', err, desc);
+  toast('❌ Connexion impossible : ' + (desc ? decodeURIComponent(desc.replace(/\+/g,' ')) : err));
+  window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+  return true;
+}
+
 // Vérifie automatiquement, au chargement de la page, si l'utilisateur a
 // déjà une session valide (ex: retour après clic sur un lien OAuth/email).
 (async function checkExistingSession(){
+  if(reportOAuthErrorIfAny()) return;
   if(!supa) return;
   const { data:{ session } } = await supa.auth.getSession();
   if(session) await onAuthSuccess(session);
@@ -5869,22 +5524,6 @@ async function sendConfirmationEmail(toName, toEmail, type){
   }
 }
 
-// Enregistrer un membre dans la liste de contact locale
-function registerMember(name, email, type){
-  try {
-    const members = JSON.parse(localStorage.getItem('gc_members') || '[]');
-    const existing = members.find(m => m.email === email);
-    if(!existing){
-      members.push({
-        name, email, type,
-        date: new Date().toISOString(),
-        id: 'GC-' + Date.now()
-      });
-      localStorage.setItem('gc_members', JSON.stringify(members));
-    }
-  } catch(e){}
-}
-
 // Le paiement passe exclusivement par redirectToStripeCheckout() (envoi vers
 // Stripe Checkout) + handleCheckoutReturn() ci-dessous (confirmation
 // serveur du paiement avant toute activation) : jamais d'activation sur un
@@ -5906,6 +5545,7 @@ async function handleCheckoutReturn(){
 
   if(checkout === 'cancelled'){
     toast('Paiement annulé — tu peux réessayer quand tu veux');
+    try{ sessionStorage.removeItem('gc_pending_pw'); }catch(e){}
     return;
   }
   if(checkout !== 'success') return;
@@ -5936,7 +5576,6 @@ async function handleCheckoutReturn(){
   // jamais "paiement non confirmé" à quelqu'un qui a bien payé.
   const name = STATE.memberName || 'Membre';
 
-  try{ registerMember(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] registerMember:', e); }
   try{ await sendConfirmationEmail(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] sendConfirmationEmail:', e); }
 
   // Connexion immédiate : le serveur a renvoyé un jeton "magic link" à usage
@@ -5959,12 +5598,27 @@ async function handleCheckoutReturn(){
   }
 
   if(session){
+    // Filet de sécurité (voir activateSubscription()) : si le compte a dû
+    // être créé de zéro côté serveur (ensureAuthUserForEmail), il n'a AUCUN
+    // mot de passe. On (ré)applique ici, une seule fois, celui saisi dans le
+    // formulaire d'abonnement — pendant qu'on a une session valide, seul
+    // moment où updateUser({password}) est possible. Best-effort : un échec
+    // ici n'empêche jamais l'accès immédiat (déjà connecté via le lien
+    // magique) — seule une future reconnexion par mot de passe serait
+    // affectée, et l'utilisateur garde "Mot de passe oublié" en secours.
+    try{
+      const pendingPw = sessionStorage.getItem('gc_pending_pw');
+      if(pendingPw) await supa.auth.updateUser({ password: pendingPw });
+    }catch(e){ console.error('[checkout-return] updateUser(password) EXCEPTION:', e); }
+    finally{ try{ sessionStorage.removeItem('gc_pending_pw'); }catch(e){} }
+
     toast('🎉 Paiement confirmé — connexion en cours...');
     await onAuthSuccess(session);
   } else {
     // Le paiement est bien confirmé et actif côté serveur — seule la
     // connexion automatique a échoué (jeton non généré, réseau...). On
     // invite simplement à se connecter avec le mot de passe déjà choisi.
+    try{ sessionStorage.removeItem('gc_pending_pw'); }catch(e){}
     toast('🎉 Paiement confirmé — connecte-toi pour accéder à ton espace');
     go('login', null);
   }
@@ -6124,11 +5778,7 @@ Réponds STRICTEMENT en JSON :
 {"titre":"...(accroche motivante pour aujourd'hui)","actions":[{"heure":"09:00","action":"...","detail":"...","type":"prospection|découverte|relance|admin"},{"heure":"11:00","action":"...","detail":"...","type":"..."},{"heure":"14:00","action":"...","detail":"...","type":"..."},{"heure":"16:00","action":"...","detail":"...","type":"..."},{"heure":"18:00","action":"...","detail":"...","type":"..."}],"objectif_jour":"...","message_coach":"..."}`;
 
   try {
-    const resp = await fetch('/.netlify/functions/ai-proxy',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
-    });
-    const data = await resp.json();
+    const data = await callAiProxy({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]});
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const plan = JSON.parse(raw.replace(/```json|```/g,'').trim());
@@ -6262,11 +5912,7 @@ Réponds STRICTEMENT en JSON avec les 6 étapes de feedback :
 {"etape1_positifs":["...","..."],"etape2_negatifs":["...","..."],"etape3_amelioration":"...","etape4_stagnation":"...","etape5_comprendre":"...","etape6_plan_demain":["...","...","..."],"score_jour":0,"message_final":"..."}`;
 
   try {
-    const resp = await fetch('/.netlify/functions/ai-proxy',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
-    });
-    const data = await resp.json();
+    const data = await callAiProxy({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]});
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const fb = JSON.parse(raw.replace(/```json|```/g,'').trim());
@@ -6340,11 +5986,7 @@ Réponds STRICTEMENT en JSON :
 {"scores":{"discipline":0,"etat_esprit":0,"prospection":0,"communication":0,"decouverte":0,"closing":0},"profil_type":"...","description_profil":"...","force_principale":"...","faiblesse_critique":"...","recommandations":[{"dimension":"...","priorite":"haute|moyenne","action":"...","explication":"..."},{"dimension":"...","priorite":"...","action":"...","explication":"..."},{"dimension":"...","priorite":"...","action":"...","explication":"..."}],"module_prioritaire":"Module 01|02|03|04|05|06|07","raison_module":"...","plan_action_semaine":["...","...","...","...","..."],"message_coach":"...","score_global":0}`;
 
   try {
-    const resp = await fetch('/.netlify/functions/ai-proxy',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1200, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
-    });
-    const data = await resp.json();
+    const data = await callAiProxy({model:'claude-sonnet-4-6', max_tokens:1200, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]});
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const scan = JSON.parse(raw.replace(/```json|```/g,'').trim());
@@ -6455,27 +6097,10 @@ function mountDossierPage(){
   });
 }
 
-let _adminComplianceMounted = false;
-function mountAdminCompliance(session){
-  if(_adminComplianceMounted || !window.GCCompliance) return;
-  var mountEl = document.getElementById('admin-compliance-mount');
-  if(!mountEl) return;
-  _adminComplianceMounted = true;
-  window.GCCompliance.mountAdmin(mountEl, {
-    getSession: async function(){ return session; }
-  });
-}
-
-let _adminLegalInfoMounted = false;
-function mountAdminLegalInfo(session){
-  if(_adminLegalInfoMounted || !window.GCCompliance) return;
-  var mountEl = document.getElementById('admin-legal-info-mount');
-  if(!mountEl) return;
-  _adminLegalInfoMounted = true;
-  window.GCCompliance.mountLegalInfo(mountEl, {
-    getSession: async function(){ return session; }
-  });
-}
+// L'administration (Conformité, Informations légales, membres, ventes,
+// retraits, litiges, support) vit exclusivement sur le site admin dissocié
+// (admin-panel/, voir generationcapable-admin.netlify.app) — voir
+// admin-panel/index.html pour mountAdmin()/mountLegalInfo().
 </script>
 
 <script src="/notifications-client.js" defer></script>
