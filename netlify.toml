@@ -1,6 +1,22 @@
 [build]
   functions = "netlify/functions"
 
+# Système de notifications — fonctions programmées (Netlify Scheduled
+# Functions). Les fonctions suffixées "-background" bénéficient d'un budget
+# d'exécution de 15 minutes (au lieu de 10s) : nécessaire pour parcourir
+# l'ensemble des vendeurs/leads à chaque passage. Voir
+# docs/notifications-system.md pour le détail de chaque job.
+[functions."notify-cron-coach-background"]
+  schedule = "*/30 * * * *"
+[functions."notify-cron-leads-background"]
+  schedule = "*/15 * * * *"
+[functions."notify-cron-crm-scan-background"]
+  schedule = "*/10 * * * *"
+[functions."notify-cron-healthcheck"]
+  schedule = "*/10 * * * *"
+[functions."notify-cron-compliance-expiry"]
+  schedule = "0 7 * * *"
+
 # En-têtes de sécurité de base. Pas de Content-Security-Policy : le site
 # repose entièrement sur des <script> et des attributs onclick= inline sans
 # nonce, une CSP stricte casserait toute interactivité. Ajouter une CSP est

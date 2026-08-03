@@ -1,0 +1,13 @@
+[build]
+  functions = "netlify/functions"
+
+# Site admin totalement séparé du site public (voir index.html — plus aucun
+# lien vers /admin-panel/ nulle part sur generationcapable.fr). Déployé comme
+# projet Netlify indépendant avec ce dossier comme "Base directory".
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Robots-Tag = "noindex, nofollow"

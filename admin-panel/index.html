@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Génération Capable — Administration</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- Widget Conformité (Dossier/AdminPanel/LegalInfoPage) — même fichier que le
+     site public, chargé depuis son origine pour éviter toute duplication de
+     code entre les deux sites Netlify indépendants (voir compliance-client.js). -->
+<script src="https://generationcapable.fr/compliance-client.js"></script>
+<style>
+:root{--bg:#0a0a0a;--bg1:#131313;--b:rgba(255,255,255,.08);--t1:#f5f5f5;--t2:#b8b8b8;--t3:#7a7a7a;--gold:#c9a84c;--green:#30d158;--orange:#ff9f0a;--red:#ff453a;--blue:#2997ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.field{width:100%;background:var(--bg1);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);font-size:14px;font-family:inherit;margin-bottom:12px}
+.field:focus{outline:none;border-color:var(--gold)}
+label{font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+textarea.field{resize:vertical;min-height:70px}
+.btn{border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-p{background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305}
+.btn-g{background:var(--bg1);border:1px solid var(--b);color:var(--t1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--bg1);border:1px solid var(--b);border-radius:12px;padding:16px 18px}
+.gate-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate-card{background:var(--bg1);border:1px solid var(--b);border-radius:16px;padding:36px;width:100%;max-width:380px;text-align:center}
+.gate-ico{font-size:38px;margin-bottom:14px}
+.gate-t{font-size:19px;font-weight:800;margin-bottom:6px}
+.gate-s{font-size:13px;color:var(--t2);margin-bottom:22px;line-height:1.5}
+.topbar{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:1px solid var(--b);position:sticky;top:0;background:var(--bg);z-index:10}
+.topbar-t{font-size:15px;font-weight:800}
+.tabs{display:flex;gap:6px;padding:14px 26px 0;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid var(--b);color:var(--t2);padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.tab.on{background:var(--gold);color:#1a1305;border-color:var(--gold)}
+.ct{padding:22px 26px 60px;max-width:1100px}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px}
+.sc{background:var(--bg1);border:1px solid var(--b);border-radius:12px;padding:16px}
+.sc-l{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.sc-v{font-size:24px;font-weight:800}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;background:var(--bg1);border:1px solid var(--b);border-radius:10px;margin-bottom:7px}
+.row-title{font-size:13px;font-weight:700}
+.row-sub{font-size:11.5px;color:var(--t3);margin-top:2px}
+.pill{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.06)}
+.empty{text-align:center;padding:26px;color:var(--t3);font-size:12.5px}
+.hidden{display:none !important}
+.kanban{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:14px;overflow-x:auto}
+.kcol-hd{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);margin-bottom:10px}
+.tkt{background:var(--bg1);border:1px solid var(--b);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.tkt:hover{border-color:var(--gold)}
+.tkt-subj{font-size:12.5px;font-weight:700;margin-bottom:4px}
+.tkt-meta{font-size:10.5px;color:var(--t3)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.overlay.hidden{display:none}
+.modal{background:var(--bg1);border:1px solid var(--b);border-radius:16px;max-width:520px;width:100%;max-height:86vh;overflow-y:auto;padding:22px}
+.modal-cl{float:right;background:none;border:none;color:var(--t3);font-size:16px;cursor:pointer}
+.msg-bubble{font-size:12.5px;color:var(--t2);border-radius:10px;padding:10px 12px;margin-bottom:8px;white-space:pre-wrap}
+.msg-user{background:var(--bg);border:1px solid var(--b)}
+.msg-admin{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2)}
+a{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate-wrap">
+  <div class="gate-card">
+    <div class="gate-ico" id="gate-ico">🔐</div>
+    <div class="gate-t" id="gate-title">Administration</div>
+    <div class="gate-s" id="gate-sub">Vérification en cours...</div>
+    <div id="gate-login-form" class="hidden">
+      <label>Email</label>
+      <input id="gate-email" class="field" type="email" placeholder="ton@email.com">
+      <label>Mot de passe</label>
+      <input id="gate-password" class="field" type="password" placeholder="••••••••">
+      <button class="btn btn-p" style="width:100%" id="gate-login-btn" onclick="gateLogin()">Se connecter →</button>
+    </div>
+    <button class="btn btn-g" style="width:100%;margin-top:10px" id="gate-action" onclick="location.reload()">Réessayer</button>
+  </div>
+</div>
+
+<div id="panel" class="hidden">
+  <div class="topbar">
+    <div class="topbar-t">⚙️ Administration — Génération Capable</div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-g" onclick="refreshCurrentTab()">🔄 Actualiser</button>
+      <button class="btn btn-g" onclick="adminSignOut()">Déconnexion</button>
+    </div>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-tab="overview" onclick="switchAdminTab('overview')">Vue d'ensemble</button>
+    <button class="tab" data-tab="members" onclick="switchAdminTab('members')">Membres</button>
+    <button class="tab" data-tab="commissions" onclick="switchAdminTab('commissions')">Commissions</button>
+    <button class="tab" data-tab="orders" onclick="switchAdminTab('orders')">Commandes CRM</button>
+    <button class="tab" data-tab="payouts" onclick="switchAdminTab('payouts')">Retraits</button>
+    <button class="tab" data-tab="disputes" onclick="switchAdminTab('disputes')">Litiges</button>
+    <button class="tab" data-tab="support" onclick="switchAdminTab('support')">Support</button>
+    <button class="tab" data-tab="compliance" onclick="switchAdminTab('compliance')">Conformité</button>
+    <button class="tab" data-tab="legal" onclick="switchAdminTab('legal')">Infos légales</button>
+  </div>
+  <div class="ct">
+
+    <div id="tab-overview">
+      <div class="sg">
+        <div class="sc"><div class="sc-l">Membres inscrits</div><div class="sc-v" id="ov-members">—</div></div>
+        <div class="sc"><div class="sc-l">Abonnés actifs</div><div class="sc-v" style="color:var(--gold)" id="ov-subs">—</div></div>
+        <div class="sc"><div class="sc-l">MRR estimé</div><div class="sc-v" id="ov-mrr">—</div></div>
+        <div class="sc"><div class="sc-l">Ventes totales</div><div class="sc-v" id="ov-sales">—</div></div>
+        <div class="sc"><div class="sc-l">Commissions dues</div><div class="sc-v" style="color:var(--orange)" id="ov-comm">—</div></div>
+        <div class="sc"><div class="sc-l">Tickets ouverts</div><div class="sc-v" style="color:var(--blue)" id="ov-tickets">—</div></div>
+      </div>
+    </div>
+
+    <div id="tab-members" class="hidden">
+      <div id="members-list"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-commissions" class="hidden">
+      <div id="commissions-list"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-orders" class="hidden">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="orders-filters">
+        <button class="tab on" data-f="all" onclick="setOrdersFilter('all')">Toutes</button>
+        <button class="tab" data-f="paid" onclick="setOrdersFilter('paid')">À faire</button>
+        <button class="tab" data-f="production" onclick="setOrdersFilter('production')">En cours</button>
+        <button class="tab" data-f="delivered" onclick="setOrdersFilter('delivered')">Livré</button>
+        <button class="tab" data-f="done" onclick="setOrdersFilter('done')">Terminé</button>
+      </div>
+      <div id="orders-list"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-payouts" class="hidden">
+      <div id="payouts-list"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-disputes" class="hidden">
+      <div id="disputes-list"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-support" class="hidden">
+      <div class="kanban" id="support-kanban">
+        <div><div class="kcol-hd">🆕 Nouveau</div><div id="kcol-nouveau"></div></div>
+        <div><div class="kcol-hd">🔧 En cours</div><div id="kcol-en_cours"></div></div>
+        <div><div class="kcol-hd">✅ Résolu</div><div id="kcol-resolu"></div></div>
+        <div><div class="kcol-hd">🔒 Fermé</div><div id="kcol-ferme"></div></div>
+      </div>
+    </div>
+
+    <div id="tab-compliance" class="hidden">
+      <div id="admin-compliance-mount"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-legal" class="hidden">
+      <div id="admin-legal-info-mount"><div class="empty">Chargement...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="overlay hidden" id="ticket-overlay">
+  <div class="modal">
+    <button class="modal-cl" onclick="closeTicketModal()">✕</button>
+    <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px" id="tk-cat">—</div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:4px" id="tk-subject">—</div>
+    <div style="font-size:11.5px;color:var(--t3);margin-bottom:14px" id="tk-meta">—</div>
+    <div id="tk-attachment" style="margin-bottom:14px"></div>
+    <div id="tk-events" style="margin-bottom:16px"></div>
+    <label>Changer le statut</label>
+    <select id="tk-status-select" class="field">
+      <option value="nouveau">🆕 Nouveau</option>
+      <option value="en_cours">🔧 En cours</option>
+      <option value="resolu">✅ Résolu</option>
+      <option value="ferme">🔒 Fermé</option>
+    </select>
+    <button class="btn btn-g" style="width:100%;margin-bottom:14px" onclick="updateTicketStatus()">Mettre à jour le statut</button>
+    <label>Répondre au vendeur</label>
+    <textarea id="tk-reply" class="field" placeholder="Ta réponse..." rows="3"></textarea>
+    <button class="btn btn-p" style="width:100%" id="tk-reply-btn" onclick="replyToTicket()">Envoyer la réponse</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://fkhfahmzxsahrstxntjs.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_XfXArB0prFU-BFZUOo6vTw_Hqkr3ZNJ';
+const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str ?? '');
+  return div.innerHTML;
+}
+function eur(cents){ return (Number(cents||0)/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+function fmtDate(d){ return new Date(d).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+
+function setGateUI(icon, title, sub, showLoginForm, showRetry){
+  document.getElementById('gate-ico').textContent = icon;
+  document.getElementById('gate-title').textContent = title;
+  document.getElementById('gate-sub').textContent = sub;
+  document.getElementById('gate-login-form').classList.toggle('hidden', !showLoginForm);
+  document.getElementById('gate-action').classList.toggle('hidden', !showRetry);
+}
+
+async function gateLogin(){
+  const email = document.getElementById('gate-email').value.trim();
+  const password = document.getElementById('gate-password').value;
+  if(!email || !password) return;
+  const btn = document.getElementById('gate-login-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supa.auth.signInWithPassword({ email, password });
+    if(error){ setGateUI('❌', 'Connexion refusée', error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : error.message, true, false); return; }
+    await checkAccess();
+  } finally { btn.disabled = false; }
+}
+
+async function adminSignOut(){
+  await supa.auth.signOut();
+  document.getElementById('panel').classList.add('hidden');
+  document.getElementById('gate').classList.remove('hidden');
+  setGateUI('🔐', 'Déconnecté', 'À bientôt.', true, false);
+}
+
+// Seule autorité sur qui est admin : /.netlify/functions/admin-verify, qui
+// vérifie côté serveur (service_role) l'appartenance à la table "admins".
+// Cette page n'affiche jamais rien avant que le serveur ait répondu.
+async function checkAccess(){
+  setGateUI('🔐', 'Vérification en cours...', 'Confirmation de ton accès administrateur.', false, false);
+
+  const { data: { session } } = await supa.auth.getSession();
+  if(!session){
+    setGateUI('🔐', 'Connexion requise', 'Connecte-toi avec ton compte administrateur.', true, false);
+    return;
+  }
+
+  try{
+    const resp = await fetch('/.netlify/functions/admin-verify', {
+      headers: { 'Authorization': 'Bearer ' + session.access_token }
+    });
+    const data = await resp.json();
+    if(resp.ok && data.authorized === true){
+      document.getElementById('gate').classList.add('hidden');
+      document.getElementById('panel').classList.remove('hidden');
+      await loadTab('overview');
+    } else {
+      setGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', false, true);
+      await supa.auth.signOut();
+    }
+  }catch(e){
+    console.error('[admin-verify]', e);
+    setGateUI('⚠️', 'Erreur de vérification', 'Réessaie dans un instant.', false, true);
+  }
+}
+
+let CURRENT_TAB = 'overview';
+function switchAdminTab(tab){
+  CURRENT_TAB = tab;
+  document.querySelectorAll('#tabs .tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  ['overview','members','commissions','orders','payouts','disputes','support','compliance','legal'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  loadTab(tab);
+}
+function refreshCurrentTab(){ loadTab(CURRENT_TAB); }
+
+async function loadTab(tab){
+  if(tab === 'overview') return loadOverview();
+  if(tab === 'members') return loadMembers();
+  if(tab === 'commissions') return loadCommissions();
+  if(tab === 'orders') return loadOrders();
+  if(tab === 'payouts') return loadPayouts();
+  if(tab === 'disputes') return loadDisputes();
+  if(tab === 'support') return loadSupportTickets();
+  if(tab === 'compliance') return mountAdminCompliance();
+  if(tab === 'legal') return mountAdminLegalInfo();
+}
+
+// ── Conformité & Informations légales (voir compliance-client.js) ──
+// Widget auto-porté, monté une seule fois (comme sur le site public) : un
+// changement d'onglet suivant réutilise l'instance déjà montée plutôt que de
+// la reconstruire — GCCompliance gère lui-même son propre rafraîchissement.
+async function currentAdminSession(){
+  const { data: { session } } = await supa.auth.getSession();
+  return session || null;
+}
+let _adminComplianceMounted = false;
+async function mountAdminCompliance(){
+  if(_adminComplianceMounted) return;
+  if(!window.GCCompliance){ console.error('[admin] compliance-client.js non chargé'); return; }
+  const mountEl = document.getElementById('admin-compliance-mount');
+  if(!mountEl) return;
+  _adminComplianceMounted = true;
+  window.GCCompliance.mountAdmin(mountEl, { getSession: currentAdminSession });
+}
+let _adminLegalInfoMounted = false;
+async function mountAdminLegalInfo(){
+  if(_adminLegalInfoMounted) return;
+  if(!window.GCCompliance){ console.error('[admin] compliance-client.js non chargé'); return; }
+  const mountEl = document.getElementById('admin-legal-info-mount');
+  if(!mountEl) return;
+  _adminLegalInfoMounted = true;
+  window.GCCompliance.mountLegalInfo(mountEl, { getSession: currentAdminSession });
+}
+
+// ── Vue d'ensemble ──
+async function loadOverview(){
+  const [{ data: subs }, { data: sales }, { data: comms }, { data: tickets }] = await Promise.all([
+    supa.rpc('admin_list_subscribers'),
+    supa.from('sales').select('amount,status'),
+    supa.from('commissions').select('amount,status'),
+    supa.rpc('admin_list_support_tickets'),
+  ]);
+  const subsList = subs || [];
+  const activeSubs = subsList.filter(s => s.is_active).length;
+  const salesList = (sales || []).filter(s => s.status === 'completed');
+  const commsDue = (comms || []).filter(c => ['pending','validated'].includes(c.status)).reduce((s,c) => s + c.amount, 0);
+  const openTickets = (tickets || []).filter(t => t.status === 'nouveau' || t.status === 'en_cours').length;
+
+  document.getElementById('ov-members').textContent = subsList.length;
+  document.getElementById('ov-subs').textContent = activeSubs;
+  document.getElementById('ov-mrr').textContent = (activeSubs * 67).toLocaleString('fr-FR') + ' €';
+  document.getElementById('ov-sales').textContent = salesList.length;
+  document.getElementById('ov-comm').textContent = eur(commsDue);
+  document.getElementById('ov-tickets').textContent = openTickets;
+}
+
+// ── Membres ──
+async function loadMembers(){
+  const el = document.getElementById('members-list');
+  el.innerHTML = '<div class="empty">Chargement...</div>';
+  const { data, error } = await supa.rpc('admin_list_subscribers');
+  if(error){ el.innerHTML = '<div class="empty">Erreur de chargement.</div>'; console.error(error); return; }
+  if(!data || !data.length){ el.innerHTML = '<div class="empty">Aucun membre inscrit.</div>'; return; }
+  el.innerHTML = data.map(m => `
+    <div class="row">
+      <div>
+        <div class="row-title">${escapeHtml(m.email)}</div>
+        <div class="row-sub">Inscrit le ${fmtDate(m.created_at)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="pill" style="color:${m.is_active ? 'var(--green)' : 'var(--t3)'}">${m.is_active ? '● Actif' : '○ Inactif'}</span>
+        <button class="btn btn-g" onclick="toggleMember('${m.user_id}', ${!m.is_active})">${m.is_active ? 'Désactiver' : 'Activer'}</button>
+      </div>
+    </div>`).join('');
+}
+let MEMBER_ACTION_INFLIGHT = false;
+async function toggleMember(userId, newStatus){
+  if(MEMBER_ACTION_INFLIGHT) return;
+  MEMBER_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('admin_set_subscriber_active', { target_user_id: userId, new_status: newStatus });
+    if(error){ alert('Erreur : ' + error.message); return; }
+    await loadMembers();
+  } finally { MEMBER_ACTION_INFLIGHT = false; }
+}
+
+// ── Commissions ──
+async function loadCommissions(){
+  const el = document.getElementById('commissions-list');
+  el.innerHTML = '<div class="empty">Chargement...</div>';
+  const { data: comms, error } = await supa.from('commissions').select('id,seller_id,amount,status,created_at').in('status', ['pending','validated']).order('created_at');
+  if(error){ el.innerHTML = '<div class="empty">Erreur de chargement.</div>'; console.error(error); return; }
+  if(!comms || !comms.length){ el.innerHTML = '<div class="empty">Aucune commission en attente.</div>'; return; }
+  const { data: subs } = await supa.rpc('admin_list_subscribers');
+  const emailByUserId = {};
+  (subs || []).forEach(s => emailByUserId[s.user_id] = s.email);
+  el.innerHTML = comms.map(c => `
+    <div class="row">
+      <div>
+        <div class="row-title">${escapeHtml(emailByUserId[c.seller_id] || c.seller_id)}</div>
+        <div class="row-sub">${eur(c.amount)} · ${fmtDate(c.created_at)} · ${c.status === 'pending' ? 'En attente' : 'Validée'}</div>
+      </div>
+      <button class="btn btn-p" onclick="markCommissionPaid('${c.id}')">Marquer payée</button>
+    </div>`).join('');
+}
+async function markCommissionPaid(id){
+  const { error } = await supa.rpc('admin_mark_commission_paid', { p_commission_id: id });
+  if(error){ alert('Erreur : ' + error.message); return; }
+  await loadCommissions();
+}
+
+// ── Commandes CRM ──
+let ORDERS_CACHE = [];
+let ORDERS_FILTER = 'all';
+const ORDER_STATUS_LABELS = { draft:'Brouillon', awaiting_payment:'Paiement en attente', paid:'Payée', production:'En production', delivered:'Livrée', done:'Terminée', cancelled:'Annulée', refunded:'Remboursée' };
+const CRM_PRODUCT_LABELS = { site_internet:'Site Internet', ia:'Solution IA', generation_capable:'Génération Capable', accompagnement:'Accompagnement', autre:'Prestation' };
+function setOrdersFilter(f){
+  ORDERS_FILTER = f;
+  document.querySelectorAll('#orders-filters .tab').forEach(b => b.classList.toggle('on', b.dataset.f === f));
+  renderOrdersList();
+}
+async function loadOrders(){
+  const el = document.getElementById('orders-list');
+  el.innerHTML = '<div class="empty">Chargement...</div>';
+  const { data, error } = await supa.rpc('admin_get_orders_overview');
+  if(error){ el.innerHTML = '<div class="empty">Erreur de chargement.</div>'; console.error(error); return; }
+  ORDERS_CACHE = data || [];
+  renderOrdersList();
+}
+function renderOrdersList(){
+  const el = document.getElementById('orders-list');
+  const rows = ORDERS_FILTER === 'all' ? ORDERS_CACHE : ORDERS_CACHE.filter(o => o.status === ORDERS_FILTER);
+  if(!rows.length){ el.innerHTML = `<div class="empty">Aucune commande${ORDERS_FILTER !== 'all' ? ' dans ce statut' : ''}.</div>`; return; }
+  el.innerHTML = rows.map(o => {
+    let actionsHtml = '';
+    if(o.status === 'production') actionsHtml = `<button class="btn btn-p" onclick="advanceOrder('${o.id}','delivered')">Marquer livrée</button>`;
+    else if(o.status === 'delivered') actionsHtml = `<button class="btn btn-p" onclick="advanceOrder('${o.id}','done')">Marquer terminée</button>`;
+    else if(o.status === 'done') actionsHtml = `<span class="pill" style="color:var(--green)">✓ Terminée</span>`;
+    return `<div class="row">
+      <div>
+        <div class="row-title">${escapeHtml(o.client_name)} · ${escapeHtml(CRM_PRODUCT_LABELS[o.product_type] || o.product_type)}</div>
+        <div class="row-sub">${escapeHtml(o.seller_email)} · ${Number(o.price).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · ${ORDER_STATUS_LABELS[o.status] || o.status}</div>
+      </div>
+      <div>${actionsHtml}</div>
+    </div>`;
+  }).join('');
+}
+async function advanceOrder(orderId, newStatus){
+  const { error } = await supa.rpc('admin_set_order_status', { p_order_id: orderId, p_new_status: newStatus });
+  if(error){ alert('Erreur : ' + error.message); return; }
+  await loadOrders();
+}
+
+// ── Retraits ──
+async function loadPayouts(){
+  const el = document.getElementById('payouts-list');
+  el.innerHTML = '<div class="empty">Chargement...</div>';
+  const { data, error } = await supa.rpc('admin_get_payouts_overview');
+  if(error){ el.innerHTML = '<div class="empty">Erreur de chargement.</div>'; console.error(error); return; }
+  const rows = data || [];
+  if(!rows.length){ el.innerHTML = '<div class="empty">Aucune demande de retrait.</div>'; return; }
+  const labels = { requested:'Demandé', paid:'Versé', failed:'Échoué', cancelled:'Annulé' };
+  el.innerHTML = rows.map(p => `
+    <div class="row">
+      <div>
+        <div class="row-title">${escapeHtml(p.seller_email)}</div>
+        <div class="row-sub">${Number(p.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · Demandé le ${fmtDate(p.requested_at)} · ${labels[p.status] || p.status}</div>
+      </div>
+      ${p.status === 'requested' ? `<button class="btn btn-p" onclick="markPayoutPaid('${p.id}')">Marquer versé</button>` : ''}
+    </div>`).join('');
+}
+async function markPayoutPaid(id){
+  if(!confirm('Confirmer que ce retrait a bien été viré au vendeur ? Action définitive.')) return;
+  const { error } = await supa.rpc('admin_mark_payout_paid', { p_payout_id: id });
+  if(error){ alert('Erreur : ' + error.message); return; }
+  await loadPayouts();
+}
+
+// ── Litiges ──
+async function loadDisputes(){
+  const el = document.getElementById('disputes-list');
+  el.innerHTML = '<div class="empty">Chargement...</div>';
+  const { data, error } = await supa.rpc('admin_get_disputed_commissions');
+  if(error){ el.innerHTML = '<div class="empty">Erreur de chargement.</div>'; console.error(error); return; }
+  const rows = data || [];
+  if(!rows.length){ el.innerHTML = '<div class="empty">Aucun litige en cours.</div>'; return; }
+  el.innerHTML = rows.map(d => `
+    <div class="row" style="background:rgba(255,69,58,.06);border-color:rgba(255,69,58,.2)">
+      <div>
+        <div class="row-title">${escapeHtml(d.seller_email)} · ${escapeHtml(d.product_name || 'Vente')}</div>
+        <div class="row-sub">${Number(d.amount).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} € · Gelée le ${fmtDate(d.created_at)}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-p" onclick="resolveDispute('${d.id}', true)">✓ Vendeur gagne</button>
+        <button class="btn btn-g" onclick="resolveDispute('${d.id}', false)">✗ Vendeur perd</button>
+      </div>
+    </div>`).join('');
+}
+async function resolveDispute(commissionId, sellerWins){
+  const label = sellerWins ? 'le vendeur a gagné ce litige' : 'le vendeur a perdu ce litige';
+  if(!confirm(`Confirmer que ${label} ? Vérifie d'abord l'issue réelle dans le Dashboard Stripe.`)) return;
+  const { error } = await supa.rpc('admin_resolve_dispute', { p_commission_id: commissionId, p_seller_wins: sellerWins });
+  if(error){ alert('Erreur : ' + error.message); return; }
+  await loadDisputes();
+}
+
+// ── Centre de Support ──
+const SUPPORT_CATEGORY_LABELS = { bug:'🐞 Bug', question:'❓ Question', demande:'📝 Demande', suggestion:'💡 Suggestion', probleme:'⚠️ Problème' };
+let SUPPORT_TICKETS_CACHE = [];
+async function loadSupportTickets(){
+  ['nouveau','en_cours','resolu','ferme'].forEach(s => document.getElementById('kcol-'+s).innerHTML = '<div class="empty">Chargement...</div>');
+  const { data, error } = await supa.rpc('admin_list_support_tickets');
+  if(error){ console.error(error); return; }
+  SUPPORT_TICKETS_CACHE = data || [];
+  ['nouveau','en_cours','resolu','ferme'].forEach(status => {
+    const col = document.getElementById('kcol-'+status);
+    const rows = SUPPORT_TICKETS_CACHE.filter(t => t.status === status);
+    col.innerHTML = rows.length ? rows.map(t => `
+      <div class="tkt" onclick="openTicketModal('${t.id}')">
+        <div class="tkt-subj">${escapeHtml(t.subject)}</div>
+        <div class="tkt-meta">${SUPPORT_CATEGORY_LABELS[t.category] || t.category} · ${t.priority} · ${escapeHtml(t.user_email)}</div>
+      </div>`).join('') : '<div class="empty" style="padding:12px">—</div>';
+  });
+}
+
+let CURRENT_TICKET_ID = null;
+async function openTicketModal(ticketId){
+  CURRENT_TICKET_ID = ticketId;
+  const t = SUPPORT_TICKETS_CACHE.find(x => x.id === ticketId);
+  if(!t) return;
+  document.getElementById('tk-cat').textContent = SUPPORT_CATEGORY_LABELS[t.category] || t.category;
+  document.getElementById('tk-subject').textContent = t.subject;
+  document.getElementById('tk-meta').textContent = `${escapeHtml(t.user_email)} · Priorité ${t.priority} · ${fmtDate(t.created_at)}`;
+  document.getElementById('tk-status-select').value = t.status;
+
+  const attEl = document.getElementById('tk-attachment');
+  attEl.innerHTML = '';
+  if(t.attachment_path){
+    const { data: signed } = await supa.storage.from('support-attachments').createSignedUrl(t.attachment_path, 3600);
+    if(signed?.signedUrl) attEl.innerHTML = `<a href="${signed.signedUrl}" target="_blank" rel="noopener">📎 Pièce jointe du ticket</a>`;
+  }
+
+  const eventsEl = document.getElementById('tk-events');
+  eventsEl.innerHTML = `<div class="msg-bubble msg-user">${escapeHtml(t.message)}<div style="font-size:10px;color:var(--t3);margin-top:6px">${fmtDate(t.created_at)}</div></div>`;
+
+  const { data: evData, error: evErr } = await supa.from('support_ticket_events').select('*').eq('ticket_id', ticketId).order('created_at');
+  if(!evErr && evData){
+    eventsEl.innerHTML += evData.map(ev => {
+      const isAdmin = ev.author === 'admin';
+      return `<div class="msg-bubble ${isAdmin ? 'msg-admin' : 'msg-user'}">
+        <div style="font-size:10.5px;font-weight:700;margin-bottom:3px">${isAdmin ? '🎧 Toi (admin)' : escapeHtml(t.user_email)}</div>
+        ${ev.note ? escapeHtml(ev.note) : ''}
+        ${ev.new_status ? `<div style="font-size:10px;color:var(--t3);margin-top:4px">Statut → ${ev.new_status}</div>` : ''}
+        <div style="font-size:10px;color:var(--t3);margin-top:6px">${fmtDate(ev.created_at)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('ticket-overlay').classList.remove('hidden');
+}
+function closeTicketModal(){
+  document.getElementById('ticket-overlay').classList.add('hidden');
+  document.getElementById('tk-reply').value = '';
+  CURRENT_TICKET_ID = null;
+}
+async function updateTicketStatus(){
+  if(!CURRENT_TICKET_ID) return;
+  const newStatus = document.getElementById('tk-status-select').value;
+  const { error } = await supa.rpc('admin_update_ticket_status', { p_ticket_id: CURRENT_TICKET_ID, p_new_status: newStatus });
+  if(error){ alert('Erreur : ' + error.message); return; }
+  closeTicketModal();
+  await loadSupportTickets();
+}
+async function replyToTicket(){
+  if(!CURRENT_TICKET_ID) return;
+  const message = document.getElementById('tk-reply').value.trim();
+  if(!message) return;
+  const btn = document.getElementById('tk-reply-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supa.rpc('admin_reply_to_ticket', { p_ticket_id: CURRENT_TICKET_ID, p_message: message });
+    if(error){ alert('Erreur : ' + error.message); return; }
+    await openTicketModal(CURRENT_TICKET_ID);
+  } finally { btn.disabled = false; }
+}
+
+checkAccess();
+supa.auth.onAuthStateChange((event, session) => {
+  if(event === 'SIGNED_IN' && session) checkAccess();
+});
+</script>
+</body>
+</html>

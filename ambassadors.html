@@ -243,12 +243,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
     </div>
   </div>
 
+  <!-- ── ÉCRAN 6 : DOSSIER ADMINISTRATIF (contrat, signature, pièces, RIB) ── -->
+  <div id="screen-dossier" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Dossier</div><h1>Administratif</h1></div>
+      </div>
+      <div id="dossier-mount"></div>
+    </div>
+  </div>
+
   <!-- ── NAV BAS ── -->
   <div class="nav">
     <div class="nav-item active" data-screen="today" onclick="goScreen('today')"><div class="nav-ico">🎯</div><div class="nav-lbl">Aujourd'hui</div></div>
     <div class="nav-item" data-screen="coach" onclick="goScreen('coach')"><div class="nav-ico">💬</div><div class="nav-lbl">IA Coach</div></div>
     <div class="nav-item" data-screen="revenue" onclick="goScreen('revenue')"><div class="nav-ico">💰</div><div class="nav-lbl">Revenus</div></div>
     <div class="nav-item" data-screen="training" onclick="goScreen('training')"><div class="nav-ico">📚</div><div class="nav-lbl">Formation</div></div>
+    <div class="nav-item" data-screen="dossier" onclick="goScreen('dossier')"><div class="nav-ico">📋</div><div class="nav-lbl">Dossier</div></div>
     <div class="nav-item" data-screen="profile" onclick="goScreen('profile')"><div class="nav-ico">👤</div><div class="nav-lbl">Profil</div></div>
   </div>
 </div>
@@ -395,6 +406,24 @@ function goScreen(name){
   document.getElementById('screen-' + name).classList.add('active');
   document.querySelector(`.nav-item[data-screen="${name}"]`).classList.add('active');
   window.scrollTo(0,0);
+  if(name === 'dossier') mountDossierPage();
+}
+
+// ── Dossier administratif (contrat, signature, pièces, RIB) — voir
+// compliance-client.js, partagé avec index.html (role différent).
+let _dossierMounted = false;
+function mountDossierPage(){
+  if(_dossierMounted || !window.GCCompliance) return;
+  const mountEl = document.getElementById('dossier-mount');
+  if(!mountEl) return;
+  _dossierMounted = true;
+  window.GCCompliance.mount(mountEl, {
+    role: 'ambassadeur',
+    getSession: async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      return data && data.session ? data.session : null;
+    }
+  });
 }
 
 // ── Écran Aujourd'hui ──
@@ -619,9 +648,12 @@ async function sendChat(){
   box.appendChild(loadingEl);
 
   try{
+    // FIX CRITIQUE (audit 2026-08-03) : ai-proxy.js exige maintenant un token de
+    // session Supabase valide (voir index.html) — sans ce header, cet appel
+    // échouerait désormais avec AUTH_REQUIRED pour tout ambassadeur pourtant connecté.
     const resp = await fetch('/.netlify/functions/ai-proxy', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type':'application/json', 'Authorization': 'Bearer ' + SESSION.access_token},
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 800,
@@ -652,5 +684,6 @@ async function sendChat(){
 // ── Init ──
 checkGate();
 </script>
+<script src="/compliance-client.js" defer></script>
 </body>
 </html>
