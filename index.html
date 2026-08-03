@@ -17,7 +17,16 @@ function openGateModal(){
   openMo('mo-subscribe');
 }
 
+// FIX (audit 2026-08-03) : cette fonction ne désactivait le bouton "Continuer
+// vers le paiement" qu'à l'intérieur de redirectToStripeCheckout(), c'est-à-
+// dire APRÈS le premier signUp() déjà résolu — un double-clic avant cet
+// instant déclenchait deux appels signUp() concurrents avec les mêmes
+// identifiants. Garde-fou explicite en plus du disable, comme pour les
+// autres actions à effet unique du fichier (ORDER_ACTION_INFLIGHT, etc.).
+let _subscribeInFlight = false;
 async function activateSubscription(){
+  if(_subscribeInFlight) return;
+
   var name = document.getElementById('sub-name');
   var email = document.getElementById('sub-email');
   var password = document.getElementById('sub-password');
@@ -30,6 +39,11 @@ async function activateSubscription(){
     return;
   }
 
+  _subscribeInFlight = true;
+  const subBtn = document.getElementById('sub-confirm-btn');
+  if(subBtn) subBtn.disabled = true;
+  try{
+
   STATE.memberName = nameVal;
   STATE.memberEmail = emailVal;
 
@@ -39,20 +53,81 @@ async function activateSubscription(){
   // paiement confirmé — jamais avant.
   if(typeof supa !== 'undefined' && supa){
     try{
-      const { error } = await supa.auth.signUp({
+      const { data, error } = await supa.auth.signUp({
         email: emailVal,
         password: pwVal,
         options: { data: { full_name: nameVal } }
       });
-      if(error && error.message && !error.message.includes('already registered')){
+      if(error){
+        // Anciennes versions de l'API Supabase pouvaient renvoyer cette
+        // erreur explicite pour un email déjà enregistré — traité comme le
+        // cas "identities: []" ci-dessous : compte existant, mot de passe
+        // JAMAIS modifié par cet appel.
+        if(error.message && error.message.includes('already registered')){
+          toast('Un compte existe déjà avec cet email — connecte-toi avec ton mot de passe, ou utilise "Mot de passe oublié".');
+          closeMo('mo-subscribe');
+          go('login', null);
+          var loginEmailEl1 = document.getElementById('login-email');
+          if(loginEmailEl1) loginEmailEl1.value = emailVal;
+          return;
+        }
         toast('❌ ' + error.message);
         return;
       }
-    }catch(e){ console.warn('Compte Supabase non créé (Supabase pas encore configuré) :', e); }
+      // BUG CRITIQUE CORRIGÉ (audit 2026-08-03) : depuis Supabase Auth v2,
+      // signUp() sur un email déjà enregistré ET confirmé ne renvoie PAS
+      // d'erreur — par protection anti-énumération, il renvoie un succès
+      // factice (data.user.identities === []) SANS jamais toucher au mot de
+      // passe existant. Sans cette vérification, quelqu'un qui rouvrait ce
+      // formulaire (paiement abandonné puis repris, second essai...) avec un
+      // mot de passe différent du tout premier croyait l'avoir "changé",
+      // payait, puis ne pouvait plus jamais se connecter avec CE mot de
+      // passe : Supabase refusait à juste titre ("Email ou mot de passe
+      // incorrect"), le vrai mot de passe restant l'ORIGINAL, jamais mis à
+      // jour par ce second appel silencieusement sans effet.
+      if(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
+        toast('Un compte existe déjà avec cet email — connecte-toi avec ton mot de passe, ou utilise "Mot de passe oublié".');
+        closeMo('mo-subscribe');
+        go('login', null);
+        var loginEmailEl2 = document.getElementById('login-email');
+        if(loginEmailEl2) loginEmailEl2.value = emailVal;
+        return;
+      }
+    }catch(e){
+      // FIX (audit 2026-08-03) : cette exception était seulement journalisée
+      // (console.warn) puis IGNORÉE — le code continuait vers Stripe comme
+      // si le compte avait été créé avec pwVal. Si signUp() échouait
+      // vraiment (réseau, Supabase indisponible...), le paiement passait
+      // quand même et le webhook/verify-checkout-session créait alors un
+      // compte SANS mot de passe (voir ensureAuthUserForEmail) : la personne
+      // payait, puis ne pouvait plus jamais se connecter avec le mot de
+      // passe qu'elle avait tapé ici, qui n'avait jamais été enregistré nulle
+      // part. On bloque maintenant explicitement plutôt que de continuer
+      // vers un paiement sur un compte dans un état inconnu.
+      console.error('[activateSubscription] signUp:', e);
+      toast('❌ Impossible de créer le compte — réessaie dans un instant');
+      return;
+    }
   }
+
+  // Filet de sécurité pour le seul cas restant où le mot de passe choisi ici
+  // pourrait ne pas être celui du compte activé après paiement : si
+  // ensureAuthUserForEmail() (verify-checkout-session.js) doit créer le
+  // compte de zéro côté serveur — parce qu'au moment du paiement il ne
+  // trouve encore aucune trace du compte tout juste créé ci-dessus — ce
+  // compte serveur est créé SANS mot de passe. handleCheckoutReturn()
+  // relit cette valeur une seule fois juste après la connexion automatique
+  // post-paiement pour (ré)appliquer ce mot de passe, puis la supprime
+  // immédiatement (voir plus bas) : jamais conservée au-delà de cet aller-retour.
+  try{ sessionStorage.setItem('gc_pending_pw', pwVal); }catch(e){}
 
   await redirectToStripeCheckout('gc_67', emailVal, 'sub-confirm-btn');
   closeMo('mo-subscribe');
+
+  }finally{
+    _subscribeInFlight = false;
+    if(subBtn) subBtn.disabled = false;
+  }
 }
 
 // Crée une session Stripe Checkout côté serveur et redirige vers Stripe.
@@ -1092,7 +1167,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
           <a onclick="showForgotPassword()" style="font-size:12px;color:var(--t3);cursor:pointer">Mot de passe oublié ?</a>
         </div>
 
-        <button onclick="authWithEmail()" style="width:100%;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;border:none;padding:14px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">Connexion</button>
+        <button id="login-submit-btn" onclick="authWithEmail()" style="width:100%;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;border:none;padding:14px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">Connexion</button>
 
         <div style="font-size:12px;color:var(--t3);margin-top:24px">
           Pas encore de compte ? <a onclick="go('rejoindre',null)" style="color:var(--gold);cursor:pointer">Rejoindre Génération Capable</a>
@@ -3295,7 +3370,7 @@ function openModPage(num){
   if(m.locked){
     document.getElementById('mod-ey').textContent = 'Module ' + m.num + ' · Verrouillé';
     document.getElementById('mod-t').textContent = m.title;
-    document.getElementById('mod-body').innerHTML = `<div style="text-align:center;padding:28px 0"><div style="font-size:40px;margin-bottom:14px">🔒</div><div style="font-size:15px;font-weight:700;margin-bottom:8px">${m.title}</div><div style="font-size:13px;color:var(--t3);line-height:1.6">${m.unlockMsg}</div></div>`;
+    document.getElementById('mod-body').innerHTML = `<div style="text-align:center;padding:28px 0"><div style="font-size:40px;margin-bottom:14px">🔒</div><div style="font-size:15px;font-weight:700;margin-bottom:8px">${escapeHtml(m.title)}</div><div style="font-size:13px;color:var(--t3);line-height:1.6">${escapeHtml(m.unlockMsg)}</div></div>`;
     openMo('mo-module');
     return;
   }
@@ -4431,19 +4506,28 @@ async function signAndLockCurrentOrder(orderId){
   }
 }
 
+// FIX (audit 2026-08-03) : contrairement aux autres actions prospect/commande
+// de ce bloc, cette fonction n'utilisait pas ORDER_ACTION_INFLIGHT — un
+// double-clic pouvait déclencher deux appels advance_prospect_stage()
+// concurrents pour le même prospect.
 async function doAdvanceStage(newStage, justification){
-  if(!PD_CURRENT_PROSPECT) return;
-  const { error } = await supa.rpc('advance_prospect_stage', {
-    p_prospect_id: PD_CURRENT_PROSPECT.id, p_new_stage: newStage, p_justification: justification || null,
-  });
-  if(error){
-    console.error('[crm] advance_prospect_stage:', error);
-    toast(error.message || "Impossible de changer l'étape pour le moment.");
-    return;
+  if(!PD_CURRENT_PROSPECT || ORDER_ACTION_INFLIGHT) return;
+  ORDER_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('advance_prospect_stage', {
+      p_prospect_id: PD_CURRENT_PROSPECT.id, p_new_stage: newStage, p_justification: justification || null,
+    });
+    if(error){
+      console.error('[crm] advance_prospect_stage:', error);
+      toast(error.message || "Impossible de changer l'étape pour le moment.");
+      return;
+    }
+    toast('✓ Étape mise à jour');
+    await openProspectDetail(PD_CURRENT_PROSPECT.id);
+    try{ renderProspectsList(); }catch(e){}
+  }finally{
+    ORDER_ACTION_INFLIGHT = false;
   }
-  toast('✓ Étape mise à jour');
-  await openProspectDetail(PD_CURRENT_PROSPECT.id);
-  try{ renderProspectsList(); }catch(e){}
 }
 
 function promptAdvanceStage(){
@@ -4851,13 +4935,24 @@ async function renderRealMembers(){
     </div>`).join('');
 }
 
+// FIX (audit 2026-08-03) : ces 3 actions admin à impact financier/compte
+// (contrairement à adminMarkPayoutPaid/adminResolveDispute, protégées par un
+// confirm() bloquant) n'avaient aucun garde-fou contre un double-clic
+// déclenchant deux fois la même RPC avant le premier re-rendu de la liste.
+let ADMIN_ACTION_INFLIGHT = false;
+
 async function toggleMemberActive(userId, newStatus){
-  if(!supa) return;
-  const { error } = await supa.rpc('admin_set_subscriber_active', { target_user_id: userId, new_status: newStatus });
-  if(error){ console.error('[admin] toggle active:', error); toast('❌ ' + error.message); return; }
-  toast(newStatus ? '✓ Membre activé' : '✓ Membre désactivé');
-  await renderRealMembers();
-  await renderAdminStats();
+  if(!supa || ADMIN_ACTION_INFLIGHT) return;
+  ADMIN_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('admin_set_subscriber_active', { target_user_id: userId, new_status: newStatus });
+    if(error){ console.error('[admin] toggle active:', error); toast('❌ ' + error.message); return; }
+    toast(newStatus ? '✓ Membre activé' : '✓ Membre désactivé');
+    await renderRealMembers();
+    await renderAdminStats();
+  }finally{
+    ADMIN_ACTION_INFLIGHT = false;
+  }
 }
 
 function exportMembersCSV(){
@@ -4909,12 +5004,17 @@ async function renderAdminCommissions(){
 }
 
 async function markCommissionPaid(commissionId){
-  if(!supa) return;
-  const { error } = await supa.rpc('admin_mark_commission_paid', { p_commission_id: commissionId });
-  if(error){ console.error('[admin] mark paid:', error); toast('❌ ' + error.message); return; }
-  toast('✓ Commission marquée comme payée');
-  await renderAdminCommissions();
-  await renderAdminStats();
+  if(!supa || ADMIN_ACTION_INFLIGHT) return;
+  ADMIN_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('admin_mark_commission_paid', { p_commission_id: commissionId });
+    if(error){ console.error('[admin] mark paid:', error); toast('❌ ' + error.message); return; }
+    toast('✓ Commission marquée comme payée');
+    await renderAdminCommissions();
+    await renderAdminStats();
+  }finally{
+    ADMIN_ACTION_INFLIGHT = false;
+  }
 }
 
 // ── Tableau de bord production (commandes CRM) — admin_get_orders_overview()
@@ -4984,11 +5084,16 @@ function renderAdminOrdersList(){
 }
 
 async function adminAdvanceOrderStatus(orderId, newStatus){
-  if(!supa) return;
-  const { error } = await supa.rpc('admin_set_order_status', { p_order_id: orderId, p_new_status: newStatus });
-  if(error){ console.error('[admin] set order status:', error); toast('❌ ' + error.message); return; }
-  toast('✓ Statut mis à jour');
-  await renderAdminOrders();
+  if(!supa || ADMIN_ACTION_INFLIGHT) return;
+  ADMIN_ACTION_INFLIGHT = true;
+  try{
+    const { error } = await supa.rpc('admin_set_order_status', { p_order_id: orderId, p_new_status: newStatus });
+    if(error){ console.error('[admin] set order status:', error); toast('❌ ' + error.message); return; }
+    toast('✓ Statut mis à jour');
+    await renderAdminOrders();
+  }finally{
+    ADMIN_ACTION_INFLIGHT = false;
+  }
 }
 
 // ── Retraits vendeurs — admin_get_payouts_overview() / admin_mark_payout_paid() ──
@@ -5171,6 +5276,31 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+// FIX CRITIQUE (audit 2026-08-03) : ai-proxy.js n'exigeait AUCUNE authentification
+// — n'importe qui sur Internet pouvait l'appeler directement (curl, script) et
+// consommer sans limite le quota payant OpenAI/Anthropic du site, sans même avoir
+// de compte. La fonction exige désormais un token de session Supabase valide
+// (Authorization: Bearer) ; ce helper centralise l'ajout de ce header pour les 5
+// fonctions IA du site, au lieu de dupliquer cette logique 5 fois.
+async function callAiProxy(body){
+  let accessToken = null;
+  try{
+    const { data:{ session } } = supa ? await supa.auth.getSession() : { data:{ session:null } };
+    accessToken = session?.access_token || null;
+  }catch(e){ console.error('[callAiProxy] getSession:', e); }
+
+  if(!accessToken){
+    return { error: 'AUTH_REQUIRED', message: 'Connecte-toi pour utiliser cette fonctionnalité.' };
+  }
+
+  const resp = await fetch('/.netlify/functions/ai-proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+    body: JSON.stringify(body)
+  });
+  return await resp.json();
+}
+
 // ══════════════════════════════════════════════════════════
 //  ÉVALUATION IA — NOTATION AUTOMATIQUE
 // ══════════════════════════════════════════════════════════
@@ -5207,11 +5337,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) avec ce format exact :
 {"scores":{"discipline":0,"communication":0,"prospection":0,"decouverte":0,"vente":0},"total":0,"verdict":"...","points_forts":["...","...","..."],"axes_amelioration":[{"titre":"...","detail":"..."},{"titre":"...","detail":"..."},{"titre":"...","detail":"..."}],"analyse_script":"...","script_suggere":"...","action_prioritaire":"...","message_coach":"..."}`;
 
   try {
-    const response = await fetch('/.netlify/functions/ai-proxy', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
-    });
-    const data = await response.json();
+    const data = await callAiProxy({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] });
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
@@ -5276,11 +5402,7 @@ Réponds STRICTEMENT en JSON (rien d'autre) :
 {"diagnostic":"...","analyse_psychologique":"...","ce_qui_cloche":["...","...","..."],"script_corrige":"...","technique_recommandee":"...","reponse_objection":"...","action_immediate":"...","niveau_urgence":"faible|moyen|élevé","conseil_final":"..."}`;
 
   try {
-    const response = await fetch('/.netlify/functions/ai-proxy', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] })
-    });
-    const data = await response.json();
+    const data = await callAiProxy({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: GC_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] });
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b => b.type === 'text')?.text || '';
     const clean = raw.replace(/```json|```/g, '').trim();
@@ -5349,6 +5471,7 @@ function renderApiError(retryCall, err){
     ? `<button class="btn btn-g" style="margin-top:12px" onclick="${retryCall}">↻ Réessayer</button>`
     : '';
   const messages = {
+    AUTH_REQUIRED: "Connecte-toi pour utiliser cette fonctionnalité.",
     NO_API_KEY: "Aucune clé IA n'est configurée sur le serveur — contacte le support.",
     INVALID_API_KEY: "La clé IA du serveur est invalide ou expirée — contacte le support.",
     RATE_LIMITED: "Trop de demandes en ce moment — réessaie dans quelques instants.",
@@ -5414,7 +5537,7 @@ async function testStudioConnection(){
     if(msg) msg.innerHTML = '<div style="font-size:12px;color:var(--green);font-weight:700">✓ Connexion HeyGen réussie</div>';
     toast('✓ HeyGen connecté');
   }catch(err){
-    if(msg) msg.innerHTML = `<div style="font-size:12px;color:var(--red)">✗ ${err.message} — vérifie ta clé API</div>`;
+    if(msg) msg.innerHTML = `<div style="font-size:12px;color:var(--red)">✗ ${escapeHtml(err.message)} — vérifie ta clé API</div>`;
   }
 }
 
@@ -5514,7 +5637,7 @@ async function studioGenerate(){
 
   }catch(err){
     if(statusEl) statusEl.style.display = 'none';
-    if(errorEl) errorEl.innerHTML = `<div style="padding:14px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:8px;font-size:12.5px;color:var(--red);margin-top:10px;line-height:1.6">${err.message}</div>`;
+    if(errorEl) errorEl.innerHTML = `<div style="padding:14px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.2);border-radius:8px;font-size:12.5px;color:var(--red);margin-top:10px;line-height:1.6">${escapeHtml(err.message)}</div>`;
   }finally{
     if(genBtn) genBtn.disabled = false;
   }
@@ -5577,15 +5700,28 @@ function authNotConfigured(){
 }
 
 // Connexion email + mot de passe
+// FIX (audit 2026-08-03) : aucun garde contre le double-clic — deux appels
+// signInWithPassword() concurrents pour les mêmes identifiants (sans impact
+// de sécurité, mais source de courses inutiles côté auth).
+let _loginInFlight = false;
 async function authWithEmail(){
+  if(_loginInFlight) return;
   var email = document.getElementById('login-email')?.value?.trim();
   var pw = document.getElementById('login-password')?.value;
   if(!email || !pw){ toast('Entre ton email et ton mot de passe'); return; }
   if(!supa) return authNotConfigured();
 
-  const { data, error } = await supa.auth.signInWithPassword({ email, password: pw });
-  if(error){ toast('❌ ' + (error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect' : error.message)); return; }
-  await onAuthSuccess(data.session);
+  _loginInFlight = true;
+  const loginBtn = document.getElementById('login-submit-btn');
+  if(loginBtn) loginBtn.disabled = true;
+  try{
+    const { data, error } = await supa.auth.signInWithPassword({ email, password: pw });
+    if(error){ toast('❌ ' + (error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect' : error.message)); return; }
+    await onAuthSuccess(data.session);
+  }finally{
+    _loginInFlight = false;
+    if(loginBtn) loginBtn.disabled = false;
+  }
 }
 
 // OAuth Google
@@ -5630,6 +5766,11 @@ async function signOutUser(){
     localStorage.removeItem('gc_code');
     localStorage.removeItem('gc_site_state_v1');
     localStorage.removeItem('gc_ev_state_v1');
+    // Nettoyage d'une clé historique (audit 2026-08-03) : registerMember()
+    // accumulait indéfiniment nom+email de chaque personne ayant payé sur cet
+    // appareil, sans jamais être relue nulle part (fonction supprimée) — sur
+    // un appareil partagé, purge les données résiduelles d'anciennes visites.
+    localStorage.removeItem('gc_members');
   }catch(e){}
   resetLocalUserState();
   _lastAuthSuccessToken = null;
@@ -5757,9 +5898,32 @@ async function saveProfile(){
   toast('✓ Profil mis à jour');
 }
 
+// FIX (audit 2026-08-03) : quand Google/Apple OAuth échoue (provider pas
+// activé côté Supabase, redirect URI non autorisée côté Google Cloud/Apple
+// Developer, utilisateur qui refuse l'accès...), Supabase redirige quand
+// même vers ce site, avec ?error=...&error_description=... (flux code) ou
+// #error=...&error_description=... (flux implicite) dans l'URL — mais rien
+// ne lisait jamais ces paramètres. Résultat pour l'utilisateur : il clique
+// sur "Continuer avec Google", revient sur la page de connexion, et RIEN ne
+// semble s'être passé (aucun message) — vu comme "le bouton ne marche pas"
+// alors qu'une vraie cause précise (souvent une simple mauvaise config
+// Supabase/Google) était disponible mais jamais affichée.
+function reportOAuthErrorIfAny(){
+  const search = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const err = search.get('error') || hash.get('error');
+  const desc = search.get('error_description') || hash.get('error_description');
+  if(!err) return false;
+  console.error('[oauth] Échec retour fournisseur:', err, desc);
+  toast('❌ Connexion impossible : ' + (desc ? decodeURIComponent(desc.replace(/\+/g,' ')) : err));
+  window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+  return true;
+}
+
 // Vérifie automatiquement, au chargement de la page, si l'utilisateur a
 // déjà une session valide (ex: retour après clic sur un lien OAuth/email).
 (async function checkExistingSession(){
+  if(reportOAuthErrorIfAny()) return;
   if(!supa) return;
   const { data:{ session } } = await supa.auth.getSession();
   if(session) await onAuthSuccess(session);
@@ -5832,22 +5996,6 @@ async function sendConfirmationEmail(toName, toEmail, type){
   }
 }
 
-// Enregistrer un membre dans la liste de contact locale
-function registerMember(name, email, type){
-  try {
-    const members = JSON.parse(localStorage.getItem('gc_members') || '[]');
-    const existing = members.find(m => m.email === email);
-    if(!existing){
-      members.push({
-        name, email, type,
-        date: new Date().toISOString(),
-        id: 'GC-' + Date.now()
-      });
-      localStorage.setItem('gc_members', JSON.stringify(members));
-    }
-  } catch(e){}
-}
-
 // Le paiement passe exclusivement par redirectToStripeCheckout() (envoi vers
 // Stripe Checkout) + handleCheckoutReturn() ci-dessous (confirmation
 // serveur du paiement avant toute activation) : jamais d'activation sur un
@@ -5869,6 +6017,7 @@ async function handleCheckoutReturn(){
 
   if(checkout === 'cancelled'){
     toast('Paiement annulé — tu peux réessayer quand tu veux');
+    try{ sessionStorage.removeItem('gc_pending_pw'); }catch(e){}
     return;
   }
   if(checkout !== 'success') return;
@@ -5899,7 +6048,6 @@ async function handleCheckoutReturn(){
   // jamais "paiement non confirmé" à quelqu'un qui a bien payé.
   const name = STATE.memberName || 'Membre';
 
-  try{ registerMember(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] registerMember:', e); }
   try{ await sendConfirmationEmail(name, data.email, 'ecosysteme'); }catch(e){ console.error('[checkout-return] sendConfirmationEmail:', e); }
 
   // Connexion immédiate : le serveur a renvoyé un jeton "magic link" à usage
@@ -5922,12 +6070,27 @@ async function handleCheckoutReturn(){
   }
 
   if(session){
+    // Filet de sécurité (voir activateSubscription()) : si le compte a dû
+    // être créé de zéro côté serveur (ensureAuthUserForEmail), il n'a AUCUN
+    // mot de passe. On (ré)applique ici, une seule fois, celui saisi dans le
+    // formulaire d'abonnement — pendant qu'on a une session valide, seul
+    // moment où updateUser({password}) est possible. Best-effort : un échec
+    // ici n'empêche jamais l'accès immédiat (déjà connecté via le lien
+    // magique) — seule une future reconnexion par mot de passe serait
+    // affectée, et l'utilisateur garde "Mot de passe oublié" en secours.
+    try{
+      const pendingPw = sessionStorage.getItem('gc_pending_pw');
+      if(pendingPw) await supa.auth.updateUser({ password: pendingPw });
+    }catch(e){ console.error('[checkout-return] updateUser(password) EXCEPTION:', e); }
+    finally{ try{ sessionStorage.removeItem('gc_pending_pw'); }catch(e){} }
+
     toast('🎉 Paiement confirmé — connexion en cours...');
     await onAuthSuccess(session);
   } else {
     // Le paiement est bien confirmé et actif côté serveur — seule la
     // connexion automatique a échoué (jeton non généré, réseau...). On
     // invite simplement à se connecter avec le mot de passe déjà choisi.
+    try{ sessionStorage.removeItem('gc_pending_pw'); }catch(e){}
     toast('🎉 Paiement confirmé — connecte-toi pour accéder à ton espace');
     go('login', null);
   }
@@ -6087,11 +6250,7 @@ Réponds STRICTEMENT en JSON :
 {"titre":"...(accroche motivante pour aujourd'hui)","actions":[{"heure":"09:00","action":"...","detail":"...","type":"prospection|découverte|relance|admin"},{"heure":"11:00","action":"...","detail":"...","type":"..."},{"heure":"14:00","action":"...","detail":"...","type":"..."},{"heure":"16:00","action":"...","detail":"...","type":"..."},{"heure":"18:00","action":"...","detail":"...","type":"..."}],"objectif_jour":"...","message_coach":"..."}`;
 
   try {
-    const resp = await fetch('/.netlify/functions/ai-proxy',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
-    });
-    const data = await resp.json();
+    const data = await callAiProxy({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]});
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const plan = JSON.parse(raw.replace(/```json|```/g,'').trim());
@@ -6225,11 +6384,7 @@ Réponds STRICTEMENT en JSON avec les 6 étapes de feedback :
 {"etape1_positifs":["...","..."],"etape2_negatifs":["...","..."],"etape3_amelioration":"...","etape4_stagnation":"...","etape5_comprendre":"...","etape6_plan_demain":["...","...","..."],"score_jour":0,"message_final":"..."}`;
 
   try {
-    const resp = await fetch('/.netlify/functions/ai-proxy',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
-    });
-    const data = await resp.json();
+    const data = await callAiProxy({model:'claude-sonnet-4-6', max_tokens:1000, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]});
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const fb = JSON.parse(raw.replace(/```json|```/g,'').trim());
@@ -6303,11 +6458,7 @@ Réponds STRICTEMENT en JSON :
 {"scores":{"discipline":0,"etat_esprit":0,"prospection":0,"communication":0,"decouverte":0,"closing":0},"profil_type":"...","description_profil":"...","force_principale":"...","faiblesse_critique":"...","recommandations":[{"dimension":"...","priorite":"haute|moyenne","action":"...","explication":"..."},{"dimension":"...","priorite":"...","action":"...","explication":"..."},{"dimension":"...","priorite":"...","action":"...","explication":"..."}],"module_prioritaire":"Module 01|02|03|04|05|06|07","raison_module":"...","plan_action_semaine":["...","...","...","...","..."],"message_coach":"...","score_global":0}`;
 
   try {
-    const resp = await fetch('/.netlify/functions/ai-proxy',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1200, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]})
-    });
-    const data = await resp.json();
+    const data = await callAiProxy({model:'claude-sonnet-4-6', max_tokens:1200, system: GC_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}]});
     if (data.error) { console.error('[GC-IA]', data.error, data.message || data.detail || ''); throw Object.assign(new Error(data.message || data.error), { code: data.error }); }
     const raw = data.content?.find(b=>b.type==='text')?.text||'';
     const scan = JSON.parse(raw.replace(/```json|```/g,'').trim());
