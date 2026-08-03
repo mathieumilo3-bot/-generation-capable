@@ -14,6 +14,8 @@
   schedule = "*/10 * * * *"
 [functions."notify-cron-healthcheck"]
   schedule = "*/10 * * * *"
+[functions."notify-cron-compliance-expiry"]
+  schedule = "0 7 * * *"
 
 # En-têtes de sécurité de base. Pas de Content-Security-Policy : le site
 # repose entièrement sur des <script> et des attributs onclick= inline sans

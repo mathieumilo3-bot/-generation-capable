@@ -175,6 +175,23 @@ const adminHotProspectStale = [
   ctx => ({ title: `Prospect chaud sans suivi`, body: `Un prospect n'a pas été relancé depuis plus de ${ctx.jours || 'plusieurs'} heures — risque de refroidissement.` }),
 ];
 
+// ── Admin — Conformité (contrats, documents, RIB) ──────────────────────────
+const adminNewSignature = [
+  ctx => ({ title: `Contrat signé — à valider`, body: `${ctx.email || 'Un utilisateur'} (${ctx.role || ''}) vient de signer son contrat électroniquement.` }),
+];
+const adminDocumentUploaded = [
+  ctx => ({ title: `Nouveau document déposé`, body: `${ctx.email || 'Un utilisateur'} a déposé un document (${ctx.docType || ''}) à valider.` }),
+];
+const adminPaymentInfoChanged = [
+  ctx => ({ title: `RIB modifié`, body: `${ctx.email || 'Un utilisateur'} a mis à jour ses coordonnées bancaires — validation requise avant tout versement.` }),
+];
+const adminDossierComplete = [
+  ctx => ({ title: `Dossier conforme ✅`, body: `Le dossier de ${ctx.email || 'un utilisateur'} est désormais complet à 100%.` }),
+];
+const sellerDocumentExpiring = [
+  ctx => ({ title: `Un document arrive à expiration`, body: `${ctx.docLabel || 'Un justificatif'} de ton dossier administratif expire bientôt — pense à le renouveler.` }),
+];
+
 // ── Admin — Technique ──────────────────────────────────────────────────────
 const adminServerError = [
   ctx => ({ title: `Erreur serveur`, body: `${ctx.contexte || 'Une fonction a échoué'}${ctx.message ? ' : ' + ctx.message : ''}` }),
@@ -260,6 +277,12 @@ const TEMPLATES = {
   'admin.technical.site_down': adminSiteDown,
   'admin.technical.site_recovered': adminSiteRecovered,
   'admin.technical.slow_response': adminSlowResponse,
+
+  'admin.compliance.new_signature': adminNewSignature,
+  'admin.compliance.document_uploaded': adminDocumentUploaded,
+  'admin.compliance.payment_info_changed': adminPaymentInfoChanged,
+  'admin.compliance.dossier_complete': adminDossierComplete,
+  'seller.compliance.document_expiring': sellerDocumentExpiring,
 };
 
 const LEAD_EMAIL_TEMPLATES = {
@@ -306,6 +329,12 @@ const CATEGORY_LABELS = {
   'admin.technical.site_down': 'Site indisponible',
   'admin.technical.site_recovered': 'Site rétabli',
   'admin.technical.slow_response': 'Temps de réponse anormal',
+
+  'admin.compliance.new_signature': 'Contrat signé (à valider)',
+  'admin.compliance.document_uploaded': 'Nouveau document déposé',
+  'admin.compliance.payment_info_changed': 'RIB modifié',
+  'admin.compliance.dossier_complete': 'Dossier devenu conforme',
+  'seller.compliance.document_expiring': 'Document arrivant à expiration',
 };
 
 const SELLER_CATEGORIES = Object.keys(CATEGORY_LABELS).filter(k => k.startsWith('seller.'));
@@ -321,6 +350,8 @@ const CRITICAL_CATEGORIES = new Set([
   'admin.business.refund_requested',
   'admin.technical.site_down',
   'admin.technical.server_error',
+  'admin.compliance.new_signature',
+  'admin.compliance.payment_info_changed',
 ]);
 
 module.exports = {

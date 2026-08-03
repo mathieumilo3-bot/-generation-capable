@@ -881,7 +881,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <div class="nav-tile-header">
           <div class="nav-tile-ico" style="background:rgba(255,159,10,.12)">📊</div>
           <span class="nav-tile-label">Ma Performance</span>
-          <span class="nav-tile-count">6</span>
+          <span class="nav-tile-count">7</span>
           <span class="nav-tile-chev">›</span>
         </div>
         <div class="nav-tile-body">
@@ -891,6 +891,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
           <div class="ni" onclick="go('commissions',this);event.stopPropagation()"><span class="ni-ico">💸</span>Commissions<span class="ni-lock-mini" id="sb-lock-eco-pay">🔒</span></div>
           <div class="ni" onclick="go('revenus',this);event.stopPropagation()"><span class="ni-ico">💰</span>Objectifs revenus</div>
           <div class="ni" onclick="go('niveaux',this);event.stopPropagation()"><span class="ni-ico">🏆</span>Mes niveaux</div>
+          <div class="ni" onclick="go('dossier',this);event.stopPropagation()"><span class="ni-ico">📋</span>Dossier administratif</div>
         </div>
       </div>
 
@@ -2540,6 +2541,17 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
   </div>
 </div>
 
+<!-- ══ DOSSIER ADMINISTRATIF (contrat, signature, pièces, RIB) ══ -->
+<div class="page" id="page-dossier">
+  <div class="topbar">
+    <div class="tb-title">Dossier administratif</div>
+    <div class="tb-sub" style="margin-left:6px">— Contrat, identité, RIB</div>
+  </div>
+  <div class="ct">
+    <div id="dossier-mount"></div>
+  </div>
+</div>
+
 <!-- ══ ADMIN ══ -->
 <div class="page" id="page-admin">
   <div id="admin-gate">
@@ -2639,6 +2651,10 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
       <div id="admin-disputes-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:28px">
         <div style="font-size:13px;color:var(--t3);text-align:center;padding:20px">Chargement...</div>
       </div>
+
+      <!-- CONTRATS & DOSSIERS — signature électronique, pièces, RIB (voir compliance-client.js) -->
+      <div class="sec-hd"><div class="sec-t">Contrats & dossiers à valider</div></div>
+      <div id="admin-compliance-mount" style="margin-bottom:28px"></div>
 
       <!-- CONTACTER LES MEMBRES -->
       <div class="sec-hd"><div class="sec-t">Envoyer un message à tous les membres</div></div>
@@ -2980,6 +2996,7 @@ function go(id, el){
   if(id==='opportunites'){ try{ switchCrmTab('prospects'); }catch(e){} }
   if(id==='performance'){ try{ renderPipelineStats(); }catch(e){} }
   if(id==='crm-outils'){ try{ renderCrmOutilsPage(); }catch(e){} }
+  if(id==='dossier'){ try{ mountDossierPage(); }catch(e){} }
   if(id==='challenges'){ try{ renderMissions(); }catch(e){} }
   if(id==='communaute'){ try{ loadFeed(); }catch(e){} }
   if(id==='commissions'){ try{ renderCommissions(); }catch(e){} }
@@ -4777,6 +4794,7 @@ async function checkAdminAccess(){
       try{ await renderAdminOrders(); }catch(e){ console.error('[admin] orders overview:', e); }
       try{ await renderAdminPayouts(); }catch(e){ console.error('[admin] payouts overview:', e); }
       try{ await renderAdminDisputes(); }catch(e){ console.error('[admin] disputes overview:', e); }
+      try{ mountAdminCompliance(session); }catch(e){ console.error('[admin] compliance panel:', e); }
     } else {
       setAdminGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', 'Retour à l\'accueil', ()=>go('accueil', null));
     }
@@ -6412,8 +6430,39 @@ function renderScanResult(scan, el){
 loadState();
 renderAll();
 handleCheckoutReturn();
+
+// ── Dossier administratif (contrat, signature, pièces, RIB) ──
+// Widget auto-porté (voir compliance-client.js) — ne dépend que d'un point
+// de montage et d'un moyen d'obtenir la session Supabase courante.
+let _dossierMounted = false;
+function mountDossierPage(){
+  if(_dossierMounted || !window.GCCompliance) return;
+  var mountEl = document.getElementById('dossier-mount');
+  if(!mountEl) return;
+  _dossierMounted = true;
+  window.GCCompliance.mount(mountEl, {
+    role: 'vendeur',
+    getSession: async function(){
+      if(!supa) return null;
+      var res = await supa.auth.getSession();
+      return res.data && res.data.session ? res.data.session : null;
+    }
+  });
+}
+
+let _adminComplianceMounted = false;
+function mountAdminCompliance(session){
+  if(_adminComplianceMounted || !window.GCCompliance) return;
+  var mountEl = document.getElementById('admin-compliance-mount');
+  if(!mountEl) return;
+  _adminComplianceMounted = true;
+  window.GCCompliance.mountAdmin(mountEl, {
+    getSession: async function(){ return session; }
+  });
+}
 </script>
 
 <script src="/notifications-client.js" defer></script>
+<script src="/compliance-client.js" defer></script>
 </body>
 </html>

@@ -2,8 +2,9 @@
   "name": "generation-capable",
   "private": true,
   "version": "1.0.0",
-  "description": "Génération Capable — site + Netlify Functions. Dépendance unique : web-push (chiffrement RFC 8291 pour le système de notifications, voir docs/notifications-system.md).",
+  "description": "Génération Capable — site + Netlify Functions. Dépendances : web-push (notifications Push, voir docs/notifications-system.md) et pdf-lib (génération des contrats signés, voir docs/compliance-system.md).",
   "dependencies": {
+    "pdf-lib": "^1.17.1",
     "web-push": "^3.6.7"
   }
 }
