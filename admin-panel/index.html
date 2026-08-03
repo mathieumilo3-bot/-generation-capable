@@ -6,6 +6,10 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Génération Capable — Administration</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- Widget Conformité (Dossier/AdminPanel/LegalInfoPage) — même fichier que le
+     site public, chargé depuis son origine pour éviter toute duplication de
+     code entre les deux sites Netlify indépendants (voir compliance-client.js). -->
+<script src="https://generationcapable.fr/compliance-client.js"></script>
 <style>
 :root{--bg:#0a0a0a;--bg1:#131313;--b:rgba(255,255,255,.08);--t1:#f5f5f5;--t2:#b8b8b8;--t3:#7a7a7a;--gold:#c9a84c;--green:#30d158;--orange:#ff9f0a;--red:#ff453a;--blue:#2997ff}
 *{box-sizing:border-box}
@@ -90,6 +94,8 @@ a{color:var(--gold)}
     <button class="tab" data-tab="payouts" onclick="switchAdminTab('payouts')">Retraits</button>
     <button class="tab" data-tab="disputes" onclick="switchAdminTab('disputes')">Litiges</button>
     <button class="tab" data-tab="support" onclick="switchAdminTab('support')">Support</button>
+    <button class="tab" data-tab="compliance" onclick="switchAdminTab('compliance')">Conformité</button>
+    <button class="tab" data-tab="legal" onclick="switchAdminTab('legal')">Infos légales</button>
   </div>
   <div class="ct">
 
@@ -138,6 +144,14 @@ a{color:var(--gold)}
         <div><div class="kcol-hd">✅ Résolu</div><div id="kcol-resolu"></div></div>
         <div><div class="kcol-hd">🔒 Fermé</div><div id="kcol-ferme"></div></div>
       </div>
+    </div>
+
+    <div id="tab-compliance" class="hidden">
+      <div id="admin-compliance-mount"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-legal" class="hidden">
+      <div id="admin-legal-info-mount"><div class="empty">Chargement...</div></div>
     </div>
 
   </div>
@@ -241,7 +255,7 @@ let CURRENT_TAB = 'overview';
 function switchAdminTab(tab){
   CURRENT_TAB = tab;
   document.querySelectorAll('#tabs .tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-  ['overview','members','commissions','orders','payouts','disputes','support'].forEach(t => {
+  ['overview','members','commissions','orders','payouts','disputes','support','compliance','legal'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
   });
   loadTab(tab);
@@ -256,6 +270,35 @@ async function loadTab(tab){
   if(tab === 'payouts') return loadPayouts();
   if(tab === 'disputes') return loadDisputes();
   if(tab === 'support') return loadSupportTickets();
+  if(tab === 'compliance') return mountAdminCompliance();
+  if(tab === 'legal') return mountAdminLegalInfo();
+}
+
+// ── Conformité & Informations légales (voir compliance-client.js) ──
+// Widget auto-porté, monté une seule fois (comme sur le site public) : un
+// changement d'onglet suivant réutilise l'instance déjà montée plutôt que de
+// la reconstruire — GCCompliance gère lui-même son propre rafraîchissement.
+async function currentAdminSession(){
+  const { data: { session } } = await supa.auth.getSession();
+  return session || null;
+}
+let _adminComplianceMounted = false;
+async function mountAdminCompliance(){
+  if(_adminComplianceMounted) return;
+  if(!window.GCCompliance){ console.error('[admin] compliance-client.js non chargé'); return; }
+  const mountEl = document.getElementById('admin-compliance-mount');
+  if(!mountEl) return;
+  _adminComplianceMounted = true;
+  window.GCCompliance.mountAdmin(mountEl, { getSession: currentAdminSession });
+}
+let _adminLegalInfoMounted = false;
+async function mountAdminLegalInfo(){
+  if(_adminLegalInfoMounted) return;
+  if(!window.GCCompliance){ console.error('[admin] compliance-client.js non chargé'); return; }
+  const mountEl = document.getElementById('admin-legal-info-mount');
+  if(!mountEl) return;
+  _adminLegalInfoMounted = true;
+  window.GCCompliance.mountLegalInfo(mountEl, { getSession: currentAdminSession });
 }
 
 // ── Vue d'ensemble ──

@@ -1,0 +1,9 @@
+{
+  "name": "generation-capable-admin",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Génération Capable — site admin dissocié (Conformité, Support, Retraits...). Dépendance : web-push, utilisée par _lib/notifications/send.js pour notifier les admins (validation dossier). Package.json distinct du site public : ce site est déployé indépendamment (Base directory = admin-panel), Netlify installe ses dépendances dans ce dossier, pas à la racine du dépôt.",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}
