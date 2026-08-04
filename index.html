@@ -6156,6 +6156,69 @@ handleCheckoutReturn();
 // mémorise l'ambassadeur à créditer si le visiteur s'abonne.
 captureReferralFromUrl();
 
+// ── Visite guidée du site vendeur (voir tutorial.js) ──
+//
+// Ciblage par le contenu du onclick plutôt que par un attribut ajouté à
+// chaque entrée de menu : la barre latérale en compte plusieurs dizaines,
+// et un sélecteur qui suit la navigation existante ne peut pas se
+// désynchroniser d'elle.
+function sellerTutorialSteps(){
+  return [
+    {
+      title: 'Bienvenue dans ton espace 👋',
+      text: "Deux minutes pour repérer les quatre endroits qui comptent vraiment. Tu pourras revoir cette visite depuis ton profil.",
+    },
+    {
+      el: '[onclick*="go(\'opportunites\'"]',
+      title: 'Tes prospects et tes ventes',
+      text: "C'est ici que tu suis chaque contact, de la prise de rendez-vous jusqu'au paiement. Une commande n'est marquée « payée » que par le paiement réel — jamais à la main.",
+    },
+    {
+      el: '[onclick*="go(\'commissions\'"]',
+      title: 'Ce que tu as gagné',
+      text: "Tes commissions arrivent ici automatiquement dès qu'une vente est encaissée. Tu y demandes aussi tes retraits.",
+    },
+    {
+      el: '[onclick*="go(\'dossier\'"]',
+      title: 'Ton dossier administratif',
+      text: "Contrat, pièce d'identité, RIB. À remplir une seule fois — sans lui, tes commissions s'accumulent mais ne peuvent pas t'être versées.",
+    },
+    {
+      el: '[onclick*="go(\'academie\'"]',
+      title: 'La formation',
+      text: "Les modules qui t'apprennent à vendre. Commence par le premier, même si tu as déjà de l'expérience : les scripts sont propres à l'offre.",
+    },
+    {
+      title: 'À toi de jouer 🚀',
+      text: "Premier objectif : ajouter ton premier prospect dans Opportunités. Le coach IA est là si tu bloques.",
+    }
+  ];
+}
+
+function startSellerTutorial(onlyFirstVisit, _tries){
+  if(!window.GCTuto){
+    const n = (_tries || 0) + 1;
+    if(n <= 20) setTimeout(() => startSellerTutorial(onlyFirstVisit, n), 150);
+    return;
+  }
+  const opts = { id: 'vendeur', steps: sellerTutorialSteps() };
+  if(onlyFirstVisit) window.GCTuto.startIfFirstVisit(opts);
+  else window.GCTuto.start(opts);
+}
+
+function replaySellerTutorial(){
+  if(!window.GCTuto) return;
+  window.GCTuto.reset('vendeur');
+  startSellerTutorial(false);
+}
+
+// Ne se déclenche que pour un membre qui a réellement accès à l'espace :
+// un visiteur non abonné voit la page de vente, pas le tableau de bord, et
+// une visite guidée par-dessus n'aurait aucun sens.
+setTimeout(() => {
+  if(document.querySelector('[onclick*="go(\'opportunites\'"]')) startSellerTutorial(true);
+}, 1200);
+
 // ── Dossier administratif (contrat, signature, pièces, RIB) ──
 // Widget auto-porté (voir compliance-client.js) — ne dépend que d'un point
 // de montage et d'un moyen d'obtenir la session Supabase courante.
@@ -6183,5 +6246,6 @@ function mountDossierPage(){
 
 <script src="/notifications-client.js" defer></script>
 <script src="/compliance-client.js" defer></script>
+<script src="/tutorial.js" defer></script>
 </body>
 </html>

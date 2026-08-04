@@ -271,17 +271,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
         <div><div class="sub">Profil</div><h1 id="profile-name">Ton profil</h1></div>
       </div>
 
-      <div class="code-box">
-        <div class="code-txt" id="profile-code">GC-AMB000</div>
-        <div class="copy-hint">Ton code ambassadeur — tape pour copier</div>
+      <div class="code-box" onclick="copyRefLink()">
+        <div class="code-txt" id="profile-code">…</div>
+        <div class="copy-hint">Ton lien personnel — tape pour copier</div>
       </div>
 
       <div class="card">
-        <div class="prof-row"><div class="prof-l">Lien ambassadeur</div><div class="prof-v" style="color:var(--gold2)">Copier</div></div>
-        <div class="prof-row"><div class="prof-l">Paiements</div><div class="prof-v">Cycle 5 → 5</div></div>
-        <div class="prof-row"><div class="prof-l">Statut</div><div class="prof-v" style="color:var(--gold2)">Actif</div></div>
+        <div class="prof-row"><div class="prof-l">Abonnés actifs apportés</div><div class="prof-v" id="prof-active">0</div></div>
+        <div class="prof-row"><div class="prof-l">Total gagné</div><div class="prof-v" style="color:var(--gold2)" id="prof-total">0 €</div></div>
+        <div class="prof-row"><div class="prof-l">Reste à te verser</div><div class="prof-v" style="color:var(--gold2)" id="prof-pending">0 €</div></div>
       </div>
 
+      <button class="btn btn-g" style="margin-bottom:10px" onclick="replayAmbassadorTutorial()">🎓 Revoir la visite guidée</button>
       <button class="btn btn-g" onclick="if(confirm('Te déconnecter ?'))deactivateDemo()">Déconnexion</button>
     </div>
   </div>
@@ -461,6 +462,7 @@ async function checkGate(){
     document.getElementById('gate-loading').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     renderAll();
+    startAmbassadorTutorial(true);
   }catch(e){
     document.getElementById('gate-loading').innerHTML =
       `<p style="color:#e08080">Erreur : ${e.message || 'inconnue'}</p>
@@ -815,6 +817,76 @@ function renderRevenue(){
   renderReferral();
 }
 
+// ── Visite guidée (voir tutorial.js) ──
+//
+// S'ouvre automatiquement à la toute première connexion, et reste
+// relançable depuis le Profil. L'ordre suit ce qu'un nouvel ambassadeur
+// doit faire dans la vraie vie : récupérer son lien, le partager, puis
+// savoir où il verra l'argent arriver.
+function ambassadorTutorialSteps(){
+  return [
+    {
+      el: '[data-tuto="lien"]',
+      title: 'Voici ton lien à toi',
+      text: "C'est ton identité sur Génération Capable. Toute personne qui s'abonne en passant par ce lien est comptée pour toi, automatiquement. Tu n'as jamais à déclarer une vente toi-même.",
+      before: () => goScreen('today')
+    },
+    {
+      el: '[data-tuto="lien"] .ref-btn-row',
+      title: 'Copie-le et mets-le dans ta bio',
+      text: "Bio TikTok, Instagram, Snap, description YouTube : partout où des gens peuvent cliquer. « Partager » ouvre directement tes applis pour l'envoyer en message.",
+    },
+    {
+      el: '.nav-item[data-screen="revenue"]',
+      title: 'Tes gains, en direct',
+      text: "Tu gagnes 15 € par mois pour chaque abonné que tu apportes, tant qu'il reste abonné. Plus 50 € à chaque vente réalisée par un vendeur que tu as fait entrer.",
+      before: () => goScreen('revenue')
+    },
+    {
+      el: '[data-tuto="tunnel"]',
+      title: 'Comprends ce qui bloque',
+      text: "Beaucoup de clics mais peu d'inscrits ? Ton lien attire, mais ton message ne convainc pas encore. C'est là que tu verras quoi améliorer.",
+    },
+    {
+      el: '.nav-item[data-screen="coach"]',
+      title: "L'IA Coach répond 24h/24",
+      text: "Un script TikTok, une réponse à « c'est trop cher », une idée de contenu : demande-lui. Elle connaît l'offre et les commissions par cœur.",
+      before: () => goScreen('coach')
+    },
+    {
+      el: '.nav-item[data-screen="dossier"]',
+      title: 'Ton dossier, à remplir une fois',
+      text: "Contrat, pièce d'identité et RIB. Sans ça, tes gains s'accumulent mais ne peuvent pas t'être versés. Cinq minutes, une seule fois.",
+      before: () => goScreen('dossier')
+    },
+    {
+      title: 'À toi de jouer 🚀',
+      text: "Ton premier objectif : mettre ton lien dans ta bio aujourd'hui. Tu peux revoir cette visite quand tu veux depuis l'onglet Profil.",
+      before: () => goScreen('today')
+    }
+  ];
+}
+
+function startAmbassadorTutorial(onlyFirstVisit, _tries){
+  // tutorial.js est chargé en "defer" : à la toute première connexion il
+  // peut ne pas encore être là quand l'écran s'affiche. On réessaie
+  // brièvement plutôt que d'abandonner silencieusement.
+  if(!window.GCTuto){
+    const n = (_tries || 0) + 1;
+    if(n <= 20) setTimeout(() => startAmbassadorTutorial(onlyFirstVisit, n), 150);
+    return;
+  }
+  const opts = { id: 'ambassadeur', steps: ambassadorTutorialSteps() };
+  if(onlyFirstVisit) window.GCTuto.startIfFirstVisit(opts);
+  else window.GCTuto.start(opts);
+}
+
+function replayAmbassadorTutorial(){
+  if(!window.GCTuto) return;
+  window.GCTuto.reset('ambassadeur');
+  startAmbassadorTutorial(false);
+}
+
 // ── Écran Formation ──
 function renderTraining(){
   const list = STATE.training;
@@ -843,14 +915,23 @@ function toggleTraining(i){
 // ── Écran Profil ──
 function renderProfile(){
   document.getElementById('profile-name').textContent = STATE.name;
-  document.getElementById('profile-code').textContent = STATE.code;
-}
-document.getElementById('profile-code')?.addEventListener?.('click', () => {});
-document.addEventListener('click', (e) => {
-  if(e.target.id === 'profile-code'){
-    navigator.clipboard?.writeText(STATE.code);
+
+  // Affiche le vrai lien de parrainage, plus l'ancien code "GC-AMB###" tiré
+  // au hasard qui ne servait à rien : c'est ce lien, et lui seul, qui
+  // déclenche l'attribution d'une vente.
+  const codeEl = document.getElementById('profile-code');
+  if(codeEl){
+    codeEl.textContent = REFERRAL && REFERRAL.link
+      ? REFERRAL.link.replace(/^https?:\/\//, '')
+      : 'Lien en cours de création…';
   }
-});
+
+  const s = (REFERRAL && REFERRAL.stats) || {};
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  set('prof-active',  s.subs_active || 0);
+  set('prof-total',   eurCents(s.earned_total_cents));
+  set('prof-pending', eurCents(s.earned_pending_cents));
+}
 
 function renderAll(){
   renderToday();
@@ -1030,5 +1111,6 @@ async function sendChat(){
 checkGate();
 </script>
 <script src="/compliance-client.js" defer></script>
+<script src="/tutorial.js" defer></script>
 </body>
 </html>

@@ -34,13 +34,18 @@ const { notifyAdmins, safeNotify } = require('./_lib/notifications/send');
 
 const MAX_STATE_BYTES = 200_000; // large marge au-dessus d'un usage normal, évite l'abus
 
+// État "métier" de l'ambassadeur : uniquement ce qui lui appartient et qu'il
+// modifie lui-même (missions cochées, progression de formation, historique de
+// chat). Les revenus et le lien de parrainage n'y figurent PLUS : ils sont
+// calculés en base à partir des paiements Stripe (voir buildReferral). Les
+// anciens champs "revenue" et "code" — un bloc de zéros et un identifiant
+// tiré au hasard, que rien n'alimentait — ont été retirés pour qu'aucune
+// interface ne puisse à nouveau afficher des chiffres inventés.
 function defaultState(){
   return {
     active: true,
     name: 'Ambassadeur',
-    code: 'GC-AMB' + Math.floor(100 + Math.random() * 900),
     missionDone: [false, false],
-    revenue: { today: 0, week: 0, month: 0, total: 0, activeSubs: 0, history: [] },
     training: [
       { title: 'Comprendre l\'offre Génération Capable', done: true },
       { title: 'Créer ton premier contenu TikTok', done: false },

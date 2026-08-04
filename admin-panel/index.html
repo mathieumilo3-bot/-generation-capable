@@ -10,6 +10,7 @@
      site public, chargé depuis son origine pour éviter toute duplication de
      code entre les deux sites Netlify indépendants (voir compliance-client.js). -->
 <script src="https://generationcapable.fr/compliance-client.js"></script>
+<script src="/tutorial.js"></script>
 <style>
 :root{--bg:#0a0a0a;--bg1:#131313;--b:rgba(255,255,255,.08);--t1:#f5f5f5;--t2:#b8b8b8;--t3:#7a7a7a;--gold:#c9a84c;--green:#30d158;--orange:#ff9f0a;--red:#ff453a;--blue:#2997ff}
 *{box-sizing:border-box}
@@ -94,6 +95,7 @@ a{color:var(--gold)}
     <div class="topbar-t">⚙️ Administration — Génération Capable</div>
     <div style="margin-left:auto;display:flex;gap:8px">
       <button class="btn btn-g" onclick="refreshCurrentTab()">🔄 Actualiser</button>
+      <button class="btn btn-g" onclick="replayAdminTutorial()">🎓 Visite guidée</button>
       <button class="btn btn-g" onclick="adminSignOut()">Déconnexion</button>
     </div>
   </div>
@@ -323,6 +325,7 @@ async function checkAccess(){
       document.getElementById('gate').classList.add('hidden');
       document.getElementById('panel').classList.remove('hidden');
       await loadTab('overview');
+      startAdminTutorial(true);
     } else {
       setGateUI('⛔', 'Accès refusé', 'Ce compte n\'a pas les droits administrateur.', false, true);
       await supa.auth.signOut();
@@ -355,6 +358,74 @@ async function loadTab(tab){
   if(tab === 'support') return loadSupportTickets();
   if(tab === 'compliance') return mountAdminCompliance();
   if(tab === 'legal') return mountAdminLegalInfo();
+}
+
+// ── Visite guidée du back-office (voir tutorial.js) ──
+//
+// Le back-office est l'écran où l'on décide de payer des gens : chaque étape
+// dit surtout ce qui est automatique et ce qui reste une décision humaine,
+// pour éviter d'attendre un virement qui ne partira jamais tout seul.
+function adminTutorialSteps(){
+  return [
+    {
+      el: '.tab[data-tab="overview"]',
+      title: 'Ton tableau de bord',
+      text: "Le chiffre d'affaires, les membres actifs et ce qui demande ton attention. C'est la première chose à regarder chaque matin.",
+      before: () => switchAdminTab('overview')
+    },
+    {
+      el: '.tab[data-tab="ambassadors"]',
+      title: 'Le suivi des ambassadeurs',
+      text: "Chaque ambassadeur, son lien, ses clics, ses conversions et ce que tu lui dois. Tout est calculé à partir des paiements Stripe réellement encaissés.",
+      before: () => switchAdminTab('ambassadors')
+    },
+    {
+      el: '#amb-summary',
+      title: 'Ce que tu dois, en un coup d\'œil',
+      text: "« Reste à verser » est le total dû à l'ensemble des ambassadeurs. Il monte tout seul : 15 € par mois et par abonné actif apporté, 50 € par vente d'un vendeur apporté.",
+      keepIfMissing: true
+    },
+    {
+      el: '.tab[data-tab="payouts"]',
+      title: 'Les demandes de retrait',
+      text: "Quand un vendeur demande à être payé, ça arrive ici. Rien ne part automatiquement : c'est toi qui valides, puis qui fais le virement depuis ta banque.",
+      before: () => switchAdminTab('payouts')
+    },
+    {
+      el: '.tab[data-tab="compliance"]',
+      title: 'Les dossiers à valider',
+      text: "Contrats signés, pièces d'identité, RIB. Tant qu'un dossier n'est pas validé ici, la personne ne peut pas être payée — c'est le garde-fou légal.",
+      before: () => switchAdminTab('compliance')
+    },
+    {
+      el: '.tab[data-tab="support"]',
+      title: 'Les messages reçus',
+      text: "Les questions des vendeurs et des ambassadeurs atterrissent ici. Y répondre vite est le meilleur moyen d'éviter les désabonnements.",
+      before: () => switchAdminTab('support')
+    },
+    {
+      title: 'Tout est en place ✅',
+      text: "Tu peux relancer cette visite à tout moment avec le bouton « Visite guidée » en haut de l'écran.",
+      before: () => switchAdminTab('overview')
+    }
+  ];
+}
+
+function startAdminTutorial(onlyFirstVisit, _tries){
+  if(!window.GCTuto){
+    const n = (_tries || 0) + 1;
+    if(n <= 20) setTimeout(() => startAdminTutorial(onlyFirstVisit, n), 150);
+    return;
+  }
+  const opts = { id: 'admin', steps: adminTutorialSteps() };
+  if(onlyFirstVisit) window.GCTuto.startIfFirstVisit(opts);
+  else window.GCTuto.start(opts);
+}
+
+function replayAdminTutorial(){
+  if(!window.GCTuto) return;
+  window.GCTuto.reset('admin');
+  startAdminTutorial(false);
 }
 
 // ── Ambassadeurs : trafic, conversions et rémunération ──
