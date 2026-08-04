@@ -17,6 +17,7 @@
 // alors envoyé (voir notify-cron-leads.js, filtre "converted = false").
 
 const { supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
+const { allow } = require('./_lib/rate-limit');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -26,6 +27,16 @@ exports.handler = async (event) => {
   }
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return jsonResponse(500, { error: 'SERVER_NOT_CONFIGURED' });
+  }
+
+  // Sans limite, n'importe qui peut noyer la base de prospects de milliers de
+  // fausses adresses — et déclencher autant de séquences d'emails, ce qui
+  // abîme la réputation d'envoi du domaine. Une personne réelle ne soumet ce
+  // formulaire qu'une ou deux fois.
+  if (!(await allow(event, 'lead', 10, 60))) {
+    // Réponse volontairement identique au succès : un script ne doit pas
+    // apprendre qu'il a été filtré, sinon il ajuste sa cadence.
+    return jsonResponse(200, { ok: true });
   }
 
   let payload;

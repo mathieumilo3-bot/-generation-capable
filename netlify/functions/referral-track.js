@@ -19,6 +19,7 @@
 
 const crypto = require('crypto');
 const { supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
+const { allow, tooManyRequests } = require('./_lib/rate-limit');
 
 // Même format que la contrainte SQL ambassadors_slug_format (migration 0020).
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/;
@@ -49,6 +50,13 @@ exports.handler = async (event) => {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[referral-track] SUPABASE_SERVICE_ROLE_KEY absente sur Netlify.');
     return jsonResponse(200, { valid: false, error: 'NO_SERVICE_ROLE_KEY' });
+  }
+
+  // Un ambassadeur pourrait marteler son propre lien pour gonfler ses clics.
+  // 40 appels par minute laisse largement passer un visiteur normal (qui en
+  // fait un seul par page) tout en coupant un script.
+  if (!(await allow(event, 'ref', 40, 60))) {
+    return tooManyRequests();
   }
 
   let payload;
