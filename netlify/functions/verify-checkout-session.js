@@ -36,6 +36,7 @@ const {
   ensureAuthUserForEmail,
   generateMagicLinkOtp,
 } = require('./_lib/supabase-admin');
+const { referralFieldsForSubscriber } = require('./_lib/referral');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') {
@@ -104,6 +105,13 @@ async function activateSubscriber({ email, offer, session }) {
 
   // Upsert sur user_id (clé primaire de "subscribers" en production) — pas
   // sur email, colonne qui n'existe pas sur cette table.
+  // Attribution ambassadeur — posée ici AUSSI, et pas seulement dans le
+  // webhook : si le webhook tardait, était rejoué ou ne partait jamais, la
+  // vente resterait sans ambassadeur alors qu'elle a bien été encaissée.
+  // referralFieldsForSubscriber() renvoie un objet vide si l'abonné a déjà un
+  // parrain, ce qui empêche les deux chemins de se contredire.
+  const referralFields = await referralFieldsForSubscriber(user.id, session.metadata?.ref);
+
   await supabaseAdminRequest('/rest/v1/subscribers?on_conflict=user_id', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -111,6 +119,7 @@ async function activateSubscriber({ email, offer, session }) {
       user_id: user.id,
       is_active: true,
       stripe_customer_id: session.customer || null,
+      ...referralFields,
       updated_at: new Date().toISOString(),
     })
   });

@@ -75,7 +75,6 @@ a{color:var(--gold)}
       <input id="gate-password" class="field" type="password" placeholder="••••••••" autocomplete="current-password">
       <button class="btn btn-p" style="width:100%" id="gate-login-btn" onclick="gateLogin()">Se connecter →</button>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
-        <button class="btn btn-g" style="width:100%" id="gate-magic-btn" onclick="gateMagicLink()">✉️ M'envoyer un lien de connexion</button>
         <button class="btn btn-g" style="width:100%;background:none;border:none;color:var(--t3);font-size:12.5px;text-decoration:underline;cursor:pointer" id="gate-forgot-btn" onclick="gateForgotPassword()">Mot de passe oublié ?</button>
       </div>
     </div>
@@ -244,23 +243,23 @@ async function gateLogin(){
   } finally { btn.disabled = false; }
 }
 
-// Connexion sans mot de passe : Supabase envoie un lien à usage unique.
-// L'accès reste verrouillé par admin-verify (table "admins") après clic —
-// recevoir le lien ne suffit pas à obtenir les droits admin.
-async function gateMagicLink(){
-  const email = document.getElementById('gate-email').value.trim();
-  if(!email){ setGateUI('✉️', 'Email requis', 'Renseigne ton email au-dessus, puis redemande le lien.', true, false); return; }
-  const btn = document.getElementById('gate-magic-btn');
-  btn.disabled = true;
-  try{
-    const { error } = await supa.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin }
-    });
-    if(error){ setGateUI('❌', 'Envoi impossible', error.message, true, false); return; }
-    setGateUI('✉️', 'Lien envoyé', 'Ouvre l\'email envoyé à ' + email + ' et clique sur le lien pour te connecter. Pense à vérifier les spams.', true, false);
-  } finally { btn.disabled = false; }
-}
+// Réinitialisation du mot de passe administrateur.
+//
+// POURQUOI LE LIEN RENVOIE VERS LE SITE PUBLIC ET NON ICI
+//   Supabase n'accepte comme cible de redirection que les URL inscrites dans
+//   sa liste blanche. Le back-office étant sur un domaine distinct qui n'y
+//   figure pas, un lien pointant ici était silencieusement remplacé par le
+//   domaine principal : l'administrateur atterrissait sur l'espace vendeur,
+//   connecté mais sans jamais avoir pu changer son mot de passe.
+//
+//   On assume donc explicitement ce trajet : l'email renvoie vers
+//   generationcapable.fr (domaine autorisé), qui affiche l'écran de nouveau
+//   mot de passe puis propose un retour vers le back-office. Le mot de passe
+//   étant commun au compte Supabase, il est ensuite utilisable ici.
+//
+//   Aucun jeton de session ne transite entre les deux domaines : seul le mot
+//   de passe est modifié, puis ressaisi normalement sur cette page.
+const PUBLIC_SITE_URL = 'https://generationcapable.fr';
 
 async function gateForgotPassword(){
   const email = document.getElementById('gate-email').value.trim();
@@ -268,9 +267,14 @@ async function gateForgotPassword(){
   const btn = document.getElementById('gate-forgot-btn');
   btn.disabled = true;
   try{
-    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: PUBLIC_SITE_URL });
     if(error){ setGateUI('❌', 'Envoi impossible', error.message, true, false); return; }
-    setGateUI('✉️', 'Email envoyé', 'Ouvre l\'email envoyé à ' + email + ' et clique sur le lien pour choisir un nouveau mot de passe. Pense à vérifier les spams.', true, false);
+    setGateUI(
+      '✉️',
+      'Email envoyé',
+      'Ouvre l\'email envoyé à ' + email + '. Le lien s\'ouvre sur generationcapable.fr : choisis-y ton nouveau mot de passe, puis clique sur « Aller au back-office » pour revenir ici. Pense à vérifier les spams.',
+      true, false
+    );
   } finally { btn.disabled = false; }
 }
 
@@ -899,6 +903,11 @@ supa.auth.onAuthStateChange((event, session) => {
 // Le hash "#...type=recovery" est consommé par supabase-js avant que
 // onAuthStateChange ne soit branché sur certains navigateurs : on le détecte
 // aussi directement pour ne jamais rater le cas.
+//
+// Ce chemin n'est aujourd'hui pas emprunté (les emails de réinitialisation
+// pointent vers le site public, cf. gateForgotPassword) mais reste correct :
+// il prendra le relais automatiquement si l'URL du back-office est un jour
+// ajoutée à la liste blanche de redirection de Supabase.
 if(/type=recovery/.test(window.location.hash)){
   RECOVERY_MODE = true;
   showNewPasswordForm();
