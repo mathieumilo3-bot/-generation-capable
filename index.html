@@ -1267,6 +1267,33 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
         <button onclick="sendResetEmail()" style="width:100%;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;border:none;padding:14px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">Envoyer le lien</button>
         <div style="font-size:12px;color:var(--t3);margin-top:20px"><a onclick="showLoginForm()" style="color:var(--gold);cursor:pointer">← Retour à la connexion</a></div>
       </div>
+
+      <!-- Vue "choisir un nouveau mot de passe" — affichée au RETOUR d'un
+           lien de réinitialisation. Sans cet écran, Supabase ouvrait une
+           session et la personne se retrouvait connectée sans jamais avoir
+           pu changer son mot de passe : au rechargement suivant, elle était
+           de nouveau bloquée avec l'ancien, oublié. -->
+      <div id="reset-view" style="display:none">
+        <h1 style="font-size:1.5rem;font-weight:600;color:var(--t1);margin-bottom:8px">Nouveau mot de passe</h1>
+        <p style="font-size:.85rem;color:var(--t2);margin-bottom:26px" id="reset-sub">Choisis le mot de passe que tu utiliseras pour te connecter.</p>
+        <div style="text-align:left;margin-bottom:14px">
+          <label style="font-size:12px;color:var(--t2);display:block;margin-bottom:6px">Nouveau mot de passe</label>
+          <input id="reset-pw" type="password" class="field" placeholder="Au moins 8 caractères" autocomplete="new-password" style="width:100%">
+        </div>
+        <div style="text-align:left;margin-bottom:18px">
+          <label style="font-size:12px;color:var(--t2);display:block;margin-bottom:6px">Confirmer</label>
+          <input id="reset-pw2" type="password" class="field" placeholder="Retape-le" autocomplete="new-password" style="width:100%">
+        </div>
+        <button id="reset-btn" onclick="applyNewPassword()" style="width:100%;background:linear-gradient(180deg,#f2c869,var(--gold) 55%,#d1a238);color:#1a1305;border:none;padding:14px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">Enregistrer le mot de passe</button>
+        <div id="reset-err" style="font-size:12.5px;color:#e08080;margin-top:14px"></div>
+        <!-- Affiché uniquement si le compte est administrateur : le
+             back-office est sur un autre domaine, il faut y retourner
+             explicitement une fois le mot de passe changé. -->
+        <div id="reset-admin-link" style="display:none;margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08)">
+          <p style="font-size:12.5px;color:var(--t2);margin-bottom:10px">Ton compte est administrateur.</p>
+          <a href="https://generationcapable-admin.netlify.app" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:rgba(255,255,255,.06);color:var(--gold);border:1px solid rgba(201,168,76,.35);padding:13px;border-radius:10px;font-size:13.5px;font-weight:700;text-decoration:none">Aller au back-office →</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -5430,11 +5457,39 @@ async function onAuthSuccess(session){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
     document.getElementById('page-dashboard').classList.add('on');
     try{ renderAll(); }catch(e){}
+    startSessionGuard();
     toast('Bienvenue dans Génération Capable !');
   } else {
     toast('Ton compte existe mais aucun abonnement actif n\'y est rattaché.');
     go('rejoindre', null);
   }
+}
+
+// ── Un seul appareil connecté à la fois ──
+//
+// L'abonnement est individuel : sans cette limite, un seul compte à 67 €/mois
+// peut servir à une équipe entière. La règle est "le dernier appareil gagne",
+// pour ne jamais enfermer dehors un client qui change de téléphone (voir
+// session-guard-client.js et la migration 0022).
+function startSessionGuard(){
+  if(!window.GCSessionGuard || !supa) return;
+  window.GCSessionGuard.init({
+    getSession: async () => {
+      const { data:{ session } } = await supa.auth.getSession();
+      return session;
+    },
+    onDisplaced: async () => {
+      try{ await supa.auth.signOut(); }catch(e){}
+      alert(
+        'Ton compte vient d\'être utilisé sur un autre appareil.\n\n' +
+        'Pour des raisons de sécurité, un seul appareil peut être connecté à la fois. ' +
+        'Reconnecte-toi ici si c\'est bien toi.'
+      );
+      location.reload();
+    }
+  });
+  // Cette connexion devient la connexion de référence.
+  window.GCSessionGuard.claim();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -5523,16 +5578,96 @@ function reportOAuthErrorIfAny(){
   return true;
 }
 
+// ── Retour d'un lien "mot de passe oublié" ──
+//
+// Supabase ouvre une session dès l'ouverture du lien puis émet
+// PASSWORD_RECOVERY. Sans le traitement ci-dessous, cette session était
+// interprétée comme une connexion normale : la personne entrait dans
+// l'application sans jamais avoir défini de nouveau mot de passe, et se
+// retrouvait bloquée au rechargement suivant avec celui qu'elle avait
+// justement oublié.
+//
+// C'est aussi le chemin de récupération des ADMINISTRATEURS : le back-office
+// est sur un autre domaine, que Supabase n'accepte pas comme cible de
+// redirection. L'email revient donc ici, sur le domaine principal, et un
+// lien vers le back-office s'affiche une fois le mot de passe changé.
+let RECOVERY_MODE = false;
+
+function showResetPasswordView(){
+  RECOVERY_MODE = true;
+  const show = (id, on) => { const el = document.getElementById(id); if(el) el.style.display = on ? 'block' : 'none'; };
+  show('login-view', false);
+  show('forgot-view', false);
+  show('reset-view', true);
+  // La page de connexion doit être visible : le lien email peut arriver
+  // alors que l'application affichait tout autre chose.
+  try{
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+    document.getElementById('page-login').classList.add('on');
+    window.scrollTo(0, 0);
+  }catch(e){}
+}
+
+async function applyNewPassword(){
+  const pw  = document.getElementById('reset-pw').value;
+  const pw2 = document.getElementById('reset-pw2').value;
+  const err = document.getElementById('reset-err');
+  err.textContent = '';
+
+  if(pw.length < 8){ err.textContent = 'Le mot de passe doit faire au moins 8 caractères.'; return; }
+  if(pw !== pw2){ err.textContent = 'Les deux mots de passe ne sont pas identiques.'; return; }
+
+  const btn = document.getElementById('reset-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supa.auth.updateUser({ password: pw });
+    if(error){ err.textContent = error.message; return; }
+
+    // Compte administrateur : on propose explicitement le back-office, qui
+    // vit sur un autre domaine et ne serait sinon jamais atteint.
+    try{
+      const { data:{ session } } = await supa.auth.getSession();
+      if(session){
+        const r = await fetch('/.netlify/functions/admin-verify', {
+          headers: { 'Authorization': 'Bearer ' + session.access_token }
+        });
+        const d = await r.json();
+        if(r.ok && d.authorized === true){
+          document.getElementById('reset-sub').textContent = 'Mot de passe enregistré ✅';
+          document.getElementById('reset-admin-link').style.display = 'block';
+          RECOVERY_MODE = false;
+          return;
+        }
+      }
+    }catch(e){ /* pas admin, ou vérification indisponible → parcours normal */ }
+
+    RECOVERY_MODE = false;
+    toast('✅ Mot de passe enregistré');
+    const { data:{ session } } = await supa.auth.getSession();
+    if(session) await onAuthSuccess(session);
+  } finally { btn.disabled = false; }
+}
+
 // Vérifie automatiquement, au chargement de la page, si l'utilisateur a
 // déjà une session valide (ex: retour après clic sur un lien OAuth/email).
 (async function checkExistingSession(){
   if(reportOAuthErrorIfAny()) return;
   if(!supa) return;
+
+  // Doit être testé AVANT getSession() : supabase-js consomme le fragment
+  // d'URL à l'initialisation, donc le marqueur disparaît ensuite.
+  const isRecovery = /type=recovery/.test(window.location.hash) ||
+                     /type=recovery/.test(window.location.search);
+
+  supa.auth.onAuthStateChange((event, session) => {
+    if(event === 'PASSWORD_RECOVERY'){ showResetPasswordView(); return; }
+    if(event === 'SIGNED_IN' && session && !RECOVERY_MODE) onAuthSuccess(session);
+  });
+
+  if(isRecovery){ showResetPasswordView(); return; }
+
   const { data:{ session } } = await supa.auth.getSession();
   if(session) await onAuthSuccess(session);
-  supa.auth.onAuthStateChange((event, session) => {
-    if(event === 'SIGNED_IN' && session) onAuthSuccess(session);
-  });
 })();
 
 
@@ -6247,5 +6382,6 @@ function mountDossierPage(){
 <script src="/notifications-client.js" defer></script>
 <script src="/compliance-client.js" defer></script>
 <script src="/tutorial.js" defer></script>
+<script src="/session-guard-client.js" defer></script>
 </body>
 </html>
