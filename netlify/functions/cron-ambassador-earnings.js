@@ -43,7 +43,26 @@ exports.handler = async () => {
     // "created: 0" est le cas NORMAL et attendu la plupart des jours : cela
     // signifie que tous les gains du mois en cours ont déjà été posés.
     console.log('[cron-ambassador-earnings]', JSON.stringify(data));
-    return jsonResponse(200, { ok: true, ...data });
+
+    // Purge des clics de plus de 24 mois — greffée ici plutôt que dans un
+    // cron dédié : c'est une opération rare et brève, et un job de plus
+    // serait un job de plus à surveiller. Un échec de purge ne doit jamais
+    // faire échouer le crédit des gains, qui est la mission principale.
+    let purged = null;
+    try {
+      const purgeR = await supabaseAdminRequest('/rest/v1/rpc/purge_old_referral_clicks', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      if (purgeR.ok) {
+        purged = await purgeR.json();
+        if (purged) console.log('[cron-ambassador-earnings] clics purgés:', purged);
+      }
+    } catch (e) {
+      console.error('[cron-ambassador-earnings] Purge des clics échouée (non bloquant)', e);
+    }
+
+    return jsonResponse(200, { ok: true, ...data, purged_clicks: purged });
 
   } catch (e) {
     console.error('[cron-ambassador-earnings] NETWORK_ERROR', e);

@@ -31,7 +31,19 @@ const DOC_TYPE_LABELS = {
   identity: "Pièce d'identité", rib: 'RIB', siret_proof: "Justificatif SIRET (extrait INPI)",
   urssaf: 'Attestation URSSAF', vat_cert: 'Certificat de TVA', other: 'Autre document',
 };
-const MAX_FILE_BYTES = 8 * 1024 * 1024;
+// Taille maximale par fichier.
+//
+// Était fixée à 8 Mo, une valeur inatteignable en pratique : Netlify refuse
+// toute requête dont le corps dépasse 6 Mo, et ce refus intervient AVANT
+// l'exécution de cette fonction. Comme le fichier arrive en base64 (~+33 %),
+// tout envoi au-delà d'environ 4,4 Mo échouait donc sur une erreur réseau
+// opaque, sans jamais atteindre le message « fichier trop volumineux » prévu
+// ici — le contrôle ne servait à rien au-dessus de cette limite.
+//
+// 4 Mo laisse une marge sûre pour l'encodage et le reste du JSON. Même valeur
+// que MAX_UPLOAD_BYTES dans compliance-client.js : le navigateur prévient
+// l'utilisateur avant l'envoi, ce contrôle-ci reste l'autorité.
+const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const ALLOWED_MIME = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' };
 
 exports.handler = async (event) => {
@@ -80,7 +92,7 @@ exports.handler = async (event) => {
 
     const fileBytes = Buffer.from(match[2], 'base64');
     if (fileBytes.length === 0 || fileBytes.length > MAX_FILE_BYTES) {
-      return jsonResponse(400, { error: 'FILE_TOO_LARGE', message: 'Fichier trop volumineux (8 Mo maximum).' });
+      return jsonResponse(400, { error: 'FILE_TOO_LARGE', message: 'Fichier trop volumineux (4 Mo maximum par fichier).' });
     }
 
     const expiresAt = /^\d{4}-\d{2}-\d{2}$/.test(payload.expires_at || '') ? payload.expires_at : null;
@@ -149,7 +161,7 @@ exports.handler = async (event) => {
     if (!ext) return jsonResponse(400, { error: 'UNSUPPORTED_FILE_TYPE', message: 'Formats acceptés : PDF, JPG, PNG.' });
     const fileBytes = Buffer.from(match[2], 'base64');
     if (fileBytes.length === 0 || fileBytes.length > MAX_FILE_BYTES) {
-      return jsonResponse(400, { error: 'FILE_TOO_LARGE', message: 'Fichier trop volumineux (8 Mo maximum).' });
+      return jsonResponse(400, { error: 'FILE_TOO_LARGE', message: 'Fichier trop volumineux (4 Mo maximum par fichier).' });
     }
 
     const newPath = `${existing.role}/${userId}/${existing.doc_type}-${Date.now()}.${ext}`;
