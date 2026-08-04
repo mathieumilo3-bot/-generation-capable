@@ -144,6 +144,81 @@ async function activateSubscription(){
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// PARRAINAGE AMBASSADEUR
+// ─────────────────────────────────────────────────────────────────────────
+// Un ambassadeur partage generationcapable.fr/<son-slug>. Netlify réécrit ce
+// chemin en /?ref=<slug> (voir netlify.toml), on le capture ici, on le fait
+// valider par le serveur, puis on le conserve 90 jours.
+//
+// Le slug conservé ici n'est qu'un INDICE : c'est le serveur qui décide, au
+// moment du paiement, s'il correspond à un ambassadeur réel (le slug part
+// dans les metadata Stripe, et le webhook le retraduit). Rien de ce qui est
+// stocké dans le navigateur ne peut donc créditer un ambassadeur à tort.
+
+const GC_REF_KEY = 'gc_ref';
+const GC_REF_TTL_DAYS = 90;
+
+function saveReferral(slug){
+  try{
+    localStorage.setItem(GC_REF_KEY, JSON.stringify({ slug, at: Date.now() }));
+  }catch(e){}
+  // Cookie de secours : certains navigateurs mobiles purgent le localStorage
+  // plus agressivement que les cookies.
+  try{
+    document.cookie = 'gc_ref=' + encodeURIComponent(slug) +
+      ';path=/;max-age=' + (GC_REF_TTL_DAYS * 86400) + ';SameSite=Lax';
+  }catch(e){}
+}
+
+function getReferral(){
+  try{
+    const raw = localStorage.getItem(GC_REF_KEY);
+    if(raw){
+      const o = JSON.parse(raw);
+      if(o && o.slug && (Date.now() - o.at) < GC_REF_TTL_DAYS * 86400000) return o.slug;
+    }
+  }catch(e){}
+  const m = document.cookie.match(/(?:^|;\s*)gc_ref=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+// Premier arrivé, premier servi : un visiteur déjà attribué à un ambassadeur
+// n'est pas réattribué s'il repasse plus tard par un autre lien. Même règle
+// côté serveur dans stripe-webhook.js — les deux doivent concorder.
+async function captureReferralFromUrl(){
+  let params;
+  try{ params = new URLSearchParams(window.location.search); }catch(e){ return; }
+  const raw = (params.get('ref') || '').toLowerCase().trim();
+  if(!raw) return;
+
+  // L'URL est nettoyée immédiatement : le visiteur voit generationcapable.fr,
+  // pas un lien à rallonge, et un partage de sa part ne recopie pas le
+  // parrainage de quelqu'un d'autre.
+  try{
+    params.delete('ref');
+    const qs = params.toString();
+    history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+  }catch(e){}
+
+  if(getReferral()) return;
+
+  try{
+    const resp = await fetch('/.netlify/functions/referral-track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: raw })
+    });
+    const data = await resp.json();
+    if(data && data.valid && data.slug){
+      saveReferral(data.slug);
+      if(data.name) toast('👋 Invité par ' + data.name);
+    }
+  }catch(e){
+    console.error('[referral] tracking indisponible', e);
+  }
+}
+
 // Crée une session Stripe Checkout côté serveur et redirige vers Stripe.
 // Remplace l'ancien lien statique (identique pour toutes les offres) et
 // l'ancienne activation "sur simple clic" : l'accès n'est débloqué qu'après
@@ -156,7 +231,7 @@ async function redirectToStripeCheckout(offer, email, submitBtnId){
     const resp = await fetch('/.netlify/functions/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ offer, email })
+      body: JSON.stringify({ offer, email, ref: getReferral() || undefined })
     });
     const data = await resp.json();
     if(!resp.ok || data.error || !data.url){
@@ -6077,6 +6152,72 @@ function renderScanResult(scan, el){
 loadState();
 renderAll();
 handleCheckoutReturn();
+// Doit tourner à chaque chargement, avant tout paiement : c'est ce qui
+// mémorise l'ambassadeur à créditer si le visiteur s'abonne.
+captureReferralFromUrl();
+
+// ── Visite guidée du site vendeur (voir tutorial.js) ──
+//
+// Ciblage par le contenu du onclick plutôt que par un attribut ajouté à
+// chaque entrée de menu : la barre latérale en compte plusieurs dizaines,
+// et un sélecteur qui suit la navigation existante ne peut pas se
+// désynchroniser d'elle.
+function sellerTutorialSteps(){
+  return [
+    {
+      title: 'Bienvenue dans ton espace 👋',
+      text: "Deux minutes pour repérer les quatre endroits qui comptent vraiment. Tu pourras revoir cette visite depuis ton profil.",
+    },
+    {
+      el: '[onclick*="go(\'opportunites\'"]',
+      title: 'Tes prospects et tes ventes',
+      text: "C'est ici que tu suis chaque contact, de la prise de rendez-vous jusqu'au paiement. Une commande n'est marquée « payée » que par le paiement réel — jamais à la main.",
+    },
+    {
+      el: '[onclick*="go(\'commissions\'"]',
+      title: 'Ce que tu as gagné',
+      text: "Tes commissions arrivent ici automatiquement dès qu'une vente est encaissée. Tu y demandes aussi tes retraits.",
+    },
+    {
+      el: '[onclick*="go(\'dossier\'"]',
+      title: 'Ton dossier administratif',
+      text: "Contrat, pièce d'identité, RIB. À remplir une seule fois — sans lui, tes commissions s'accumulent mais ne peuvent pas t'être versées.",
+    },
+    {
+      el: '[onclick*="go(\'academie\'"]',
+      title: 'La formation',
+      text: "Les modules qui t'apprennent à vendre. Commence par le premier, même si tu as déjà de l'expérience : les scripts sont propres à l'offre.",
+    },
+    {
+      title: 'À toi de jouer 🚀',
+      text: "Premier objectif : ajouter ton premier prospect dans Opportunités. Le coach IA est là si tu bloques.",
+    }
+  ];
+}
+
+function startSellerTutorial(onlyFirstVisit, _tries){
+  if(!window.GCTuto){
+    const n = (_tries || 0) + 1;
+    if(n <= 20) setTimeout(() => startSellerTutorial(onlyFirstVisit, n), 150);
+    return;
+  }
+  const opts = { id: 'vendeur', steps: sellerTutorialSteps() };
+  if(onlyFirstVisit) window.GCTuto.startIfFirstVisit(opts);
+  else window.GCTuto.start(opts);
+}
+
+function replaySellerTutorial(){
+  if(!window.GCTuto) return;
+  window.GCTuto.reset('vendeur');
+  startSellerTutorial(false);
+}
+
+// Ne se déclenche que pour un membre qui a réellement accès à l'espace :
+// un visiteur non abonné voit la page de vente, pas le tableau de bord, et
+// une visite guidée par-dessus n'aurait aucun sens.
+setTimeout(() => {
+  if(document.querySelector('[onclick*="go(\'opportunites\'"]')) startSellerTutorial(true);
+}, 1200);
 
 // ── Dossier administratif (contrat, signature, pièces, RIB) ──
 // Widget auto-porté (voir compliance-client.js) — ne dépend que d'un point
@@ -6105,5 +6246,6 @@ function mountDossierPage(){
 
 <script src="/notifications-client.js" defer></script>
 <script src="/compliance-client.js" defer></script>
+<script src="/tutorial.js" defer></script>
 </body>
 </html>

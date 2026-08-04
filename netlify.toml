@@ -16,11 +16,31 @@
   schedule = "*/10 * * * *"
 [functions."notify-cron-compliance-expiry"]
   schedule = "0 7 * * *"
+# Gains ambassadeurs : passage quotidien, idempotent côté SQL (voir la
+# fonction — repasser ne crédite jamais deux fois le même mois).
+[functions."cron-ambassador-earnings"]
+  schedule = "0 6 * * *"
 
 # En-têtes de sécurité de base. Pas de Content-Security-Policy : le site
 # repose entièrement sur des <script> et des attributs onclick= inline sans
 # nonce, une CSP stricte casserait toute interactivité. Ajouter une CSP est
 # un chantier à part (nonces ou hashes sur chaque script inline) — voir audit.
+# Liens de parrainage ambassadeurs : generationcapable.fr/<slug>
+#
+# Netlify sert TOUJOURS un fichier réel en priorité sur une règle de
+# redirection (tant qu'on ne met pas force = true). Cette règle attrape donc
+# uniquement les chemins qui ne correspondent à aucun fichier du site :
+# /index.html, /ambassadors.html, /sw.js, /manifest.json et
+# /.netlify/functions/* continuent de fonctionner normalement.
+#
+# Le slug n'est PAS validé ici — c'est referral-track.js qui tranche côté
+# serveur. Un chemin inconnu (faute de frappe, vieux lien) affiche donc
+# simplement la page d'accueil, sans erreur pour le visiteur.
+[[redirects]]
+  from = "/:slug"
+  to = "/index.html?ref=:slug"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]
