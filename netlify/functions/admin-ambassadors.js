@@ -124,18 +124,59 @@ async function setSlug(ambassadorId, rawSlug) {
   return jsonResponse(200, { ok: true, slug });
 }
 
+// Renseigner le nom crée AUSSI le lien, si l'ambassadeur n'en a pas encore.
+//
+// Sans cela, un lien n'existait qu'après la première connexion de
+// l'ambassadeur : impossible de préparer et d'envoyer les liens à l'avance.
+// L'administrateur peut donc désormais saisir « Marie Dupont » et obtenir
+// generationcapable.fr/marie-dupont immédiatement, sans que Marie ait eu à
+// se connecter.
+//
+// Un lien déjà existant n'est jamais recalculé : une fois diffusé (bio,
+// messages, flyers), le changer casserait tout ce qui pointe dessus. Pour le
+// corriger volontairement, il y a « Modifier le lien ».
 async function setName(ambassadorId, firstName, lastName) {
+  const first = String(firstName || '').trim().slice(0, 80);
+  const last  = String(lastName || '').trim().slice(0, 80);
+
+  const curR = await supabaseAdminRequest(
+    `/rest/v1/ambassadors?id=eq.${encodeURIComponent(ambassadorId)}&select=slug`
+  );
+  const curRows = curR.ok ? await curR.json() : [];
+  const hasSlug = !!(Array.isArray(curRows) && curRows[0] && curRows[0].slug);
+
+  const fields = {
+    first_name: first || null,
+    last_name: last || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  let createdSlug = null;
+  if (!hasSlug && (first || last)) {
+    try {
+      const genR = await supabaseAdminRequest('/rest/v1/rpc/generate_ambassador_slug', {
+        method: 'POST',
+        body: JSON.stringify({ p_base: `${first} ${last}`.trim(), p_exclude_id: ambassadorId }),
+      });
+      if (genR.ok) {
+        const generated = await genR.json();
+        if (generated) { createdSlug = generated; fields.slug = generated; }
+      } else {
+        console.error('[admin-ambassadors] generate_ambassador_slug a échoué', genR.status);
+      }
+    } catch (e) {
+      console.error('[admin-ambassadors] setName / slug', e);
+    }
+  }
+
   const r = await supabaseAdminRequest(`/rest/v1/ambassadors?id=eq.${encodeURIComponent(ambassadorId)}`, {
     method: 'PATCH',
     headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({
-      first_name: String(firstName || '').trim().slice(0, 80) || null,
-      last_name: String(lastName || '').trim().slice(0, 80) || null,
-      updated_at: new Date().toISOString(),
-    }),
+    body: JSON.stringify(fields),
   });
   if (!r.ok) return jsonResponse(200, { error: 'WRITE_ERROR', detail: await r.text() });
-  return jsonResponse(200, { ok: true });
+
+  return jsonResponse(200, { ok: true, slug: createdSlug });
 }
 
 async function setActive(ambassadorId, isActive) {

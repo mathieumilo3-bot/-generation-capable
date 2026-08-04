@@ -51,7 +51,71 @@ async function saveState(state) {
   });
 }
 
+// ── Contrôle croisé paiements / accès ────────────────────────────────────
+//
+// LA PANNE LA PLUS COÛTEUSE N'EST PAS UN SITE HORS LIGNE.
+//   Un site hors ligne se voit tout de suite. Un client qui PAIE et n'obtient
+//   pas son accès, lui, ne se voit pas : le paiement est encaissé, Stripe est
+//   content, le site répond normalement — et personne n'apprend le problème
+//   avant que le client n'écrive, en colère, plusieurs heures plus tard.
+//
+//   Ce cas survient si le webhook Stripe échoue durablement (secret changé,
+//   Supabase indisponible au mauvais moment, bug d'écriture). Le ping de la
+//   page d'accueil n'en verrait rien.
+//
+// PRINCIPE : toute vente encaissée doit correspondre à un abonné actif.
+//   On tolère 20 minutes de décalage — le temps que le webhook arrive et que
+//   Stripe fasse ses propres réessais — pour ne pas alerter sur un paiement
+//   en cours de traitement.
+const PAYMENT_GRACE_MINUTES = 20;
+
+async function findPaidWithoutAccess() {
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const until = new Date(Date.now() - PAYMENT_GRACE_MINUTES * 60 * 1000).toISOString();
+
+  const r = await supabaseAdminRequest(
+    `/rest/v1/sales?created_at=gte.${encodeURIComponent(since)}` +
+    `&created_at=lte.${encodeURIComponent(until)}` +
+    `&status=eq.completed&select=id,buyer_user_id,created_at&limit=200`
+  );
+  if (!r.ok) return [];
+  const sales = await r.json();
+  if (!Array.isArray(sales) || sales.length === 0) return [];
+
+  const buyerIds = [...new Set(sales.map(s => s.buyer_user_id).filter(Boolean))];
+  if (buyerIds.length === 0) return [];
+
+  const subR = await supabaseAdminRequest(
+    `/rest/v1/subscribers?user_id=in.(${buyerIds.join(',')})&is_active=eq.true&select=user_id`
+  );
+  if (!subR.ok) return [];
+  const active = new Set(((await subR.json()) || []).map(s => s.user_id));
+
+  return sales.filter(s => s.buyer_user_id && !active.has(s.buyer_user_id));
+}
+
 exports.handler = async () => {
+  // Contrôlé à chaque passage (toutes les 10 minutes), indépendamment de la
+  // disponibilité du site : les deux pannes n'ont rien à voir.
+  try {
+    const orphans = await findPaidWithoutAccess();
+    if (orphans.length > 0) {
+      console.error('[healthcheck] PAIEMENTS SANS ACCÈS', JSON.stringify(orphans.map(o => o.id)));
+      await safeNotify(() => notifyAdmins({
+        category: 'admin.technical.site_down',
+        // Une alerte par heure au maximum tant que la situation dure : assez
+        // pour ne pas passer inaperçu, pas assez pour noyer la boîte mail.
+        eventKey: `paid_without_access:${new Date().toISOString().slice(0, 13)}`,
+        ctx: {
+          message: `${orphans.length} paiement(s) encaissé(s) sans accès actif — vérifier le webhook Stripe`,
+        },
+      }));
+    }
+  } catch (e) {
+    // Ne doit jamais empêcher le contrôle de disponibilité qui suit.
+    console.error('[healthcheck] Contrôle paiements/accès impossible', e);
+  }
+
   const result = await pingSite();
   const state = await getState();
 

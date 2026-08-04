@@ -556,13 +556,41 @@ function editAmbassadorSlug(id){
   ambassadorAction({ action: 'set_slug', ambassador_id: id, slug: val.trim().toLowerCase() });
 }
 
-function editAmbassadorName(id){
+// Renseigner le nom crée aussi le lien quand l'ambassadeur n'en a pas encore :
+// c'est ce qui permet de préparer et d'envoyer les liens sans attendre que
+// chacun se soit connecté une première fois.
+async function editAmbassadorName(id){
   const a = AMBASSADORS.find(x => x.ambassador_id === id);
-  const first = prompt('Prénom de l\'ambassadeur :', (a && a.name || '').split(' ')[0] || '');
+  const hasLink = !!(a && a.slug);
+  const known = (a && a.name && a.name.indexOf('@') === -1) ? a.name : '';
+
+  const first = prompt(
+    hasLink ? 'Prénom de l\'ambassadeur :'
+            : 'Prénom de l\'ambassadeur.\n\nSon lien sera créé à partir du prénom et du nom.',
+    known.split(' ')[0] || ''
+  );
   if(first === null) return;
-  const last = prompt('Nom de famille :', (a && a.name || '').split(' ').slice(1).join(' '));
+  const last = prompt('Nom de famille :', known.split(' ').slice(1).join(' '));
   if(last === null) return;
-  ambassadorAction({ action: 'set_name', ambassador_id: id, first_name: first, last_name: last });
+
+  const session = await currentAdminSession();
+  if(!session) return;
+  try{
+    const resp = await fetch('/.netlify/functions/admin-ambassadors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ action: 'set_name', ambassador_id: id, first_name: first, last_name: last })
+    });
+    const data = await resp.json();
+    if(data.error){ alert(data.message || data.error); return; }
+    if(data.slug){
+      alert('Lien créé :\n\ngenerationcapable.fr/' + data.slug + '\n\nTu peux l\'envoyer dès maintenant.');
+    }
+    await loadAmbassadors();
+  }catch(e){
+    console.error('[admin-ambassadors] set_name', e);
+    alert('Erreur réseau.');
+  }
 }
 
 function toggleAmbassadorActive(id, currentlyInactive){

@@ -11,3 +11,10 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Robots-Tag = "noindex, nofollow"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    # Le back-office affiche des données de tous les membres (emails, montants,
+    # pièces justificatives) : rien ne doit rester dans le cache du navigateur
+    # après déconnexion, ni sur un poste partagé.
+    Cache-Control = "no-store, max-age=0"

@@ -48,3 +48,21 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    # HSTS : impose le HTTPS pour les visites suivantes, y compris si
+    # quelqu'un tape "generationcapable.fr" sans protocole. Sans cet en-tête,
+    # la toute première requête part en clair et peut être détournée sur un
+    # réseau hostile (wifi public) avant même la redirection vers HTTPS.
+    # 2 ans, sous-domaines inclus — valeur attendue pour un site qui traite
+    # des paiements.
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains"
+    # Empêche le navigateur d'envoyer les identifiants enregistrés vers un
+    # autre site en cas d'ouverture croisée.
+    Cross-Origin-Opener-Policy = "same-origin"
+
+# Les pièces justificatives (identité, RIB) et les contrats signés ne doivent
+# jamais être mis en cache par un intermédiaire, ni indexés.
+[[headers]]
+  for = "/.netlify/functions/compliance-*"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
+    X-Robots-Tag = "noindex, nofollow"

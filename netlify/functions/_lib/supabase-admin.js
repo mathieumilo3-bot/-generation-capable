@@ -31,12 +31,40 @@ async function verifySessionToken(event, anonKey) {
 // Appel REST Supabase authentifié en service_role (contourne la RLS). Réservé
 // aux opérations que la fonction appelante a déjà autorisées elle-même
 // (vérification de token, vérification de rôle, événement Stripe signé...).
+// Erreurs transitoires : coupure réseau, limite de débit, indisponibilité
+// temporaire de Supabase. Rien à voir avec une requête invalide (4xx), qui
+// échouerait identiquement au deuxième essai.
+const RETRY_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const MAX_ATTEMPTS = 3;
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Appel REST Supabase en service_role, avec réessais sur incident passager.
+//
+// POURQUOI DES RÉESSAIS
+//   Ces appels portent le chemin de l'argent : activation d'un abonné après
+//   paiement, attribution de la vente à un ambassadeur, écriture d'une
+//   commission. Une simple micro-coupure réseau pendant un webhook Stripe
+//   suffisait à perdre définitivement l'une de ces écritures — un client
+//   ayant payé sans accès, ou une vente encaissée sans ambassadeur crédité.
+//
+//   Les réessais ne sont PAS dangereux ici : toutes les écritures du chemin
+//   argent sont idempotentes par construction (upsert sur user_id, index
+//   uniques sur ambassador_earnings, déduplication par stripe_event_id).
+//   Rejouer une écriture ne crée donc jamais de doublon.
+//
+//   Les lectures et écritures normales du site en bénéficient aussi, sans
+//   changement d'usage : la fonction garde exactement la même signature et
+//   renvoie toujours la réponse fetch brute.
 async function supabaseAdminRequest(path, options = {}) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY absente des variables d\'environnement Netlify');
   }
-  const r = await fetch(`${SUPABASE_URL}${path}`, {
+
+  const init = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -44,8 +72,34 @@ async function supabaseAdminRequest(path, options = {}) {
       Authorization: `Bearer ${serviceKey}`,
       ...(options.headers || {})
     }
-  });
-  return r;
+  };
+
+  let lastError = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}${path}`, init);
+
+      if (RETRY_STATUSES.has(r.status) && attempt < MAX_ATTEMPTS) {
+        console.warn(`[supabase-admin] ${r.status} sur ${path} — tentative ${attempt}/${MAX_ATTEMPTS}`);
+        await sleep(250 * attempt);   // 250 ms, puis 500 ms
+        continue;
+      }
+      return r;
+
+    } catch (e) {
+      // Panne réseau : la requête n'a pas abouti, on peut réessayer sans
+      // risque de double écriture.
+      lastError = e;
+      if (attempt < MAX_ATTEMPTS) {
+        console.warn(`[supabase-admin] Réseau KO sur ${path} — tentative ${attempt}/${MAX_ATTEMPTS}`);
+        await sleep(250 * attempt);
+        continue;
+      }
+    }
+  }
+
+  console.error(`[supabase-admin] Échec définitif sur ${path}`, lastError);
+  throw lastError || new Error(`Appel Supabase impossible : ${path}`);
 }
 
 function jsonResponse(statusCode, data) {
