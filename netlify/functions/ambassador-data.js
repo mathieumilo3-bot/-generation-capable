@@ -62,50 +62,24 @@ function defaultState(){
 // production, et jamais une URL de test.
 const PUBLIC_SITE = 'https://generationcapable.fr';
 
-// Attribue un slug à un ambassadeur qui n'en a pas encore. La génération et
-// le contrôle d'unicité sont faits en base (generate_ambassador_slug), seule
-// autorité capable de garantir qu'aucun doublon ne passe entre deux appels
-// concurrents.
-async function ensureSlug(ambassadorId, row, email) {
-  const base =
-    [row && row.first_name, row && row.last_name].filter(Boolean).join(' ').trim() ||
-    (row && row.state && row.state.name && row.state.name !== 'Ambassadeur' ? row.state.name : '') ||
-    String(email || '').split('@')[0];
-
-  try {
-    const genR = await supabaseAdminRequest('/rest/v1/rpc/generate_ambassador_slug', {
-      method: 'POST',
-      body: JSON.stringify({ p_base: base, p_exclude_id: ambassadorId }),
-    });
-    if (!genR.ok) {
-      console.error('[ambassador-data] generate_ambassador_slug a échoué', genR.status);
-      return null;
-    }
-    const slug = await genR.json();
-    if (!slug) return null;
-
-    const upR = await supabaseAdminRequest(`/rest/v1/ambassadors?id=eq.${ambassadorId}`, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ slug }),
-    });
-    if (!upR.ok) {
-      console.error('[ambassador-data] Écriture du slug échouée', upR.status);
-      return null;
-    }
-    return slug;
-  } catch (e) {
-    console.error('[ambassador-data] ensureSlug', e);
-    return null;
-  }
-}
-
 // Statistiques réelles de l'ambassadeur — clics, filleuls, abonnés actifs,
 // gains — calculées en base par ambassador_dashboard(). Remplace l'ancien
 // bloc "revenue" du JSON d'état, qui n'était alimenté par rien et affichait
 // donc des zéros perpétuels.
-async function buildReferral(ambassadorId, slug) {
+async function buildReferral(ambassadorId, slug, identity) {
   const link = slug ? `${PUBLIC_SITE}/${slug}` : null;
+  const ident = identity || {};
+  const base = {
+    slug,
+    link,
+    first_name: ident.first_name || null,
+    last_name: ident.last_name || null,
+    // Tant que c'est faux, l'espace ambassadeur demande le prénom et le nom
+    // avant d'afficher quoi que ce soit d'autre : sans eux, le lien serait
+    // dérivé de l'adresse email, ce qui donne des liens illisibles du type
+    // generationcapable.fr/jsnko911.
+    identity_set: !!(ident.first_name || ident.last_name),
+  };
   try {
     const r = await supabaseAdminRequest('/rest/v1/rpc/ambassador_dashboard', {
       method: 'POST',
@@ -113,13 +87,83 @@ async function buildReferral(ambassadorId, slug) {
     });
     if (!r.ok) {
       console.error('[ambassador-data] ambassador_dashboard a échoué', r.status);
-      return { slug, link, stats: null };
+      return { ...base, stats: null };
     }
-    return { slug, link, stats: await r.json() };
+    return { ...base, stats: await r.json() };
   } catch (e) {
     console.error('[ambassador-data] buildReferral', e);
-    return { slug, link, stats: null };
+    return { ...base, stats: null };
   }
+}
+
+// Nom d'une personne : lettres (accents compris), espaces, apostrophes et
+// traits d'union. Volontairement permissif sur la forme, strict sur ce qui
+// n'a rien à faire dans un nom (chiffres, balises, symboles).
+const NAME_RE = /^[\p{L}][\p{L}\s'’-]{0,59}$/u;
+
+function cleanName(v) {
+  return String(v || '').replace(/\s+/g, ' ').trim();
+}
+
+// Enregistre prénom + nom et en dérive le lien de parrainage.
+async function setIdentity(email, rawFirst, rawLast) {
+  const firstName = cleanName(rawFirst);
+  const lastName  = cleanName(rawLast);
+
+  if (!NAME_RE.test(firstName) || !NAME_RE.test(lastName)) {
+    return jsonResponse(200, {
+      error: 'INVALID_NAME',
+      message: 'Renseigne un prénom et un nom valides (lettres, tirets et apostrophes uniquement).',
+    });
+  }
+
+  const r = await supabaseAdminRequest(
+    `/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}&select=id,slug,first_name,last_name`
+  );
+  const rows = r.ok ? await r.json() : [];
+  const amb = Array.isArray(rows) ? rows[0] : null;
+  if (!amb) return jsonResponse(404, { error: 'AMBASSADOR_NOT_FOUND' });
+
+  // Le lien n'est (re)calculé que tant qu'aucun vrai nom n'a été enregistré.
+  // Passé ce point, le lien est considéré comme diffusé : on n'y touche plus.
+  const identityAlreadySet = !!(amb.first_name || amb.last_name);
+
+  const fields = {
+    first_name: firstName,
+    last_name: lastName,
+    updated_at: new Date().toISOString(),
+  };
+
+  let slug = amb.slug;
+  if (!identityAlreadySet) {
+    try {
+      const genR = await supabaseAdminRequest('/rest/v1/rpc/generate_ambassador_slug', {
+        method: 'POST',
+        body: JSON.stringify({ p_base: `${firstName} ${lastName}`, p_exclude_id: amb.id }),
+      });
+      if (genR.ok) {
+        const generated = await genR.json();
+        if (generated) { slug = generated; fields.slug = generated; }
+      } else {
+        console.error('[ambassador-data] generate_ambassador_slug a échoué', genR.status);
+      }
+    } catch (e) {
+      console.error('[ambassador-data] setIdentity / slug', e);
+    }
+  }
+
+  const upR = await supabaseAdminRequest(`/rest/v1/ambassadors?id=eq.${amb.id}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify(fields),
+  });
+  if (!upR.ok) {
+    const detail = await upR.text();
+    console.error('[ambassador-data] Écriture identité échouée', upR.status, detail);
+    return jsonResponse(200, { error: 'WRITE_ERROR', message: 'Enregistrement impossible, réessaie.' });
+  }
+
+  return jsonResponse(200, { ok: true, referral: await buildReferral(amb.id, slug) });
 }
 
 exports.handler = async (event) => {
@@ -152,13 +196,13 @@ exports.handler = async (event) => {
 
       if (rows.length > 0) {
         const amb = rows[0];
-        // Un ambassadeur créé avant la migration 0020 n'a pas encore de slug :
-        // on lui en attribue un à sa prochaine connexion, plutôt que d'exiger
-        // une intervention manuelle en admin.
-        const slug = amb.slug || await ensureSlug(amb.id, amb, email);
+        // Aucun slug n'est fabriqué à partir de l'email : l'ambassadeur
+        // saisit son prénom et son nom (voir setIdentity), et c'est de là que
+        // vient son lien. Un slug dérivé d'une adresse donnerait
+        // generationcapable.fr/jsnko911 — impossible à mettre dans une bio.
         return jsonResponse(200, {
           state: amb.state,
-          referral: await buildReferral(amb.id, slug),
+          referral: await buildReferral(amb.id, amb.slug, amb),
         });
       }
 
@@ -180,11 +224,12 @@ exports.handler = async (event) => {
         ctx: { email },
       }));
 
+      // Nouvel ambassadeur : pas encore de lien. L'espace lui demandera son
+      // prénom et son nom, et le lien sera créé à ce moment-là.
       const newRow = Array.isArray(created) ? created[0] : created;
-      const newSlug = newRow && newRow.id ? await ensureSlug(newRow.id, newRow, email) : null;
       return jsonResponse(200, {
         state: initial,
-        referral: newRow && newRow.id ? await buildReferral(newRow.id, newSlug) : null,
+        referral: newRow && newRow.id ? await buildReferral(newRow.id, null, newRow) : null,
       });
     }
 
@@ -195,6 +240,18 @@ exports.handler = async (event) => {
       } catch (e) {
         return jsonResponse(400, { error: 'Invalid JSON body' });
       }
+      // Enregistrement de l'identité — c'est CE moment qui fabrique le lien
+      // personnel. L'ambassadeur saisit son prénom et son nom, le slug en est
+      // dérivé, et generationcapable.fr/prenom-nom existe aussitôt.
+      //
+      // Le slug n'est calculé que si l'ambassadeur n'en avait pas encore un
+      // choisi à partir de son vrai nom : une fois qu'il a diffusé son lien
+      // (bio TikTok, messages, flyers), le changer casserait tout ce qui
+      // pointe dessus. Une correction reste possible côté administration.
+      if (payload.action === 'set_identity') {
+        return await setIdentity(email, payload.first_name, payload.last_name);
+      }
+
       const { state } = payload;
       if (!state) return jsonResponse(400, { error: 'Missing state' });
       if (JSON.stringify(state).length > MAX_STATE_BYTES) {

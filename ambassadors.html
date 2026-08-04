@@ -76,6 +76,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
 .funnel-row b{color:var(--gold2);font-size:15px}
 .pay-rule{font-size:12.5px;color:var(--t2);line-height:1.6;padding:7px 0}
 .pay-rule b{color:var(--gold2)}
+.id-label{display:block;font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px}
+.id-input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:12px 13px;color:var(--t1);font-size:15px;font-family:inherit;margin-bottom:12px}
+.id-input:focus{outline:none;border-color:var(--bh)}
+.id-preview{background:var(--bg);border:1px dashed var(--bh);border-radius:9px;padding:11px;font-size:13.5px;color:var(--gold2);text-align:center;margin-bottom:13px;word-break:break-all;font-family:ui-monospace,Menlo,monospace}
+.id-error{font-size:12.5px;color:#e08080;margin-top:10px;min-height:1em}
 
 /* ── Formation ── */
 .mod-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--b);cursor:pointer}
@@ -156,7 +161,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
         <div id="mission-tasks"></div>
       </div>
 
-      <div class="card" id="ref-card" data-tuto="lien">
+      <!-- Demandé une seule fois, à la première connexion : c'est de ce nom
+           que naît le lien personnel (generationcapable.fr/prenom-nom). -->
+      <div class="card" id="identity-card" style="display:none">
+        <div class="card-l">👤 Crée ton lien</div>
+        <div class="ref-hint" style="margin:0 0 14px">
+          Ton prénom et ton nom servent à créer ton lien personnel, celui que tu
+          mettras dans ta bio. Renseigne-les une seule fois.
+        </div>
+        <label class="id-label">Prénom</label>
+        <input id="id-first" class="id-input" type="text" placeholder="Ex : Marie" autocomplete="given-name">
+        <label class="id-label">Nom</label>
+        <input id="id-last" class="id-input" type="text" placeholder="Ex : Dupont" autocomplete="family-name">
+        <div class="id-preview" id="id-preview">generationcapable.fr/…</div>
+        <button class="btn btn-gold" id="id-save-btn" onclick="saveIdentity()">Créer mon lien →</button>
+        <div class="id-error" id="id-error"></div>
+      </div>
+
+      <div class="card" id="ref-card" data-tuto="lien" style="display:none">
         <div class="card-l">🔗 Ton lien personnel</div>
         <div class="ref-link" id="ref-link">Chargement…</div>
         <div class="ref-btn-row">
@@ -709,12 +731,86 @@ function eurCents(c){
   }) + ' €';
 }
 
+// Aperçu du lien pendant la saisie : l'ambassadeur voit ce qu'il obtiendra
+// avant de valider. La translittération reproduit celle de la base
+// (fonction SQL slugify) pour que l'aperçu corresponde au résultat réel.
+function previewSlug(first, last){
+  const src = (first + ' ' + last)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')  // retire les accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return src;
+}
+
+function updateIdentityPreview(){
+  const first = document.getElementById('id-first').value.trim();
+  const last  = document.getElementById('id-last').value.trim();
+  const slug  = previewSlug(first, last);
+  document.getElementById('id-preview').textContent =
+    'generationcapable.fr/' + (slug || '…');
+}
+
+async function saveIdentity(){
+  const first = document.getElementById('id-first').value.trim();
+  const last  = document.getElementById('id-last').value.trim();
+  const err   = document.getElementById('id-error');
+  err.textContent = '';
+
+  if(first.length < 2 || last.length < 2){
+    err.textContent = 'Renseigne ton prénom et ton nom.';
+    return;
+  }
+
+  const btn = document.getElementById('id-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Création…';
+  try{
+    const resp = await fetch('/.netlify/functions/ambassador-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION.access_token },
+      body: JSON.stringify({ action: 'set_identity', first_name: first, last_name: last })
+    });
+    const data = await resp.json();
+    if(data.error){ err.textContent = data.message || data.error; return; }
+
+    REFERRAL = data.referral || REFERRAL;
+    if(STATE){ STATE.name = first; saveState(STATE); }
+    renderReferral();
+    renderProfile();
+    toastAmb('✅ Ton lien est prêt');
+  }catch(e){
+    console.error('[identity]', e);
+    err.textContent = 'Erreur réseau — réessaie.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Créer mon lien →';
+  }
+}
+
 function renderReferral(){
-  const linkEl = document.getElementById('ref-link');
+  const linkEl  = document.getElementById('ref-link');
+  const idCard  = document.getElementById('identity-card');
+  const refCard = document.getElementById('ref-card');
   if(!linkEl) return;
 
-  if(!REFERRAL || !REFERRAL.link){
-    linkEl.textContent = 'Lien en cours de création…';
+  // Pas encore de nom renseigné → on demande d'abord l'identité, sans quoi
+  // le lien n'existe pas. C'est le tout premier geste d'un ambassadeur.
+  const needsIdentity = !REFERRAL || !REFERRAL.identity_set || !REFERRAL.link;
+  if(idCard)  idCard.style.display  = needsIdentity ? 'block' : 'none';
+  if(refCard) refCard.style.display = needsIdentity ? 'none'  : 'block';
+
+  if(needsIdentity){
+    const f = document.getElementById('id-first');
+    const l = document.getElementById('id-last');
+    if(f && !f._bound){
+      f._bound = true;
+      f.addEventListener('input', updateIdentityPreview);
+      l.addEventListener('input', updateIdentityPreview);
+      l.addEventListener('keydown', (e) => { if(e.key === 'Enter') saveIdentity(); });
+    }
+    updateIdentityPreview();
     return;
   }
   // Affiché sans "https://" — plus lisible et plus court à recopier à la main.
