@@ -137,6 +137,45 @@
     { key: 'vat_cert', label: 'Certificat de TVA' },
   ];
 
+  // Taille maximale par fichier.
+  //
+  // ⚠️ NE PAS REMONTER SANS CHANGER D'ARCHITECTURE.
+  // Les fonctions Netlify refusent toute requête dont le corps dépasse 6 Mo,
+  // et le refus a lieu AVANT l'exécution du code : impossible d'afficher un
+  // message clair depuis le serveur. Comme le fichier est transporté en
+  // base64 (data URL), il pèse ~33 % de plus que l'original. Un fichier de
+  // 4,5 Mo dépasse donc déjà la limite une fois encodé.
+  //
+  // 4 Mo laisse une marge sûre pour l'encodage et le reste du JSON (nom du
+  // fichier, type, date d'expiration). La limite est vérifiée ici, dans le
+  // navigateur, pour que l'utilisateur reçoive un message compréhensible
+  // plutôt qu'une erreur réseau opaque — le serveur la revérifie de son côté,
+  // car un contrôle côté navigateur ne protège de rien.
+  const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+  const MAX_UPLOAD_LABEL = '4 Mo';
+  const ACCEPTED_MIME = ['application/pdf', 'image/png', 'image/jpeg'];
+
+  function humanSize(bytes) {
+    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1).replace('.', ',') + ' Mo';
+    return Math.max(1, Math.round(bytes / 1024)) + ' Ko';
+  }
+
+  // Contrôle commun à tous les points de dépôt. Renvoie un message d'erreur
+  // explicite, ou null si le fichier est acceptable.
+  function checkUploadFile(file) {
+    if (!file) return 'Fichier illisible.';
+    if (file.size === 0) return `« ${file.name} » est vide.`;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return `« ${file.name} » fait ${humanSize(file.size)} — maximum ${MAX_UPLOAD_LABEL} par fichier.`;
+    }
+    // Certains navigateurs mobiles laissent le type vide : on ne bloque alors
+    // pas sur ce seul critère, le serveur tranchera à partir du contenu.
+    if (file.type && ACCEPTED_MIME.indexOf(file.type) === -1) {
+      return `« ${file.name} » n'est pas un PDF, JPG ou PNG.`;
+    }
+    return null;
+  }
+
   // ══════════════════════════════════════════════════════════════════════
   //  DOSSIER — vue utilisateur (vendeur ou ambassadeur)
   // ══════════════════════════════════════════════════════════════════════
@@ -435,8 +474,9 @@
               <label>Date d'expiration (si applicable)</label>
               <input type="date" id="gcc-doc-expiry">
             </div>
-            <div class="gcc-upload-zone" id="gcc-upload-zone">📤 Cliquer pour choisir un fichier (PDF, JPG, PNG — 8 Mo max)</div>
-            <input type="file" id="gcc-file-input" accept="application/pdf,image/png,image/jpeg" style="display:none">
+            <div class="gcc-upload-zone" id="gcc-upload-zone">📤 Cliquer ou déposer tes fichiers ici<br><span style="opacity:.65;font-size:.9em">PDF, JPG, PNG — plusieurs fichiers possibles, ${MAX_UPLOAD_LABEL} par fichier</span></div>
+            <div id="gcc-upload-report" style="margin-top:10px"></div>
+            <input type="file" id="gcc-file-input" accept="application/pdf,image/png,image/jpeg" multiple style="display:none">
             <input type="file" id="gcc-replace-input" accept="application/pdf,image/png,image/jpeg" style="display:none">
           </div>
         `;
@@ -446,33 +486,99 @@
 
         const zone = el.querySelector('#gcc-upload-zone');
         const input = el.querySelector('#gcc-file-input');
-        zone.onclick = () => input.click();
-        input.onchange = async () => {
-          const file = input.files[0];
-          if (!file) return;
-          if (file.size > 8 * 1024 * 1024) { toast('❌ Fichier trop volumineux (8 Mo max)'); return; }
-          zone.textContent = 'Envoi en cours…';
-          try {
-            const dataUrl = await fileToDataUrl(file);
-            const resp = await apiCall('compliance-documents', session, {
-              method: 'POST',
-              body: JSON.stringify({
-                role, doc_type: docTypeSel.value, file_name: file.name, fileDataUrl: dataUrl,
-                expires_at: el.querySelector('#gcc-doc-expiry').value || null,
-              }),
-            });
-            if (resp.ok && resp.data && resp.data.ok) {
-              toast('✅ Document déposé');
-              await refresh();
-            } else {
-              toast('❌ ' + (resp.data && resp.data.message || 'Erreur lors du dépôt'));
+        const report = el.querySelector('#gcc-upload-report');
+        const IDLE_ZONE_HTML = `📤 Cliquer ou déposer tes fichiers ici<br><span style="opacity:.65;font-size:.9em">PDF, JPG, PNG — plusieurs fichiers possibles, ${MAX_UPLOAD_LABEL} par fichier</span>`;
+
+        // Dépôt de PLUSIEURS fichiers en une fois (recto/verso d'une pièce
+        // d'identité, justificatifs multi-pages…). Les envois sont faits l'un
+        // APRÈS l'autre, jamais en parallèle : chaque fichier voyage en
+        // base64 dans le corps de la requête, et lancer cinq envois
+        // simultanés depuis un mobile en 4G fait échouer l'ensemble.
+        //
+        // Un fichier refusé n'interrompt jamais les autres : le rapport final
+        // dit précisément lequel est passé et lequel a échoué, plutôt qu'un
+        // « erreur » global qui oblige à tout recommencer à l'aveugle.
+        let uploading = false;
+        async function uploadFiles(fileList) {
+          const files = Array.from(fileList || []);
+          if (!files.length) return;
+          if (uploading) { toast('⏳ Un envoi est déjà en cours'); return; }
+          uploading = true;
+          report.innerHTML = '';
+
+          const results = [];
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            zone.textContent = `Envoi ${i + 1} / ${files.length} — ${file.name}…`;
+
+            const problem = checkUploadFile(file);
+            if (problem) { results.push({ name: file.name, ok: false, msg: problem }); continue; }
+
+            try {
+              const dataUrl = await fileToDataUrl(file);
+              const resp = await apiCall('compliance-documents', session, {
+                method: 'POST',
+                body: JSON.stringify({
+                  role, doc_type: docTypeSel.value, file_name: file.name, fileDataUrl: dataUrl,
+                  expires_at: el.querySelector('#gcc-doc-expiry').value || null,
+                }),
+              });
+              if (resp.ok && resp.data && resp.data.ok) {
+                results.push({ name: file.name, ok: true });
+              } else {
+                results.push({
+                  name: file.name, ok: false,
+                  msg: (resp.data && resp.data.message) || 'Refusé par le serveur.',
+                });
+              }
+            } catch (e) {
+              results.push({ name: file.name, ok: false, msg: 'Lecture ou réseau impossible.' });
             }
-          } catch (e) {
-            toast('❌ Erreur lors de la lecture du fichier');
           }
-          zone.textContent = '📤 Cliquer pour choisir un fichier (PDF, JPG, PNG — 8 Mo max)';
+
+          zone.innerHTML = IDLE_ZONE_HTML;
           input.value = '';
-        };
+          uploading = false;
+
+          const okCount = results.filter(r => r.ok).length;
+          const failed = results.filter(r => !r.ok);
+
+          report.innerHTML = results.map(r => `
+            <div style="font-size:12.5px;padding:5px 0;color:${r.ok ? '#7fc98f' : '#e08080'}">
+              ${r.ok ? '✅' : '❌'} ${esc(r.name)}${r.ok ? '' : ' — ' + esc(r.msg)}
+            </div>
+          `).join('');
+
+          if (okCount) {
+            toast(okCount === 1 ? '✅ Document déposé' : `✅ ${okCount} documents déposés`);
+            await refresh();
+          }
+          if (failed.length && !okCount) {
+            toast(`❌ ${failed.length === 1 ? 'Fichier refusé' : failed.length + ' fichiers refusés'}`);
+          }
+        }
+
+        zone.onclick = () => { if (!uploading) input.click(); };
+        input.onchange = () => uploadFiles(input.files);
+
+        // Glisser-déposer, sur ordinateur. Sans preventDefault sur dragover,
+        // le navigateur ouvrirait le fichier dans un nouvel onglet au lieu de
+        // le confier à la page.
+        ['dragenter', 'dragover'].forEach(evt => {
+          zone.addEventListener(evt, (e) => {
+            e.preventDefault(); e.stopPropagation();
+            zone.style.borderColor = 'var(--gold, #C9A84C)';
+          });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+          zone.addEventListener(evt, (e) => {
+            e.preventDefault(); e.stopPropagation();
+            zone.style.borderColor = '';
+          });
+        });
+        zone.addEventListener('drop', (e) => {
+          if (e.dataTransfer && e.dataTransfer.files) uploadFiles(e.dataTransfer.files);
+        });
 
         const replaceInput = el.querySelector('#gcc-replace-input');
         el.querySelectorAll('.gcc-doc-replace').forEach(btn => {
@@ -480,7 +586,8 @@
             replaceInput.onchange = async () => {
               const file = replaceInput.files[0];
               if (!file) return;
-              if (file.size > 8 * 1024 * 1024) { toast('❌ Fichier trop volumineux (8 Mo max)'); return; }
+              const problem = checkUploadFile(file);
+              if (problem) { toast('❌ ' + problem); replaceInput.value = ''; return; }
               try {
                 const dataUrl = await fileToDataUrl(file);
                 const resp = await apiCall('compliance-documents', session, {
