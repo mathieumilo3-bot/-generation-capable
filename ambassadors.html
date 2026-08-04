@@ -253,6 +253,59 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
     </div>
   </div>
 
+  <!-- ── ÉCRAN 7 : CENTRE DE SUPPORT — remplace le fil "Communauté" (voir
+       migration 0018_support_center.sql) : les ambassadeurs ne discutent
+       plus entre eux, ils envoient un ticket privé qui n'arrive QUE dans
+       l'espace admin dissocié (admin_list_support_tickets()). ── -->
+  <div id="screen-support" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Support</div><h1>Centre de Support</h1></div>
+      </div>
+
+      <div id="support-list-view">
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-bottom:14px" onclick="showNewTicketForm()">+ Nouveau ticket</button>
+        <div id="support-tickets-list"><div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Chargement...</div></div>
+      </div>
+
+      <div id="support-new-form" style="display:none">
+        <div class="card">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Nouveau ticket</div>
+          <label style="font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:5px">Catégorie</label>
+          <select id="support-new-category" class="field" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:12px">
+            <option value="bug">🐞 Bug</option>
+            <option value="question">❓ Question</option>
+            <option value="demande">📝 Demande</option>
+            <option value="suggestion">💡 Suggestion</option>
+            <option value="probleme">⚠️ Problème</option>
+          </select>
+          <label style="font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:5px">Sujet</label>
+          <input id="support-new-subject" class="field" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:12px" maxlength="200" placeholder="Résume ta demande en quelques mots">
+          <label style="font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:5px">Message</label>
+          <textarea id="support-new-message" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:14px;min-height:110px;resize:vertical;font-family:inherit" maxlength="4000" placeholder="Décris ta demande en détail..."></textarea>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-p" style="flex:1;justify-content:center" id="support-new-submit-btn" onclick="submitNewTicket()">Envoyer</button>
+            <button class="btn btn-g" onclick="hideNewTicketForm()">Annuler</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="support-thread-view" style="display:none">
+        <button class="btn btn-g" style="margin-bottom:12px" onclick="closeTicketThreadAmb()">← Retour</button>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px" id="amb-tk-cat">—</div>
+          <div style="font-size:15px;font-weight:800;margin-bottom:4px" id="amb-tk-subject">—</div>
+          <div style="font-size:11.5px;color:var(--t3)" id="amb-tk-meta">—</div>
+        </div>
+        <div id="amb-tk-events" style="margin-bottom:14px"></div>
+        <div class="card">
+          <textarea id="amb-tk-reply" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:10px;min-height:70px;resize:vertical;font-family:inherit" maxlength="4000" placeholder="Ta réponse..."></textarea>
+          <button class="btn btn-p" style="width:100%;justify-content:center" id="amb-tk-reply-btn" onclick="replyToTicketAmb()">Envoyer la réponse</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── NAV BAS ── -->
   <div class="nav">
     <div class="nav-item active" data-screen="today" onclick="goScreen('today')"><div class="nav-ico">🎯</div><div class="nav-lbl">Aujourd'hui</div></div>
@@ -260,6 +313,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
     <div class="nav-item" data-screen="revenue" onclick="goScreen('revenue')"><div class="nav-ico">💰</div><div class="nav-lbl">Revenus</div></div>
     <div class="nav-item" data-screen="training" onclick="goScreen('training')"><div class="nav-ico">📚</div><div class="nav-lbl">Formation</div></div>
     <div class="nav-item" data-screen="dossier" onclick="goScreen('dossier')"><div class="nav-ico">📋</div><div class="nav-lbl">Dossier</div></div>
+    <div class="nav-item" data-screen="support" onclick="goScreen('support')"><div class="nav-ico">🎧</div><div class="nav-lbl">Support</div></div>
     <div class="nav-item" data-screen="profile" onclick="goScreen('profile')"><div class="nav-ico">👤</div><div class="nav-lbl">Profil</div></div>
   </div>
 </div>
@@ -407,6 +461,125 @@ function goScreen(name){
   document.querySelector(`.nav-item[data-screen="${name}"]`).classList.add('active');
   window.scrollTo(0,0);
   if(name === 'dossier') mountDossierPage();
+  if(name === 'support') loadMySupportTicketsAmb();
+}
+
+// ── Centre de Support — mêmes RPC que index.html (get_my_support_tickets,
+// create_support_ticket, get_my_support_ticket_events,
+// add_support_ticket_message ; voir migration 0018_support_center.sql).
+// Chaque ambassadeur ne voit que ses propres tickets (RLS), l'équipe les
+// traite depuis l'espace admin dissocié (admin_list_support_tickets()).
+const SUPPORT_CATEGORY_LABELS_AMB = { bug:'🐞 Bug', question:'❓ Question', demande:'📝 Demande', suggestion:'💡 Suggestion', probleme:'⚠️ Problème' };
+const SUPPORT_STATUS_LABELS_AMB = { nouveau:'🆕 Nouveau', en_cours:'🔧 En cours', resolu:'✅ Résolu', ferme:'🔒 Fermé' };
+let SUPPORT_TICKETS_CACHE_AMB = [];
+
+async function loadMySupportTicketsAmb(){
+  const el = document.getElementById('support-tickets-list');
+  if(!el || !SESSION) return;
+  el.innerHTML = '<div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Chargement...</div>';
+  const { data, error } = await supabaseClient.rpc('get_my_support_tickets');
+  if(error){ console.error('[support] liste:', error); el.innerHTML = '<div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Erreur de chargement.</div>'; return; }
+  SUPPORT_TICKETS_CACHE_AMB = data || [];
+  if(!SUPPORT_TICKETS_CACHE_AMB.length){
+    el.innerHTML = '<div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Aucun ticket pour l\'instant — envoie-nous un message si tu as une question.</div>';
+    return;
+  }
+  el.innerHTML = SUPPORT_TICKETS_CACHE_AMB.map(t => `
+    <div class="card" style="cursor:pointer" onclick="openTicketThreadAmb('${t.id}')">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+        <div style="font-size:13.5px;font-weight:700">${escapeHtml(t.subject)}</div>
+        <div style="font-size:10.5px;font-weight:800;white-space:nowrap">${SUPPORT_STATUS_LABELS_AMB[t.status] || t.status}</div>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:4px">${SUPPORT_CATEGORY_LABELS_AMB[t.category] || t.category} · ${new Date(t.created_at).toLocaleDateString('fr-FR')}</div>
+    </div>`).join('');
+}
+
+function showNewTicketForm(){
+  document.getElementById('support-list-view').style.display = 'none';
+  document.getElementById('support-new-form').style.display = 'block';
+}
+function hideNewTicketForm(){
+  document.getElementById('support-new-form').style.display = 'none';
+  document.getElementById('support-list-view').style.display = 'block';
+  document.getElementById('support-new-subject').value = '';
+  document.getElementById('support-new-message').value = '';
+}
+let SUPPORT_SUBMIT_INFLIGHT_AMB = false;
+async function submitNewTicket(){
+  if(SUPPORT_SUBMIT_INFLIGHT_AMB || !SESSION) return;
+  const category = document.getElementById('support-new-category').value;
+  const subject = document.getElementById('support-new-subject').value.trim();
+  const message = document.getElementById('support-new-message').value.trim();
+  if(!subject || !message){ alert('Merci de remplir le sujet et le message.'); return; }
+  if(subject.length > 200){ alert('Sujet trop long (200 caractères max).'); return; }
+  if(message.length > 4000){ alert('Message trop long (4000 caractères max).'); return; }
+
+  SUPPORT_SUBMIT_INFLIGHT_AMB = true;
+  const btn = document.getElementById('support-new-submit-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supabaseClient.rpc('create_support_ticket', { p_category: category, p_priority: 'normale', p_subject: subject, p_message: message });
+    if(error){ console.error('[support] création:', error); alert('❌ ' + error.message); return; }
+    hideNewTicketForm();
+    await loadMySupportTicketsAmb();
+  } finally {
+    SUPPORT_SUBMIT_INFLIGHT_AMB = false;
+    btn.disabled = false;
+  }
+}
+
+let CURRENT_TICKET_ID_AMB = null;
+async function openTicketThreadAmb(ticketId){
+  CURRENT_TICKET_ID_AMB = ticketId;
+  const t = SUPPORT_TICKETS_CACHE_AMB.find(x => x.id === ticketId);
+  if(!t) return;
+  document.getElementById('support-list-view').style.display = 'none';
+  document.getElementById('support-thread-view').style.display = 'block';
+  document.getElementById('amb-tk-cat').textContent = SUPPORT_CATEGORY_LABELS_AMB[t.category] || t.category;
+  document.getElementById('amb-tk-subject').textContent = t.subject;
+  document.getElementById('amb-tk-meta').textContent = `${SUPPORT_STATUS_LABELS_AMB[t.status] || t.status} · ${new Date(t.created_at).toLocaleDateString('fr-FR')}`;
+
+  const eventsEl = document.getElementById('amb-tk-events');
+  eventsEl.innerHTML = `<div class="card" style="margin-bottom:8px">${escapeHtml(t.message)}<div style="font-size:10px;color:var(--t3);margin-top:6px">${new Date(t.created_at).toLocaleString('fr-FR')}</div></div>`;
+
+  const { data: evData, error } = await supabaseClient.rpc('get_my_support_ticket_events', { p_ticket_id: ticketId });
+  if(error){ console.error('[support] historique:', error); return; }
+  (evData || []).forEach(ev => {
+    const isAdmin = ev.author === 'admin';
+    eventsEl.innerHTML += `<div class="card" style="margin-bottom:8px${isAdmin ? ';border-color:var(--gold2)' : ''}">
+      <div style="font-size:10.5px;font-weight:700;margin-bottom:3px">${isAdmin ? "🎧 L'équipe" : 'Toi'}</div>
+      ${ev.note ? escapeHtml(ev.note) : ''}
+      ${ev.new_status ? `<div style="font-size:10px;color:var(--t3);margin-top:4px">Statut → ${SUPPORT_STATUS_LABELS_AMB[ev.new_status] || ev.new_status}</div>` : ''}
+      <div style="font-size:10px;color:var(--t3);margin-top:6px">${new Date(ev.created_at).toLocaleString('fr-FR')}</div>
+    </div>`;
+  });
+}
+function closeTicketThreadAmb(){
+  document.getElementById('support-thread-view').style.display = 'none';
+  document.getElementById('support-list-view').style.display = 'block';
+  document.getElementById('amb-tk-reply').value = '';
+  CURRENT_TICKET_ID_AMB = null;
+}
+let SUPPORT_REPLY_INFLIGHT_AMB = false;
+async function replyToTicketAmb(){
+  if(SUPPORT_REPLY_INFLIGHT_AMB || !CURRENT_TICKET_ID_AMB) return;
+  const input = document.getElementById('amb-tk-reply');
+  const message = input.value.trim();
+  if(!message) return;
+  if(message.length > 4000){ alert('Message trop long (4000 caractères max).'); return; }
+
+  SUPPORT_REPLY_INFLIGHT_AMB = true;
+  const btn = document.getElementById('amb-tk-reply-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supabaseClient.rpc('add_support_ticket_message', { p_ticket_id: CURRENT_TICKET_ID_AMB, p_message: message });
+    if(error){ console.error('[support] réponse:', error); alert('❌ ' + error.message); return; }
+    input.value = '';
+    await openTicketThreadAmb(CURRENT_TICKET_ID_AMB);
+  } finally {
+    SUPPORT_REPLY_INFLIGHT_AMB = false;
+    btn.disabled = false;
+  }
 }
 
 // ── Dossier administratif (contrat, signature, pièces, RIB) — voir
