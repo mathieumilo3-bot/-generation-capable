@@ -181,13 +181,26 @@ async function recordAndProcess(stripeEvent) {
         // Lu AVANT l'upsert : seule façon de savoir si c'est une toute
         // première activation ("Nouveau vendeur inscrit") ou une simple
         // réactivation d'un abonnement déjà connu.
-        const existingResp = await supabaseAdminRequest(`/rest/v1/subscribers?user_id=eq.${user.id}&select=is_active`);
+        const existingResp = await supabaseAdminRequest(`/rest/v1/subscribers?user_id=eq.${user.id}&select=is_active,referred_by_ambassador_id`);
         const existingRows = existingResp.ok ? await existingResp.json() : [];
         const wasActiveBefore = !!(existingRows && existingRows[0] && existingRows[0].is_active);
+        const alreadyAttributed = !!(existingRows && existingRows[0] && existingRows[0].referred_by_ambassador_id);
+
+        // ATTRIBUTION AMBASSADEUR — maillon final de la chaîne.
+        // Le slug a été posé dans les metadata Stripe par
+        // create-checkout-session.js : on le relit ici depuis l'objet Stripe
+        // (donc côté serveur, après signature du webhook vérifiée) et jamais
+        // depuis le navigateur. On ne réattribue jamais un abonné déjà
+        // attribué : le premier ambassadeur qui l'a apporté le garde, même
+        // si l'abonné repasse plus tard par un autre lien.
+        const referredBy = alreadyAttributed
+          ? null
+          : await resolveAmbassadorIdBySlug(obj.metadata?.ref);
 
         await upsertSubscriberByUserId(user.id, {
           is_active: true,
           stripe_customer_id: obj.customer || null,
+          ...(referredBy ? { referred_by_ambassador_id: referredBy } : {}),
         });
         await supabaseAdminRequest('/rest/v1/sales', {
           method: 'POST',
@@ -319,6 +332,31 @@ async function upsertSubscriberByUserId(userId, fields) {
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ user_id: userId, ...fields, updated_at: new Date().toISOString() })
   });
+}
+
+// Traduit le slug de parrainage (posé dans les metadata Stripe au moment du
+// checkout) en identifiant d'ambassadeur. Renvoie null si le slug est absent,
+// mal formé, inconnu, ou si l'ambassadeur est désactivé — dans tous ces cas
+// l'abonné est simplement enregistré sans parrain, jamais rejeté.
+async function resolveAmbassadorIdBySlug(rawSlug) {
+  const slug = String(rawSlug || '').toLowerCase().trim();
+  if (!slug || !/^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/.test(slug)) return null;
+  try {
+    const r = await supabaseAdminRequest(
+      `/rest/v1/ambassadors?slug=eq.${encodeURIComponent(slug)}&select=id,is_active&limit=1`
+    );
+    if (!r.ok) {
+      console.error('[stripe-webhook] Résolution du slug de parrainage échouée', r.status);
+      return null;
+    }
+    const rows = await r.json();
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    if (rows[0].is_active === false) return null;
+    return rows[0].id;
+  } catch (e) {
+    console.error('[stripe-webhook] resolveAmbassadorIdBySlug', e);
+    return null;
+  }
 }
 
 // ── Commandes CRM : commande → vente → commission → wallet ──

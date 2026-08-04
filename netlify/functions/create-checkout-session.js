@@ -55,6 +55,15 @@ exports.handler = async (event) => {
     return json(400, { error: 'Missing or invalid offer/email' });
   }
 
+  // Parrainage : le slug de l'ambassadeur voyage jusqu'à Stripe dans les
+  // metadata de la session. C'est ce qui rend l'attribution fiable — le
+  // webhook la relira depuis Stripe (source serveur, non modifiable par le
+  // client après coup) plutôt que de faire confiance au navigateur au
+  // moment du retour de paiement. Un slug invalide est simplement ignoré :
+  // il ne doit jamais empêcher un paiement d'aboutir.
+  const ref = String(payload.ref || '').toLowerCase().trim();
+  const refValid = /^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/.test(ref) ? ref : null;
+
   const offer = getOffer(offerKey);
   if (!offer) {
     console.error('[create-checkout-session] Offre inconnue ou Price ID non configuré:', offerKey);
@@ -76,7 +85,7 @@ exports.handler = async (event) => {
       client_reference_id: email,
       success_url: `${origin}/?checkout=success&offer=${offer.key}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/?checkout=cancelled&offer=${offer.key}`,
-      metadata: { offer: offer.key },
+      metadata: refValid ? { offer: offer.key, ref: refValid } : { offer: offer.key },
       allow_promotion_codes: true,
     });
 

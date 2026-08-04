@@ -69,10 +69,21 @@ a{color:var(--gold)}
     <div class="gate-s" id="gate-sub">Vérification en cours...</div>
     <div id="gate-login-form" class="hidden">
       <label>Email</label>
-      <input id="gate-email" class="field" type="email" placeholder="ton@email.com">
+      <input id="gate-email" class="field" type="email" placeholder="ton@email.com" autocomplete="username">
       <label>Mot de passe</label>
-      <input id="gate-password" class="field" type="password" placeholder="••••••••">
+      <input id="gate-password" class="field" type="password" placeholder="••••••••" autocomplete="current-password">
       <button class="btn btn-p" style="width:100%" id="gate-login-btn" onclick="gateLogin()">Se connecter →</button>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+        <button class="btn btn-g" style="width:100%" id="gate-magic-btn" onclick="gateMagicLink()">✉️ M'envoyer un lien de connexion</button>
+        <button class="btn btn-g" style="width:100%;background:none;border:none;color:var(--t3);font-size:12.5px;text-decoration:underline;cursor:pointer" id="gate-forgot-btn" onclick="gateForgotPassword()">Mot de passe oublié ?</button>
+      </div>
+    </div>
+    <div id="gate-newpw-form" class="hidden">
+      <label>Nouveau mot de passe</label>
+      <input id="gate-newpw" class="field" type="password" placeholder="Au moins 8 caractères" autocomplete="new-password">
+      <label>Confirmer le mot de passe</label>
+      <input id="gate-newpw2" class="field" type="password" placeholder="Retape-le" autocomplete="new-password">
+      <button class="btn btn-p" style="width:100%" id="gate-newpw-btn" onclick="gateSetNewPassword()">Enregistrer et me connecter →</button>
     </div>
     <button class="btn btn-g" style="width:100%;margin-top:10px" id="gate-action" onclick="location.reload()">Réessayer</button>
   </div>
@@ -89,6 +100,7 @@ a{color:var(--gold)}
   <div class="tabs" id="tabs">
     <button class="tab on" data-tab="overview" onclick="switchAdminTab('overview')">Vue d'ensemble</button>
     <button class="tab" data-tab="members" onclick="switchAdminTab('members')">Membres</button>
+    <button class="tab" data-tab="ambassadors" onclick="switchAdminTab('ambassadors')">Ambassadeurs</button>
     <button class="tab" data-tab="commissions" onclick="switchAdminTab('commissions')">Commissions</button>
     <button class="tab" data-tab="orders" onclick="switchAdminTab('orders')">Commandes CRM</button>
     <button class="tab" data-tab="payouts" onclick="switchAdminTab('payouts')">Retraits</button>
@@ -112,6 +124,11 @@ a{color:var(--gold)}
 
     <div id="tab-members" class="hidden">
       <div id="members-list"><div class="empty">Chargement...</div></div>
+    </div>
+
+    <div id="tab-ambassadors" class="hidden">
+      <div id="amb-summary" style="margin-bottom:14px"></div>
+      <div id="ambassadors-list"><div class="empty">Chargement...</div></div>
     </div>
 
     <div id="tab-commissions" class="hidden">
@@ -198,6 +215,18 @@ function setGateUI(icon, title, sub, showLoginForm, showRetry){
   document.getElementById('gate-sub').textContent = sub;
   document.getElementById('gate-login-form').classList.toggle('hidden', !showLoginForm);
   document.getElementById('gate-action').classList.toggle('hidden', !showRetry);
+  // Le formulaire "nouveau mot de passe" n'est montré que par
+  // showNewPasswordForm() (retour d'un lien de réinitialisation).
+  document.getElementById('gate-newpw-form').classList.add('hidden');
+}
+
+function showNewPasswordForm(){
+  document.getElementById('gate-ico').textContent = '🔑';
+  document.getElementById('gate-title').textContent = 'Nouveau mot de passe';
+  document.getElementById('gate-sub').textContent = 'Choisis un mot de passe pour ton compte administrateur.';
+  document.getElementById('gate-login-form').classList.add('hidden');
+  document.getElementById('gate-action').classList.add('hidden');
+  document.getElementById('gate-newpw-form').classList.remove('hidden');
 }
 
 async function gateLogin(){
@@ -208,7 +237,60 @@ async function gateLogin(){
   btn.disabled = true;
   try{
     const { error } = await supa.auth.signInWithPassword({ email, password });
-    if(error){ setGateUI('❌', 'Connexion refusée', error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : error.message, true, false); return; }
+    if(error){ setGateUI('❌', 'Connexion refusée', error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect. Utilise "Mot de passe oublié ?" ou le lien de connexion par email.' : error.message, true, false); return; }
+    await checkAccess();
+  } finally { btn.disabled = false; }
+}
+
+// Connexion sans mot de passe : Supabase envoie un lien à usage unique.
+// L'accès reste verrouillé par admin-verify (table "admins") après clic —
+// recevoir le lien ne suffit pas à obtenir les droits admin.
+async function gateMagicLink(){
+  const email = document.getElementById('gate-email').value.trim();
+  if(!email){ setGateUI('✉️', 'Email requis', 'Renseigne ton email au-dessus, puis redemande le lien.', true, false); return; }
+  const btn = document.getElementById('gate-magic-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supa.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin }
+    });
+    if(error){ setGateUI('❌', 'Envoi impossible', error.message, true, false); return; }
+    setGateUI('✉️', 'Lien envoyé', 'Ouvre l\'email envoyé à ' + email + ' et clique sur le lien pour te connecter. Pense à vérifier les spams.', true, false);
+  } finally { btn.disabled = false; }
+}
+
+async function gateForgotPassword(){
+  const email = document.getElementById('gate-email').value.trim();
+  if(!email){ setGateUI('✉️', 'Email requis', 'Renseigne ton email au-dessus, puis reclique sur "Mot de passe oublié ?".', true, false); return; }
+  const btn = document.getElementById('gate-forgot-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    if(error){ setGateUI('❌', 'Envoi impossible', error.message, true, false); return; }
+    setGateUI('✉️', 'Email envoyé', 'Ouvre l\'email envoyé à ' + email + ' et clique sur le lien pour choisir un nouveau mot de passe. Pense à vérifier les spams.', true, false);
+  } finally { btn.disabled = false; }
+}
+
+async function gateSetNewPassword(){
+  const pw = document.getElementById('gate-newpw').value;
+  const pw2 = document.getElementById('gate-newpw2').value;
+  if(pw.length < 8){
+    document.getElementById('gate-sub').textContent = 'Le mot de passe doit faire au moins 8 caractères.';
+    return;
+  }
+  if(pw !== pw2){
+    document.getElementById('gate-sub').textContent = 'Les deux mots de passe ne sont pas identiques.';
+    return;
+  }
+  const btn = document.getElementById('gate-newpw-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supa.auth.updateUser({ password: pw });
+    if(error){
+      document.getElementById('gate-sub').textContent = error.message;
+      return;
+    }
     await checkAccess();
   } finally { btn.disabled = false; }
 }
@@ -255,7 +337,7 @@ let CURRENT_TAB = 'overview';
 function switchAdminTab(tab){
   CURRENT_TAB = tab;
   document.querySelectorAll('#tabs .tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-  ['overview','members','commissions','orders','payouts','disputes','support','compliance','legal'].forEach(t => {
+  ['overview','members','ambassadors','commissions','orders','payouts','disputes','support','compliance','legal'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== tab);
   });
   loadTab(tab);
@@ -265,6 +347,7 @@ function refreshCurrentTab(){ loadTab(CURRENT_TAB); }
 async function loadTab(tab){
   if(tab === 'overview') return loadOverview();
   if(tab === 'members') return loadMembers();
+  if(tab === 'ambassadors') return loadAmbassadors();
   if(tab === 'commissions') return loadCommissions();
   if(tab === 'orders') return loadOrders();
   if(tab === 'payouts') return loadPayouts();
@@ -272,6 +355,178 @@ async function loadTab(tab){
   if(tab === 'support') return loadSupportTickets();
   if(tab === 'compliance') return mountAdminCompliance();
   if(tab === 'legal') return mountAdminLegalInfo();
+}
+
+// ── Ambassadeurs : trafic, conversions et rémunération ──
+//
+// Une ligne par ambassadeur. Tous les chiffres viennent du registre
+// ambassador_earnings et des paiements Stripe réellement encaissés (RPC
+// admin_ambassador_leaderboard) — rien n'est recalculé ici.
+let AMBASSADORS = [];
+
+async function loadAmbassadors(){
+  const listEl = document.getElementById('ambassadors-list');
+  listEl.innerHTML = '<div class="empty">Chargement...</div>';
+
+  const session = await currentAdminSession();
+  if(!session){ listEl.innerHTML = '<div class="empty">Session expirée.</div>'; return; }
+
+  try{
+    const resp = await fetch('/.netlify/functions/admin-ambassadors', {
+      headers: { 'Authorization': 'Bearer ' + session.access_token }
+    });
+    const data = await resp.json();
+    if(data.error){
+      listEl.innerHTML = '<div class="empty">Erreur : ' + escapeHtml(data.message || data.error) + '</div>';
+      return;
+    }
+    AMBASSADORS = data.ambassadors || [];
+    renderAmbassadors();
+  }catch(e){
+    console.error('[admin-ambassadors]', e);
+    listEl.innerHTML = '<div class="empty">Erreur réseau.</div>';
+  }
+}
+
+function renderAmbassadors(){
+  const listEl = document.getElementById('ambassadors-list');
+  const sumEl  = document.getElementById('amb-summary');
+
+  const totalDu = AMBASSADORS.reduce((s,a) => s + Number(a.earned_pending_cents || 0), 0);
+  const totalVerse = AMBASSADORS.reduce((s,a) => s + Number(a.earned_paid_cents || 0), 0);
+  const totalActifs = AMBASSADORS.reduce((s,a) => s + Number(a.subs_active || 0), 0);
+  const totalClics = AMBASSADORS.reduce((s,a) => s + Number(a.clicks_total || 0), 0);
+
+  sumEl.innerHTML = `<div class="card" style="display:flex;flex-wrap:wrap;gap:22px">
+    <div><div style="font-size:21px;font-weight:800;color:var(--gold)">${eur(totalDu)}</div><div class="row-sub">Reste à verser</div></div>
+    <div><div style="font-size:21px;font-weight:800">${eur(totalVerse)}</div><div class="row-sub">Déjà versé</div></div>
+    <div><div style="font-size:21px;font-weight:800">${totalActifs}</div><div class="row-sub">Abonnés apportés actifs</div></div>
+    <div><div style="font-size:21px;font-weight:800">${totalClics}</div><div class="row-sub">Clics cumulés</div></div>
+    <div><div style="font-size:21px;font-weight:800">${AMBASSADORS.length}</div><div class="row-sub">Ambassadeurs</div></div>
+  </div>`;
+
+  if(!AMBASSADORS.length){
+    listEl.innerHTML = '<div class="empty">Aucun ambassadeur pour l\'instant.</div>';
+    return;
+  }
+
+  listEl.innerHTML = AMBASSADORS.map(a => {
+    const lien = a.slug ? 'generationcapable.fr/' + a.slug : '— pas encore de lien —';
+    // Taux de conversion clic → inscription : le seul indicateur qui dise si
+    // l'ambassadeur amène du trafic qualifié ou du volume creux.
+    const conv = a.clicks_unique > 0
+      ? Math.round((Number(a.signups_total) / Number(a.clicks_unique)) * 100) + '%'
+      : '—';
+    const inactif = a.is_active === false;
+
+    return `<div class="row" style="align-items:flex-start;flex-wrap:wrap;${inactif ? 'opacity:.55' : ''}">
+      <div style="flex:1;min-width:210px">
+        <div class="row-title">${escapeHtml(a.name || a.email)}${inactif ? ' <span style="color:var(--t3);font-weight:400">(désactivé)</span>' : ''}</div>
+        <div class="row-sub">${escapeHtml(a.email)}</div>
+        <div class="row-sub" style="color:var(--gold);margin-top:4px;font-family:ui-monospace,Menlo,monospace">${escapeHtml(lien)}</div>
+      </div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px">
+        <div><b style="font-size:15px">${a.clicks_total}</b><div class="row-sub">clics</div></div>
+        <div><b style="font-size:15px">${a.signups_total}</b><div class="row-sub">inscrits</div></div>
+        <div><b style="font-size:15px">${a.subs_active}</b><div class="row-sub">actifs</div></div>
+        <div><b style="font-size:15px">${a.subs_churned}</b><div class="row-sub">partis</div></div>
+        <div><b style="font-size:15px">${conv}</b><div class="row-sub">conversion</div></div>
+        <div><b style="font-size:15px;color:var(--gold)">${eur(a.earned_pending_cents)}</b><div class="row-sub">à verser</div></div>
+        <div><b style="font-size:15px">${eur(a.earned_paid_cents)}</b><div class="row-sub">versé</div></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:4px">
+        <button class="btn btn-g" onclick="editAmbassadorSlug('${a.ambassador_id}')">✏️ Modifier le lien</button>
+        <button class="btn btn-g" onclick="editAmbassadorName('${a.ambassador_id}')">👤 Nom</button>
+        <button class="btn btn-g" onclick="viewAmbassadorEarnings('${a.ambassador_id}')">📄 Détail des gains</button>
+        ${Number(a.earned_pending_cents) > 0
+          ? `<button class="btn btn-p" onclick="markAmbassadorPaid('${a.ambassador_id}')">✅ Marquer versé (${eur(a.earned_pending_cents)})</button>`
+          : ''}
+        <button class="btn btn-g" onclick="toggleAmbassadorActive('${a.ambassador_id}', ${inactif})">${inactif ? 'Réactiver' : 'Désactiver'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function ambassadorAction(body, okMsg){
+  const session = await currentAdminSession();
+  if(!session) return;
+  try{
+    const resp = await fetch('/.netlify/functions/admin-ambassadors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if(data.error){ alert(data.message || data.error); return false; }
+    if(okMsg) alert(okMsg);
+    await loadAmbassadors();
+    return true;
+  }catch(e){
+    console.error('[admin-ambassadors] action', e);
+    alert('Erreur réseau.');
+    return false;
+  }
+}
+
+function editAmbassadorSlug(id){
+  const a = AMBASSADORS.find(x => x.ambassador_id === id);
+  const current = a && a.slug ? a.slug : '';
+  const val = prompt(
+    'Lien personnel de l\'ambassadeur.\n\n' +
+    'Il donnera : generationcapable.fr/<lien>\n' +
+    'Lettres sans accent, chiffres et tirets uniquement.',
+    current
+  );
+  if(val === null) return;
+  ambassadorAction({ action: 'set_slug', ambassador_id: id, slug: val.trim().toLowerCase() });
+}
+
+function editAmbassadorName(id){
+  const a = AMBASSADORS.find(x => x.ambassador_id === id);
+  const first = prompt('Prénom de l\'ambassadeur :', (a && a.name || '').split(' ')[0] || '');
+  if(first === null) return;
+  const last = prompt('Nom de famille :', (a && a.name || '').split(' ').slice(1).join(' '));
+  if(last === null) return;
+  ambassadorAction({ action: 'set_name', ambassador_id: id, first_name: first, last_name: last });
+}
+
+function toggleAmbassadorActive(id, currentlyInactive){
+  const reactivating = currentlyInactive === true;
+  if(!reactivating && !confirm('Désactiver cet ambassadeur ?\n\nSon lien cessera d\'attribuer de nouveaux abonnés. Les gains déjà acquis sont conservés.')) return;
+  ambassadorAction({ action: 'set_active', ambassador_id: id, is_active: reactivating });
+}
+
+function markAmbassadorPaid(id){
+  const a = AMBASSADORS.find(x => x.ambassador_id === id);
+  const montant = a ? eur(a.earned_pending_cents) : '';
+  if(!confirm('Confirmer le versement de ' + montant + ' à ' + (a ? (a.name || a.email) : 'cet ambassadeur') + ' ?\n\nCette action marque les gains comme versés. Elle ne déclenche aucun virement automatique.')) return;
+  ambassadorAction({ action: 'mark_paid', ambassador_id: id }, 'Gains marqués comme versés.');
+}
+
+async function viewAmbassadorEarnings(id){
+  const session = await currentAdminSession();
+  if(!session) return;
+  const a = AMBASSADORS.find(x => x.ambassador_id === id);
+  try{
+    const resp = await fetch('/.netlify/functions/admin-ambassadors?detail=' + encodeURIComponent(id), {
+      headers: { 'Authorization': 'Bearer ' + session.access_token }
+    });
+    const data = await resp.json();
+    if(data.error){ alert(data.message || data.error); return; }
+    const rows = data.earnings || [];
+    if(!rows.length){ alert('Aucun gain enregistré pour cet ambassadeur.'); return; }
+
+    const KIND = { subscription_month: 'Abonné actif (15 €)', seller_sale: 'Vente vendeur (50 €)' };
+    const ST   = { pending: 'à verser', available: 'à verser', paid: 'versé', cancelled: 'annulé' };
+    const lignes = rows.slice(0, 60).map(r =>
+      fmtDate(r.created_at) + ' — ' + (KIND[r.kind] || r.kind) + ' — ' + eur(r.amount_cents) + ' — ' + (ST[r.status] || r.status)
+    ).join('\n');
+    alert('Gains de ' + (a ? (a.name || a.email) : '') + '\n\n' + lignes +
+          (rows.length > 60 ? '\n\n… et ' + (rows.length - 60) + ' autres lignes.' : ''));
+  }catch(e){
+    console.error('[admin-ambassadors] detail', e);
+    alert('Erreur réseau.');
+  }
 }
 
 // ── Conformité & Informations légales (voir compliance-client.js) ──
@@ -553,10 +808,32 @@ async function replyToTicket(){
   } finally { btn.disabled = false; }
 }
 
-checkAccess();
+// Retour d'un lien "mot de passe oublié" : Supabase pose une session de
+// récupération et émet PASSWORD_RECOVERY. On affiche alors le formulaire de
+// nouveau mot de passe au lieu d'entrer directement dans le panneau.
+let RECOVERY_MODE = false;
 supa.auth.onAuthStateChange((event, session) => {
-  if(event === 'SIGNED_IN' && session) checkAccess();
+  if(event === 'PASSWORD_RECOVERY'){
+    RECOVERY_MODE = true;
+    showNewPasswordForm();
+    return;
+  }
+  if(event === 'SIGNED_IN' && session && !RECOVERY_MODE) checkAccess();
+  if(event === 'USER_UPDATED' && RECOVERY_MODE){
+    RECOVERY_MODE = false;
+    checkAccess();
+  }
 });
+
+// Le hash "#...type=recovery" est consommé par supabase-js avant que
+// onAuthStateChange ne soit branché sur certains navigateurs : on le détecte
+// aussi directement pour ne jamais rater le cas.
+if(/type=recovery/.test(window.location.hash)){
+  RECOVERY_MODE = true;
+  showNewPasswordForm();
+} else {
+  checkAccess();
+}
 </script>
 </body>
 </html>

@@ -51,6 +51,72 @@ function defaultState(){
   };
 }
 
+// Domaine public sur lequel les liens de parrainage sont partagés. Codé ici
+// (et non déduit de l'Origin de la requête) pour qu'un ambassadeur consultant
+// son espace depuis une prévisualisation Netlify copie malgré tout le lien de
+// production, et jamais une URL de test.
+const PUBLIC_SITE = 'https://generationcapable.fr';
+
+// Attribue un slug à un ambassadeur qui n'en a pas encore. La génération et
+// le contrôle d'unicité sont faits en base (generate_ambassador_slug), seule
+// autorité capable de garantir qu'aucun doublon ne passe entre deux appels
+// concurrents.
+async function ensureSlug(ambassadorId, row, email) {
+  const base =
+    [row && row.first_name, row && row.last_name].filter(Boolean).join(' ').trim() ||
+    (row && row.state && row.state.name && row.state.name !== 'Ambassadeur' ? row.state.name : '') ||
+    String(email || '').split('@')[0];
+
+  try {
+    const genR = await supabaseAdminRequest('/rest/v1/rpc/generate_ambassador_slug', {
+      method: 'POST',
+      body: JSON.stringify({ p_base: base, p_exclude_id: ambassadorId }),
+    });
+    if (!genR.ok) {
+      console.error('[ambassador-data] generate_ambassador_slug a échoué', genR.status);
+      return null;
+    }
+    const slug = await genR.json();
+    if (!slug) return null;
+
+    const upR = await supabaseAdminRequest(`/rest/v1/ambassadors?id=eq.${ambassadorId}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ slug }),
+    });
+    if (!upR.ok) {
+      console.error('[ambassador-data] Écriture du slug échouée', upR.status);
+      return null;
+    }
+    return slug;
+  } catch (e) {
+    console.error('[ambassador-data] ensureSlug', e);
+    return null;
+  }
+}
+
+// Statistiques réelles de l'ambassadeur — clics, filleuls, abonnés actifs,
+// gains — calculées en base par ambassador_dashboard(). Remplace l'ancien
+// bloc "revenue" du JSON d'état, qui n'était alimenté par rien et affichait
+// donc des zéros perpétuels.
+async function buildReferral(ambassadorId, slug) {
+  const link = slug ? `${PUBLIC_SITE}/${slug}` : null;
+  try {
+    const r = await supabaseAdminRequest('/rest/v1/rpc/ambassador_dashboard', {
+      method: 'POST',
+      body: JSON.stringify({ p_ambassador_id: ambassadorId }),
+    });
+    if (!r.ok) {
+      console.error('[ambassador-data] ambassador_dashboard a échoué', r.status);
+      return { slug, link, stats: null };
+    }
+    return { slug, link, stats: await r.json() };
+  } catch (e) {
+    console.error('[ambassador-data] buildReferral', e);
+    return { slug, link, stats: null };
+  }
+}
+
 exports.handler = async (event) => {
   const anonKey = process.env.SUPABASE_ANON_KEY;
   if (!anonKey) {
@@ -71,7 +137,7 @@ exports.handler = async (event) => {
   try {
     if (event.httpMethod === 'GET') {
       const r = await supabaseAdminRequest(
-        `/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}&select=state`
+        `/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}&select=id,state,slug,first_name,last_name`
       );
       const rows = await r.json();
       if (!r.ok) {
@@ -80,7 +146,15 @@ exports.handler = async (event) => {
       }
 
       if (rows.length > 0) {
-        return jsonResponse(200, { state: rows[0].state });
+        const amb = rows[0];
+        // Un ambassadeur créé avant la migration 0020 n'a pas encore de slug :
+        // on lui en attribue un à sa prochaine connexion, plutôt que d'exiger
+        // une intervention manuelle en admin.
+        const slug = amb.slug || await ensureSlug(amb.id, amb, email);
+        return jsonResponse(200, {
+          state: amb.state,
+          referral: await buildReferral(amb.id, slug),
+        });
       }
 
       // Ambassadeur inconnu → première connexion, on le crée avec l'état par défaut.
@@ -100,7 +174,13 @@ exports.handler = async (event) => {
         eventKey: `new_ambassador:${email}`,
         ctx: { email },
       }));
-      return jsonResponse(200, { state: initial });
+
+      const newRow = Array.isArray(created) ? created[0] : created;
+      const newSlug = newRow && newRow.id ? await ensureSlug(newRow.id, newRow, email) : null;
+      return jsonResponse(200, {
+        state: initial,
+        referral: newRow && newRow.id ? await buildReferral(newRow.id, newSlug) : null,
+      });
     }
 
     if (event.httpMethod === 'POST') {

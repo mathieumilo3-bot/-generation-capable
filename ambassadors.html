@@ -67,6 +67,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
 .hist-name{color:var(--t2)}
 .hist-amt{color:var(--gold2);font-weight:700}
 .empty{text-align:center;color:var(--t3);font-size:12.5px;padding:30px 10px}
+/* Lien de parrainage — l'élément le plus important de l'écran d'accueil */
+.ref-link{background:var(--bg);border:1px dashed var(--bh);border-radius:10px;padding:13px 12px;font-size:14px;font-weight:700;color:var(--gold2);word-break:break-all;text-align:center;margin-bottom:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.ref-btn-row{display:flex;gap:8px}
+.ref-hint{font-size:11.5px;color:var(--t3);line-height:1.5;margin-top:10px}
+.funnel-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--b);font-size:13px;color:var(--t2)}
+.funnel-row:last-child{border-bottom:none}
+.funnel-row b{color:var(--gold2);font-size:15px}
+.pay-rule{font-size:12.5px;color:var(--t2);line-height:1.6;padding:7px 0}
+.pay-rule b{color:var(--gold2)}
 
 /* ── Formation ── */
 .mod-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--b);cursor:pointer}
@@ -147,8 +156,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
         <div id="mission-tasks"></div>
       </div>
 
+      <div class="card" id="ref-card" data-tuto="lien">
+        <div class="card-l">🔗 Ton lien personnel</div>
+        <div class="ref-link" id="ref-link">Chargement…</div>
+        <div class="ref-btn-row">
+          <button class="btn btn-gold" style="flex:1" onclick="copyRefLink()">📋 Copier</button>
+          <button class="btn btn-g" style="flex:1" onclick="shareRefLink()">📤 Partager</button>
+        </div>
+        <div class="ref-hint">
+          Mets ce lien dans ta bio TikTok, Instagram ou Snap. Chaque personne qui
+          s'abonne en passant par lui t'est créditée automatiquement — tu n'as
+          rien à déclarer.
+        </div>
+      </div>
+
       <div class="stat-row">
-        <div class="stat"><div class="stat-v" id="today-earn">0 €</div><div class="stat-l">Gagné aujourd'hui</div></div>
+        <div class="stat"><div class="stat-v" id="ref-clicks">0</div><div class="stat-l">Clics sur ton lien</div></div>
+        <div class="stat"><div class="stat-v" id="ref-active">0</div><div class="stat-l">Abonnés actifs</div></div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-v" id="today-earn">0 €</div><div class="stat-l">Gagné ce mois</div></div>
         <div class="stat"><div class="stat-v" id="today-progress">0%</div><div class="stat-l">Mission complétée</div></div>
       </div>
 
@@ -187,11 +215,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
       </div>
 
       <div class="rev-grid">
-        <div class="rev-item"><div class="rev-v" id="rev-today">0 €</div><div class="rev-l">Aujourd'hui</div></div>
-        <div class="rev-item"><div class="rev-v" id="rev-week">0 €</div><div class="rev-l">Cette semaine</div></div>
         <div class="rev-item full"><div class="rev-v" id="rev-total">0 €</div><div class="rev-l">Total cumulé</div></div>
         <div class="rev-item"><div class="rev-v" id="rev-month">0 €</div><div class="rev-l">Ce mois</div></div>
-        <div class="rev-item"><div class="rev-v" id="rev-count">0</div><div class="rev-l">Abonnements actifs</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-pending">0 €</div><div class="rev-l">En attente</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-paid">0 €</div><div class="rev-l">Déjà versé</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-count">0</div><div class="rev-l">Abonnés actifs</div></div>
+      </div>
+
+      <div class="card" data-tuto="tunnel">
+        <div class="card-l">Ton tunnel</div>
+        <div class="funnel-row"><span>👁️ Clics sur ton lien</span><b id="fn-clicks">0</b></div>
+        <div class="funnel-row"><span>🙋 Visiteurs uniques</span><b id="fn-unique">0</b></div>
+        <div class="funnel-row"><span>✅ Inscrits via ton lien</span><b id="fn-signups">0</b></div>
+        <div class="funnel-row"><span>💳 Abonnés encore actifs</span><b id="fn-active">0</b></div>
+        <div class="funnel-row"><span>💔 Désabonnés</span><b id="fn-churn">0</b></div>
+      </div>
+
+      <div class="card">
+        <div class="card-l">Comment tu es payé</div>
+        <div class="pay-rule"><b>15 €/mois</b> pour chaque abonné que tu apportes, versés tant qu'il reste abonné.</div>
+        <div class="pay-rule"><b>50 €</b> à chaque vente réalisée par un vendeur que tu as fait entrer.</div>
       </div>
 
       <div class="card">
@@ -351,7 +394,29 @@ async function loadStateFromServer(){
     console.error('[ambassador-data] load error', data.error, data.message || data.detail || '');
     throw new Error(data.message || data.error);
   }
+  // Lien de parrainage + statistiques réelles, calculés côté serveur à
+  // partir des paiements Stripe. Jamais persistés côté navigateur : on les
+  // relit à chaque connexion pour qu'ils ne puissent pas être périmés.
+  REFERRAL = data.referral || null;
   return data.state;
+}
+
+// Rafraîchit uniquement les chiffres (sans recharger tout l'écran), pour que
+// l'ambassadeur voie ses stats bouger après un partage sans se reconnecter.
+async function refreshReferralStats(){
+  if(!SESSION) return;
+  try{
+    const resp = await fetch('/.netlify/functions/ambassador-data', {
+      headers: { 'Authorization': 'Bearer ' + SESSION.access_token }
+    });
+    const data = await resp.json();
+    if(data && data.referral){
+      REFERRAL = data.referral;
+      renderReferral();
+    }
+  }catch(e){
+    console.error('[ambassador-data] refresh stats', e);
+  }
 }
 
 async function saveStateToServer(){
@@ -614,7 +679,9 @@ function renderToday(){
     </div>
   `).join('');
 
-  document.getElementById('today-earn').textContent = STATE.revenue.today + ' €';
+  // Le lien et les compteurs viennent du serveur (renderReferral), pas de
+  // STATE : c'est ce qui garantit que l'ambassadeur voit ses vrais chiffres.
+  renderReferral();
   const done = STATE.missionDone.filter(Boolean).length;
   document.getElementById('today-progress').textContent = Math.round(done / STATE.missionDone.length * 100) + '%';
 }
@@ -624,23 +691,128 @@ function toggleMission(i){
   renderToday();
 }
 
+// ── Parrainage : lien personnel et statistiques réelles ──
+//
+// REFERRAL est renseigné par le serveur (ambassador-data.js → RPC
+// ambassador_dashboard). Aucune de ces valeurs n'est calculée ni stockée
+// dans le navigateur : elles proviennent des paiements Stripe réellement
+// encaissés. L'ancien bloc STATE.revenue, qui n'était alimenté par rien,
+// n'est plus utilisé pour l'affichage.
+let REFERRAL = null;
+
+function eurCents(c){
+  return (Number(c || 0) / 100).toLocaleString('fr-FR', {
+    minimumFractionDigits: 0, maximumFractionDigits: 2
+  }) + ' €';
+}
+
+function renderReferral(){
+  const linkEl = document.getElementById('ref-link');
+  if(!linkEl) return;
+
+  if(!REFERRAL || !REFERRAL.link){
+    linkEl.textContent = 'Lien en cours de création…';
+    return;
+  }
+  // Affiché sans "https://" — plus lisible et plus court à recopier à la main.
+  linkEl.textContent = REFERRAL.link.replace(/^https?:\/\//, '');
+
+  const s = REFERRAL.stats || {};
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+
+  set('ref-clicks', s.clicks_total || 0);
+  set('ref-active', s.subs_active || 0);
+  set('today-earn', eurCents(s.earned_month_cents));
+
+  set('rev-total',   eurCents(s.earned_total_cents));
+  set('rev-month',   eurCents(s.earned_month_cents));
+  set('rev-pending', eurCents(s.earned_pending_cents));
+  set('rev-paid',    eurCents(s.earned_paid_cents));
+  set('rev-count',   s.subs_active || 0);
+
+  set('fn-clicks',  s.clicks_total || 0);
+  set('fn-unique',  s.clicks_unique || 0);
+  set('fn-signups', s.signups_total || 0);
+  set('fn-active',  s.subs_active || 0);
+  set('fn-churn',   s.subs_churned || 0);
+
+  renderRevenueHistory(s.history || []);
+}
+
+function renderRevenueHistory(history){
+  const histEl = document.getElementById('rev-history');
+  if(!histEl) return;
+  if(!history.length){
+    histEl.innerHTML = `<div class="empty">Aucune commission pour l'instant.<br>Ton premier abonnement apparaîtra ici.</div>`;
+    return;
+  }
+  histEl.innerHTML = history.map(h => {
+    const d = h.date ? new Date(h.date).toLocaleDateString('fr-FR', {day:'2-digit',month:'short'}) : '';
+    const cancelled = h.status === 'cancelled';
+    return `<div class="hist-row">
+      <div class="hist-name">${escapeHtmlAmb(h.label || '')}${d ? ' · ' + d : ''}</div>
+      <div class="hist-amt" style="${cancelled ? 'opacity:.45;text-decoration:line-through' : ''}">+${eurCents(h.amount)}</div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtmlAmb(str){
+  const d = document.createElement('div');
+  d.textContent = String(str ?? '');
+  return d.innerHTML;
+}
+
+async function copyRefLink(){
+  if(!REFERRAL || !REFERRAL.link) return;
+  try{
+    await navigator.clipboard.writeText(REFERRAL.link);
+    toastAmb('✅ Lien copié — colle-le dans ta bio');
+  }catch(e){
+    // Safari iOS refuse l'accès au presse-papiers hors geste direct : on
+    // sélectionne le texte pour que l'ambassadeur puisse copier à la main.
+    const el = document.getElementById('ref-link');
+    if(el){
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    toastAmb('Sélectionne le lien puis appuie sur "Copier"');
+  }
+}
+
+async function shareRefLink(){
+  if(!REFERRAL || !REFERRAL.link) return;
+  const shareData = {
+    title: 'Génération Capable',
+    text: 'Rejoins Génération Capable avec mon lien 👇',
+    url: REFERRAL.link
+  };
+  if(navigator.share){
+    try{ await navigator.share(shareData); return; }
+    catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  copyRefLink();
+}
+
+function toastAmb(msg){
+  let el = document.getElementById('amb-toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'amb-toast';
+    el.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1c1c1c;border:1px solid rgba(201,168,76,.35);color:#f5f0e8;padding:11px 16px;border-radius:11px;font-size:13px;z-index:9999;max-width:88%;text-align:center;transition:opacity .25s';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2600);
+}
+
 // ── Écran Revenus ──
 function renderRevenue(){
-  const r = STATE.revenue;
-  document.getElementById('rev-today').textContent = r.today + ' €';
-  document.getElementById('rev-week').textContent = r.week + ' €';
-  document.getElementById('rev-month').textContent = r.month + ' €';
-  document.getElementById('rev-total').textContent = r.total + ' €';
-  document.getElementById('rev-count').textContent = r.activeSubs;
-
-  const histEl = document.getElementById('rev-history');
-  if(r.history.length === 0){
-    histEl.innerHTML = `<div class="empty">Aucune commission pour l'instant.<br>Ton premier abonnement apparaîtra ici.</div>`;
-  } else {
-    histEl.innerHTML = r.history.map(h => `
-      <div class="hist-row"><div class="hist-name">${h.label}</div><div class="hist-amt">+${h.amount} €</div></div>
-    `).join('');
-  }
+  renderReferral();
 }
 
 // ── Écran Formation ──
