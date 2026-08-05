@@ -353,8 +353,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
       </div>
 
       <div id="support-list-view">
-        <button class="btn btn-p" style="width:100%;justify-content:center;margin-bottom:14px" onclick="showNewTicketForm()">+ Nouveau ticket</button>
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-bottom:14px" onclick="showSupportAI()">+ Poser une question</button>
         <div id="support-tickets-list"><div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Chargement...</div></div>
+      </div>
+
+      <!-- GC Support v1 (docs/gc-ai-os/18) : répond avant qu'un ticket humain
+           soit nécessaire, à partir des mêmes faits que GC Coach
+           (GC_CORE_FACTS). Ne remplace jamais la possibilité de créer un
+           ticket directement — souveraineté humaine, même règle que GC Coach. -->
+      <div id="support-ai-view" style="display:none">
+        <div class="card">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">🤖 Assistant Support</div>
+          <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Décris ta question — je réponds tout de suite si je peux. Sinon, je prépare un ticket pour l'équipe avec le contexte déjà rempli.</div>
+          <textarea id="support-ai-question" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:10px;min-height:80px;resize:vertical;font-family:inherit" maxlength="1000" placeholder="Ex : Comment je corrige mon lien personnel ?"></textarea>
+          <button class="btn btn-p" style="width:100%;justify-content:center" id="support-ai-ask-btn" onclick="askSupportAI()">Demander</button>
+          <button class="btn btn-g" style="width:100%;justify-content:center;margin-top:8px" onclick="hideSupportAI()">Annuler</button>
+        </div>
+        <div id="support-ai-answer" class="card" style="display:none">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">🤖 Réponse</div>
+          <div id="support-ai-answer-text" style="font-size:13.5px;color:var(--t1);white-space:pre-wrap;line-height:1.5;margin-bottom:16px"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-p" style="flex:1;justify-content:center" onclick="supportAIResolved()">✅ Ça répond</button>
+            <button class="btn btn-g" style="flex:1;justify-content:center" onclick="supportAIEscalate()">❌ J'ai encore besoin d'aide</button>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:14px">
+          <a href="#" onclick="event.preventDefault();hideSupportAI();showNewTicketForm()" style="font-size:11.5px;color:var(--t3);text-decoration:underline">Créer un ticket directement, sans passer par l'assistant</a>
+        </div>
       </div>
 
       <div id="support-new-form" style="display:none">
@@ -659,6 +684,86 @@ async function loadMySupportTicketsAmb(){
       </div>
       <div style="font-size:11px;color:var(--t3);margin-top:4px">${SUPPORT_CATEGORY_LABELS_AMB[t.category] || t.category} · ${new Date(t.created_at).toLocaleDateString('fr-FR')}</div>
     </div>`).join('');
+}
+
+// ── GC Support v1 (docs/gc-ai-os/17-21) ──
+//
+// Couche IA posée devant le Centre de Support déjà en production
+// (create_support_ticket, get_my_support_tickets) — répond à partir de
+// GC_CORE_FACTS avant qu'un ticket humain soit créé. Si la réponse ne
+// suffit pas, le ticket est créé avec la question ET la réponse déjà
+// tentée en contexte : l'ambassadeur n'a jamais à tout retaper, et
+// l'équipe voit immédiatement ce qui a déjà été essayé.
+function showSupportAI(){
+  document.getElementById('support-list-view').style.display = 'none';
+  document.getElementById('support-ai-view').style.display = 'block';
+  document.getElementById('support-ai-answer').style.display = 'none';
+  document.getElementById('support-ai-question').value = '';
+}
+function hideSupportAI(){
+  document.getElementById('support-ai-view').style.display = 'none';
+  document.getElementById('support-list-view').style.display = 'block';
+}
+
+let SUPPORT_AI_LAST_Q = '';
+let SUPPORT_AI_LAST_A = '';
+let SUPPORT_AI_INFLIGHT = false;
+
+async function askSupportAI(){
+  if(SUPPORT_AI_INFLIGHT) return;
+  const q = document.getElementById('support-ai-question').value.trim();
+  if(!q) return;
+
+  SUPPORT_AI_INFLIGHT = true;
+  const btn = document.getElementById('support-ai-ask-btn');
+  btn.disabled = true;
+  btn.textContent = 'Recherche...';
+
+  try{
+    const resp = await fetch('/.netlify/functions/ai-proxy', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization': 'Bearer ' + SESSION.access_token},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 400,
+        system: GC_SUPPORT_SYSTEM_PROMPT,
+        messages: [{ role:'user', content: q }]
+      })
+    });
+    const data = await resp.json();
+    const answer = (!data.error && data.content?.find(b => b.type === 'text')?.text) || '';
+    SUPPORT_AI_LAST_Q = q;
+    SUPPORT_AI_LAST_A = answer;
+    document.getElementById('support-ai-answer-text').textContent =
+      answer || "Je n'ai pas pu répondre avec certitude — crée un ticket, l'équipe reprend directement ta question ci-dessous.";
+    document.getElementById('support-ai-answer').style.display = 'block';
+  }catch(e){
+    console.error('[GCSupport] ask', e);
+    SUPPORT_AI_LAST_Q = q;
+    SUPPORT_AI_LAST_A = '';
+    document.getElementById('support-ai-answer-text').textContent = 'Erreur réseau — crée un ticket, l\'équipe reprend directement ta question ci-dessous.';
+    document.getElementById('support-ai-answer').style.display = 'block';
+  } finally {
+    SUPPORT_AI_INFLIGHT = false;
+    btn.disabled = false;
+    btn.textContent = 'Demander';
+  }
+}
+
+function supportAIResolved(){
+  hideSupportAI();
+  if(typeof toastAmb === 'function') toastAmb('✅ Parfait, question résolue.');
+}
+
+// Escalade : jamais silencieuse. Le formulaire de ticket s'ouvre pré-rempli
+// avec la question et la tentative de réponse, pour que l'équipe voie tout
+// de suite ce qui a déjà été essayé — l'ambassadeur ne retape rien.
+function supportAIEscalate(){
+  document.getElementById('support-ai-view').style.display = 'none';
+  showNewTicketForm();
+  document.getElementById('support-new-subject').value = SUPPORT_AI_LAST_Q.slice(0, 200);
+  document.getElementById('support-new-message').value = SUPPORT_AI_LAST_Q +
+    (SUPPORT_AI_LAST_A ? '\n\n— Réponse automatique reçue (insuffisante) :\n' + SUPPORT_AI_LAST_A : '');
 }
 
 function showNewTicketForm(){
@@ -1238,6 +1343,61 @@ function renderAll(){
 //  IA COACH — réutilise le GC Cognitive Engine existant
 //  (même Core que index.html, nouvelle Config Layer "Ambassadeur")
 // ══════════════════════════════════════════════════════════
+// ── GC Core Facts — source unique de vérité factuelle sur l'offre ──
+//
+// Utilisé par GC Coach (AMBASSADOR_SYSTEM_PROMPT) ET GC Support
+// (GC_SUPPORT_SYSTEM_PROMPT) : deux IA qui répondraient différemment à
+// "combien coûte l'abonnement ?" casseraient la confiance immédiatement
+// (voir docs/gc-ai-os/17-plateforme-membres-vision.md — « aucune IA ne
+// doit donner une réponse contradictoire »). Une seule chaîne, jamais deux
+// copies qui peuvent diverger avec le temps.
+const GC_CORE_FACTS = `CONNAISSANCE PRODUIT
+Génération Capable : formation à la vente terrain (prospection, découverte, closing) avec accompagnement IA quotidien intégré. Offre unique : 67€/mois, engagement 6 mois, accès immédiat. Inclut 6 modules vidéo+PDF, coaching 24/7, diagnostic IA du profil vendeur, plan d'action généré chaque matin, rapport analysé chaque soir.
+
+COMMISSIONS (précis, ne jamais approximer ni inventer un autre chiffre)
+15€/mois pour chaque client apporté par l'ambassadeur, versés tant que ce client reste abonné (s'arrête s'il se désabonne). En plus : 50€ à chaque vente réalisée par un vendeur que l'ambassadeur a personnellement fait intégrer à Génération Capable (commission de second niveau, sur l'activité du vendeur recruté, pas sur les clients de ce vendeur).
+
+Positionnement liberté (légitime, spécifique au rôle d'ambassadeur) : un ambassadeur travaille d'où il veut, quand il veut, et apprend à créer ses propres opportunités — c'est une réalité du rôle, pas une promesse abstraite. Reste toujours honnête : cette liberté vient du travail fourni, jamais d'un résultat automatique ou garanti.
+
+Cible : jeunes (18-25 ans) motivés mais pas encore formés à la vente, cherchant un cadre structurant et une compétence monétisable.
+
+Différenciation réelle : suivi quotidien (pas juste des vidéos passives), diagnostic IA du profil vendeur qui adapte le coaching, fondateur avec vraie expérience terrain.
+
+Objections et réponses honnêtes :
+- "Trop cher" → coût par jour (~2,20€/jour), jamais de chiffre de revenu promis en retour.
+- "Pas le temps" → modules courts et actionnables ; ne jamais minimiser l'effort réel requis.
+- "Système pyramidal ?" → non : contenu pédagogique réel, commission sur vente apportée, pas de structure à paliers de recrutement.
+- "Gratuit sur YouTube existe" → le gratuit n'a pas de suivi individualisé quotidien.`;
+
+// ── GC Support v1 (docs/gc-ai-os/18-agents-membres-catalogue.md) ──
+//
+// Couche IA posée devant le Centre de Support déjà en production, pas un
+// nouveau centre de support. Scope volontairement étroit : questions
+// pratiques sur l'app/l'offre, jamais de coaching commercial (ça reste
+// GC Coach, ci-dessous) — deux rôles clairs valent mieux qu'une IA qui
+// essaie de tout faire.
+const GC_SUPPORT_SYSTEM_PROMPT = `Tu es GC Support, l'assistant du Centre de Support de Génération Capable, dans l'espace ambassadeur.
+
+TON RÔLE
+Répondre aux questions pratiques sur l'app, l'abonnement, les commissions, le fonctionnement du programme ambassadeur. Tu n'es PAS un coach commercial : si la personne demande de l'aide pour vendre, créer du contenu ou répondre à un prospect, dis-le lui et oriente-la vers l'écran "IA Coach" — n'essaie jamais de faire ce travail à sa place.
+
+${GC_CORE_FACTS}
+
+FONCTIONNEMENT DE L'APP (pour répondre aux questions pratiques)
+- Le lien personnel se crée une seule fois, à la première connexion (écran "Aujourd'hui"), à partir du prénom et du nom.
+- Les gains (total, ce mois, en attente, déjà versé) sont visibles sur l'écran "Revenus".
+- La progression de formation est sur l'écran "Formation", avec la mission du jour recalculée automatiquement chaque jour.
+- La bibliothèque de ressources (FAQ, objections, playbooks réseaux sociaux, règles, check-lists) est accessible via "📚 Bibliothèque Génération Capable" sur les écrans "Aujourd'hui" et "Formation".
+- Pour corriger un lien personnel déjà créé, ou toute question de facturation/résiliation précise, la réponse honnête est d'orienter vers un ticket — ne jamais improviser une procédure que tu ne connais pas avec certitude.
+
+RÈGLES ABSOLUES
+- Ne jamais inventer un chiffre, un délai ou une procédure que tu ne connais pas avec certitude — dis-le clairement plutôt que de deviner.
+- Ne jamais promettre un revenu ni un résultat.
+- Si tu ne peux pas résoudre la question avec certitude, dis-le explicitement en une phrase et invite la personne à créer un ticket — ne fais jamais semblant d'avoir résolu le problème.
+
+FORMAT
+Réponse courte (5 lignes maximum), directe, sans préambule. Si tu ne sais pas, dis-le en une phrase, pas plus.`;
+
 const AMBASSADOR_SYSTEM_PROMPT = `Tu es le GC Cognitive Engine™. Tu n'es pas un chatbot ni un assistant conversationnel générique. Tu es une architecture cognitive dont la seule mission est de faire progresser durablement la personne qui te parle vers son plus haut potentiel professionnel.
 
 MISSION
@@ -1267,23 +1427,7 @@ Chaque jour, aide l'ambassadeur à : créer, publier, prospecter, répondre, ana
 OBJECTIF ULTIME
 Créer le plus grand nombre possible de nouveaux membres — non pas grâce à la manipulation, de fausses promesses ou des techniques agressives, mais parce que les ambassadeurs deviennent réellement meilleurs.
 
-CONNAISSANCE PRODUIT
-Génération Capable : formation à la vente terrain (prospection, découverte, closing) avec accompagnement IA quotidien intégré. Offre unique : 67€/mois, engagement 6 mois, accès immédiat. Inclut 6 modules vidéo+PDF, coaching 24/7, diagnostic IA du profil vendeur, plan d'action généré chaque matin, rapport analysé chaque soir.
-
-COMMISSIONS (précis, ne jamais approximer ni inventer un autre chiffre)
-15€/mois pour chaque client apporté par l'ambassadeur, versés tant que ce client reste abonné (s'arrête s'il se désabonne). En plus : 50€ à chaque vente réalisée par un vendeur que l'ambassadeur a personnellement fait intégrer à Génération Capable (commission de second niveau, sur l'activité du vendeur recruté, pas sur les clients de ce vendeur).
-
-Positionnement liberté (légitime, spécifique au rôle d'ambassadeur) : un ambassadeur travaille d'où il veut, quand il veut, et apprend à créer ses propres opportunités — c'est une réalité du rôle, pas une promesse abstraite. Reste toujours honnête : cette liberté vient du travail fourni, jamais d'un résultat automatique ou garanti.
-
-Cible : jeunes (18-25 ans) motivés mais pas encore formés à la vente, cherchant un cadre structurant et une compétence monétisable.
-
-Différenciation réelle : suivi quotidien (pas juste des vidéos passives), diagnostic IA du profil vendeur qui adapte le coaching, fondateur avec vraie expérience terrain.
-
-Objections et réponses honnêtes :
-- "Trop cher" → coût par jour (~2,20€/jour), jamais de chiffre de revenu promis en retour.
-- "Pas le temps" → modules courts et actionnables ; ne jamais minimiser l'effort réel requis.
-- "Système pyramidal ?" → non : contenu pédagogique réel, commission sur vente apportée, pas de structure à paliers de recrutement.
-- "Gratuit sur YouTube existe" → le gratuit n'a pas de suivi individualisé quotidien.
+${GC_CORE_FACTS}
 
 TU CONNAIS PARFAITEMENT
 Génération Capable, ses formations, ses modules, ses valeurs, son offre, les commissions, les objections, les profils utilisateurs, les réseaux sociaux, les algorithmes, le copywriting, le storytelling, la vente, la psychologie, le closing, la prospection, le personal branding, la pédagogie.
