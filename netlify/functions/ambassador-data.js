@@ -79,6 +79,13 @@ async function buildReferral(ambassadorId, slug, identity) {
     // dérivé de l'adresse email, ce qui donne des liens illisibles du type
     // generationcapable.fr/jsnko911.
     identity_set: !!(ident.first_name || ident.last_name),
+    // Dernière écriture réelle de l'état de cet ambassadeur (colonne
+    // updated_at, déjà présente sur la table). Ajouté pour GC Pilot v1
+    // (voir docs/gc-ai-os/17-21) : détecter une inactivité de plusieurs
+    // jours pour proposer une mission de réactivation plutôt que d'empiler
+    // une nouvelle tâche par-dessus un retard déjà là. Simple lecture
+    // d'une colonne existante — aucune migration, aucun nouveau droit.
+    updated_at: ident.updated_at || null,
   };
   try {
     const r = await supabaseAdminRequest('/rest/v1/rpc/ambassador_dashboard', {
@@ -186,7 +193,7 @@ exports.handler = async (event) => {
   try {
     if (event.httpMethod === 'GET') {
       const r = await supabaseAdminRequest(
-        `/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}&select=id,state,slug,first_name,last_name`
+        `/rest/v1/ambassadors?email=eq.${encodeURIComponent(email)}&select=id,state,slug,first_name,last_name,updated_at`
       );
       const rows = await r.json();
       if (!r.ok) {

@@ -158,7 +158,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
 
       <div class="card">
         <div class="card-l">Mission du jour</div>
-        <div class="mission-title" id="mission-title">Publier 2 vidéos TikTok</div>
+        <div class="mission-title" id="mission-title">Chargement de ta mission...</div>
         <div id="mission-tasks"></div>
       </div>
 
@@ -766,29 +766,116 @@ function mountDossierPage(){
   });
 }
 
+// ── GC Pilot v1 (docs/gc-ai-os/17-21) ──
+//
+// Remplace les 2 missions statiques ("Publier 1ère/2ème vidéo", identiques
+// pour tout le monde depuis le premier jour de l'app) par une mission
+// calculée à partir de signaux déjà disponibles côté client : formation,
+// distribution du lien, inactivité. Volontairement déterministe (règles,
+// pas d'appel IA) — c'est la version "Phase 1" décrite en
+// 20-dashboards-ux-roadmap.md : coût marginal nul, aucune nouvelle
+// infrastructure serveur, testable en isolation.
+//
+// Priorité : le risque de l'INACTION passe avant tout le reste (voir
+// 17-plateforme-membres-vision.md) — un ambassadeur qui n'a rien fait
+// depuis 2 jours doit voir une mission de réactivation avant n'importe
+// quelle autre suggestion, même une formation en retard. Règle de sortie
+// identique à l'IA Coach (AMBASSADOR_SYSTEM_PROMPT) : une priorité claire,
+// jamais dix — deux missions maximum.
+function todayKey(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+const PILOT_HEADLINES = {
+  setup:      'Débloque tes missions',
+  reactivate: 'On reprend en douceur 👋',
+  training:   'On avance sur ta formation',
+  share:      'Fais connaître ton lien',
+  engage:     'Transforme ton audience',
+  publish:    'Ta mission du jour'
+};
+
+function computeMissionsForToday(state, referral){
+  const identitySet = !!(referral && referral.identity_set);
+  if(!identitySet){
+    return [{ id: 'setup-link', kind: 'setup', label: 'Crée ton lien personnel ci-dessus pour débloquer tes missions du jour', done: false }];
+  }
+
+  const missions = [];
+  const stats = (referral && referral.stats) || {};
+
+  // updated_at vient du serveur (ambassador-data.js) : dernière écriture
+  // réelle de l'état de cet ambassadeur, pas une estimation côté client.
+  const lastActiveIso = referral && referral.updated_at;
+  if(lastActiveIso){
+    const daysInactive = (Date.now() - new Date(lastActiveIso).getTime()) / 86400000;
+    if(daysInactive >= 2){
+      missions.push({ id: 'reactivate', kind: 'reactivate', label: 'Reprends avec une action de 5 minutes : réponds à un commentaire ou un message reçu', done: false });
+    }
+  }
+
+  const nextModule = (state.training || []).find(m => !m.done);
+  if(nextModule){
+    missions.push({ id: 'training-' + nextModule.title, kind: 'training', label: 'Termine le module : ' + nextModule.title, done: false });
+  }
+
+  if((stats.clicks || 0) === 0){
+    missions.push({ id: 'share-link', kind: 'share', label: 'Mets ton lien personnel dans ta bio (TikTok, Instagram ou Snap)', done: false });
+  } else if((stats.subs_active || 0) === 0){
+    missions.push({ id: 'engage', kind: 'engage', label: 'Réponds à tous les commentaires et messages reçus depuis ta dernière publication', done: false });
+  }
+
+  if(missions.length === 0){
+    missions.push({ id: 'publish', kind: 'publish', label: 'Publie un contenu aujourd\'hui', done: false });
+  }
+
+  return missions.slice(0, 2);
+}
+
+// Régénéré une fois par jour (date locale), ou immédiatement si le lien
+// vient d'être créé (identitySet change) — jamais recalculé à chaque
+// rendu, pour que cocher une mission ne la fasse pas disparaître avant la
+// fin de la journée.
+function ensurePilotMissions(){
+  const key = todayKey();
+  const identitySet = !!(REFERRAL && REFERRAL.identity_set);
+  if(!STATE.pilot || STATE.pilot.date !== key || STATE.pilot.identitySet !== identitySet){
+    STATE.pilot = { date: key, identitySet, missions: computeMissionsForToday(STATE, REFERRAL) };
+    saveState(STATE);
+  }
+  return STATE.pilot.missions;
+}
+
 // ── Écran Aujourd'hui ──
 function renderToday(){
   const h = new Date().getHours();
   document.getElementById('today-greet').textContent =
     (h < 12 ? 'Bonjour' : h < 18 ? 'Salut' : 'Bonsoir') + ' 👋';
 
+  const missions = ensurePilotMissions();
+  const isSetup = missions[0].kind === 'setup';
+  document.getElementById('mission-title').textContent = PILOT_HEADLINES[missions[0].kind] || PILOT_HEADLINES.publish;
+
   const tasksEl = document.getElementById('mission-tasks');
-  const tasks = ['Publier 1ère vidéo', 'Publier 2ème vidéo'];
-  tasksEl.innerHTML = tasks.map((t,i) => `
-    <div class="mtask ${STATE.missionDone[i] ? 'done' : ''}">
-      <div class="chk ${STATE.missionDone[i] ? 'on' : ''}" onclick="toggleMission(${i})">${STATE.missionDone[i] ? '✓' : ''}</div>
-      <div class="mtask-txt">${t}</div>
+  tasksEl.innerHTML = isSetup ? '' : missions.map(m => `
+    <div class="mtask ${m.done ? 'done' : ''}">
+      <div class="chk ${m.done ? 'on' : ''}" onclick="toggleMission('${m.id}')">${m.done ? '✓' : ''}</div>
+      <div class="mtask-txt">${m.label}</div>
     </div>
   `).join('');
 
   // Le lien et les compteurs viennent du serveur (renderReferral), pas de
   // STATE : c'est ce qui garantit que l'ambassadeur voit ses vrais chiffres.
   renderReferral();
-  const done = STATE.missionDone.filter(Boolean).length;
-  document.getElementById('today-progress').textContent = Math.round(done / STATE.missionDone.length * 100) + '%';
+  const done = isSetup ? 0 : missions.filter(m => m.done).length;
+  const total = isSetup ? 1 : missions.length;
+  document.getElementById('today-progress').textContent = Math.round(done / total * 100) + '%';
 }
-function toggleMission(i){
-  STATE.missionDone[i] = !STATE.missionDone[i];
+function toggleMission(id){
+  const m = STATE.pilot.missions.find(x => x.id === id);
+  if(!m) return;
+  m.done = !m.done;
   saveState(STATE);
   renderToday();
 }
@@ -854,7 +941,11 @@ async function saveIdentity(){
 
     REFERRAL = data.referral || REFERRAL;
     if(STATE){ STATE.name = first; saveState(STATE); }
-    renderReferral();
+    // renderToday() recalcule aussi la mission GC Pilot (voir plus bas) :
+    // tant que le lien n'existait pas, la seule mission possible était de le
+    // créer — une fois REFERRAL.identity_set vrai, une vraie mission du jour
+    // doit apparaître immédiatement, pas seulement au lendemain.
+    renderToday();
     renderProfile();
     toastAmb('✅ Ton lien est prêt');
   }catch(e){
