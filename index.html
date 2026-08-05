@@ -5578,14 +5578,30 @@ async function saveProfile(){
 // semble s'être passé (aucun message) — vu comme "le bouton ne marche pas"
 // alors qu'une vraie cause précise (souvent une simple mauvaise config
 // Supabase/Google) était disponible mais jamais affichée.
+// FIX (2026-08-05) : ce même paramètre #error=... est aussi celui que
+// Supabase pose quand on clique un vieux lien "Confirme ton email" devenu
+// invalide (error_code=otp_expired) — typiquement parce qu'une inscription a
+// été retentée entre-temps (double tentative après un premier paiement
+// refusé) et que Supabase invalide alors le lien précédent en émettant le
+// nouveau. Ce lien n'a AUCUN rôle dans le parcours d'achat : le compte est de
+// toute façon confirmé automatiquement côté serveur une fois le paiement
+// Stripe confirmé (voir ensureAuthUserForEmail dans verify-checkout-session.js
+// / stripe-webhook.js). Avant ce fix, ce cas retombait dans le message
+// "Connexion impossible", qui donne l'impression d'un site cassé alors que le
+// paiement, lui, n'a jamais dépendu de ce lien.
 function reportOAuthErrorIfAny(){
   const search = new URLSearchParams(window.location.search);
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   const err = search.get('error') || hash.get('error');
+  const code = search.get('error_code') || hash.get('error_code');
   const desc = search.get('error_description') || hash.get('error_description');
   if(!err) return false;
-  console.error('[oauth] Échec retour fournisseur:', err, desc);
-  toast('❌ Connexion impossible : ' + (desc ? decodeURIComponent(desc.replace(/\+/g,' ')) : err));
+  console.error('[oauth] Échec retour fournisseur:', err, code, desc);
+  if(code === 'otp_expired'){
+    toast("✉️ Ce lien de confirmation par email n'est plus valable (un autre a été envoyé depuis) — ce n'est pas grave : il ne bloque pas le paiement. Reprends simplement sur \"Continuer vers le paiement\".");
+  } else {
+    toast('❌ Connexion impossible : ' + (desc ? decodeURIComponent(desc.replace(/\+/g,' ')) : err));
+  }
   window.history.replaceState({}, '', window.location.origin + window.location.pathname);
   return true;
 }
