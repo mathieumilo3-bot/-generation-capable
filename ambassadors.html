@@ -128,7 +128,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
   <h2>Deviens ambassadeur Génération Capable</h2>
   <p>Recrute, gagne des commissions récurrentes sur chaque abonnement actif que tu apportes, et progresse avec un coach IA dédié — activation immédiate.</p>
   <input class="chat-input" id="activate-email" type="email" placeholder="Ton email" style="width:100%;margin-bottom:12px;text-align:center">
-  <button class="btn btn-gold" onclick="activateAmbassador()">🚀 Recevoir mon lien de connexion</button>
+  <button class="btn btn-gold" id="activate-btn" onclick="activateAmbassador()">🚀 Recevoir mon lien de connexion</button>
   <div id="activate-error" style="color:#e08080;font-size:12px;margin-top:10px"></div>
 </div>
 
@@ -137,6 +137,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,san
   <div class="badge-live" style="margin:0 auto 20px;width:fit-content">GC AMBASSADORS OS</div>
   <h2>Vérifie ta boîte mail 📩</h2>
   <p>On vient de t'envoyer un lien de connexion à <strong id="check-email-addr"></strong>. Ouvre l'email et clique sur le lien — ça te connecte directement, aucun mot de passe à retenir.</p>
+  <p style="font-size:12px;color:var(--t3);margin-top:-14px;margin-bottom:24px">Si tu as demandé plusieurs liens, seul celui du <strong>dernier email reçu</strong> fonctionne — les précédents sont automatiquement désactivés.</p>
   <button class="btn btn-g" onclick="checkGate()">← Retour</button>
 </div>
 
@@ -485,6 +486,31 @@ async function saveStateToServer(){
 // garder l'interface réactive (pas d'attente visible à chaque coche/case cochée).
 function saveState(){ saveStateToServer(); }
 
+// FIX (incident 2026-08-05) : quand un lien magique est invalide (déjà
+// utilisé, ou remplacé par un lien plus récent demandé pour le même email —
+// Supabase n'autorise qu'un seul lien actif à la fois), Supabase redirige
+// quand même vers ce site avec #error=...&error_code=...&error_description=...
+// dans l'URL, sans jamais créer de session. Rien ne lisait ces paramètres :
+// l'ambassadeur cliquait sur le lien reçu par email, retombait sur l'écran
+// d'activation VIDE (aucun message), et avait l'impression que "ça ne marche
+// juste pas". Même classe de bug déjà corrigée sur index.html pour
+// l'OAuth Google/Apple (voir reportOAuthErrorIfAny) — traitement identique ici.
+function reportOtpErrorIfAny(){
+  const search = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const err = search.get('error') || hash.get('error');
+  const code = search.get('error_code') || hash.get('error_code');
+  const desc = search.get('error_description') || hash.get('error_description');
+  if(!err) return false;
+  console.error('[auth] Échec du lien magique:', err, code, desc);
+  const friendly = code === 'otp_expired'
+    ? "Ce lien a expiré ou a déjà été utilisé. Si tu as demandé plusieurs liens, seul le dernier email reçu fonctionne — sinon, redemande-en un ci-dessous."
+    : "Ce lien de connexion n'est plus valide. Redemande-en un ci-dessous.";
+  document.getElementById('activate-error').textContent = friendly;
+  window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+  return true;
+}
+
 // ── Activation (écran gate) ──
 async function checkGate(){
   document.getElementById('gate-activate').style.display = 'none';
@@ -492,11 +518,14 @@ async function checkGate(){
   document.getElementById('gate-loading').style.display = 'block';
   document.getElementById('app').style.display = 'none';
 
+  const hadOtpError = reportOtpErrorIfAny();
+
   const { data: { session } } = await supabaseClient.auth.getSession();
 
   if(!session){
     document.getElementById('gate-activate').style.display = 'block';
     document.getElementById('gate-loading').style.display = 'none';
+    if(hadOtpError) document.getElementById('activate-email').focus();
     return;
   }
 
@@ -515,7 +544,20 @@ async function checkGate(){
   }
 }
 
+// FIX (incident 2026-08-05) : sans garde anti-double-clic, un tap un peu
+// appuyé ou impatient déclenchait 2-3 appels signInWithOtp() quasi
+// simultanés. Le premier réussissait (email envoyé), les suivants se
+// heurtaient au cooldown de 60s imposé par Supabase pour le MÊME email et
+// remontaient une erreur 429 — affichée avec le même message générique que
+// n'importe quel vrai échec, donnant l'impression que RIEN n'avait
+// fonctionné alors qu'un lien était bel et bien parti. Résultat concret :
+// la personne redemandait un lien encore et encore, ce qui invalidait à
+// chaque fois le précédent (Supabase ne garde qu'un lien actif par email) —
+// puis cliquait sur un email plus ancien, qui échouait avec "One-time token
+// not found" (voir reportOtpErrorIfAny ci-dessus).
+let _otpInFlight = false;
 async function activateAmbassador(){
+  if(_otpInFlight) return;
   const emailInput = document.getElementById('activate-email');
   const email = emailInput.value.trim().toLowerCase();
   const errEl = document.getElementById('activate-error');
@@ -525,14 +567,27 @@ async function activateAmbassador(){
   }
   errEl.textContent = '';
 
+  _otpInFlight = true;
+  const btn = document.getElementById('activate-btn');
+  const btnLabel = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Envoi en cours...'; }
+
   const { error } = await supabaseClient.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: window.location.href.split('#')[0] }
   });
 
+  _otpInFlight = false;
+  if(btn){ btn.disabled = false; btn.textContent = btnLabel; }
+
   if(error){
-    errEl.textContent = "Impossible d'envoyer le lien, réessaie dans une minute.";
     console.error('[auth] signInWithOtp error', error);
+    // Ce cooldown ne se déclenche QUE si un envoi a déjà réussi il y a moins
+    // d'une minute pour cet email — ce n'est donc jamais un vrai échec.
+    const isCooldown = error.status === 429 || (error.code && error.code.includes('rate_limit')) || /security purposes/i.test(error.message || '');
+    errEl.textContent = isCooldown
+      ? "Un lien vient déjà d'être envoyé à cette adresse il y a moins d'une minute — vérifie ta boîte mail (et les spams) avant d'en redemander un nouveau."
+      : "Impossible d'envoyer le lien, réessaie dans une minute.";
     return;
   }
 
