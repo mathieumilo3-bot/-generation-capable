@@ -36,6 +36,51 @@
 # Le slug n'est PAS validé ici — c'est referral-track.js qui tranche côté
 # serveur. Un chemin inconnu (faute de frappe, vieux lien) affiche donc
 # simplement la page d'accueil, sans erreur pour le visiteur.
+#
+# ⚠️ INCIDENT DU 04/08 — À LIRE AVANT DE TOUCHER À CETTE SECTION.
+#   Cette règle est un rewrite (status 200) : elle renvoie le CONTENU de
+#   index.html, soit 464 Ko. Tout chemin sans fichier correspondant était donc
+#   servi à 464 Ko — y compris /favicon.ico et /apple-touch-icon.png, que
+#   chaque iPhone réclame automatiquement à chaque visite. Résultat : environ
+#   1,4 Mo gaspillé par visiteur, quatre fois le poids réel de la page. Le
+#   quota de bande passante Netlify a été épuisé en quelques heures le jour du
+#   lancement, et le site a été mis en pause par Netlify.
+#
+#   Correctif : ces fichiers existent désormais réellement à la racine
+#   (favicon.ico, apple-touch-icon*.png, robots.txt, sitemap.xml). Netlify
+#   sert toujours un fichier réel AVANT d'appliquer une règle de redirection :
+#   ils ne peuvent donc plus tomber dans ce rewrite.
+#
+#   RÈGLE À RESPECTER : avant d'ajouter un fichier attendu par un navigateur
+#   ou un service tiers, créer le fichier — ne jamais compter sur ce rewrite
+#   pour absorber un chemin manquant.
+#
+#   Les règles 404 ci-dessous couvrent les chemins qu'on ne peut pas créer à
+#   l'avance (sondes de sécurité, robots) et qui, sinon, coûteraient 464 Ko
+#   chacun.
+
+# Chemins systématiquement sondés par des robots : 404 immédiat, quelques
+# octets, au lieu de 464 Ko de page d'accueil.
+[[redirects]]
+  from = "/.well-known/*"
+  to = "/404-empty"
+  status = 404
+
+[[redirects]]
+  from = "/wp-admin/*"
+  to = "/404-empty"
+  status = 404
+
+[[redirects]]
+  from = "/wp-login.php"
+  to = "/404-empty"
+  status = 404
+
+[[redirects]]
+  from = "/.env"
+  to = "/404-empty"
+  status = 404
+
 [[redirects]]
   from = "/:slug"
   to = "/index.html?ref=:slug"

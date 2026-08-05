@@ -1,0 +1,9 @@
+# generationcapable.fr
+User-agent: *
+Allow: /
+
+# Espaces privés : aucune raison d'être indexés.
+Disallow: /ambassadors.html
+Disallow: /.netlify/
+
+Sitemap: https://generationcapable.fr/sitemap.xml

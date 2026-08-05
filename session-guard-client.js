@@ -17,7 +17,26 @@
   'use strict';
 
   var DEVICE_KEY = 'gc_device_id';
-  var CHECK_INTERVAL_MS = 90000; // 1 min 30
+
+  // Fréquence de vérification.
+  //
+  // Était à 90 secondes, ce qui représentait 40 appels de fonction par heure
+  // et par onglet ouvert. Un onglet laissé ouvert toute une journée coûtait à
+  // lui seul plusieurs centaines d'appels, pour un événement — un compte
+  // utilisé ailleurs — qui survient au mieux quelques fois par mois.
+  //
+  // 10 minutes suffisent largement : le partage de compte reste détecté, et
+  // la vérification au retour sur l'onglet (visibilitychange) couvre le cas
+  // qui compte vraiment — quelqu'un qui reprend sa session après que le
+  // compte a été utilisé ailleurs.
+  var CHECK_INTERVAL_MS = 600000; // 10 minutes
+
+  // Anti-rafale sur le retour d'onglet : basculer entre applications sur
+  // mobile déclenche visibilitychange en continu. Sans ce garde-fou, un
+  // utilisateur qui jongle entre deux apps générait un appel par bascule.
+  var MIN_CHECK_GAP_MS = 120000; // 2 minutes
+  var lastCheckAt = 0;
+
   var timer = null;
   var config = null; // { getSession, onDisplaced }
 
@@ -68,7 +87,13 @@
     start();
   }
 
-  async function checkOnce() {
+  async function checkOnce(force) {
+    // Ignore les appels rapprochés (bascules d'application sur mobile), sauf
+    // demande explicite au démarrage.
+    var now = Date.now();
+    if (!force && now - lastCheckAt < MIN_CHECK_GAP_MS) return;
+    lastCheckAt = now;
+
     var res = await call('check');
     if (res && res.displaced === true) {
       stop();
@@ -91,12 +116,12 @@
   }
 
   function onVisible() {
-    if (document.visibilityState === 'visible') checkOnce();
+    if (document.visibilityState === 'visible') checkOnce(false);
   }
 
   function init(opts) {
     config = opts || {};
-    checkOnce();
+    checkOnce(true);   // premier contrôle immédiat, sans anti-rafale
     start();
   }
 
