@@ -70,7 +70,19 @@ async function activateSubscription(){
       const { data, error } = await supa.auth.signUp({
         email: emailVal,
         password: pwVal,
-        options: { data: { full_name: nameVal } }
+        options: {
+          data: { full_name: nameVal },
+          // FIX CRITIQUE (audit auth 2026-08-05) : sans emailRedirectTo explicite,
+          // le lien "Confirm your signup" de l'email retombe sur la Site URL
+          // configurée dans le dashboard Supabase — si elle est mal réglée (URL de
+          // preview, ancien domaine...) la personne qui clique confirme bien son
+          // compte côté Supabase mais atterrit hors du site, sans session, sans
+          // moyen de revenir automatiquement dans l'app. On fixe explicitement la
+          // racine du site courant, qui est aussi le seul chemin jamais réécrit par
+          // la règle catch-all Netlify "/:slug" (voir netlify.toml) : la query/le
+          // fragment renvoyés par Supabase arrivent donc toujours intacts ici.
+          emailRedirectTo: window.location.origin + '/'
+        }
       });
       if(error){
         // Anciennes versions de l'API Supabase pouvaient renvoyer cette
@@ -5346,7 +5358,29 @@ async function authWithEmail(){
   if(loginBtn) loginBtn.disabled = true;
   try{
     const { data, error } = await supa.auth.signInWithPassword({ email, password: pw });
-    if(error){ toast('❌ ' + (error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect' : error.message)); return; }
+    if(error){
+      // FIX CRITIQUE (audit auth 2026-08-05) : si le lien de confirmation reçu par
+      // email a été "consommé" avant le vrai clic de l'utilisateur (scanner de
+      // liens d'un client mail — Apple Mail Privacy Protection, antivirus
+      // d'entreprise, proxy Gmail — qui préchargent automatiquement les URL des
+      // emails pour les analyser), ou a simplement expiré, la personne se
+      // retrouvait bloquée : compte créé, mais aucun moyen évident de recevoir un
+      // nouveau lien. On détecte ce cas précis ("Email not confirmed", renvoyé par
+      // Supabase quand le mot de passe est correct mais l'email pas confirmé) et on
+      // renvoie automatiquement un nouvel email de confirmation, sans que la
+      // personne ait à comprendre pourquoi ni à chercher un bouton "renvoyer".
+      if(error.message === 'Email not confirmed'){
+        console.error('[auth] signInWithPassword: email non confirmé —', error);
+        try{
+          const { error: resendErr } = await supa.auth.resend({ type: 'signup', email });
+          if(resendErr) console.error('[auth] resend confirmation:', resendErr);
+        }catch(e){ console.error('[auth] resend confirmation EXCEPTION:', e); }
+        toast('📧 Ton email n\'est pas encore confirmé — on vient de t\'envoyer un nouveau lien, vérifie ta boîte de réception (et les spams).');
+        return;
+      }
+      toast('❌ ' + (error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect' : error.message));
+      return;
+    }
     await onAuthSuccess(data.session);
   }finally{
     _loginInFlight = false;
@@ -5355,16 +5389,23 @@ async function authWithEmail(){
 }
 
 // OAuth Google
+// FIX (audit auth 2026-08-05) : redirectTo pointait vers window.location.pathname
+// (variable selon la page d'où l'utilisateur lance la connexion) au lieu d'une
+// URL fixe — deux risques : 1) une URL qui ne correspond à aucune entrée exacte
+// de la liste "Redirect URLs" Supabase se fait rejeter, 2) un chemin qui n'est
+// pas un fichier réel du site passe par la règle catch-all Netlify "/:slug" (voir
+// netlify.toml) qui réécrit la query string et perdrait un éventuel paramètre de
+// retour. La racine du site est le seul chemin garanti stable des deux côtés.
 async function authWithGoogle(){
   if(!supa) return authNotConfigured();
-  const { error } = await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } });
+  const { error } = await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + '/' } });
   if(error) toast('❌ ' + error.message);
 }
 
 // OAuth Apple
 async function authWithApple(){
   if(!supa) return authNotConfigured();
-  const { error } = await supa.auth.signInWithOAuth({ provider:'apple', options:{ redirectTo: window.location.origin + window.location.pathname } });
+  const { error } = await supa.auth.signInWithOAuth({ provider:'apple', options:{ redirectTo: window.location.origin + '/' } });
   if(error) toast('❌ ' + error.message);
 }
 
@@ -5382,7 +5423,7 @@ async function sendResetEmail(){
   if(!email){ toast('Entre ton email'); return; }
   if(!supa) return authNotConfigured();
 
-  const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+  const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/' });
   if(error){ toast('❌ ' + error.message); return; }
   toast('✓ Email envoyé — vérifie ta boîte de réception');
   showLoginForm();
@@ -5566,15 +5607,29 @@ async function saveProfile(){
 // semble s'être passé (aucun message) — vu comme "le bouton ne marche pas"
 // alors qu'une vraie cause précise (souvent une simple mauvaise config
 // Supabase/Google) était disponible mais jamais affichée.
+// NOTE (audit auth 2026-08-05) : malgré son nom d'origine, cette fonction ne
+// couvre pas QUE l'OAuth — Supabase renvoie exactement le même format
+// (?error=...&error_description=...&error_code=... ou l'équivalent en #fragment)
+// pour un lien de confirmation d'inscription ou de réinitialisation de mot de
+// passe expiré ou déjà utilisé. Avant ce correctif, un tel échec revenait sur le
+// site SANS AUCUN message : l'utilisateur voyait juste la page d'accueil, sans
+// comprendre pourquoi "ça n'avait pas marché" — exactement le symptôme du bug
+// "confirmé mais jamais connecté".
 function reportOAuthErrorIfAny(){
   const search = new URLSearchParams(window.location.search);
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   const err = search.get('error') || hash.get('error');
+  const code = search.get('error_code') || hash.get('error_code');
   const desc = search.get('error_description') || hash.get('error_description');
   if(!err) return false;
-  console.error('[oauth] Échec retour fournisseur:', err, desc);
-  toast('❌ Connexion impossible : ' + (desc ? decodeURIComponent(desc.replace(/\+/g,' ')) : err));
+  console.error('[auth] Échec retour lien (OAuth ou email) :', err, code, desc);
   window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+  if(code === 'otp_expired'){
+    toast('❌ Ce lien a expiré ou a déjà été utilisé. Reconnecte-toi avec ton mot de passe : un nouveau lien de confirmation te sera renvoyé automatiquement si besoin.');
+    go('login', null);
+    return true;
+  }
+  toast('❌ Connexion impossible : ' + (desc ? decodeURIComponent(desc.replace(/\+/g,' ')) : err));
   return true;
 }
 
@@ -5648,11 +5703,92 @@ async function applyNewPassword(){
   } finally { btn.disabled = false; }
 }
 
+// ── Lien de confirmation reçu par email (inscription, changement d'email,
+//    réinitialisation de mot de passe) — méthode recommandée par Supabase ──
+//
+// Deux formats de lien coexistent selon le template configuré côté dashboard
+// Supabase (Authentication → Email Templates) :
+//  1. L'ancien lien {{ .ConfirmationURL }} : Supabase vérifie et pose la
+//     session lui-même côté serveur (redirection avec la session déjà dans le
+//     fragment d'URL, #access_token=...) — supabase-js la récupère tout seul
+//     (detectSessionInUrl), rien à faire ici pour ce cas.
+//  2. Le lien recommandé par Supabase, {{ .SiteURL }}/?token_hash={{ .TokenHash }}&type=...
+//     — voir la doc Supabase "Redirecting the user in Email Templates". La
+//     vérification n'a lieu qu'ICI, au moment réel où un navigateur exécute ce
+//     code. C'est la protection officiellement recommandée contre les
+//     scanners de liens (Apple Mail Privacy Protection, antivirus
+//     d'entreprise, proxy images/liens de Gmail...) : ces outils ouvrent
+//     automatiquement les liens d'un email pour les analyser AVANT que la
+//     personne ne clique elle-même. Avec l'ancien lien, ce simple GET
+//     automatique consomme le jeton à usage unique — la personne tombe alors
+//     sur "lien déjà utilisé" en cliquant pour de vrai, sans jamais être
+//     connectée. Avec token_hash, un GET automatique ne déclenche plus aucune
+//     vérification : seul ce code, qui tourne dans un vrai navigateur après
+//     chargement complet de la page, appelle verifyOtp().
+//
+// → Action recommandée côté dashboard (non versionnable depuis ce dépôt,
+//   à faire manuellement dans Authentication → Email Templates) : remplacer
+//   {{ .ConfirmationURL }} par {{ .SiteURL }}/?token_hash={{ .TokenHash }}&type=signup
+//   (et &type=recovery dans le template "Reset password") pour bénéficier de
+//   cette protection. Le code ci-dessous gère les DEUX formats, donc rien ne
+//   casse si ce changement n'est pas encore fait.
+async function consumeTokenHashFromUrl(){
+  const search = new URLSearchParams(window.location.search);
+  const tokenHash = search.get('token_hash');
+  const type = search.get('type');
+  if(!tokenHash || !type) return false;
+
+  // Nettoyage immédiat de l'URL : un rafraîchissement de page ne doit jamais
+  // retenter la vérification d'un jeton déjà consommé (Supabase renverrait
+  // alors une erreur "otp_expired" trompeuse pour un lien qui a en réalité
+  // déjà fonctionné une première fois).
+  window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+
+  const { data, error } = await supa.auth.verifyOtp({ token_hash: tokenHash, type });
+  if(error){
+    console.error('[auth] verifyOtp(token_hash):', error);
+    toast(type === 'recovery'
+      ? '❌ Ce lien de réinitialisation a expiré ou a déjà été utilisé — redemande un email depuis "Mot de passe oublié".'
+      : '❌ Ce lien a expiré ou a déjà été utilisé — reconnecte-toi avec ton mot de passe : un nouveau lien te sera renvoyé automatiquement.');
+    go('login', null);
+    return true;
+  }
+  if(type === 'recovery'){
+    // Comme pour le flux historique (voir RECOVERY_MODE ci-dessous) : une
+    // session de récupération ne doit JAMAIS être traitée comme une connexion
+    // normale, sous peine de laisser entrer sans passer par la définition
+    // d'un nouveau mot de passe.
+    showResetPasswordView();
+    return true;
+  }
+  if(data.session) await onAuthSuccess(data.session);
+  return true;
+}
+
 // Vérifie automatiquement, au chargement de la page, si l'utilisateur a
 // déjà une session valide (ex: retour après clic sur un lien OAuth/email).
 (async function checkExistingSession(){
   if(reportOAuthErrorIfAny()) return;
   if(!supa) return;
+
+  // IMPORTANT (audit auth 2026-08-05) : l'écouteur onAuthStateChange est
+  // enregistré APRÈS consumeTokenHashFromUrl(), jamais avant. verifyOtp() émet
+  // lui-même un évènement SIGNED_IN en interne dès que la session est posée —
+  // s'il existait déjà un abonné à ce moment-là pour un lien de type
+  // "recovery", ce SIGNED_IN serait traité comme une connexion normale AVANT
+  // que showResetPasswordView() n'ait eu la main pour lever RECOVERY_MODE
+  // (celui-ci n'est mis à true qu'une fois verifyOtp() résolu). Enregistrer
+  // l'écouteur seulement ensuite garantit qu'aucune notification ne peut être
+  // reçue pendant cette fenêtre ; on continue quand même à s'abonner après
+  // coup pour les évènements futurs de la session (rafraîchissement de jeton,
+  // déconnexion depuis un autre onglet...).
+  if(await consumeTokenHashFromUrl()){
+    supa.auth.onAuthStateChange((event, session) => {
+      if(event === 'PASSWORD_RECOVERY'){ showResetPasswordView(); return; }
+      if(event === 'SIGNED_IN' && session && !RECOVERY_MODE) onAuthSuccess(session);
+    });
+    return;
+  }
 
   // Doit être testé AVANT getSession() : supabase-js consomme le fragment
   // d'URL à l'initialisation, donc le marqueur disparaît ensuite.
