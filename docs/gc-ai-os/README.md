@@ -12,6 +12,14 @@ Ce dossier est la documentation vivante de l'architecture. Le code
 d'implémentation (Next.js / TypeScript / Supabase) vit dans un repository
 séparé : **gc-ai-os** (voir section « Repository technique » ci-dessous).
 
+**Deux volets, à ne pas confondre** : 01-16 documentent le volet qui pilote
+Génération Capable **l'entreprise** (agents internes : CTO, DevOps,
+Marketing...). 17-21 documentent GC Brain, le volet qui pilote Génération
+Capable **le produit** — l'expérience quotidienne des ambassadeurs,
+vendeurs, directeurs et du CEO dans l'app. Même patron d'architecture
+(Orchestrateur + agents spécialisés + mémoire + RBAC), deux domaines
+différents, deux points de départ différents (voir 17 pour le détail).
+
 ## Sommaire
 
 | Document | Contenu |
@@ -32,6 +40,11 @@ séparé : **gc-ai-os** (voir section « Repository technique » ci-dessous).
 | [14-executive-brain.md](./14-executive-brain.md) | GC Executive Brain : 8 Brains instrumentés, Decision Engine, Enterprise Score, briefing du matin |
 | [15-human-brain.md](./15-human-brain.md) | GC Human Brain : direction humaine, préférences observées, consentement et RGPD |
 | [16-audit.md](./16-audit.md) | **Audit du 29/07/2026** : promis vs implémenté, écarts vérifiés par commande, ordre de réparation |
+| [17-plateforme-membres-vision.md](./17-plateforme-membres-vision.md) | GC Brain : le deuxième volet de GC AI OS — pilote le **produit** (ambassadeurs, vendeurs, directeurs, CEO), positionnement vis-à-vis du volet interne (01-16) |
+| [18-agents-membres-catalogue.md](./18-agents-membres-catalogue.md) | Catalogue des 13 agents membres (GC Pilot, GC Coach, GC Content, GC Command Center...), avec leur nature réelle (système distinct ou vue partagée) |
+| [19-scoring-pilotage-notifications.md](./19-scoring-pilotage-notifications.md) | Les 7 scores membres, la chaîne de pilotage membre → directeur → CEO, le système de notifications et d'automatisations |
+| [20-dashboards-ux-roadmap.md](./20-dashboards-ux-roadmap.md) | Dashboards par rôle, parcours premier jour/semaine/mois, roadmap en 5 phases (15 → 50 000 membres) |
+| [21-audit-plateforme-membres.md](./21-audit-plateforme-membres.md) | **Audit du 05/08/2026** : autocritique de 17-20, faiblesses, fonctionnalités coupées/fusionnées, innovations ajoutées |
 
 ## Repository technique
 
