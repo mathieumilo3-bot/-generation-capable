@@ -85,6 +85,18 @@ async function activateSubscription(){
           if(loginEmailEl1) loginEmailEl1.value = emailVal;
           return;
         }
+        // FIX (2026-08-05) : un double clic sur "Continuer vers le paiement"
+        // (ex: le premier essai semblait ne rien faire) déclenchait un second
+        // signUp() sur le même email quelques secondes après le premier —
+        // Supabase le bloque alors avec une erreur technique en anglais
+        // ("For security purposes, you can only request this after N
+        // seconds."), affichée telle quelle et donnant l'impression que le
+        // site est cassé. Le compte du premier essai existe déjà : on le dit
+        // clairement plutôt que d'afficher l'erreur brute.
+        if(error.status === 429 || (error.code && error.code.includes('rate_limit')) || (error.message && /security purposes/i.test(error.message))){
+          toast('Ton compte est déjà en cours de création — patiente une minute puis appuie à nouveau sur "Continuer vers le paiement".');
+          return;
+        }
         toast('❌ ' + error.message);
         return;
       }
