@@ -1130,7 +1130,7 @@ label{font-size:10.5px;font-weight:700;color:var(--t3);display:block;margin-bott
     <!-- Carte vidéo premium — miniature YouTube, pas d'embed visible avant clic -->
     <div style="width:100%;max-width:400px;margin-bottom:28px;position:relative;z-index:1">
       <div id="video-card" style="position:relative;padding-bottom:56.25%;border-radius:18px;overflow:hidden;border:1px solid rgba(229,185,74,.15);background:#000;box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 30px 60px -25px rgba(0,0,0,.85), 0 0 40px -18px rgba(229,185,74,.2);cursor:pointer" onclick="playHeroVideo()">
-        <img src="https://img.youtube.com/vi/847P9zFvJbM/maxresdefault.jpg" alt="Présentation Génération Capable" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+        <img src="https://img.youtube.com/vi/vXQCrm7yPCc/hqdefault.jpg" alt="Présentation Génération Capable" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
         <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.45))"></div>
         <div style="position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;background:rgba(5,5,5,.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);padding:7px 12px;border-radius:999px;font-size:11px;font-weight:600;color:#fff">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/></svg>
@@ -3150,7 +3150,7 @@ function playHeroVideo(){
   var card = document.getElementById('video-card');
   if(!card) return;
   card.outerHTML = '<div style="position:relative;padding-bottom:56.25%;border-radius:18px;overflow:hidden;border:1px solid rgba(229,185,74,.15);background:#000">'
-    + '<iframe src="https://www.youtube.com/embed/847P9zFvJbM?autoplay=1&rel=0&modestbranding=1" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
+    + '<iframe src="https://www.youtube.com/embed/vXQCrm7yPCc?autoplay=1&rel=0&modestbranding=1" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
     + '</div>';
 }
 document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('on')}));
