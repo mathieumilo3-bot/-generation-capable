@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { join } from "node:path";
 import { getDb } from "@/server/db";
 import { resolveStorageRoot } from "@/server/storage";
+import { getCurrentUserId } from "@/server/auth";
 
 export const runtime = "nodejs";
 
@@ -25,11 +26,24 @@ interface ApplyCommandResult {
 // Next.js 14 : params est un objet simple, pas une Promise (Next 15).
 export async function POST(request: Request, { params }: { params: { id: string } }): Promise<NextResponse> {
   const { id: projectId } = params;
+
+  // Authentification requise
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  }
+
   const body = (await request.json()) as { command?: string };
   if (!body.command) return NextResponse.json({ error: "Commande manquante." }, { status: 400 });
 
   const db = getDb();
-  if (!db.getProject(projectId)) return NextResponse.json({ error: "Projet introuvable." }, { status: 404 });
+  const project = db.getProject(projectId);
+  if (!project) return NextResponse.json({ error: "Projet introuvable." }, { status: 404 });
+
+  // Vérification d'ownership
+  if (project.userId !== userId) {
+    return NextResponse.json({ error: "Accès refusé à ce projet." }, { status: 403 });
+  }
 
   try {
     const { stdout } = await execFileAsync(process.execPath, [EDIT_CLI, projectId, body.command], {

@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server";
 import { PIPELINE_STAGES, STAGE_LABEL_FR } from "@video-editor/shared-types";
 import { getDb } from "@/server/db";
+import { getCurrentUserId } from "@/server/auth";
 
 export const runtime = "nodejs";
 
 // Next.js 14 : params est un objet simple, pas une Promise (Next 15).
 export async function GET(_request: Request, { params }: { params: { id: string } }): Promise<NextResponse> {
   const { id } = params;
+
+  // Authentification requise
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  }
+
   const db = getDb();
   const project = db.getProject(id);
   if (!project) return NextResponse.json({ error: "Projet introuvable." }, { status: 404 });
+
+  // Vérification d'ownership
+  if (project.userId !== userId) {
+    return NextResponse.json({ error: "Accès refusé à ce projet." }, { status: 403 });
+  }
 
   const stagesByName = db.latestStagesForProject(id);
   const stages = PIPELINE_STAGES.map((stage) => {

@@ -9,6 +9,7 @@ import type { MediaContainer } from "@video-editor/shared-types";
 import { getDb } from "@/server/db";
 import { startPipelineJob } from "@/server/jobs";
 import { resolveStorageRoot } from "@/server/storage";
+import { getCurrentUserId, createUserSession } from "@/server/auth";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,12 @@ const EXT_TO_CONTAINER: Record<string, MediaContainer> = {
  * progression réelle est ensuite lue via /api/projects/[id]/status.
  */
 export async function POST(request: Request): Promise<NextResponse> {
+  // Authentification: récupère ou crée une session utilisateur
+  let userId = await getCurrentUserId();
+  if (!userId) {
+    userId = await createUserSession();
+  }
+
   const form = await request.formData();
   const brief = (form.get("brief") as string | null)?.trim();
   const presetId = (form.get("preset") as string | null) ?? undefined;
@@ -45,7 +52,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const db = getDb();
-  const project = db.createProject({ userId: "demo-user", title: brief.slice(0, 80) });
+  const project = db.createProject({ userId, title: brief.slice(0, 80) });
   const rushesDir = join(resolveStorageRoot(), project.id, "rushes");
   await mkdir(rushesDir, { recursive: true });
 
