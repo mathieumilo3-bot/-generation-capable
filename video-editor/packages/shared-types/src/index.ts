@@ -8,3 +8,6 @@ export * from "./render.js";
 export * from "./cost.js";
 export * from "./feedback.js";
 export * from "./validation.js";
+export * from "./creative-plan.js";
+export * from "./creative-criticism.js";
+export * from "./creative-learning.js";

@@ -9,3 +9,6 @@ export * from "./sound-designer.js";
 export * from "./creative-director.js";
 export * from "./quality-control.js";
 export * from "./style-profile-resolver.js";
+export * from "./creative-brain.js";
+export * from "./creative-critic.js";
+export { CreativeLearningEngine, applyLearningToStrategy } from "./creative-learning-engine.js";
