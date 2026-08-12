@@ -1,0 +1,29 @@
+# Remplace la ligne app par le nom que tu as choisi avec `fly apps create`.
+app = "REMPLACE-MOI"
+primary_region = "cdg"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  VIDEO_EDITOR_STORAGE_ROOT = "/data"
+
+[mounts]
+  source = "video_editor_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  # Toujours actif — le pipeline tourne en sous-processus (voir
+  # apps/web/src/server/jobs.ts), sans connexion HTTP maintenue pendant le
+  # montage. L'auto-stop de Fly se base sur l'activité HTTP : il pourrait
+  # arrêter la machine EN PLEIN RENDU. Le désactiver coûte plus cher
+  # (machine allumée en continu) mais évite un montage tué à moitié.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "2gb"

@@ -43,6 +43,54 @@ l'environnement avant de lancer (`ANTHROPIC_API_KEY`, `GOOGLE_API_KEY` ou
 en mode dégradé honnête, annoncé comme tel dans les logs et les warnings
 retournés par le pipeline.
 
+## Déployer en privé (Fly.io)
+
+`Dockerfile` + `fly.toml` sont prêts à l'emploi — Debian (pas Alpine, le
+bundler Remotion a un binaire natif lié à glibc), ffmpeg installé,
+Chromium headless-shell de Remotion pré-téléchargé au build. Ce
+répertoire de session n'a pas d'accès réseau sortant vers Fly.io (politique
+réseau de l'environnement) — le déploiement se fait donc depuis ta propre
+machine, en 5 commandes :
+
+```bash
+# 1. Installer flyctl (une fois) : https://fly.io/docs/flyctl/install/
+curl -L https://fly.io/install.sh | sh
+
+# 2. Se connecter (ouvre le navigateur, crée un compte si besoin)
+fly auth login
+
+# 3. Depuis video-editor/ : créer l'app (choisis un nom unique globalement)
+cd video-editor
+fly apps create ton-nom-unique
+
+# 4. Créer le volume persistant (stockage des vidéos + base SQLite)
+fly volumes create video_editor_data --app ton-nom-unique --region cdg --size 3
+
+# 5. Éditer fly.toml : remplacer "REMPLACE-MOI" par ton-nom-unique, puis :
+fly deploy --app ton-nom-unique
+```
+
+`fly deploy` affiche l'URL finale (`https://ton-nom-unique.fly.dev`) — elle
+n'est pas indexée ni annoncée nulle part, seul quelqu'un qui connaît
+l'adresse y accède (pas d'authentification applicative pour l'instant,
+volontaire pour le MVP — voir §16 du brief produit : pas de comptes/SSO).
+
+Pour de vraies réponses IA en production, ajouter les clés en secrets
+plutôt qu'en variables d'environnement en clair :
+
+```bash
+fly secrets set ANTHROPIC_API_KEY=... DEEPGRAM_API_KEY=... --app ton-nom-unique
+```
+
+**Coût** : `shared-cpu-2x` + 2 Go RAM + 3 Go de volume, machine allumée en
+continu (`auto_stop_machines = false` — nécessaire car le pipeline tourne
+en sous-processus détaché de la requête HTTP ; laisser Fly l'arrêter
+automatiquement risquerait de tuer un montage en cours). À vérifier sur
+[fly.io/docs/about/pricing](https://fly.io/docs/about/pricing/) — de
+l'ordre de quelques dollars à ~15 $/mois selon la région. Pour couper les
+coûts entre deux sessions d'usage : `fly scale count 0 --app ton-nom-unique`
+(puis `fly scale count 1` pour la relancer).
+
 ## Structure
 
 ```
