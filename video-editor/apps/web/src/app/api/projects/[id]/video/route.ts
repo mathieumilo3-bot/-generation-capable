@@ -6,8 +6,9 @@ import { getDb } from "@/server/db";
 
 export const runtime = "nodejs";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
-  const { id } = await params;
+// Next.js 14 : params est un objet simple, pas une Promise (Next 15).
+export async function GET(_request: Request, { params }: { params: { id: string } }): Promise<Response> {
+  const { id } = params;
   const db = getDb();
   const renders = db.listRendersByProject(id);
   const finalRender = [...renders].reverse().find((r) => r.kind === "final" && r.status === "done" && r.filePath);

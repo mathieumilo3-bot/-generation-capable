@@ -29,8 +29,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   const form = await request.formData();
   const brief = (form.get("brief") as string | null)?.trim();
   const presetId = (form.get("preset") as string | null) ?? undefined;
-  const rushFiles = form.getAll("rushes").filter((f): f is File => f instanceof File);
-  const referenceFiles = form.getAll("references").filter((f): f is File => f instanceof File);
+  // Un <input type="file"> vide contribue quand même une entrée FormData —
+  // un File fantôme avec name="" et size=0 — qui n'est jamais un vrai
+  // fichier. Sans ce filtre, écrire ce File à son "nom" (une chaîne vide)
+  // résout vers le dossier parent lui-même → EISDIR (constaté en test).
+  const isRealFile = (f: FormDataEntryValue): f is File => f instanceof File && f.size > 0 && f.name !== "";
+  const rushFiles = form.getAll("rushes").filter(isRealFile);
+  const referenceFiles = form.getAll("references").filter(isRealFile);
 
   if (!brief) {
     return NextResponse.json({ error: "Le brief est obligatoire — décris ce que tu veux créer." }, { status: 400 });

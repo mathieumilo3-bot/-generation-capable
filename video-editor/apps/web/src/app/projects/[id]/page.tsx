@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState, use as usePromise } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 interface StageInfo {
   stage: string;
@@ -34,8 +34,11 @@ const COMMANDS: { command: string; label: string }[] = [
   { command: "more_dynamic_captions", label: "Sous-titres plus dynamiques" },
 ];
 
-export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = usePromise(params);
+export default function ProjectPage({ params }: { params: { id: string } }) {
+  // Next.js 14 : `params` est un objet simple côté client, pas une Promise
+  // (ça, c'est Next 15) — utiliser React.use() dessus déclenchait
+  // exactement l'erreur #438 constatée en test bout-en-bout.
+  const { id } = params;
   const [data, setData] = useState<StatusResponse | null>(null);
   const [cacheBust, setCacheBust] = useState(0);
   const [commandBusy, setCommandBusy] = useState<string | null>(null);

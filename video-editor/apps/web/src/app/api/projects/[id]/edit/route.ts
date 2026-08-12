@@ -22,8 +22,9 @@ interface ApplyCommandResult {
  * spawné plutôt que d'importer @video-editor/render ici — même raison
  * que la création de projet (server/jobs.ts).
  */
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> {
-  const { id: projectId } = await params;
+// Next.js 14 : params est un objet simple, pas une Promise (Next 15).
+export async function POST(request: Request, { params }: { params: { id: string } }): Promise<NextResponse> {
+  const { id: projectId } = params;
   const body = (await request.json()) as { command?: string };
   if (!body.command) return NextResponse.json({ error: "Commande manquante." }, { status: 400 });
 

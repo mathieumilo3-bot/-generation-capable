@@ -4,8 +4,9 @@ import { getDb } from "@/server/db";
 
 export const runtime = "nodejs";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> {
-  const { id } = await params;
+// Next.js 14 : params est un objet simple, pas une Promise (Next 15).
+export async function GET(_request: Request, { params }: { params: { id: string } }): Promise<NextResponse> {
+  const { id } = params;
   const db = getDb();
   const project = db.getProject(id);
   if (!project) return NextResponse.json({ error: "Projet introuvable." }, { status: 404 });
