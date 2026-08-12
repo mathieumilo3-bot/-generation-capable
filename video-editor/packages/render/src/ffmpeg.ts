@@ -16,12 +16,35 @@ export class FfmpegError extends Error {
   }
 }
 
-async function runFfmpeg(args: string[]): Promise<{ stdout: string; stderr: string }> {
+async function runFfmpeg(args: string[], opts?: { timeoutMs?: number; operation?: string }): Promise<{ stdout: string; stderr: string }> {
+  const operation = opts?.operation ?? "ffmpeg";
+  const timeoutMs = opts?.timeoutMs ?? 600000; // 10 min default
+  const opLabel = `[${operation}] `;
+  const t0 = Date.now();
+
   try {
-    return await execFileAsync("ffmpeg", ["-hide_banner", "-y", ...args], { maxBuffer: 1024 * 1024 * 64 });
+    let completed = false;
+    const promise = execFileAsync("ffmpeg", ["-hide_banner", "-y", ...args], { maxBuffer: 1024 * 1024 * 64 });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        if (!completed) {
+          const elapsed = Date.now() - t0;
+          reject(new Error(`${operation} timeout après ${(elapsed / 1000).toFixed(1)}s (limite: ${(timeoutMs / 1000).toFixed(0)}s)`));
+        }
+      }, timeoutMs);
+    });
+
+    const result = await Promise.race([promise, timeoutPromise]);
+    completed = true;
+    const elapsed = Date.now() - t0;
+    console.log(`${opLabel}Succès (${(elapsed / 1000).toFixed(1)}s)`);
+    return result;
   } catch (err) {
+    const elapsed = Date.now() - t0;
+    console.log(`${opLabel}Erreur après ${(elapsed / 1000).toFixed(1)}s`);
     const e = err as { stderr?: string; message: string };
-    throw new FfmpegError(`ffmpeg a échoué: ${e.message}`, e.stderr ?? "");
+    throw new FfmpegError(`${operation} a échoué: ${e.message}`, e.stderr ?? "");
   }
 }
 
@@ -67,23 +90,26 @@ export async function probe(filePath: string): Promise<MediaInfo> {
  * (§11 du brief : "ne pas envoyer inutilement les rushs complets").
  */
 export async function generateProxy(inputPath: string, outputPath: string): Promise<void> {
-  await runFfmpeg([
-    "-i",
-    inputPath,
-    "-vf",
-    "scale=640:-2",
-    "-c:v",
-    "libx264",
-    "-preset",
-    "veryfast",
-    "-crf",
-    "30",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "64k",
-    outputPath,
-  ]);
+  await runFfmpeg(
+    [
+      "-i",
+      inputPath,
+      "-vf",
+      "scale=640:-2",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "veryfast",
+      "-crf",
+      "30",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "64k",
+      outputPath,
+    ],
+    { operation: "proxy_generation", timeoutMs: 120000 }
+  );
 }
 
 export interface SilenceWindow {
@@ -106,15 +132,18 @@ export async function detectSilence(
   const minDur = opts.minSilenceDurationSec ?? 0.5;
   let stderr = "";
   try {
-    const res = await runFfmpeg([
-      "-i",
-      inputPath,
-      "-af",
-      `silencedetect=noise=${noiseDb}dB:d=${minDur}`,
-      "-f",
-      "null",
-      "-",
-    ]);
+    const res = await runFfmpeg(
+      [
+        "-i",
+        inputPath,
+        "-af",
+        `silencedetect=noise=${noiseDb}dB:d=${minDur}`,
+        "-f",
+        "null",
+        "-",
+      ],
+      { operation: "silence_detection", timeoutMs: 120000 }
+    );
     stderr = res.stderr;
   } catch (err) {
     if (err instanceof FfmpegError) stderr = err.stderr;
@@ -156,7 +185,7 @@ export async function volumeStats(inputPath: string, window?: SilenceWindow): Pr
   args.push("-i", inputPath, "-af", "volumedetect", "-f", "null", "-");
   let stderr = "";
   try {
-    const res = await runFfmpeg(args);
+    const res = await runFfmpeg(args, { operation: "volume_stats", timeoutMs: 60000 });
     stderr = res.stderr;
   } catch (err) {
     if (err instanceof FfmpegError) stderr = err.stderr;
@@ -192,34 +221,37 @@ export async function cutClip(
   const scale = opts.zoomScale && opts.zoomScale > 1 ? opts.zoomScale : 1;
   const targetRatio = opts.targetWidth / opts.targetHeight;
   const vf = [
-    // crop à l'aspect ratio cible en gardant le centre, puis scale + zoom éventuel
     `crop='if(gt(a,${targetRatio}),ih*${targetRatio},iw)':'if(gt(a,${targetRatio}),ih,iw/${targetRatio})'`,
     `scale=${Math.round(opts.targetWidth * scale)}:${Math.round(opts.targetHeight * scale)}`,
     scale > 1
       ? `crop=${opts.targetWidth}:${opts.targetHeight}`
       : `scale=${opts.targetWidth}:${opts.targetHeight}`,
   ].join(",");
-  await runFfmpeg([
-    "-ss",
-    String(window.start),
-    "-to",
-    String(window.end),
-    "-i",
-    inputPath,
-    "-vf",
-    vf,
-    "-c:v",
-    "libx264",
-    "-preset",
-    "veryfast",
-    "-crf",
-    "20",
-    "-c:a",
-    "aac",
-    "-ar",
-    "48000",
-    outputPath,
-  ]);
+  const durationSec = window.end - window.start;
+  await runFfmpeg(
+    [
+      "-ss",
+      String(window.start),
+      "-to",
+      String(window.end),
+      "-i",
+      inputPath,
+      "-vf",
+      vf,
+      "-c:v",
+      "libx264",
+      "-preset",
+      "veryfast",
+      "-crf",
+      "20",
+      "-c:a",
+      "aac",
+      "-ar",
+      "48000",
+      outputPath,
+    ],
+    { operation: `cut_clip_${durationSec.toFixed(1)}s`, timeoutMs: Math.max(60000, durationSec * 15000) }
+  );
 }
 
 /** Concaténation des clips déjà découpés/recadrés au même format — ré-encode pour garantir des paramètres identiques (durabilité > micro-optimisation). */
@@ -229,7 +261,10 @@ export async function concatClips(clipPaths: string[], outputPath: string): Prom
   const listContent = clipPaths.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n");
   await writeFile(listPath, listContent, "utf-8");
   try {
-    await runFfmpeg(["-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", outputPath]);
+    await runFfmpeg(
+      ["-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", outputPath],
+      { operation: `concat_${clipPaths.length}_clips`, timeoutMs: 120000 }
+    );
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -251,23 +286,26 @@ export async function mixAudioWithMusic(
   const filter = opts.duckingEnabled
     ? `[1:a]volume=${musicGain}[music];[music][0:a]sidechaincompress=threshold=0.05:ratio=8:attack=5:release=300[duckedmusic];[0:a][duckedmusic]amix=inputs=2:duration=first:dropout_transition=0[aout]`
     : `[1:a]volume=${musicGain}[music];[0:a][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`;
-  await runFfmpeg([
-    "-i",
-    videoWithVoicePath,
-    "-i",
-    musicPath,
-    "-filter_complex",
-    filter,
-    "-map",
-    "0:v",
-    "-map",
-    "[aout]",
-    "-c:v",
-    "copy",
-    "-c:a",
-    "aac",
-    outputPath,
-  ]);
+  await runFfmpeg(
+    [
+      "-i",
+      videoWithVoicePath,
+      "-i",
+      musicPath,
+      "-filter_complex",
+      filter,
+      "-map",
+      "0:v",
+      "-map",
+      "[aout]",
+      "-c:v",
+      "copy",
+      "-c:a",
+      "aac",
+      outputPath,
+    ],
+    { operation: "mix_audio_music", timeoutMs: 120000 }
+  );
 }
 
 /** Repli de sous-titres si le rendu Remotion (habillage) n'est pas disponible dans l'environnement — jamais livrer une vidéo sans sous-titres si le style demandé en attend. */
@@ -277,7 +315,7 @@ export async function burnCaptionsFallback(
   captions: { text: string; startSec: number; endSec: number }[]
 ): Promise<void> {
   if (captions.length === 0) {
-    await runFfmpeg(["-i", inputPath, "-c", "copy", outputPath]);
+    await runFfmpeg(["-i", inputPath, "-c", "copy", outputPath], { operation: "passthrough_copy", timeoutMs: 60000 });
     return;
   }
   const drawtextFilters = captions
@@ -286,7 +324,10 @@ export async function burnCaptionsFallback(
       return `drawtext=text='${escaped}':fontcolor=white:fontsize=54:box=1:boxcolor=black@0.55:boxborderw=16:x=(w-text_w)/2:y=h*0.78:enable='between(t,${c.startSec},${c.endSec})'`;
     })
     .join(",");
-  await runFfmpeg(["-i", inputPath, "-vf", drawtextFilters, "-c:a", "copy", outputPath]);
+  await runFfmpeg(
+    ["-i", inputPath, "-vf", drawtextFilters, "-c:a", "copy", outputPath],
+    { operation: `burn_${captions.length}_captions`, timeoutMs: 180000 }
+  );
 }
 
 export interface FinalEncodeOptions {
@@ -297,29 +338,35 @@ export interface FinalEncodeOptions {
 
 /** Export final prêt-plateforme : faststart pour lecture immédiate côté client. */
 export async function finalEncode(inputPath: string, outputPath: string, opts: FinalEncodeOptions): Promise<void> {
-  await runFfmpeg([
-    "-i",
-    inputPath,
-    "-vf",
-    `scale=${opts.width}:${opts.height},fps=${opts.fps}`,
-    "-c:v",
-    "libx264",
-    "-preset",
-    "medium",
-    "-crf",
-    "18",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "192k",
-    "-movflags",
-    "+faststart",
-    outputPath,
-  ]);
+  await runFfmpeg(
+    [
+      "-i",
+      inputPath,
+      "-vf",
+      `scale=${opts.width}:${opts.height},fps=${opts.fps}`,
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      "18",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "192k",
+      "-movflags",
+      "+faststart",
+      outputPath,
+    ],
+    { operation: `final_encode_${opts.width}x${opts.height}`, timeoutMs: 600000 }
+  );
 }
 
 export async function extractAudio(inputPath: string, outputPath: string): Promise<void> {
-  await runFfmpeg(["-i", inputPath, "-vn", "-c:a", "libmp3lame", "-q:a", "4", outputPath]);
+  await runFfmpeg(
+    ["-i", inputPath, "-vn", "-c:a", "libmp3lame", "-q:a", "4", outputPath],
+    { operation: "extract_audio", timeoutMs: 120000 }
+  );
 }
 
 /**
@@ -330,7 +377,10 @@ export async function extractAudio(inputPath: string, outputPath: string): Promi
 export async function detectSceneCuts(inputPath: string, threshold = 0.35): Promise<number[]> {
   let stderr = "";
   try {
-    const res = await runFfmpeg(["-i", inputPath, "-vf", `select='gt(scene,${threshold})',showinfo`, "-f", "null", "-"]);
+    const res = await runFfmpeg(
+      ["-i", inputPath, "-vf", `select='gt(scene,${threshold})',showinfo`, "-f", "null", "-"],
+      { operation: "detect_scene_cuts", timeoutMs: 120000 }
+    );
     stderr = res.stderr;
   } catch (err) {
     if (err instanceof FfmpegError) stderr = err.stderr;
@@ -342,15 +392,59 @@ export async function detectSceneCuts(inputPath: string, threshold = 0.35): Prom
 
 /** Normalisation de loudness (EBU R128) — améliore directement le critère QC "sound" sans aucune IA. */
 export async function normalizeLoudness(inputPath: string, outputPath: string): Promise<void> {
-  await runFfmpeg([
-    "-i",
-    inputPath,
-    "-af",
-    "loudnorm=I=-16:TP=-1.5:LRA=11",
-    "-c:v",
-    "copy",
-    "-c:a",
-    "aac",
-    outputPath,
-  ]);
+  await runFfmpeg(
+    [
+      "-i",
+      inputPath,
+      "-af",
+      "loudnorm=I=-16:TP=-1.5:LRA=11",
+      "-c:v",
+      "copy",
+      "-c:a",
+      "aac",
+      outputPath,
+    ],
+    { operation: "normalize_loudness", timeoutMs: 120000 }
+  );
+}
+
+export async function validateFinalRender(filePath: string): Promise<{ isValid: boolean; issues: string[] }> {
+  const issues: string[] = [];
+  try {
+    const info = await probe(filePath);
+    if (info.durationSec < 1) issues.push("Duration less than 1 second");
+    if (info.width < 640 || info.height < 360) issues.push(`Resolution ${info.width}x${info.height} is too low`);
+    if (!info.videoCodec) issues.push("No video codec detected");
+    return { isValid: issues.length === 0, issues };
+  } catch (err) {
+    return { isValid: false, issues: [(err as Error).message] };
+  }
+}
+
+export async function generateFastPreview(
+  inputPath: string,
+  outputPath: string,
+  width: number = 640,
+  height: number = 360
+): Promise<void> {
+  await runFfmpeg(
+    [
+      "-i",
+      inputPath,
+      "-vf",
+      `scale=${width}:${height},fps=24`,
+      "-c:v",
+      "libx264",
+      "-preset",
+      "ultrafast",
+      "-crf",
+      "28",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "48k",
+      outputPath,
+    ],
+    { operation: `fast_preview_${width}x${height}`, timeoutMs: 60000 }
+  );
 }

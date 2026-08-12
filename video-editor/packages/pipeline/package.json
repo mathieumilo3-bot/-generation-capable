@@ -9,7 +9,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "echo 'no lint configured'",
-    "test": "echo 'no tests yet'",
+    "test": "node dist/test-render-optimization.js",
+    "test:render-opt": "node dist/test-render-optimization.js",
     "demo": "node dist/demo.js"
   },
   "dependencies": {

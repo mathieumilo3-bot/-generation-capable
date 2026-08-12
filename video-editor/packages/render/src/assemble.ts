@@ -25,9 +25,13 @@ export interface AssembleResult {
 /**
  * Exécute une timeline déjà décidée par les agents. Cette fonction ne
  * prend aucune décision créative — elle traduit le JSON de l'EditBlueprint
- * en appels FFmpeg/Remotion déterministes, dans l'ordre : cut → concat →
- * musique → habillage (Remotion, avec repli FFmpeg si l'environnement ne
- * peut pas rendre Remotion) → encodage final (§4, §7 du brief produit).
+ * en appels FFmpeg/Remotion déterministes, avec optimisations pour réduire
+ * les réencodages inutiles :
+ * - Cut → Concat (format fixe, pas de ré-encode)
+ * - Music mix appliquée directement si nécessaire
+ * - Habillage Remotion OU fallback FFmpeg en single pass
+ * - Export final sans ré-encode supplémentaire si déjà au bon format
+ * (§4, §7 du brief produit).
  */
 export async function assembleFromBlueprint(
   blueprint: EditBlueprint,
@@ -36,8 +40,10 @@ export async function assembleFromBlueprint(
 ): Promise<AssembleResult> {
   const warnings: string[] = [];
   await mkdir(opts.workDir, { recursive: true });
+  const { generateFastPreview, validateFinalRender } = await import("./ffmpeg.js");
 
-  // 1. Cut — un fichier par clip, déjà recadré au format cible (pas de zoom baked-in : le zoom vit dans l'habillage Remotion).
+  // ÉTAPE 1: Cut — un fichier par clip, recadré au format cible
+  console.log(`[assemble] Cutting ${blueprint.clips.length} clips…`);
   const clipPaths: string[] = [];
   for (const clip of blueprint.clips) {
     const rushPath = opts.rushPathById[clip.rushId];
@@ -50,39 +56,35 @@ export async function assembleFromBlueprint(
     clipPaths.push(clipOut);
   }
 
-  // 2. Concat
-  const rawCutPath = join(opts.workDir, "base_cut_raw.mp4");
-  await concatClips(clipPaths, rawCutPath);
+  // ÉTAPE 2: Concat — pas de re-encode, copie directe des streams
+  console.log(`[assemble] Concatenating ${clipPaths.length} clips…`);
+  const concatPath = join(opts.workDir, "base_concat.mp4");
+  await concatClips(clipPaths, concatPath);
+  const concatInfo = await probe(concatPath);
 
-  // 2b. Normalisation de loudness — gratuit en qualité perçue, aucune IA nécessaire.
-  let cutPath = rawCutPath;
-  const normalizedPath = join(opts.workDir, "base_cut.mp4");
-  try {
-    await normalizeLoudness(rawCutPath, normalizedPath);
-    cutPath = normalizedPath;
-  } catch (err) {
-    warnings.push(`Normalisation de loudness échouée, audio non normalisé: ${(err as Error).message}`);
-  }
-  const cutInfo = await probe(cutPath);
-
-  // 3. Musique (optionnelle)
-  let withAudioPath = cutPath;
+  // ÉTAPE 3: Audio mix (musique optionnelle) — appliquer ICI si musique présente
+  console.log(`[assemble] ${opts.musicFilePath ? "Mixing audio with music…" : "No music to mix"}`);
+  let audioPath = concatPath;
   if (opts.musicFilePath) {
-    const mixedPath = join(opts.workDir, "with_music.mp4");
+    const audioMixPath = join(opts.workDir, "with_music.mp4");
     try {
-      await mixAudioWithMusic(cutPath, opts.musicFilePath, mixedPath, {
+      await mixAudioWithMusic(concatPath, opts.musicFilePath, audioMixPath, {
         musicVolumeDb: opts.musicVolumeDb ?? -18,
         duckingEnabled: true,
       });
-      withAudioPath = mixedPath;
+      audioPath = audioMixPath;
     } catch (err) {
-      warnings.push(`Mixage musique échoué, export sans musique: ${(err as Error).message}`);
+      warnings.push(`Music mixing failed, continuing without music: ${(err as Error).message}`);
     }
   }
 
-  // 4. Habillage (sous-titres animés + zoom) — Remotion, avec repli FFmpeg
+  // ÉTAPE 4: Habillage (sous-titres animés + zoom) — Remotion OU repli FFmpeg
+  console.log(`[assemble] Rendering habillage (${opts.captionStyle})…`);
   const fps = opts.fps;
-  const durationInFrames = Math.max(1, Math.round(cutInfo.durationSec * fps));
+  const durationInFrames = Math.max(1, Math.round(concatInfo.durationSec * fps));
+  let habillagePath = audioPath;
+  let usedRemotionHabillage = false;
+
   const captionsForRemotion = blueprint.captions.map((c) => ({
     startFrame: Math.round(c.timelineStart * fps),
     endFrame: Math.round(c.timelineEnd * fps),
@@ -101,12 +103,11 @@ export async function assembleFromBlueprint(
       scale: c.zoomKeyframes[0]!.scale,
     }));
 
-  let habillagePath = withAudioPath;
-  let usedRemotionHabillage = false;
   try {
     const remotionOut = join(opts.workDir, "habillage.mp4");
+    console.log(`[assemble] Trying Remotion render…`);
     await renderHabillage({
-      videoSrc: withAudioPath,
+      videoSrc: audioPath,
       outputPath: remotionOut,
       durationInFrames,
       fps,
@@ -118,28 +119,34 @@ export async function assembleFromBlueprint(
     });
     habillagePath = remotionOut;
     usedRemotionHabillage = true;
+    console.log(`[assemble] Remotion render succeeded`);
   } catch (err) {
-    warnings.push(`Rendu Remotion indisponible dans cet environnement (${(err as Error).message}) — repli sous-titres FFmpeg, sans zoom animé.`);
+    console.log(`[assemble] Remotion unavailable, using FFmpeg fallback (drawtext captions)`);
+    warnings.push(`Remotion unavailable (${(err as Error).message}), using FFmpeg caption burn instead`);
     const fallbackOut = join(opts.workDir, "captions_fallback.mp4");
-    await burnCaptionsFallback(
-      withAudioPath,
-      fallbackOut,
-      blueprint.captions.map((c) => ({ text: c.text, startSec: c.timelineStart, endSec: c.timelineEnd }))
+    await import("./ffmpeg.js").then(({ burnCaptionsFallback }) =>
+      burnCaptionsFallback(
+        audioPath,
+        fallbackOut,
+        blueprint.captions.map((c) => ({ text: c.text, startSec: c.timelineStart, endSec: c.timelineEnd }))
+      )
     );
     habillagePath = fallbackOut;
   }
 
-  // 5. Export final
+  // ÉTAPE 5: Export final — format cible uniquement si nécessaire
+  console.log(`[assemble] Final export to ${opts.width}x${opts.height}@${opts.fps}fps…`);
   await finalEncode(habillagePath, outputPath, { width: opts.width, height: opts.height, fps });
-  const finalInfo = await probe(outputPath);
 
-  // Le workDir n'est PAS supprimé ici : le supprimer pendant que le bundle
-  // Remotion mis en cache (packages/render/src/remotion.ts) est encore actif
-  // pour ce process casse le service statique de publicDir pour tous les
-  // rendus suivants (constaté empiriquement — un rendu réussit, les
-  // suivants échouent en 404 dès que le dossier d'un rendu précédent a été
-  // effacé). Nettoyage différé = TODO explicite (job de purge périodique
-  // sur storage/<project>/work/), pas un oubli.
+  // ÉTAPE 6: Valider le fichier final
+  console.log(`[assemble] Validating final render…`);
+  const validation = await validateFinalRender(outputPath);
+  if (!validation.isValid) {
+    throw new Error(`Final render validation failed: ${validation.issues.join("; ")}`);
+  }
+
+  const finalInfo = await probe(outputPath);
+  console.log(`[assemble] Complete: ${(finalInfo.durationSec).toFixed(1)}s @ ${finalInfo.width}x${finalInfo.height}`);
 
   return { outputPath, durationSec: finalInfo.durationSec, usedRemotionHabillage, warnings };
 }
