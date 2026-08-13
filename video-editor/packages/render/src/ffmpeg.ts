@@ -55,6 +55,10 @@ export interface MediaInfo {
   hasAudio: boolean;
   videoCodec: string;
   container: string;
+  /** Durée du flux vidéo (secondes) — peut différer du flux audio (dead air). */
+  videoDurationSec: number;
+  /** Durée du flux audio (secondes), 0 si pas d'audio. */
+  audioDurationSec: number;
 }
 
 /** ffprobe — jamais faire confiance à une durée déclarée par le client, toujours re-mesurer (§11 du brief). */
@@ -70,17 +74,22 @@ export async function probe(filePath: string): Promise<MediaInfo> {
   ]);
   const json = JSON.parse(stdout) as {
     format: { duration: string; format_name: string };
-    streams: { codec_type: string; codec_name: string; width?: number; height?: number }[];
+    streams: { codec_type: string; codec_name: string; width?: number; height?: number; duration?: string }[];
   };
   const videoStream = json.streams.find((s) => s.codec_type === "video");
   const audioStream = json.streams.find((s) => s.codec_type === "audio");
+  const formatDur = parseFloat(json.format.duration);
+  const videoDurationSec = videoStream?.duration ? parseFloat(videoStream.duration) : formatDur;
+  const audioDurationSec = audioStream?.duration ? parseFloat(audioStream.duration) : audioStream ? formatDur : 0;
   return {
-    durationSec: parseFloat(json.format.duration),
+    durationSec: formatDur,
     width: videoStream?.width ?? 0,
     height: videoStream?.height ?? 0,
     hasAudio: Boolean(audioStream),
     videoCodec: videoStream?.codec_name ?? "unknown",
     container: json.format.format_name.split(",")[0] ?? "unknown",
+    videoDurationSec: Number.isFinite(videoDurationSec) ? videoDurationSec : formatDur,
+    audioDurationSec: Number.isFinite(audioDurationSec) ? audioDurationSec : 0,
   };
 }
 
@@ -171,6 +180,41 @@ export function nonSilentSegments(totalDurationSec: number, silences: SilenceWin
   }
   if (cursor < totalDurationSec) segments.push({ start: cursor, end: totalDurationSec });
   return segments.filter((s) => s.end - s.start > 0.3);
+}
+
+export interface BrightnessStats {
+  /** Luma moyenne 0-255 (YAVG). < ~40 = très sombre, > ~235 = cramé. */
+  yavg: number;
+  /** true si le plan est trop sombre pour être exploitable tel quel. */
+  tooDark: boolean;
+  /** true si le plan est surexposé/cramé. */
+  tooBright: boolean;
+}
+
+/**
+ * Mesure la luminosité réelle d'un plan via le filtre `signalstats`
+ * (YAVG = luma moyenne sur 255). Sert à REJETER les plans inexploitables
+ * (nuit sous-exposée, contre-jour cramé) avant qu'ils ne polluent le
+ * montage — c'est une vraie mesure ffmpeg, pas une heuristique de
+ * résolution. On échantillonne quelques images (fps bas) pour rester
+ * rapide sur un long rush.
+ */
+export async function measureBrightness(inputPath: string, window?: SilenceWindow): Promise<BrightnessStats> {
+  const args: string[] = [];
+  if (window) args.push("-ss", String(window.start), "-to", String(window.end));
+  // 2 images/s suffisent pour une moyenne stable ; on plafonne le coût.
+  args.push("-i", inputPath, "-vf", "fps=2,signalstats,metadata=print", "-an", "-f", "null", "-");
+  let stderr = "";
+  try {
+    const res = await runFfmpeg(args, { operation: "brightness", timeoutMs: 60000 });
+    stderr = res.stderr;
+  } catch (err) {
+    if (err instanceof FfmpegError) stderr = err.stderr;
+    else throw err;
+  }
+  const values = [...stderr.matchAll(/lavfi\.signalstats\.YAVG=([\d.]+)/g)].map((m) => parseFloat(m[1]!));
+  const yavg = values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : 128;
+  return { yavg, tooDark: yavg < 40, tooBright: yavg > 235 };
 }
 
 export interface VolumeStats {
@@ -454,13 +498,55 @@ export async function normalizeLoudness(inputPath: string, outputPath: string): 
   );
 }
 
-export async function validateFinalRender(filePath: string): Promise<{ isValid: boolean; issues: string[] }> {
+export interface ValidateRenderOptions {
+  /** Format attendu — rejette une orientation inattendue (ex: paysage alors qu'on vise du vertical). */
+  expectedWidth?: number;
+  expectedHeight?: number;
+}
+
+/**
+ * Garde-fou final (§14, §15 du brief factory) : une vidéo qui présente
+ * l'un des défauts ci-dessous ne doit JAMAIS être livrée. Ces contrôles
+ * rendent structurellement impossibles les défauts constatés sur les
+ * mauvais rendus (8 s de silence en fin, mauvaise orientation) — le rendu
+ * échoue explicitement au lieu de livrer une vidéo "horrible".
+ */
+export async function validateFinalRender(
+  filePath: string,
+  opts?: ValidateRenderOptions
+): Promise<{ isValid: boolean; issues: string[] }> {
   const issues: string[] = [];
   try {
     const info = await probe(filePath);
-    if (info.durationSec < 1) issues.push("Duration less than 1 second");
-    if (info.width < 640 || info.height < 360) issues.push(`Resolution ${info.width}x${info.height} is too low`);
-    if (!info.videoCodec) issues.push("No video codec detected");
+    if (info.durationSec < 1) issues.push("Durée inférieure à 1 seconde");
+    if (info.width < 640 || info.height < 360) issues.push(`Résolution ${info.width}x${info.height} trop basse`);
+    if (!info.videoCodec || info.videoCodec === "unknown") issues.push("Aucun codec vidéo détecté");
+
+    // ANTI-DEAD-AIR : la vidéo ne doit pas se prolonger dans le silence
+    // bien après la fin de l'audio (le défaut "8 s de vide" constaté).
+    if (info.hasAudio && info.audioDurationSec > 0) {
+      const gap = info.videoDurationSec - info.audioDurationSec;
+      const tolerance = Math.max(2, info.videoDurationSec * 0.15);
+      if (gap > tolerance) {
+        issues.push(
+          `Vide en fin de vidéo : la vidéo dure ${info.videoDurationSec.toFixed(1)}s mais l'audio s'arrête à ${info.audioDurationSec.toFixed(1)}s (${gap.toFixed(1)}s de silence)`
+        );
+      }
+    } else if (!info.hasAudio) {
+      issues.push("Aucune piste audio dans le rendu final");
+    }
+
+    // ORIENTATION attendue (ex: vertical pour les réseaux sociaux).
+    if (opts?.expectedWidth && opts?.expectedHeight) {
+      const expectedPortrait = opts.expectedHeight > opts.expectedWidth;
+      const actualPortrait = info.height > info.width;
+      if (expectedPortrait !== actualPortrait) {
+        issues.push(
+          `Orientation inattendue : ${info.width}x${info.height} (attendu ${opts.expectedWidth}x${opts.expectedHeight})`
+        );
+      }
+    }
+
     return { isValid: issues.length === 0, issues };
   } catch (err) {
     return { isValid: false, issues: [(err as Error).message] };

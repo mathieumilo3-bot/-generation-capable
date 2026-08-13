@@ -15,7 +15,49 @@ import { parseAndValidateJson } from "./llm-json.js";
 import { z } from "zod";
 
 function editScore(s: Segment): number {
-  return s.hookPotential * 0.3 + s.energy * 0.2 + s.relevance * 0.25 + s.narrativeInterest * 0.15 + s.visualQuality * 0.1;
+  // visualQuality reflète désormais la LUMINOSITÉ réelle mesurée (ffmpeg),
+  // pas la seule résolution — elle pèse donc davantage : un beau plan bien
+  // exposé mérite d'être retenu, un plan sous-exposé d'être écarté.
+  return s.hookPotential * 0.25 + s.energy * 0.15 + s.relevance * 0.22 + s.narrativeInterest * 0.13 + s.visualQuality * 0.25;
+}
+
+/**
+ * Seuil de qualité visuelle en dessous duquel un plan est jugé
+ * inexploitable (nuit sous-exposée, cramé) et écarté du montage — sauf
+ * s'il ne reste rien d'autre (mieux vaut un plan médiocre que pas de
+ * montage). C'est ce qui empêche les plans sombres illisibles d'atterrir
+ * dans la vidéo finale.
+ */
+const USABLE_VISUAL_THRESHOLD = 0.3;
+
+/**
+ * Ordonne les plans sélectionnés en gardant chaque RUSH contigu, plutôt
+ * que d'entrelacer les rushs par timestamp (ce qui produisait des sauts
+ * brutaux jour→nuit→jour). Chaque scène reste cohérente ; les groupes de
+ * rush sont ordonnés en menant par le meilleur matériau.
+ */
+function coherentOrder(selected: Segment[], leadRushId?: string): Segment[] {
+  const byRush = new Map<string, Segment[]>();
+  for (const s of selected) {
+    const arr = byRush.get(s.rushId) ?? [];
+    arr.push(s);
+    byRush.set(s.rushId, arr);
+  }
+  const groups = [...byRush.entries()].map(([rushId, segs]) => {
+    segs.sort((a, b) => a.start - b.start); // ordre chronologique DANS le rush
+    const bestScore = Math.max(...segs.map(editScore));
+    return { rushId, segs, bestScore };
+  });
+  // Le rush du hook mène (pas de coupe brutale juste après le hook) ;
+  // ensuite le rush au meilleur plan. Les scènes ne s'entremêlent jamais.
+  groups.sort((a, b) => {
+    if (leadRushId) {
+      if (a.rushId === leadRushId && b.rushId !== leadRushId) return -1;
+      if (b.rushId === leadRushId && a.rushId !== leadRushId) return 1;
+    }
+    return b.bestScore - a.bestScore;
+  });
+  return groups.flatMap((g) => g.segs);
 }
 
 const LLM_STORY_SCHEMA = z.object({
@@ -72,7 +114,12 @@ export async function runStoryDirector(
 }
 
 function heuristicStoryBeats(segments: Segment[], brief: BriefSpec, styleProfile: StyleProfile): StoryBeat[] {
-  const chronological = [...segments].sort((a, b) => a.start - b.start);
+  // Écarter les plans inexploitables (sous-exposés/cramés) — sauf si ça ne
+  // laisse plus rien : un montage médiocre reste préférable à pas de montage.
+  const usable = segments.filter((s) => s.visualQuality >= USABLE_VISUAL_THRESHOLD);
+  const pool = usable.length > 0 ? usable : segments;
+
+  const chronological = [...pool].sort((a, b) => a.start - b.start);
   const earlyCutoff = chronological[0]!.start + (chronological[chronological.length - 1]!.end - chronological[0]!.start) * 0.4;
   const earlyCandidates = chronological.filter((s) => s.start <= earlyCutoff);
   const hookPool = earlyCandidates.length > 0 ? earlyCandidates : chronological;
@@ -82,16 +129,18 @@ function heuristicStoryBeats(segments: Segment[], brief: BriefSpec, styleProfile
   const budgetSec = Math.max(5, brief.targetDurationSec - styleProfile.hookDuration - 2);
   const byScore = [...remaining].sort((a, b) => editScore(b) - editScore(a));
 
-  const selected: Segment[] = [];
+  const picked: Segment[] = [];
   let used = 0;
   for (const s of byScore) {
     const dur = Math.min(s.end - s.start, styleProfile.averageCutDuration * 1.4);
-    if (used + dur > budgetSec && selected.length > 0) continue;
-    selected.push(s);
+    if (used + dur > budgetSec && picked.length > 0) continue;
+    picked.push(s);
     used += dur;
     if (used >= budgetSec) break;
   }
-  selected.sort((a, b) => a.start - b.start);
+  // Ordre COHÉRENT : chaque rush reste contigu (plus de saut jour↔nuit),
+  // le rush du hook menant pour enchaîner naturellement après l'accroche.
+  const selected = coherentOrder(picked, hook.rushId);
 
   const beats: StoryBeat[] = [{ role: "hook", segmentIds: [hook.id] }];
   if (selected.length === 0) {

@@ -180,9 +180,13 @@ export async function assembleFromBlueprint(
   const encodeMs = Date.now() - tEncode;
   console.log(`[assemble] Final ${streamCopied ? "remux (stream copy, no re-encode)" : "encode"} done`);
 
-  // ÉTAPE 6: Valider le fichier final
+  // ÉTAPE 6: Valider le fichier final (garde-fous anti-défauts §14/§15 :
+  // pas de vide en fin, orientation conforme au format cible).
   console.log(`[assemble] Validating final render…`);
-  const validation = await validateFinalRender(outputPath);
+  const validation = await validateFinalRender(outputPath, {
+    expectedWidth: opts.width,
+    expectedHeight: opts.height,
+  });
   if (!validation.isValid) {
     throw new Error(`Final render validation failed: ${validation.issues.join("; ")}`);
   }

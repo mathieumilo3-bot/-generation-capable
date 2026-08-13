@@ -7,7 +7,7 @@ import {
 import type { Db } from "@video-editor/db";
 import type { ModelRouter } from "@video-editor/model-router";
 import { recordProviderCall } from "@video-editor/cost-ledger";
-import { probe, detectSilence, nonSilentSegments, volumeStats, extractAudio, type SilenceWindow } from "@video-editor/render";
+import { probe, detectSilence, nonSilentSegments, volumeStats, extractAudio, measureBrightness, type SilenceWindow } from "@video-editor/render";
 import { join, dirname } from "node:path";
 
 function dbToEnergy(meanVolumeDb: number): number {
@@ -29,6 +29,20 @@ function visualQualityFromResolution(width: number, height: number): number {
   if (maxSide >= 1280) return 0.7;
   if (maxSide >= 854) return 0.55;
   return 0.4;
+}
+
+/**
+ * Facteur de qualité visuelle issu de la luminosité RÉELLE (mesure ffmpeg
+ * signalstats). Un plan sous-exposé (nuit noire) ou cramé (contre-jour)
+ * est un plan qu'un bon monteur écarte — on l'écrase fortement pour qu'il
+ * ne soit pas sélectionné, plutôt que de le juger sur sa seule résolution.
+ */
+function brightnessFactor(yavg: number, tooDark: boolean, tooBright: boolean): number {
+  if (tooDark) return 0.2; // nuit sous-exposée / illisible → quasi éliminé
+  if (tooBright) return 0.45; // cramé → fortement pénalisé
+  if (yavg < 60) return 0.7; // sombre mais rattrapable
+  if (yavg > 210) return 0.75; // clair limite
+  return 1; // exposition correcte
 }
 
 export interface RushTranscript {
@@ -80,7 +94,7 @@ export async function runVideoAnalyzer(
 
   const silences = await detectSilence(analysisSource, { noiseDb: -32, minSilenceDurationSec: 0.45 });
   const windows = nonSilentSegments(info.durationSec, silences);
-  const visualQuality = visualQualityFromResolution(info.width, info.height);
+  const resolutionQuality = visualQualityFromResolution(info.width, info.height);
 
   const segments: Segment[] = [];
   for (let i = 0; i < windows.length; i++) {
@@ -88,6 +102,14 @@ export async function runVideoAnalyzer(
     const vol = await volumeStats(analysisSource, w).catch(() => ({ meanVolumeDb: -30, maxVolumeDb: -20 }));
     const energy = dbToEnergy(vol.meanVolumeDb);
     const clarity = durationClarity(w.end - w.start);
+
+    // Qualité visuelle RÉELLE : résolution × luminosité mesurée (ffmpeg).
+    // Un plan sous-exposé/cramé est écarté, pas jugé sur sa seule taille.
+    const bright = await measureBrightness(analysisSource, w).catch(() => ({ yavg: 128, tooDark: false, tooBright: false }));
+    const visualQuality = Math.max(
+      0,
+      Math.min(1, resolutionQuality * brightnessFactor(bright.yavg, bright.tooDark, bright.tooBright))
+    );
     const segTranscript = transcript.words
       .filter((word) => word.start >= w.start && word.end <= w.end)
       .map((word) => word.word)
