@@ -2,6 +2,7 @@ import {
   newId,
   StoryBlueprintSchema,
   type BriefSpec,
+  type CreativePlan,
   type Segment,
   type StoryBeat,
   type StoryBeatRole,
@@ -80,7 +81,8 @@ export async function runStoryDirector(
   segments: Segment[],
   brief: BriefSpec,
   styleProfile: StyleProfile,
-  version: number
+  version: number,
+  creativePlan?: CreativePlan
 ): Promise<StoryBlueprint> {
   if (segments.length === 0) {
     throw new Error("Aucun segment exploitable détecté dans les rushs — impossible de construire un storytelling.");
@@ -94,7 +96,7 @@ export async function runStoryDirector(
       console.warn(`[story_director] LLM indisponible/invalide, repli heuristique: ${(err as Error).message}`);
     }
   }
-  if (!beats) beats = heuristicStoryBeats(segments, brief, styleProfile);
+  if (!beats) beats = heuristicStoryBeats(segments, brief, styleProfile, creativePlan);
 
   const usedIds = new Set(beats.flatMap((b) => b.segmentIds));
   const discardedSegmentIds = segments.map((s) => s.id).filter((id) => !usedIds.has(id));
@@ -113,7 +115,12 @@ export async function runStoryDirector(
   return blueprint;
 }
 
-function heuristicStoryBeats(segments: Segment[], brief: BriefSpec, styleProfile: StyleProfile): StoryBeat[] {
+function heuristicStoryBeats(
+  segments: Segment[],
+  brief: BriefSpec,
+  styleProfile: StyleProfile,
+  creativePlan?: CreativePlan
+): StoryBeat[] {
   // Écarter les plans inexploitables (sous-exposés/cramés) — sauf si ça ne
   // laisse plus rien : un montage médiocre reste préférable à pas de montage.
   const usable = segments.filter((s) => s.visualQuality >= USABLE_VISUAL_THRESHOLD);
@@ -123,7 +130,19 @@ function heuristicStoryBeats(segments: Segment[], brief: BriefSpec, styleProfile
   const earlyCutoff = chronological[0]!.start + (chronological[chronological.length - 1]!.end - chronological[0]!.start) * 0.4;
   const earlyCandidates = chronological.filter((s) => s.start <= earlyCutoff);
   const hookPool = earlyCandidates.length > 0 ? earlyCandidates : chronological;
-  const hook = [...hookPool].sort((a, b) => editScore(b) - editScore(a))[0]!;
+
+  // LE DIRECTEUR CHOISIT L'ACCROCHE : si le cerveau créatif a désigné un
+  // meilleur hook (analyse énergie + potentiel d'accroche sur TOUS les
+  // segments, pas seulement le début) et qu'il est exploitable, on le
+  // respecte. C'est une décision réelle du directeur sur le montage, pas
+  // un simple recalcul heuristique local.
+  const plannedHook = creativePlan?.bestHook
+    ? pool.find((s) => s.id === creativePlan.bestHook.segmentId)
+    : undefined;
+  const hook = plannedHook ?? [...hookPool].sort((a, b) => editScore(b) - editScore(a))[0]!;
+  if (plannedHook) {
+    console.log(`[story_director] Accroche imposée par le directeur créatif : segment ${plannedHook.id} (${creativePlan!.bestHook.type})`);
+  }
 
   const remaining = chronological.filter((s) => s.id !== hook.id);
   const budgetSec = Math.max(5, brief.targetDurationSec - styleProfile.hookDuration - 2);

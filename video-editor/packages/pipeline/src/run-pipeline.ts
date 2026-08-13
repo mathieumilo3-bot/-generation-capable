@@ -39,9 +39,12 @@ import {
   runSoundDesigner,
   runCreativeDirector,
   runQualityControl,
+  runCreativeBrain,
+  runCreativeCritic,
   type RushTranscript,
 } from "@video-editor/agents";
 import type { CreativeReview } from "@video-editor/agents";
+import type { CreativePlan } from "@video-editor/shared-types";
 import { applyCorrection } from "./apply-correction.js";
 
 export interface RunPipelineInput {
@@ -198,9 +201,29 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
       db.setBriefSpec(brief.id, briefSpec);
     });
 
+    let creativePlan: CreativePlan | undefined;
     let storyBlueprint!: StoryBlueprint;
     await runStage("story_blueprint", async () => {
-      storyBlueprint = await runStoryDirector(db, router, input.projectId, allSegments, briefSpec, styleProfile, 1);
+      // LE DIRECTEUR CRÉATIF pilote le montage : il produit un plan unifié
+      // (intention, MEILLEURE ACCROCHE choisie sur l'ensemble des plans,
+      // arc narratif, pacing, courbe émotionnelle, cibles qualité) que le
+      // Story Director consomme ensuite. 100% additif : si le cerveau
+      // échoue, on retombe intégralement sur les heuristiques éprouvées.
+      try {
+        creativePlan = await runCreativeBrain(
+          db,
+          router,
+          input.projectId,
+          allSegments,
+          briefSpec,
+          styleProfile,
+          input.referenceVideoPaths
+        );
+        console.log(`[pipeline] Directeur créatif → ${creativePlan.reasoning}`);
+      } catch (err) {
+        warnings.push(`Directeur créatif indisponible, montage heuristique: ${(err as Error).message}`);
+      }
+      storyBlueprint = await runStoryDirector(db, router, input.projectId, allSegments, briefSpec, styleProfile, 1, creativePlan);
     });
 
     const segmentsById = new Map(allSegments.map((s) => [s.id, s]));
@@ -334,6 +357,22 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
     let qcReport!: QcReport;
     await runStage("quality_control", async () => {
       qcReport = runQualityControl(db, proxyRender.id, input.projectId, editBlueprint, segmentsById, styleProfile, briefSpec, creativeReview);
+
+      // LE DIRECTEUR ÉVALUE SON PROPRE MONTAGE : le Critic note le rendu
+      // proxy contre le plan créatif (9 dimensions) et remonte ses
+      // reproches. Additif — n'altère pas la décision QC déterministe
+      // existante, mais donne au directeur un regard critique traçable.
+      if (creativePlan) {
+        try {
+          const critique = await runCreativeCritic(db, input.projectId, proxyRender.id, editBlueprint, creativePlan, segmentsById);
+          console.log(
+            `[pipeline] Critique créatif → global ${critique.overallScore}/100 (créatif ${critique.creativeScore}, technique ${critique.technicalScore}) — ${critique.shouldIterate ? "itération recommandée" : "acceptable"}`
+          );
+          for (const issue of critique.criticalIssues) warnings.push(`[critic] ${issue.issue} → ${issue.suggestedAction}`);
+        } catch (err) {
+          warnings.push(`Critique créatif indisponible: ${(err as Error).message}`);
+        }
+      }
     });
 
     await runStage("correction", async () => {
