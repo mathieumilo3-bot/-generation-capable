@@ -24,6 +24,19 @@ primary_region = "cdg"
   auto_start_machines = true
   min_machines_running = 1
 
+# Machine de rendu — CPU performance DÉDIÉ (pas de vCPU partagé), pour que
+# Remotion rende un maximum de frames en parallèle (§ objectif rendu).
+# 16 vCPU performance + 32 Go : la concurrence Remotion s'adapte au runtime
+# au nombre réel de CPU (voir packages/render/src/remotion.ts →
+# resolveRenderConcurrency), donc cette machine sera exploitée à fond sans
+# rien coder en dur. auto_stop_machines reste false (un rendu ne doit
+# jamais être tué à mi-parcours par l'arrêt automatique de Fly).
+#
+# Profils indicatifs (choisir selon le débit voulu / coût) :
+#   DEV     : shared-cpu-2x  / 2gb   (lent, économique)
+#   PROD    : performance-16x / 32gb (cible actuelle — rendu rapide)
+#   Débit + : plusieurs machines performance-* (le scheduler + claim
+#             atomique en base rendent l'ajout de machines sûr, voir FACTORY.md)
 [[vm]]
-  size = "shared-cpu-2x"
-  memory = "2gb"
+  size = "performance-16x"
+  memory = "32gb"

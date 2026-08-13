@@ -23,6 +23,11 @@ export interface AssembleOptions {
   musicVolumeDb?: number;
   /** Profil de rendu (§10) — presets/CRF FFmpeg + concurrence Remotion. Défauts = comportement historique. */
   profile?: AssembleProfile;
+  /**
+   * Progression RÉELLE du rendu Remotion (frames rendues), pour afficher
+   * "Export final — X%" + heartbeat. Jamais simulé.
+   */
+  onRenderProgress?: (p: { renderedFrames: number; totalFrames: number; concurrency: number }) => void;
 }
 
 export interface AssembleResult {
@@ -38,6 +43,8 @@ export interface AssembleResult {
     encodeMs: number;
   };
   framesRendered?: number;
+  /** Concurrence Remotion réellement utilisée pour ce rendu. */
+  renderConcurrency?: number;
   /** true si l'export final a évité un ré-encodage (stream copy, §5). */
   finalStreamCopied: boolean;
 }
@@ -112,6 +119,7 @@ export async function assembleFromBlueprint(
   let habillagePath = audioPath;
   let usedRemotionHabillage = false;
   let framesRendered: number | undefined;
+  let renderConcurrency: number | undefined;
 
   const captionsForRemotion = blueprint.captions.map((c) => ({
     startFrame: Math.round(c.timelineStart * fps),
@@ -146,11 +154,13 @@ export async function assembleFromBlueprint(
       zoomWindows,
       captionStyle: opts.captionStyle,
       concurrency: profile.remotionConcurrency ?? null,
+      onProgress: opts.onRenderProgress,
     });
     habillagePath = remotionOut;
     usedRemotionHabillage = true;
     framesRendered = r.framesRendered;
-    console.log(`[assemble] Remotion render succeeded`);
+    renderConcurrency = r.concurrency;
+    console.log(`[assemble] Remotion render succeeded (concurrency=${r.concurrency})`);
   } catch (err) {
     console.log(`[assemble] Remotion unavailable, using FFmpeg fallback (drawtext captions)`);
     warnings.push(`Remotion unavailable (${(err as Error).message}), using FFmpeg caption burn instead`);
@@ -201,6 +211,7 @@ export async function assembleFromBlueprint(
     warnings,
     timings: { cutMs, concatMs, habillageMs, encodeMs },
     framesRendered,
+    renderConcurrency,
     finalStreamCopied: streamCopied,
   };
 }

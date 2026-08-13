@@ -5,12 +5,62 @@ import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, renameSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { cp, mkdir } from "node:fs/promises";
+import os from "node:os";
 import { tmpdir } from "node:os";
 import { resolveStorageRoot, toStorageRelativePath } from "./storage-root.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export { resolveStorageRoot, toStorageRelativePath };
+
+/** Plafond dur de concurrence Remotion — au-delà, Chromium/RAM deviennent le bottleneck. */
+const MAX_REMOTION_CONCURRENCY = 16;
+/** Budget mémoire prudent par frame-renderer Chromium concurrent (1080x1920), en Mo. */
+const REMOTION_MEM_PER_WORKER_MB = 1400;
+
+/** Mémoire réellement disponible (Mo) — MemAvailable sous Linux, sinon os.freemem. */
+function availableMemMb(): number {
+  try {
+    const meminfo = readFileSync("/proc/meminfo", "utf-8");
+    const m = /MemAvailable:\s+(\d+)\s+kB/.exec(meminfo);
+    if (m) return Math.round(Number.parseInt(m[1]!, 10) / 1024);
+  } catch {
+    /* pas Linux */
+  }
+  return Math.round(os.freemem() / (1024 * 1024));
+}
+
+/**
+ * Concurrence de rendu Remotion réellement adaptée à la machine (§ objectif
+ * rendu). Sur une machine 16 vCPU performance, renvoie 16 → les 16 CPU
+ * rendent des frames EN PARALLÈLE. Formule demandée :
+ *   max(1, min(nbCPU, 16))
+ * bornée EN PLUS par la RAM disponible pour ne jamais déclencher l'OOM
+ * killer (stabilité > concurrence brute) : si 16 workers ne tiennent pas
+ * en mémoire, on descend automatiquement.
+ *
+ * `explicit` (REMOTION_CONCURRENCY / profil) surcharge tout si fourni.
+ */
+export function resolveRenderConcurrency(explicit?: number | null): { concurrency: number; reason: string } {
+  const cpuCount = os.cpus().length || 1;
+  // Priorité à une valeur explicite (profil), sinon à l'override d'env
+  // REMOTION_CONCURRENCY, sinon auto d'après CPU/RAM.
+  const envOverride = Number.parseInt(process.env.REMOTION_CONCURRENCY ?? "", 10);
+  const forced = explicit != null && explicit > 0 ? explicit : Number.isFinite(envOverride) && envOverride > 0 ? envOverride : null;
+  if (forced != null) {
+    const c = Math.max(1, Math.min(forced, MAX_REMOTION_CONCURRENCY));
+    return { concurrency: c, reason: `forcé (REMOTION_CONCURRENCY/profil=${forced}) → ${c}` };
+  }
+  const byCpu = Math.max(1, Math.min(cpuCount, MAX_REMOTION_CONCURRENCY));
+  const availMb = availableMemMb();
+  const byRam = Math.max(1, Math.floor(availMb / REMOTION_MEM_PER_WORKER_MB));
+  const concurrency = Math.max(1, Math.min(byCpu, byRam));
+  const limited = byRam < byCpu ? "RAM" : "CPU";
+  return {
+    concurrency,
+    reason: `${cpuCount} vCPU · ${availMb}Mo dispo → CPU:${byCpu} · RAM:${byRam} · retenu ${concurrency} (limité par ${limited})`,
+  };
+}
 
 let cachedBundle: { url: string; outDir: string } | null = null;
 
@@ -132,14 +182,22 @@ export interface RenderHabillageInput {
   captionStyle: HabillageCaptionStyle;
   /**
    * Concurrence de rendu Remotion (nombre d'onglets Chromium rendant des
-   * frames en parallèle). null = auto Remotion (≈ moitié des cœurs).
-   * Pilotée par le profil/config (REMOTION_CONCURRENCY) pour rester
-   * calibrée aux ressources partagées avec les workers FFmpeg (§3, §5).
+   * frames EN PARALLÈLE). null/absent = auto adapté au nombre de CPU
+   * (resolveRenderConcurrency). Une valeur explicite (profil/config
+   * REMOTION_CONCURRENCY) surcharge.
    */
   concurrency?: number | null;
+  /**
+   * Callback de progression RÉELLE, basé sur les frames effectivement
+   * rendues par Remotion (jamais simulé) — sert à afficher
+   * "Export final — X%" et à émettre un heartbeat régulier.
+   */
+  onProgress?: (p: { renderedFrames: number; totalFrames: number; concurrency: number }) => void;
 }
 
-export async function renderHabillage(input: RenderHabillageInput): Promise<{ durationMs: number; framesRendered: number }> {
+export async function renderHabillage(
+  input: RenderHabillageInput
+): Promise<{ durationMs: number; framesRendered: number; concurrency: number }> {
   const start = Date.now();
   const { url: bundleUrl, outDir } = await getBundle();
   const relativeVideoSrc = await syncAssetToBundle(outDir, input.videoSrc);
@@ -152,12 +210,17 @@ export async function renderHabillage(input: RenderHabillageInput): Promise<{ du
     fps: input.fps,
   };
   const browserExecutable = resolveBrowserExecutable();
+  const { concurrency, reason } = resolveRenderConcurrency(input.concurrency);
+  console.log(`[remotion] Concurrence de rendu : ${reason}`);
+
   const composition = await selectComposition({
     serveUrl: bundleUrl,
     id: "Habillage",
     inputProps,
     browserExecutable,
   });
+
+  let lastRendered = 0;
   await renderMedia({
     composition: {
       ...composition,
@@ -172,7 +235,11 @@ export async function renderHabillage(input: RenderHabillageInput): Promise<{ du
     inputProps,
     browserExecutable,
     chromiumOptions: { headless: true },
-    ...(input.concurrency != null ? { concurrency: input.concurrency } : {}),
+    concurrency,
+    onProgress: ({ renderedFrames }) => {
+      lastRendered = renderedFrames;
+      input.onProgress?.({ renderedFrames, totalFrames: input.durationInFrames, concurrency });
+    },
   });
-  return { durationMs: Date.now() - start, framesRendered: input.durationInFrames };
+  return { durationMs: Date.now() - start, framesRendered: lastRendered || input.durationInFrames, concurrency };
 }

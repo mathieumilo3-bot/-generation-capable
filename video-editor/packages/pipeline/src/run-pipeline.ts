@@ -11,7 +11,18 @@ import type {
   StyleProfile,
   RenderProfile,
 } from "@video-editor/shared-types";
-import { RENDER_PROFILE_PARAMS } from "@video-editor/shared-types";
+import { RENDER_PROFILE_PARAMS, PIPELINE_STAGES, STAGE_WEIGHTS } from "@video-editor/shared-types";
+
+/** Bande de progression globale [start,end] d'une étape, d'après ses poids réels. */
+function stageBand(stage: PipelineStage): { start: number; end: number } {
+  const total = PIPELINE_STAGES.reduce((s, x) => s + STAGE_WEIGHTS[x], 0);
+  let before = 0;
+  for (const s of PIPELINE_STAGES) {
+    if (s === stage) break;
+    before += STAGE_WEIGHTS[s];
+  }
+  return { start: (before / total) * 100, end: ((before + STAGE_WEIGHTS[stage]) / total) * 100 };
+}
 import type { Db } from "@video-editor/db";
 import type { ModelRouter } from "@video-editor/model-router";
 import { recordProviderCall } from "@video-editor/cost-ledger";
@@ -233,6 +244,23 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
       const outputPath = join(resolveStorageRoot(), input.projectId, "renders", `${renderRow.id}.mp4`);
       await mkdir(dirname(outputPath), { recursive: true });
       const start = Date.now();
+      // Progression RÉELLE du rendu (frames Remotion) + heartbeat : l'UI
+      // voit "Export final — 88% → 100%" avancer, jamais un pourcentage figé.
+      const band = stageBand(kind === "final" ? "final_render" : "proxy_render");
+      const label = kind === "final" ? "Export final" : "Rendu d'aperçu";
+      const onRenderProgress = ({ renderedFrames, totalFrames, concurrency }: { renderedFrames: number; totalFrames: number; concurrency: number }) => {
+        if (!jobId || totalFrames <= 0) return;
+        const frac = Math.max(0, Math.min(1, renderedFrames / totalFrames));
+        const pct = Math.round(frac * 100);
+        const elapsed = Date.now() - start;
+        const eta = frac > 0.02 && frac < 1 ? Math.round((elapsed * (1 - frac)) / frac) : null;
+        db.updateRenderJobProgress(jobId, {
+          progress: Math.round(band.start + (band.end - band.start) * frac),
+          currentStage: `${label} — ${pct}% (${renderedFrames}/${totalFrames} frames, ${concurrency} en parallèle)`,
+          estimatedRemainingMs: eta,
+          workerPid: process.pid,
+        });
+      };
       try {
         const result = await assembleFromBlueprint(blueprint, outputPath, {
           width,
@@ -250,6 +278,7 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
             finalCrf: profileParams.finalCrf,
             remotionConcurrency: profileParams.remotionConcurrency,
           },
+          onRenderProgress,
         });
         warnings.push(...result.warnings);
         const durationMs = Date.now() - start;
