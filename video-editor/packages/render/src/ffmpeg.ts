@@ -204,6 +204,10 @@ export interface CutClipOptions {
   targetHeight: number;
   /** Punch-in statique (§4 Editor Agent) — un vrai zoom animé image par image vit dans la composition Remotion, pas ici. */
   zoomScale?: number;
+  /** Preset libx264 (profil de rendu §10). Défaut veryfast = comportement historique. */
+  preset?: string;
+  /** CRF (profil de rendu §10). Défaut 20 = comportement historique. */
+  crf?: number;
 }
 
 /**
@@ -241,9 +245,9 @@ export async function cutClip(
       "-c:v",
       "libx264",
       "-preset",
-      "veryfast",
+      opts.preset ?? "veryfast",
       "-crf",
-      "20",
+      String(opts.crf ?? 20),
       "-c:a",
       "aac",
       "-ar",
@@ -334,6 +338,10 @@ export interface FinalEncodeOptions {
   width: number;
   height: number;
   fps: number;
+  /** Preset libx264 (profil de rendu §10). Défaut medium = comportement historique. */
+  preset?: string;
+  /** CRF (profil de rendu §10). Défaut 18 = comportement historique. */
+  crf?: number;
 }
 
 /** Export final prêt-plateforme : faststart pour lecture immédiate côté client. */
@@ -347,9 +355,9 @@ export async function finalEncode(inputPath: string, outputPath: string, opts: F
       "-c:v",
       "libx264",
       "-preset",
-      "medium",
+      opts.preset ?? "medium",
       "-crf",
-      "18",
+      String(opts.crf ?? 18),
       "-c:a",
       "aac",
       "-b:a",
@@ -360,6 +368,44 @@ export async function finalEncode(inputPath: string, outputPath: string, opts: F
     ],
     { operation: `final_encode_${opts.width}x${opts.height}`, timeoutMs: 600000 }
   );
+}
+
+/**
+ * Finalisation SANS ré-encodage vidéo (§5, §10 du brief factory) : quand
+ * la vidéo d'habillage est DÉJÀ au format cible (largeur/hauteur/fps
+ * corrects, codec h264 — ce qui est le cas car cutClip a déjà recadré au
+ * format et Remotion rend directement à la bonne taille), une passe
+ * libx264 complète est du gaspillage pur. On se contente d'un remux
+ * stream-copy + faststart : quasi instantané, qualité identique bit pour
+ * bit. Repli sur un vrai encodage si le format ne correspond pas.
+ *
+ * Renvoie true si le chemin rapide (copy) a été pris.
+ */
+export async function finalizeOutput(
+  inputPath: string,
+  outputPath: string,
+  opts: FinalEncodeOptions
+): Promise<{ streamCopied: boolean }> {
+  let info: MediaInfo | null = null;
+  try {
+    info = await probe(inputPath);
+  } catch {
+    info = null;
+  }
+  const matchesTarget =
+    info !== null && info.width === opts.width && info.height === opts.height && info.videoCodec === "h264";
+
+  if (matchesTarget) {
+    // Remux uniquement : conteneur + faststart, aucun pixel retouché.
+    await runFfmpeg(
+      ["-i", inputPath, "-c", "copy", "-movflags", "+faststart", outputPath],
+      { operation: `finalize_remux_${opts.width}x${opts.height}`, timeoutMs: 120000 }
+    );
+    return { streamCopied: true };
+  }
+
+  await finalEncode(inputPath, outputPath, opts);
+  return { streamCopied: false };
 }
 
 export async function extractAudio(inputPath: string, outputPath: string): Promise<void> {

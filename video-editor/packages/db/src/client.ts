@@ -23,7 +23,13 @@ import type {
   FeedbackEventType,
   ConversationalCommand,
   CostLedgerEntry,
+  RenderJob,
+  RenderJobStatus,
+  RenderJobPriority,
+  RenderProfile,
+  RenderMetrics,
 } from "@video-editor/shared-types";
+import { RUNNING_JOB_STATUSES, TERMINAL_JOB_STATUSES } from "@video-editor/shared-types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -46,6 +52,20 @@ export class Db {
   constructor(path: string) {
     this.sqlite = new DatabaseSync(path);
     this.sqlite.exec("PRAGMA foreign_keys = ON;");
+    // WAL + busy_timeout : indispensables maintenant que plusieurs process
+    // (serveur web + scheduler + N workers de rendu, voir
+    // @video-editor/orchestrator) écrivent dans le MÊME fichier SQLite. WAL
+    // autorise lectures concurrentes pendant une écriture ; busy_timeout
+    // fait patienter un writer plutôt que d'échouer sur "database is
+    // locked". Sans effet néfaste en mono-process (le mode démo/CLI).
+    try {
+      this.sqlite.exec("PRAGMA journal_mode = WAL;");
+      this.sqlite.exec("PRAGMA busy_timeout = 10000;");
+      this.sqlite.exec("PRAGMA synchronous = NORMAL;");
+    } catch {
+      // Certains FS (montages réseau) refusent WAL — on reste en mode par
+      // défaut, le busy_timeout suffira à sérialiser les écritures.
+    }
     const schema = readFileSync(join(__dirname, "schema.sql"), "utf-8");
     this.sqlite.exec(schema);
   }
@@ -520,6 +540,288 @@ export class Db {
       .filter((m) => m.tags.includes(tag));
   }
 
+  // ---- render queue (§2, §3, §17, §28 du brief factory) ----------------
+
+  /**
+   * Met un projet en file. Idempotent par projet : si un job non-terminal
+   * existe déjà pour ce projectId, on le renvoie au lieu d'en créer un
+   * second (§17 : trois clics = un seul job). C'est la garantie
+   * anti-duplication côté données, indépendante de tout état mémoire.
+   */
+  enqueueRenderJob(input: {
+    projectId: string;
+    payload: string;
+    priority?: RenderJobPriority;
+    profile?: RenderProfile;
+    maxAttempts?: number;
+  }): RenderJob {
+    const existing = this.getActiveRenderJobForProject(input.projectId);
+    if (existing) return existing;
+
+    const job: RenderJob = {
+      jobId: newId("rjob"),
+      projectId: input.projectId,
+      priority: input.priority ?? 0,
+      status: "queued",
+      profile: input.profile ?? "balanced",
+      payload: input.payload,
+      progress: 0,
+      attempts: 0,
+      maxAttempts: input.maxAttempts ?? 3,
+      createdAt: nowIso(),
+    };
+    this.sqlite
+      .prepare(
+        `INSERT INTO render_queue (job_id, project_id, priority, status, profile, payload, progress, attempts, max_attempts, created_at)
+         VALUES ($jobId, $projectId, $priority, 'queued', $profile, $payload, 0, 0, $maxAttempts, $createdAt)`
+      )
+      .run({
+        $jobId: job.jobId,
+        $projectId: job.projectId,
+        $priority: job.priority,
+        $profile: job.profile,
+        $payload: job.payload,
+        $maxAttempts: job.maxAttempts,
+        $createdAt: job.createdAt,
+      });
+    return job;
+  }
+
+  getActiveRenderJobForProject(projectId: string): RenderJob | null {
+    const placeholders = TERMINAL_JOB_STATUSES.map((_, i) => `$s${i}`).join(", ");
+    const params: Record<string, string> = { $projectId: projectId };
+    TERMINAL_JOB_STATUSES.forEach((s, i) => (params[`$s${i}`] = s));
+    const row = this.sqlite
+      .prepare(
+        `SELECT * FROM render_queue WHERE project_id = $projectId AND status NOT IN (${placeholders})
+         ORDER BY created_at DESC LIMIT 1`
+      )
+      .get(params) as Record<string, unknown> | undefined;
+    return row ? rowToRenderJob(row) : null;
+  }
+
+  getRenderJob(jobId: string): RenderJob | null {
+    const row = this.sqlite.prepare(`SELECT * FROM render_queue WHERE job_id = $jobId`).get({ $jobId: jobId }) as
+      | Record<string, unknown>
+      | undefined;
+    return row ? rowToRenderJob(row) : null;
+  }
+
+  /**
+   * Réclame atomiquement le prochain job de la file pour un worker donné.
+   * SQLite n'ayant qu'un seul writer, la transaction IMMEDIATE + le
+   * UPDATE conditionné sur `status='queued'` garantissent qu'un job n'est
+   * jamais réclamé par deux workers (§2 : aucune double exécution).
+   * Renvoie null si la file est vide.
+   */
+  claimNextRenderJob(workerId: string): RenderJob | null {
+    let claimed: RenderJob | null = null;
+    this.sqlite.exec("BEGIN IMMEDIATE");
+    try {
+      const row = this.sqlite
+        .prepare(
+          `SELECT * FROM render_queue WHERE status = 'queued'
+           ORDER BY priority DESC, created_at ASC LIMIT 1`
+        )
+        .get() as Record<string, unknown> | undefined;
+      if (row) {
+        const jobId = row.job_id as string;
+        const res = this.sqlite
+          .prepare(
+            `UPDATE render_queue
+             SET status = 'preparing', worker_id = $workerId, started_at = COALESCE(started_at, $now),
+                 heartbeat_at = $now, attempts = attempts + 1, error = NULL
+             WHERE job_id = $jobId AND status = 'queued'`
+          )
+          .run({ $workerId: workerId, $now: nowIso(), $jobId: jobId });
+        if (res.changes === 1) claimed = rowToRenderJob({ ...row, status: "preparing", worker_id: workerId });
+      }
+      this.sqlite.exec("COMMIT");
+    } catch (err) {
+      this.sqlite.exec("ROLLBACK");
+      throw err;
+    }
+    return claimed;
+  }
+
+  /** Met à jour la progression + heartbeat d'un job en cours (appelé par le worker). */
+  updateRenderJobProgress(
+    jobId: string,
+    update: {
+      status?: RenderJobStatus;
+      progress?: number;
+      currentStage?: string;
+      estimatedRemainingMs?: number | null;
+      workerPid?: number;
+    }
+  ): void {
+    this.sqlite
+      .prepare(
+        `UPDATE render_queue SET
+           status = COALESCE($status, status),
+           progress = COALESCE($progress, progress),
+           current_stage = COALESCE($currentStage, current_stage),
+           estimated_remaining_ms = CASE WHEN $hasEta = 1 THEN $eta ELSE estimated_remaining_ms END,
+           worker_pid = COALESCE($workerPid, worker_pid),
+           heartbeat_at = $now
+         WHERE job_id = $jobId`
+      )
+      .run({
+        $status: update.status ?? null,
+        $progress: update.progress ?? null,
+        $currentStage: update.currentStage ?? null,
+        $hasEta: update.estimatedRemainingMs !== undefined ? 1 : 0,
+        $eta: update.estimatedRemainingMs ?? null,
+        $workerPid: update.workerPid ?? null,
+        $now: nowIso(),
+        $jobId: jobId,
+      });
+  }
+
+  completeRenderJob(jobId: string, outputPath?: string): void {
+    this.sqlite
+      .prepare(
+        `UPDATE render_queue SET status = 'completed', progress = 100, completed_at = $now,
+           output_path = COALESCE($outputPath, output_path), estimated_remaining_ms = 0, error = NULL
+         WHERE job_id = $jobId`
+      )
+      .run({ $now: nowIso(), $outputPath: outputPath ?? null, $jobId: jobId });
+  }
+
+  /**
+   * Marque un job en échec. S'il reste des tentatives, il repart en file
+   * (§28 auto-recovery) ; sinon il devient terminal `failed`. Renvoie true
+   * si le job a été remis en file (donc doit être re-dispatché).
+   */
+  failRenderJob(jobId: string, error: string): boolean {
+    const job = this.getRenderJob(jobId);
+    if (!job) return false;
+    if (job.attempts < job.maxAttempts) {
+      this.sqlite
+        .prepare(
+          `UPDATE render_queue SET status = 'queued', worker_id = NULL, worker_pid = NULL,
+             heartbeat_at = NULL, error = $error WHERE job_id = $jobId`
+        )
+        .run({ $error: error, $jobId: jobId });
+      return true;
+    }
+    this.sqlite
+      .prepare(`UPDATE render_queue SET status = 'failed', completed_at = $now, error = $error WHERE job_id = $jobId`)
+      .run({ $now: nowIso(), $error: error, $jobId: jobId });
+    return false;
+  }
+
+  /** Annulation (§18). Renvoie le PID du worker pour que l'appelant puisse le tuer. */
+  cancelRenderJob(jobId: string): { workerPid?: number } | null {
+    const job = this.getRenderJob(jobId);
+    if (!job) return null;
+    if (TERMINAL_JOB_STATUSES.includes(job.status)) return { workerPid: job.workerPid };
+    this.sqlite
+      .prepare(`UPDATE render_queue SET status = 'cancelled', completed_at = $now WHERE job_id = $jobId`)
+      .run({ $now: nowIso(), $jobId: jobId });
+    return { workerPid: job.workerPid };
+  }
+
+  countRunningRenderJobs(): number {
+    const placeholders = RUNNING_JOB_STATUSES.map((_, i) => `$s${i}`).join(", ");
+    const params: Record<string, string> = {};
+    RUNNING_JOB_STATUSES.forEach((s, i) => (params[`$s${i}`] = s));
+    const row = this.sqlite
+      .prepare(`SELECT COUNT(*) as n FROM render_queue WHERE status IN (${placeholders})`)
+      .get(params) as { n: number };
+    return row.n;
+  }
+
+  listRenderJobs(filter?: { status?: RenderJobStatus }): RenderJob[] {
+    const rows = filter?.status
+      ? (this.sqlite
+          .prepare(`SELECT * FROM render_queue WHERE status = $status ORDER BY priority DESC, created_at ASC`)
+          .all({ $status: filter.status }) as Record<string, unknown>[])
+      : (this.sqlite
+          .prepare(`SELECT * FROM render_queue ORDER BY created_at DESC`)
+          .all() as Record<string, unknown>[]);
+    return rows.map(rowToRenderJob);
+  }
+
+  /**
+   * Reprise après crash (§28). Un job "running" dont le heartbeat est plus
+   * vieux que `staleMs` a un worker mort (process tué, machine redémarrée).
+   * On le remet en file (ou en échec si tentatives épuisées). Renvoie les
+   * jobs remis en file, à re-dispatcher. Au démarrage, passer staleMs=0
+   * remet en file TOUT job "running" (aucun worker vivant après un
+   * redémarrage — les sous-processus ne survivent pas au process parent).
+   */
+  recoverStaleRenderJobs(staleMs: number): RenderJob[] {
+    const placeholders = RUNNING_JOB_STATUSES.map((_, i) => `$s${i}`).join(", ");
+    const params: Record<string, string> = {};
+    RUNNING_JOB_STATUSES.forEach((s, i) => (params[`$s${i}`] = s));
+    const rows = this.sqlite
+      .prepare(`SELECT * FROM render_queue WHERE status IN (${placeholders})`)
+      .all(params) as Record<string, unknown>[];
+
+    const now = Date.now();
+    const recovered: RenderJob[] = [];
+    for (const row of rows) {
+      const job = rowToRenderJob(row);
+      const hb = job.heartbeatAt ? new Date(job.heartbeatAt).getTime() : 0;
+      const age = now - hb;
+      if (age < staleMs) continue; // worker encore vivant
+
+      if (job.attempts < job.maxAttempts) {
+        this.sqlite
+          .prepare(
+            `UPDATE render_queue SET status = 'queued', worker_id = NULL, worker_pid = NULL,
+               heartbeat_at = NULL, error = $error WHERE job_id = $jobId`
+          )
+          .run({ $error: `Worker perdu (heartbeat > ${(staleMs / 1000).toFixed(0)}s), reprise automatique`, $jobId: job.jobId });
+        recovered.push({ ...job, status: "queued" });
+      } else {
+        this.sqlite
+          .prepare(`UPDATE render_queue SET status = 'failed', completed_at = $now, error = $error WHERE job_id = $jobId`)
+          .run({ $now: nowIso(), $error: "Worker perdu et tentatives épuisées", $jobId: job.jobId });
+        this.setProjectStatus(job.projectId, "failed");
+      }
+    }
+    return recovered;
+  }
+
+  // ---- render metrics (§20) --------------------------------------------
+  recordRenderMetrics(m: RenderMetrics): void {
+    this.sqlite
+      .prepare(
+        `INSERT INTO render_metrics (id, job_id, project_id, render_id, kind, duration_total_ms, duration_cut_ms,
+           duration_concat_ms, duration_habillage_ms, duration_encode_ms, frames_rendered, fps, used_remotion,
+           memory_peak_mb, worker_id, created_at)
+         VALUES ($id, $jobId, $projectId, $renderId, $kind, $total, $cut, $concat, $habillage, $encode, $frames, $fps,
+           $usedRemotion, $memPeak, $workerId, $createdAt)`
+      )
+      .run({
+        $id: newId("rmet"),
+        $jobId: m.jobId ?? null,
+        $projectId: m.projectId,
+        $renderId: m.renderId,
+        $kind: m.kind,
+        $total: m.durationTotalMs,
+        $cut: m.durationCutMs ?? null,
+        $concat: m.durationConcatMs ?? null,
+        $habillage: m.durationHabillageMs ?? null,
+        $encode: m.durationEncodeMs ?? null,
+        $frames: m.framesRendered ?? null,
+        $fps: m.fps ?? null,
+        $usedRemotion: m.usedRemotion ? 1 : 0,
+        $memPeak: m.memoryPeakMb ?? null,
+        $workerId: m.workerId ?? null,
+        $createdAt: m.createdAt,
+      });
+  }
+
+  listRenderMetricsByProject(projectId: string): RenderMetrics[] {
+    const rows = this.sqlite
+      .prepare(`SELECT * FROM render_metrics WHERE project_id = $projectId ORDER BY created_at ASC`)
+      .all({ $projectId: projectId }) as Record<string, unknown>[];
+    return rows.map(rowToRenderMetrics);
+  }
+
   // ---- cost ledger -----------------------------------------------------
   recordCost(entry: CostLedgerEntry): void {
     this.sqlite
@@ -616,6 +918,50 @@ function rowToRender(row: Record<string, unknown>): RenderVersion {
     filePath: (row.file_path as string | null) ?? undefined,
     durationMs: (row.duration_ms as number | null) ?? undefined,
     error: (row.error as string | null) ?? undefined,
+    createdAt: row.created_at as string,
+  };
+}
+
+function rowToRenderJob(row: Record<string, unknown>): RenderJob {
+  return {
+    jobId: row.job_id as string,
+    projectId: row.project_id as string,
+    priority: row.priority as number,
+    status: row.status as RenderJobStatus,
+    profile: (row.profile as RenderProfile) ?? "balanced",
+    payload: row.payload as string,
+    progress: (row.progress as number) ?? 0,
+    currentStage: (row.current_stage as string | null) ?? undefined,
+    estimatedRemainingMs: (row.estimated_remaining_ms as number | null) ?? undefined,
+    attempts: (row.attempts as number) ?? 0,
+    maxAttempts: (row.max_attempts as number) ?? 3,
+    workerId: (row.worker_id as string | null) ?? undefined,
+    workerPid: (row.worker_pid as number | null) ?? undefined,
+    heartbeatAt: (row.heartbeat_at as string | null) ?? undefined,
+    error: (row.error as string | null) ?? undefined,
+    outputPath: (row.output_path as string | null) ?? undefined,
+    createdAt: row.created_at as string,
+    startedAt: (row.started_at as string | null) ?? undefined,
+    completedAt: (row.completed_at as string | null) ?? undefined,
+  };
+}
+
+function rowToRenderMetrics(row: Record<string, unknown>): RenderMetrics {
+  return {
+    jobId: (row.job_id as string | null) ?? "",
+    projectId: row.project_id as string,
+    renderId: row.render_id as string,
+    kind: row.kind as "proxy" | "final",
+    durationTotalMs: row.duration_total_ms as number,
+    durationCutMs: (row.duration_cut_ms as number | null) ?? undefined,
+    durationConcatMs: (row.duration_concat_ms as number | null) ?? undefined,
+    durationHabillageMs: (row.duration_habillage_ms as number | null) ?? undefined,
+    durationEncodeMs: (row.duration_encode_ms as number | null) ?? undefined,
+    framesRendered: (row.frames_rendered as number | null) ?? undefined,
+    fps: (row.fps as number | null) ?? undefined,
+    usedRemotion: Boolean(row.used_remotion),
+    memoryPeakMb: (row.memory_peak_mb as number | null) ?? undefined,
+    workerId: (row.worker_id as string | null) ?? undefined,
     createdAt: row.created_at as string,
   };
 }

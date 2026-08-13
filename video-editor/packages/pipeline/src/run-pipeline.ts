@@ -9,7 +9,9 @@ import type {
   Segment,
   StoryBlueprint,
   StyleProfile,
+  RenderProfile,
 } from "@video-editor/shared-types";
+import { RENDER_PROFILE_PARAMS } from "@video-editor/shared-types";
 import type { Db } from "@video-editor/db";
 import type { ModelRouter } from "@video-editor/model-router";
 import { recordProviderCall } from "@video-editor/cost-ledger";
@@ -39,6 +41,8 @@ export interface RunPipelineInput {
   width?: number;
   height?: number;
   fps?: number;
+  /** Profil de rendu (§10) — vitesse/qualité. Défaut balanced (comportement historique). */
+  profile?: RenderProfile;
 }
 
 export interface RunPipelineResult {
@@ -67,6 +71,8 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
   const height = input.height ?? 1920;
   const fps = input.fps ?? 30;
   const warnings: string[] = [];
+  const profileParams = RENDER_PROFILE_PARAMS[input.profile ?? "balanced"];
+  const jobId = process.env.VIDEO_EDITOR_JOB_ID; // pour rattacher les métriques au job de queue
 
   db.setProjectStatus(input.projectId, "processing");
 
@@ -237,10 +243,36 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
           rushPathById,
           musicFilePath,
           musicVolumeDb: editBlueprint.music?.volumeDb,
+          profile: {
+            cutPreset: profileParams.cutPreset,
+            cutCrf: profileParams.cutCrf,
+            finalPreset: profileParams.finalPreset,
+            finalCrf: profileParams.finalCrf,
+            remotionConcurrency: profileParams.remotionConcurrency,
+          },
         });
         warnings.push(...result.warnings);
         const durationMs = Date.now() - start;
         db.updateRenderStatus(renderRow.id, "done", { filePath: result.outputPath, durationMs });
+
+        // Métriques réelles (§20) — comprendre POURQUOI un rendu est lent.
+        db.recordRenderMetrics({
+          jobId: jobId ?? "",
+          projectId: input.projectId,
+          renderId: renderRow.id,
+          kind,
+          durationTotalMs: durationMs,
+          durationCutMs: result.timings.cutMs,
+          durationConcatMs: result.timings.concatMs,
+          durationHabillageMs: result.timings.habillageMs,
+          durationEncodeMs: result.timings.encodeMs,
+          framesRendered: result.framesRendered,
+          fps: result.framesRendered ? Math.round((result.framesRendered / durationMs) * 1000 * 10) / 10 : undefined,
+          usedRemotion: result.usedRemotionHabillage,
+          memoryPeakMb: Math.round(process.memoryUsage().rss / (1024 * 1024)),
+          workerId: process.env.HOSTNAME ?? undefined,
+          createdAt: new Date().toISOString(),
+        });
         recordProviderCall(db, {
           projectId: input.projectId,
           agent: "render_engine",

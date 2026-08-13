@@ -14,11 +14,32 @@ interface QcScores {
   sound: number; broll: number; coherence: number; styleMatch: number; overall: number;
 }
 
+interface QueueInfo {
+  status: string;
+  progress: number;
+  currentStage: string | null;
+  estimatedRemainingMs: number | null;
+  attempts: number;
+  maxAttempts: number;
+  workerId: string | null;
+  profile: string;
+}
+
 interface StatusResponse {
   project: { id: string; status: "draft" | "processing" | "ready" | "failed" };
   stages: StageInfo[];
+  queue: QueueInfo | null;
   result: { videoUrl: string | null; qcReport: { scores: QcScores; passed: boolean; threshold: number } | null } | null;
   error?: string;
+}
+
+function formatEta(ms: number | null): string {
+  if (ms === null || ms <= 0) return "";
+  const totalSec = Math.round(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  if (min > 0) return `~${min} min ${sec.toString().padStart(2, "0")}s restantes`;
+  return `~${sec}s restantes`;
 }
 
 const COMMANDS: { command: string; label: string }[] = [
@@ -63,6 +84,15 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
       clearTimeout(timer);
     };
   }, [id]);
+
+  async function cancelJob() {
+    setCommandMessage(null);
+    try {
+      await fetch(`/api/projects/${id}/cancel`, { method: "POST" });
+    } catch {
+      /* la prochaine poll reflétera l'état */
+    }
+  }
 
   async function runCommand(command: string) {
     setCommandBusy(command);
@@ -112,7 +142,30 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
       {!isReady && !isFailed ? (
         <>
           <h1>Ton monteur travaille…</h1>
-          <p className="sub">Chaque étape ci-dessous est réelle — aucune barre de progression simulée.</p>
+          <p className="sub">Progression réelle mesurée côté serveur — aucune barre simulée.</p>
+
+          {data.queue ? (
+            <div className="progress-block">
+              <div className="progress-head">
+                <span className="progress-stage">{data.queue.currentStage ?? "En file d'attente…"}</span>
+                <span className="progress-pct">{Math.round(data.queue.progress)}%</span>
+              </div>
+              <div className="progress-track">
+                <div className="progress-fill" style={{ width: `${Math.max(2, data.queue.progress)}%` }} />
+              </div>
+              <div className="progress-meta">
+                {data.queue.status === "queued" ? (
+                  <span>En file d'attente — un worker va prendre le projet dès qu'il est libre.</span>
+                ) : (
+                  <span>{formatEta(data.queue.estimatedRemainingMs)}</span>
+                )}
+                {data.queue.attempts > 1 ? (
+                  <span className="progress-retry">Tentative {data.queue.attempts}/{data.queue.maxAttempts}</span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           <div className="stage-list">
             {data.stages.map((s) => (
               <div key={s.stage} className={`stage-row ${s.status === "completed" ? "done" : s.status}`}>
@@ -120,6 +173,10 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                 <span>{s.label}</span>
               </div>
             ))}
+          </div>
+
+          <div className="actions" style={{ marginTop: 24 }}>
+            <button className="secondary" onClick={cancelJob}>Annuler le montage</button>
           </div>
         </>
       ) : null}

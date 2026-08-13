@@ -139,6 +139,59 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_project ON jobs(project_id);
 
+-- Render Queue : l'unité de travail de bout en bout d'UN projet (§2 du
+-- brief factory). Distincte de `jobs` (trace d'audit par étape) : cette
+-- table pilote QUAND et SUR QUEL worker un projet s'exécute, avec
+-- priorité, reprise après crash (heartbeat) et exécution unique garantie
+-- (claim atomique côté application). Conçue pour être migrable telle
+-- quelle vers Postgres (SELECT … FOR UPDATE SKIP LOCKED) ou Redis.
+CREATE TABLE IF NOT EXISTS render_queue (
+  job_id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id),
+  priority INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'queued',
+  profile TEXT NOT NULL DEFAULT 'balanced',
+  payload TEXT NOT NULL,
+  progress REAL NOT NULL DEFAULT 0,
+  current_stage TEXT,
+  estimated_remaining_ms INTEGER,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  max_attempts INTEGER NOT NULL DEFAULT 3,
+  worker_id TEXT,
+  worker_pid INTEGER,
+  heartbeat_at TEXT,
+  error TEXT,
+  output_path TEXT,
+  created_at TEXT NOT NULL,
+  started_at TEXT,
+  completed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_render_queue_status ON render_queue(status);
+CREATE INDEX IF NOT EXISTS idx_render_queue_project ON render_queue(project_id);
+-- Dispatch : file d'attente triée par priorité puis ancienneté.
+CREATE INDEX IF NOT EXISTS idx_render_queue_dispatch ON render_queue(status, priority DESC, created_at ASC);
+
+-- Métriques par rendu (§20) : comprendre POURQUOI un montage est lent.
+CREATE TABLE IF NOT EXISTS render_metrics (
+  id TEXT PRIMARY KEY,
+  job_id TEXT,
+  project_id TEXT NOT NULL,
+  render_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  duration_total_ms INTEGER NOT NULL,
+  duration_cut_ms INTEGER,
+  duration_concat_ms INTEGER,
+  duration_habillage_ms INTEGER,
+  duration_encode_ms INTEGER,
+  frames_rendered INTEGER,
+  fps REAL,
+  used_remotion INTEGER NOT NULL DEFAULT 0,
+  memory_peak_mb REAL,
+  worker_id TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_render_metrics_project ON render_metrics(project_id);
+
 CREATE TABLE IF NOT EXISTS feedback_events (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id),

@@ -1,8 +1,16 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { EditBlueprint } from "@video-editor/shared-types";
-import { cutClip, concatClips, finalEncode, mixAudioWithMusic, burnCaptionsFallback, probe, normalizeLoudness } from "./ffmpeg.js";
+import { cutClip, concatClips, finalizeOutput, mixAudioWithMusic, probe } from "./ffmpeg.js";
 import { renderHabillage, type HabillageCaptionStyle } from "./remotion.js";
+
+export interface AssembleProfile {
+  cutPreset?: string;
+  cutCrf?: number;
+  finalPreset?: string;
+  finalCrf?: number;
+  remotionConcurrency?: number | null;
+}
 
 export interface AssembleOptions {
   width: number;
@@ -13,6 +21,8 @@ export interface AssembleOptions {
   rushPathById: Record<string, string>;
   musicFilePath?: string | null;
   musicVolumeDb?: number;
+  /** Profil de rendu (§10) — presets/CRF FFmpeg + concurrence Remotion. Défauts = comportement historique. */
+  profile?: AssembleProfile;
 }
 
 export interface AssembleResult {
@@ -20,18 +30,28 @@ export interface AssembleResult {
   durationSec: number;
   usedRemotionHabillage: boolean;
   warnings: string[];
+  /** Décomposition des temps (§20 monitoring) — mesurés, jamais estimés. */
+  timings: {
+    cutMs: number;
+    concatMs: number;
+    habillageMs: number;
+    encodeMs: number;
+  };
+  framesRendered?: number;
+  /** true si l'export final a évité un ré-encodage (stream copy, §5). */
+  finalStreamCopied: boolean;
 }
 
 /**
  * Exécute une timeline déjà décidée par les agents. Cette fonction ne
  * prend aucune décision créative — elle traduit le JSON de l'EditBlueprint
- * en appels FFmpeg/Remotion déterministes, avec optimisations pour réduire
- * les réencodages inutiles :
- * - Cut → Concat (format fixe, pas de ré-encode)
+ * en appels FFmpeg/Remotion déterministes, avec des optimisations pour
+ * réduire les réencodages inutiles :
+ * - Cut → Concat (format fixe, pas de ré-encode au concat)
  * - Music mix appliquée directement si nécessaire
  * - Habillage Remotion OU fallback FFmpeg en single pass
- * - Export final sans ré-encode supplémentaire si déjà au bon format
- * (§4, §7 du brief produit).
+ * - Export final SANS ré-encodage si déjà au bon format (remux + faststart)
+ * (§4, §5, §7, §10 du brief produit/factory).
  */
 export async function assembleFromBlueprint(
   blueprint: EditBlueprint,
@@ -40,10 +60,12 @@ export async function assembleFromBlueprint(
 ): Promise<AssembleResult> {
   const warnings: string[] = [];
   await mkdir(opts.workDir, { recursive: true });
-  const { generateFastPreview, validateFinalRender } = await import("./ffmpeg.js");
+  const { validateFinalRender } = await import("./ffmpeg.js");
+  const profile = opts.profile ?? {};
 
   // ÉTAPE 1: Cut — un fichier par clip, recadré au format cible
   console.log(`[assemble] Cutting ${blueprint.clips.length} clips…`);
+  const tCut = Date.now();
   const clipPaths: string[] = [];
   for (const clip of blueprint.clips) {
     const rushPath = opts.rushPathById[clip.rushId];
@@ -52,15 +74,20 @@ export async function assembleFromBlueprint(
     await cutClip(rushPath, { start: clip.sourceStart, end: clip.sourceEnd }, clipOut, {
       targetWidth: opts.width,
       targetHeight: opts.height,
+      preset: profile.cutPreset,
+      crf: profile.cutCrf,
     });
     clipPaths.push(clipOut);
   }
+  const cutMs = Date.now() - tCut;
 
   // ÉTAPE 2: Concat — pas de re-encode, copie directe des streams
   console.log(`[assemble] Concatenating ${clipPaths.length} clips…`);
+  const tConcat = Date.now();
   const concatPath = join(opts.workDir, "base_concat.mp4");
   await concatClips(clipPaths, concatPath);
   const concatInfo = await probe(concatPath);
+  const concatMs = Date.now() - tConcat;
 
   // ÉTAPE 3: Audio mix (musique optionnelle) — appliquer ICI si musique présente
   console.log(`[assemble] ${opts.musicFilePath ? "Mixing audio with music…" : "No music to mix"}`);
@@ -84,6 +111,7 @@ export async function assembleFromBlueprint(
   const durationInFrames = Math.max(1, Math.round(concatInfo.durationSec * fps));
   let habillagePath = audioPath;
   let usedRemotionHabillage = false;
+  let framesRendered: number | undefined;
 
   const captionsForRemotion = blueprint.captions.map((c) => ({
     startFrame: Math.round(c.timelineStart * fps),
@@ -103,10 +131,11 @@ export async function assembleFromBlueprint(
       scale: c.zoomKeyframes[0]!.scale,
     }));
 
+  const tHabillage = Date.now();
   try {
     const remotionOut = join(opts.workDir, "habillage.mp4");
     console.log(`[assemble] Trying Remotion render…`);
-    await renderHabillage({
+    const r = await renderHabillage({
       videoSrc: audioPath,
       outputPath: remotionOut,
       durationInFrames,
@@ -116,9 +145,11 @@ export async function assembleFromBlueprint(
       captions: captionsForRemotion,
       zoomWindows,
       captionStyle: opts.captionStyle,
+      concurrency: profile.remotionConcurrency ?? null,
     });
     habillagePath = remotionOut;
     usedRemotionHabillage = true;
+    framesRendered = r.framesRendered;
     console.log(`[assemble] Remotion render succeeded`);
   } catch (err) {
     console.log(`[assemble] Remotion unavailable, using FFmpeg fallback (drawtext captions)`);
@@ -133,10 +164,21 @@ export async function assembleFromBlueprint(
     );
     habillagePath = fallbackOut;
   }
+  const habillageMs = Date.now() - tHabillage;
 
-  // ÉTAPE 5: Export final — format cible uniquement si nécessaire
-  console.log(`[assemble] Final export to ${opts.width}x${opts.height}@${opts.fps}fps…`);
-  await finalEncode(habillagePath, outputPath, { width: opts.width, height: opts.height, fps });
+  // ÉTAPE 5: Export final — remux stream-copy si déjà au format cible
+  // (évite une passe libx264 complète redondante, §5), sinon vrai encodage.
+  console.log(`[assemble] Finalizing to ${opts.width}x${opts.height}@${opts.fps}fps…`);
+  const tEncode = Date.now();
+  const { streamCopied } = await finalizeOutput(habillagePath, outputPath, {
+    width: opts.width,
+    height: opts.height,
+    fps,
+    preset: profile.finalPreset,
+    crf: profile.finalCrf,
+  });
+  const encodeMs = Date.now() - tEncode;
+  console.log(`[assemble] Final ${streamCopied ? "remux (stream copy, no re-encode)" : "encode"} done`);
 
   // ÉTAPE 6: Valider le fichier final
   console.log(`[assemble] Validating final render…`);
@@ -146,7 +188,15 @@ export async function assembleFromBlueprint(
   }
 
   const finalInfo = await probe(outputPath);
-  console.log(`[assemble] Complete: ${(finalInfo.durationSec).toFixed(1)}s @ ${finalInfo.width}x${finalInfo.height}`);
+  console.log(`[assemble] Complete: ${finalInfo.durationSec.toFixed(1)}s @ ${finalInfo.width}x${finalInfo.height}`);
 
-  return { outputPath, durationSec: finalInfo.durationSec, usedRemotionHabillage, warnings };
+  return {
+    outputPath,
+    durationSec: finalInfo.durationSec,
+    usedRemotionHabillage,
+    warnings,
+    timings: { cutMs, concatMs, habillageMs, encodeMs },
+    framesRendered,
+    finalStreamCopied: streamCopied,
+  };
 }

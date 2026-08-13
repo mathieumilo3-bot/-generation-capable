@@ -14,10 +14,13 @@ declare global {
  * `web.sqlite` que les scripts CLI spawnés (packages/pipeline/src/cli-*)
  * — c'est le même stockage vu depuis deux entrées différentes.
  */
+export function getDbPath(): string {
+  return join(resolveStorageRoot(), "web.sqlite");
+}
+
 export function getDb(): Db {
   if (!globalThis.__videoEditorDb) {
-    const dbPath = join(resolveStorageRoot(), "web.sqlite");
-    globalThis.__videoEditorDb = new Db(dbPath);
+    globalThis.__videoEditorDb = new Db(getDbPath());
   }
   return globalThis.__videoEditorDb;
 }

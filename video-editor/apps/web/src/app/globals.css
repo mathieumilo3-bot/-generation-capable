@@ -98,6 +98,21 @@ button.secondary:hover { border-color: var(--accent); }
   font-size: 14px;
 }
 
+.progress-block { margin: 28px 0 8px; }
+.progress-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.progress-stage { font-size: 15px; color: var(--ink); font-weight: 600; }
+.progress-pct { font-size: 22px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.progress-track { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.progress-fill {
+  height: 100%; background: var(--accent); border-radius: 999px;
+  transition: width 0.6s ease;
+}
+.progress-meta {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 8px; font-size: 13px; color: var(--ink-muted);
+}
+.progress-retry { color: var(--err); }
+
 .stage-list { display: flex; flex-direction: column; gap: 2px; margin: 32px 0; }
 .stage-row {
   display: flex; align-items: center; gap: 12px;

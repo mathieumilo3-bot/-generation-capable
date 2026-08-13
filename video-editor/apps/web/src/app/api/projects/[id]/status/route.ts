@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PIPELINE_STAGES, STAGE_LABEL_FR } from "@video-editor/shared-types";
 import { getDb } from "@/server/db";
+import { getProjectQueueJob } from "@/server/jobs";
 import { getCurrentUserId } from "@/server/auth";
 
 export const runtime = "nodejs";
@@ -35,6 +36,22 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     };
   });
 
+  // Progression réelle issue de la queue (§9, §26) : % global, étape
+  // lisible, ETA honnête, tentatives. Jamais un pourcentage simulé.
+  const job = getProjectQueueJob(id);
+  const queue = job
+    ? {
+        status: job.status,
+        progress: job.progress,
+        currentStage: job.currentStage ?? null,
+        estimatedRemainingMs: job.estimatedRemainingMs ?? null,
+        attempts: job.attempts,
+        maxAttempts: job.maxAttempts,
+        workerId: job.workerId ?? null,
+        profile: job.profile,
+      }
+    : null;
+
   let result: unknown = null;
   if (project.status === "ready") {
     const renders = db.listRendersByProject(id);
@@ -47,5 +64,5 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     };
   }
 
-  return NextResponse.json({ project, stages, result });
+  return NextResponse.json({ project, stages, queue, result });
 }
