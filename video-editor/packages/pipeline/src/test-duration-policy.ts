@@ -4,8 +4,13 @@
  * Prouve, en logique pure (aucun ffmpeg, aucune clé) :
  *   TEST 1  brief sans durée → AUCUN 45s (targetDurationSec undefined).
  *   TEST 2  contenu 12s + brief dynamique → cible ≈ contenu, jamais 45.
- *   TEST 3  durée explicite > contenu → ramenée au contenu (pas de remplissage).
- *   TEST 4  contenu long + short-form → plafonné (≤ 60s).
+ *   TEST 3  durée explicite TOUJOURS respectée, même si > contenu détecté
+ *           (le système ne rogne jamais silencieusement une demande
+ *           légitime — il signale seulement si le contenu est court, sans
+ *           jamais fabriquer de contenu pour combler).
+ *   TEST 4  aucun plafond arbitraire de plateforme : du contenu long (10
+ *           minutes) donne une cible longue si rien n'est demandé — pas de
+ *           limite "60s TikTok" inventée.
  *   TEST 9  durée courte demandée → segments réellement RETIRÉS du montage
  *           (discardés absents du blueprint = absents du MP4).
  */
@@ -58,16 +63,18 @@ async function main(): Promise<void> {
     assert(d.targetSec <= 12.1 && d.targetSec >= 8, `cible ${d.targetSec}s ≈ contenu 12s, jamais 45`);
     assert(d.explicit === false, "marquée comme dérivée");
 
-    console.log("\n[TEST 3] Durée explicite 30s mais contenu 12s → ramenée à 12s (pas de remplissage)");
+    console.log("\n[TEST 3] Durée explicite 30s avec contenu 12s → 30s TOUJOURS respectée (pas rognée)");
     const d3 = resolveTargetDurationSec({ platform: "tiktok", targetDurationSec: 30 }, segs12);
-    console.log(`  → ${d3.targetSec}s (${d3.reason})`);
-    assert(d3.targetSec <= 12.1, `ramenée au contenu (${d3.targetSec}s), on ne fabrique pas 30s`);
+    console.log(`  → ${d3.targetSec}s (${d3.reason}) contentInsufficient=${d3.contentInsufficient}`);
+    assert(d3.targetSec === 30, `la demande explicite (${d3.targetSec}s) n'est JAMAIS rognée silencieusement`);
+    assert(d3.contentInsufficient === true, "le manque de contenu est signalé (flag), pas caché");
 
-    console.log("\n[TEST 4] Contenu long (120s) + short-form → plafonné à 60s");
-    const segsLong = Array.from({ length: 40 }, (_, i) => seg(`L${i}`, i * 3)); // 40×3 = 120s
+    console.log("\n[TEST 4] Aucun plafond arbitraire : contenu long (10 min) + brief sans durée → cible longue, pas de limite 60s inventée");
+    const segsLong = Array.from({ length: 200 }, (_, i) => seg(`L${i}`, i * 3)); // 200×3 = 600s = 10min
     const d4 = resolveTargetDurationSec({ platform: "tiktok", targetDurationSec: undefined }, segsLong);
     console.log(`  → ${d4.targetSec}s (${d4.reason})`);
-    assert(d4.targetSec <= 60, `plafonné short-form (${d4.targetSec}s ≤ 60)`);
+    assert(d4.targetSec > 60, `AUCUN plafond de plateforme : cible (${d4.targetSec}s) suit le contenu réel, pas une limite inventée`);
+    assert(Math.abs(d4.targetSec - 600) < 1, "cible = contenu utile intégral (600s), sans plafond");
 
     console.log("\n[TEST 9] Durée courte demandée → segments réellement retirés du montage");
     const segs24 = Array.from({ length: 8 }, (_, i) => seg(`k${i}`, i * 3, 3, 0.5 + i * 0.05)); // 24s, scores variés

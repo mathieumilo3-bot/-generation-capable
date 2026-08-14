@@ -12,17 +12,7 @@ import type {
   RenderProfile,
 } from "@video-editor/shared-types";
 import { RENDER_PROFILE_PARAMS, PIPELINE_STAGES, STAGE_WEIGHTS } from "@video-editor/shared-types";
-
-/** Bande de progression globale [start,end] d'une étape, d'après ses poids réels. */
-function stageBand(stage: PipelineStage): { start: number; end: number } {
-  const total = PIPELINE_STAGES.reduce((s, x) => s + STAGE_WEIGHTS[x], 0);
-  let before = 0;
-  for (const s of PIPELINE_STAGES) {
-    if (s === stage) break;
-    before += STAGE_WEIGHTS[s];
-  }
-  return { start: (before / total) * 100, end: ((before + STAGE_WEIGHTS[stage]) / total) * 100 };
-}
+import type { CreativePlan } from "@video-editor/shared-types";
 import type { Db } from "@video-editor/db";
 import type { ModelRouter } from "@video-editor/model-router";
 import { recordProviderCall } from "@video-editor/cost-ledger";
@@ -41,10 +31,21 @@ import {
   runQualityControl,
   runCreativeBrain,
   runCreativeCritic,
+  resolveTargetDurationSec,
   type RushTranscript,
 } from "@video-editor/agents";
 import type { CreativeReview } from "@video-editor/agents";
-import type { CreativePlan } from "@video-editor/shared-types";
+
+/** Bande de progression globale [start,end] d'une étape, d'après ses poids réels. */
+function stageBand(stage: PipelineStage): { start: number; end: number } {
+  const total = PIPELINE_STAGES.reduce((s, x) => s + STAGE_WEIGHTS[x], 0);
+  let before = 0;
+  for (const s of PIPELINE_STAGES) {
+    if (s === stage) break;
+    before += STAGE_WEIGHTS[s];
+  }
+  return { start: (before / total) * 100, end: ((before + STAGE_WEIGHTS[stage]) / total) * 100 };
+}
 import { applyCorrection } from "./apply-correction.js";
 
 export interface RunPipelineInput {
@@ -238,6 +239,19 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
       const brief = db.createBrief({ projectId: input.projectId, rawText: input.rawBriefText });
       briefSpec = await runBriefAnalyzer(db, router, input.projectId, input.rawBriefText);
       db.setBriefSpec(brief.id, briefSpec);
+
+      // Une durée explicite est TOUJOURS respectée (jamais rognée en
+      // silence) — mais si le contenu réellement disponible est plus
+      // court, on le dit clairement plutôt que de fabriquer du contenu
+      // (boucle/freeze) ou de tronquer sans prévenir.
+      if (briefSpec.targetDurationSec != null) {
+        const d = resolveTargetDurationSec(briefSpec, allSegments);
+        if (d.contentInsufficient) {
+          warnings.push(
+            `Durée demandée (${briefSpec.targetDurationSec}s) supérieure au contenu réellement exploitable détecté dans les rushs — le montage utilisera tout le contenu disponible plutôt que d'inventer des images.`
+          );
+        }
+      }
     });
 
     let creativePlan: CreativePlan | undefined;
