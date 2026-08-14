@@ -12,6 +12,8 @@
     "test": "node dist/test-montage-quality.js",
     "test:render-opt": "node dist/test-render-optimization.js",
     "test:montage": "node dist/test-montage-quality.js",
+    "test:captions": "node dist/test-captions-sync.js",
+    "test:brain": "node dist/test-creative-brain.js",
     "demo": "node dist/demo.js"
   },
   "dependencies": {

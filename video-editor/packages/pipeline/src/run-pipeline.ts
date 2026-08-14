@@ -237,7 +237,10 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
     });
 
     await runStage("captions", async () => {
-      editBlueprint = runCaptionDirector(editBlueprint, segmentsById, styleProfile);
+      // Propage les VRAIS timestamps mot-à-mot (STT) → sous-titres
+      // réellement synchronisés quand une clé Deepgram est configurée ;
+      // repli uniforme honnête sinon.
+      editBlueprint = runCaptionDirector(editBlueprint, segmentsById, styleProfile, transcripts);
     });
 
     let musicFilePath: string | null = null;

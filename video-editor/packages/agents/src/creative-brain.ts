@@ -18,6 +18,7 @@ import type { Db } from "@video-editor/db";
 import type { ModelRouter } from "@video-editor/model-router";
 import type { Segment, StyleProfile, BriefSpec } from "@video-editor/shared-types";
 import type {
+  ContentIntent,
   CreativePlan,
   HookCandidate,
   NarrativeArc,
@@ -25,6 +26,8 @@ import type {
   StylePreset,
 } from "@video-editor/shared-types";
 import { recordProviderCall } from "@video-editor/cost-ledger";
+import { parseAndValidateJson } from "./llm-json.js";
+import { z } from "zod";
 
 // Mapper BriefSpec.platform → CreativePlan.platform
 function mapPlatform(briefPlatform: string): CreativePlan["platform"] {
@@ -107,11 +110,9 @@ export async function runCreativeBrain(
   const t0 = Date.now();
   console.log(`[creative-brain] Analysing ${segments.length} segments for creative planning…`);
 
-  // Dériver l'intention de contenu du brief
-  const contentIntent = {
-    primary: briefSpec.objective.toLowerCase().includes("education")
-      ? ("education" as const)
-      : ("entertainment" as const),
+  // Dériver l'intention de contenu du brief (élargissable par le LLM)
+  const contentIntent: ContentIntent = {
+    primary: briefSpec.objective.toLowerCase().includes("education") ? "education" : "entertainment",
     clarity: 0.8,
   };
 
@@ -124,13 +125,53 @@ export async function runCreativeBrain(
     attentionSpan: "short" as const,
   };
 
-  // Trouver les meilleurs hooks
+  // Trouver les meilleurs hooks (heuristique — base et repli)
   const hookCandidates = findBestHooks(segments, 3);
-  const bestHook = hookCandidates[0] ?? createFallbackHook(segments[0]);
-  console.log(`[creative-brain] Best hook found: segment ${bestHook.segmentId} (score: ${bestHook.score})`);
+  let bestHook = hookCandidates[0] ?? createFallbackHook(segments[0]);
 
-  // Structure narrative basée sur le brief
+  // Structure narrative basée sur le brief (heuristique — base et repli)
   const narrativeArc = inferNarrativeArc(briefSpec, segments);
+  let overallTone = briefSpec.tone;
+  let endingFeeling = "satisfied";
+
+  // DIRECTION LLM : quand une clé Anthropic est configurée, le directeur
+  // RAISONNE réellement sur le contenu — intention, MEILLEURE accroche
+  // (sur l'ensemble des plans, avec justification), structure narrative,
+  // ton — au lieu des seules heuristiques. Tout id de segment renvoyé est
+  // revérifié : une accroche hallucinée est rejetée, jamais suivie (§11).
+  // Repli complet et silencieux sur l'heuristique en cas d'échec/absence.
+  let usedLlm = false;
+  let llmReasoning = "";
+  if (router.capabilities.llm) {
+    try {
+      const dir = await llmCreativeDirection(db, router, projectId, segments, briefSpec, styleProfile);
+      contentIntent.primary = dir.intent;
+      contentIntent.clarity = dir.clarity;
+      const hookSeg = segments.find((s) => s.id === dir.bestHookSegmentId);
+      if (hookSeg) {
+        bestHook = {
+          segmentId: hookSeg.id,
+          startSec: hookSeg.start,
+          endSec: hookSeg.end,
+          type: dir.hookType,
+          score: Math.round(Math.max(bestHook.score, hookSeg.hookPotential * 100)),
+          reasoning: dir.hookReasoning,
+          clarity: hookSeg.clarity,
+          retentionPotential: hookSeg.energy * 100,
+          isStub: false,
+        };
+      }
+      narrativeArc.structure = dir.narrativeStructure;
+      overallTone = dir.overallTone;
+      endingFeeling = dir.endingFeeling;
+      usedLlm = true;
+      llmReasoning = dir.reasoning;
+      console.log(`[creative-brain] Direction LLM: hook=${bestHook.segmentId} (${bestHook.type}), arc=${narrativeArc.structure}`);
+    } catch (err) {
+      console.warn(`[creative-brain] Direction LLM indisponible/invalide, heuristique conservée: ${(err as Error).message}`);
+    }
+  }
+  console.log(`[creative-brain] Best hook: segment ${bestHook.segmentId} (score ${bestHook.score}, ${usedLlm ? "LLM" : "heuristique"})`);
 
   // Générer StylePreset depuis le StyleProfile
   const stylePreset = styleProfileToPreset(styleProfile, briefSpec);
@@ -213,8 +254,8 @@ export async function runCreativeBrain(
     },
     emotionalCurve: {
       moments: generateEmotionalMoments(segments),
-      overallTone: briefSpec.tone,
-      targetEndingFeeling: "satisfied",
+      overallTone,
+      targetEndingFeeling: endingFeeling,
     },
     visualPattern: "varied",
     stylePreset,
@@ -228,37 +269,89 @@ export async function runCreativeBrain(
       maxRedundancy: 20,
     },
     reasoning:
-      `Created creative plan targeting ${platform}. ` +
-      `Selected hook from segment ${bestHook.segmentId} (${bestHook.type}) with score ${bestHook.score}. ` +
-      `Using ${narrativeArc.structure} narrative structure.`,
-    confidence: 0.75,
+      (usedLlm ? `[LLM] ${llmReasoning} ` : "") +
+      `Cible ${platform}. Accroche = segment ${bestHook.segmentId} (${bestHook.type}). ` +
+      `Structure ${narrativeArc.structure}.`,
+    confidence: usedLlm ? 0.85 : 0.75,
+    // Direction (intention/hook/arc/ton) par LLM, tactiques (pacing/broll/
+    // captions/sound) encore heuristiques → approche hybride quand LLM.
     isFullyLLM: false,
-    isFullyHeuristic: true,
-    hybridApproach: false,
+    isFullyHeuristic: !usedLlm,
+    hybridApproach: usedLlm,
   };
 
   const durationMs = Date.now() - t0;
-  console.log(`[creative-brain] Plan created in ${(durationMs / 1000).toFixed(1)}s`);
-
-  recordProviderCall(db, {
-    projectId,
-    agent: "render_engine",
-    stage: "story_blueprint",
-    result: {
-      data: null,
-      provider: "stub",
-      model: "creative_brain_v1",
-      inputUnits: segments.length,
-      inputUnitType: "segments",
-      outputUnits: 1,
-      outputUnitType: "creative_plan",
-      durationMs,
-      costMicroUsd: 0,
-      isStub: true,
-    },
-  });
+  console.log(`[creative-brain] Plan created in ${(durationMs / 1000).toFixed(1)}s (${usedLlm ? "hybride LLM+heuristique" : "heuristique"})`);
 
   return plan;
+}
+
+// Direction créative par LLM (chemin réel quand une clé est configurée)
+
+const LLM_DIRECTION_SCHEMA = z.object({
+  intent: z.enum(["entertainment", "education", "persuasion", "inspiration", "documentation"]),
+  clarity: z.number().min(0).max(1),
+  bestHookSegmentId: z.string(),
+  hookType: z.enum(["curiosity", "pattern_interrupt", "authority", "emotion", "question", "revelation", "payoff"]),
+  hookReasoning: z.string(),
+  narrativeStructure: z.enum([
+    "linear",
+    "three_act",
+    "hero_journey",
+    "problem_solution",
+    "before_after",
+    "mystery_reveal",
+    "emotional_journey",
+  ]),
+  overallTone: z.string(),
+  endingFeeling: z.string(),
+  reasoning: z.string(),
+});
+
+type LlmDirection = z.infer<typeof LLM_DIRECTION_SCHEMA>;
+
+async function llmCreativeDirection(
+  db: Db,
+  router: ModelRouter,
+  projectId: string,
+  segments: Segment[],
+  brief: BriefSpec,
+  styleProfile: StyleProfile
+): Promise<LlmDirection> {
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const compact = segments.map((s) => ({
+    id: s.id,
+    start: r2(s.start),
+    end: r2(s.end),
+    transcript: s.transcript.slice(0, 180),
+    scores: {
+      energy: r2(s.energy),
+      hookPotential: r2(s.hookPotential),
+      narrativeInterest: r2(s.narrativeInterest),
+      visualQuality: r2(s.visualQuality),
+    },
+  }));
+  const result = await router.llm.complete({
+    system: `Tu es le DIRECTEUR CRÉATIF d'un monteur vidéo IA pour formats courts verticaux
+(TikTok/Reels/Shorts). À partir des segments analysés (jamais les rushs bruts), décide la
+DIRECTION du montage. Réponds UNIQUEMENT en JSON:
+{"intent":"entertainment|education|persuasion|inspiration|documentation","clarity":0..1,
+"bestHookSegmentId":"<un id EXISTANT de la liste>","hookType":"curiosity|pattern_interrupt|authority|emotion|question|revelation|payoff",
+"hookReasoning":"...","narrativeStructure":"linear|three_act|hero_journey|problem_solution|before_after|mystery_reveal|emotional_journey",
+"overallTone":"...","endingFeeling":"...","reasoning":"..."}
+Règles : bestHookSegmentId DOIT être l'un des ids fournis (n'en invente aucun). Choisis
+l'accroche qui capte le plus fort dès la première seconde (énergie, curiosité, rupture de
+pattern). Priorité : rétention, clarté, naturel.`,
+    prompt: `Brief: ${JSON.stringify(brief)}\nStyle: ${styleProfile.name} (cut ~${styleProfile.averageCutDuration}s)\nSegments disponibles:\n${JSON.stringify(compact)}`,
+    maxTokens: 700,
+  });
+  recordProviderCall(db, { projectId, agent: "story_director", stage: "story_blueprint", result });
+  const parsed = parseAndValidateJson(result.data, LLM_DIRECTION_SCHEMA);
+  // Anti-hallucination : l'accroche désignée doit exister réellement.
+  if (!segments.some((s) => s.id === parsed.bestHookSegmentId)) {
+    throw new Error("Le modèle a désigné une accroche inexistante (hallucination) — direction rejetée.");
+  }
+  return parsed;
 }
 
 // Utilitaires
