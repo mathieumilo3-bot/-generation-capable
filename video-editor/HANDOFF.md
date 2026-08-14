@@ -14,9 +14,10 @@ assistant (ou toi) puisse reprendre sans rien redécouvrir.
 
 | # | Chantier | État |
 |---|----------|------|
-| A | **Cerveau créatif** (CreativePlan, Critic, Learning) | ⚠️ **Compilé mais PAS câblé** au pipeline — c'est "l'âme" qui manque encore |
+| A | **Cerveau créatif / directeur** (CreativePlan, Critic) | ✅ **Câblé au pipeline** — pilote l'accroche ; chemin LLM réel (repli heuristique). Testé (11 assertions). Le Learning reste non câblé. |
 | B | **Usine de production** (queue, concurrence adaptative, workers, recovery, métriques, progression) | ✅ **Vivant + testé** (31 assertions) |
-| C | **Réalisme du montage** (rejet plans sombres, ordre cohérent, garde-fous anti-défauts) | ✅ **Vivant + testé** (11 assertions) |
+| C | **Réalisme du montage** (rejet plans sombres, ordre cohérent, garde-fous, sous-titres synchronisés) | ✅ **Vivant + testé** (11 + 6 assertions) |
+| D | **Puissance de rendu** (performance-16x, concurrence Remotion adaptative, progression frame-réelle) | ✅ **Vivant + benchmark** (×2.28, +51 pts CPU sur 4 vCPU) |
 
 ---
 
