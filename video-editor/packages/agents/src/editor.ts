@@ -69,8 +69,12 @@ export function runEditor(
     cursor += outDuration;
   }
 
-  // Respect du budget de durée cible (§4 du brief : format 30-90s) : on coupe la queue plutôt que de dépasser largement.
-  const maxDurationSec = brief.targetDurationSec * 1.3;
+  // Respect du budget de durée cible : durée demandée, sinon dérivée du
+  // contenu réellement présent (jamais 45s inventé, §3/§24). On coupe la
+  // queue plutôt que de dépasser, on NE rallonge jamais artificiellement.
+  const orderedContentSec = ordered.reduce((sum, o) => sum + (o.segment.end - o.segment.start), 0);
+  const target = brief.targetDurationSec ?? orderedContentSec;
+  const maxDurationSec = target * 1.3;
   if (cursor > maxDurationSec) {
     let acc = 0;
     const trimmed: TimelineClip[] = [];

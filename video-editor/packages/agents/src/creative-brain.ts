@@ -27,6 +27,7 @@ import type {
 } from "@video-editor/shared-types";
 import { recordProviderCall } from "@video-editor/cost-ledger";
 import { parseAndValidateJson } from "./llm-json.js";
+import { resolveTargetDurationSec, usableContentDurationSec } from "./duration-policy.js";
 import { z } from "zod";
 
 // Mapper BriefSpec.platform → CreativePlan.platform
@@ -125,6 +126,13 @@ export async function runCreativeBrain(
     attentionSpan: "short" as const,
   };
 
+  // DURÉE ÉDITORIALE : dérivée du contenu si non demandée (jamais 45s
+  // inventé, §3/§24). Source de vérité pour toute la suite du montage.
+  const durationDecision = resolveTargetDurationSec(briefSpec, segments);
+  let targetDurationSec = durationDecision.targetSec;
+  const contentSec = usableContentDurationSec(segments);
+  console.log(`[creative-brain] Durée cible: ${targetDurationSec}s (${durationDecision.reason})`);
+
   // Trouver les meilleurs hooks (heuristique — base et repli)
   const hookCandidates = findBestHooks(segments, 3);
   let bestHook = hookCandidates[0] ?? createFallbackHook(segments[0]);
@@ -164,6 +172,12 @@ export async function runCreativeBrain(
       narrativeArc.structure = dir.narrativeStructure;
       overallTone = dir.overallTone;
       endingFeeling = dir.endingFeeling;
+      // Le directeur peut affiner la durée — mais JAMAIS au-delà du contenu
+      // disponible (pas de remplissage) et jamais en dessous de 3s.
+      if (dir.targetDurationSec != null && !durationDecision.explicit) {
+        const clamped = Math.max(3, Math.min(dir.targetDurationSec, contentSec > 0 ? contentSec : dir.targetDurationSec));
+        targetDurationSec = Math.round(clamped * 10) / 10;
+      }
       usedLlm = true;
       llmReasoning = dir.reasoning;
       console.log(`[creative-brain] Direction LLM: hook=${bestHook.segmentId} (${bestHook.type}), arc=${narrativeArc.structure}`);
@@ -198,7 +212,7 @@ export async function runCreativeBrain(
     audience,
     platform,
     format: "vertical",
-    targetDurationSec: briefSpec.targetDurationSec,
+    targetDurationSec,
 
     bestHook,
     alternativeHooks: hookCandidates.slice(1),
@@ -291,6 +305,8 @@ export async function runCreativeBrain(
 const LLM_DIRECTION_SCHEMA = z.object({
   intent: z.enum(["entertainment", "education", "persuasion", "inspiration", "documentation"]),
   clarity: z.number().min(0).max(1),
+  /** Durée éditoriale conseillée (secondes) — null si aucune durée demandée et à laisser dériver du contenu. */
+  targetDurationSec: z.number().positive().nullable().optional(),
   bestHookSegmentId: z.string(),
   hookType: z.enum(["curiosity", "pattern_interrupt", "authority", "emotion", "question", "revelation", "payoff"]),
   hookReasoning: z.string(),
@@ -336,6 +352,7 @@ async function llmCreativeDirection(
 (TikTok/Reels/Shorts). À partir des segments analysés (jamais les rushs bruts), décide la
 DIRECTION du montage. Réponds UNIQUEMENT en JSON:
 {"intent":"entertainment|education|persuasion|inspiration|documentation","clarity":0..1,
+"targetDurationSec": <nombre ou null : durée éditoriale idéale ; null si tu laisses dériver du contenu ; NE dépasse JAMAIS la durée totale des segments fournis, n'invente pas de durée pour "remplir">,
 "bestHookSegmentId":"<un id EXISTANT de la liste>","hookType":"curiosity|pattern_interrupt|authority|emotion|question|revelation|payoff",
 "hookReasoning":"...","narrativeStructure":"linear|three_act|hero_journey|problem_solution|before_after|mystery_reveal|emotional_journey",
 "overallTone":"...","endingFeeling":"...","reasoning":"..."}

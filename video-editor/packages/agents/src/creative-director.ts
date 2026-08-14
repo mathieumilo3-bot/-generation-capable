@@ -15,12 +15,17 @@ export function runCreativeDirector(editBlueprint: EditBlueprint, styleProfile: 
   const notes: string[] = [];
   let ok = true;
 
-  const durationRatio = editBlueprint.totalDurationSec / brief.targetDurationSec;
-  if (durationRatio < 0.6 || durationRatio > 1.4) {
-    ok = false;
-    notes.push(
-      `Durée totale (${editBlueprint.totalDurationSec.toFixed(1)}s) trop éloignée de la cible (${brief.targetDurationSec}s).`
-    );
+  // On ne compare la durée qu'à une cible RÉELLE (demandée ou dérivée du
+  // contenu). Sans cible, la durée du montage est légitime par construction
+  // (elle vient du contenu) — pas de fausse alerte "trop éloignée de 45s".
+  if (brief.targetDurationSec != null) {
+    const durationRatio = editBlueprint.totalDurationSec / brief.targetDurationSec;
+    if (durationRatio < 0.6 || durationRatio > 1.4) {
+      ok = false;
+      notes.push(
+        `Durée totale (${editBlueprint.totalDurationSec.toFixed(1)}s) trop éloignée de la cible (${brief.targetDurationSec.toFixed(1)}s).`
+      );
+    }
   }
 
   const hookClip = editBlueprint.clips.find((c) => c.role === "hook");

@@ -10,9 +10,13 @@ objet JSON valide, aucun texte autour, respectant exactement ce schéma :
 {
   "objective": string, "audience": string,
   "platform": "tiktok"|"instagram_reels"|"youtube_shorts"|"generic_vertical",
-  "targetDurationSec": number (15-180), "tone": string, "style": string,
+  "targetDurationSec": number | null, "tone": string, "style": string,
   "cta": string (optionnel), "dynamism": number (0-1), "constraints": string[]
-}`;
+}
+RÈGLE DURÉE CRITIQUE : ne renseigne "targetDurationSec" QUE si l'utilisateur
+a EXPLICITEMENT indiqué une durée (ex: "30 secondes", "1 minute"). Sinon
+mets null — la durée sera dérivée du contenu réel. N'invente JAMAIS une
+durée (surtout pas 45s) simplement parce qu'aucune n'est précisée.`;
 
 /**
  * Agent 01 — Brief Analyzer. Chemin réel : LLM avec sortie JSON stricte.
@@ -49,12 +53,14 @@ const PLATFORM_KEYWORDS: [RegExp, BriefSpec["platform"]][] = [
 function heuristicBriefSpec(rawText: string): BriefSpec {
   const platform = PLATFORM_KEYWORDS.find(([re]) => re.test(rawText))?.[1] ?? "generic_vertical";
 
+  // Durée : UNIQUEMENT si l'utilisateur l'a explicitement écrite. Sinon
+  // undefined → dérivée du contenu en aval (jamais 45s inventé, §3/§24).
   const secMatch = rawText.match(/(\d+)\s*(secondes?|sec\b|s\b)/i);
   const minMatch = rawText.match(/(\d+)\s*(minutes?|min\b)/i);
-  let targetDurationSec = 45;
+  let targetDurationSec: number | undefined;
   if (secMatch) targetDurationSec = parseInt(secMatch[1]!, 10);
   else if (minMatch) targetDurationSec = parseInt(minMatch[1]!, 10) * 60;
-  targetDurationSec = Math.max(15, Math.min(180, targetDurationSec));
+  if (targetDurationSec != null) targetDurationSec = Math.max(1, Math.min(3600, targetDurationSec));
 
   const dynamicWords = /dynamique|énergique|hype|rapide|punchy|agressif/i;
   const calmWords = /premium|épuré|calme|posé|minimal|sobre/i;

@@ -67,6 +67,45 @@ export interface RunPipelineResult {
   briefSpec: BriefSpec;
   styleProfile: StyleProfile;
   warnings: string[];
+  /** Résumé éditorial lisible : POURQUOI la vidéo ressemble à ça (§18 observabilité). */
+  editorialSummary: string[];
+}
+
+/**
+ * Construit le résumé éditorial — les décisions RÉELLES visibles dans le
+ * MP4 final (§18). Permet de vérifier d'un coup d'œil que le cerveau a
+ * réellement monté, pas juste exécuté un pipeline.
+ */
+function buildEditorialSummary(
+  editBlueprint: EditBlueprint,
+  storyBlueprint: StoryBlueprint,
+  segmentsById: Map<string, Segment>,
+  totalSegments: number,
+  plan: CreativePlan | undefined,
+  durationExplicit: boolean
+): string[] {
+  const clips = editBlueprint.clips;
+  const avgShot = clips.length > 0 ? clips.reduce((s, c) => s + c.outDuration, 0) / clips.length : 0;
+  const zoomCount = clips.filter((c) => c.zoomKeyframes.length > 0).length;
+  const brollResolved = editBlueprint.brollSlots.filter((s) => s.resolvedSource !== null).length;
+  const hookClip = clips.find((c) => c.role === "hook") ?? clips[0];
+  const hookSeg = hookClip ? segmentsById.get(hookClip.segmentId) : undefined;
+  const hookText = hookSeg?.transcript?.slice(0, 60).trim();
+  const removed = storyBlueprint.discardedSegmentIds.length;
+  const director = plan ? (plan.hybridApproach ? "LLM + heuristique" : "heuristique") : "heuristique (cerveau indisponible)";
+
+  return [
+    `DURÉE     : ${editBlueprint.totalDurationSec.toFixed(1)}s (${durationExplicit ? "demandée" : "dérivée du contenu"})`,
+    `DIRECTEUR : ${director}${plan ? ` — confiance ${(plan.confidence * 100).toFixed(0)}%` : ""}`,
+    `HOOK      : ${hookClip ? `plan ${hookClip.role}` : "n/a"}${hookText ? ` — « ${hookText}${hookText.length >= 60 ? "…" : ""} »` : ""}`,
+    `CUTS      : ${removed} segment(s) retiré(s) sur ${totalSegments} analysés → ${clips.length} plans montés`,
+    `RYTHME    : ${avgShot.toFixed(1)}s par plan en moyenne`,
+    `ZOOMS     : ${zoomCount} punch-in`,
+    `B-ROLL    : ${brollResolved} intervention(s) résolue(s)`,
+    `CAPTIONS  : ${editBlueprint.captions.length} cues${editBlueprint.captions.length === 0 ? " (pas de STT — sous-titres désactivés honnêtement)" : ""}`,
+    `MUSIQUE   : ${editBlueprint.music?.title ?? "aucune"}`,
+    `FIN       : ${plan?.endingStrategy ?? "payoff"}`,
+  ];
 }
 
 export type ProgressCallback = (stage: PipelineStage, status: "start" | "done" | "failed") => void;
@@ -203,12 +242,16 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
 
     let creativePlan: CreativePlan | undefined;
     let storyBlueprint!: StoryBlueprint;
+    // Le brief éditorial : identique au brief, mais avec la DURÉE décidée
+    // par le directeur (dérivée du contenu si non demandée — jamais 45s).
+    // C'est cette durée que consomment Story Director et Editor.
+    let editorialBrief: BriefSpec = briefSpec;
     await runStage("story_blueprint", async () => {
       // LE DIRECTEUR CRÉATIF pilote le montage : il produit un plan unifié
       // (intention, MEILLEURE ACCROCHE choisie sur l'ensemble des plans,
-      // arc narratif, pacing, courbe émotionnelle, cibles qualité) que le
-      // Story Director consomme ensuite. 100% additif : si le cerveau
-      // échoue, on retombe intégralement sur les heuristiques éprouvées.
+      // durée éditoriale, arc narratif, pacing, courbe émotionnelle, cibles
+      // qualité) que le Story Director consomme ensuite. 100% additif : si
+      // le cerveau échoue, on retombe intégralement sur les heuristiques.
       try {
         creativePlan = await runCreativeBrain(
           db,
@@ -219,17 +262,18 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
           styleProfile,
           input.referenceVideoPaths
         );
-        console.log(`[pipeline] Directeur créatif → ${creativePlan.reasoning}`);
+        editorialBrief = { ...briefSpec, targetDurationSec: creativePlan.targetDurationSec };
+        console.log(`[pipeline] Directeur créatif → durée ${creativePlan.targetDurationSec}s · ${creativePlan.reasoning}`);
       } catch (err) {
         warnings.push(`Directeur créatif indisponible, montage heuristique: ${(err as Error).message}`);
       }
-      storyBlueprint = await runStoryDirector(db, router, input.projectId, allSegments, briefSpec, styleProfile, 1, creativePlan);
+      storyBlueprint = await runStoryDirector(db, router, input.projectId, allSegments, editorialBrief, styleProfile, 1, creativePlan);
     });
 
     const segmentsById = new Map(allSegments.map((s) => [s.id, s]));
     let editBlueprint!: EditBlueprint;
     await runStage("edit_blueprint", async () => {
-      editBlueprint = runEditor(db, input.projectId, storyBlueprint, segmentsById, styleProfile, briefSpec, 1);
+      editBlueprint = runEditor(db, input.projectId, storyBlueprint, segmentsById, styleProfile, editorialBrief, 1);
     });
 
     await runStage("broll", async () => {
@@ -252,7 +296,7 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
 
     let creativeReview!: CreativeReview;
     await runStage("creative_review", async () => {
-      creativeReview = runCreativeDirector(editBlueprint, styleProfile, briefSpec);
+      creativeReview = runCreativeDirector(editBlueprint, styleProfile, editorialBrief);
       for (const note of creativeReview.notes) warnings.push(`[creative_review] ${note}`);
     });
 
@@ -404,7 +448,18 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
       db.setProjectStatus(input.projectId, "ready");
     });
 
-    return { finalRender, proxyRender, qcReport, editBlueprint, briefSpec, styleProfile, warnings };
+    const editorialSummary = buildEditorialSummary(
+      editBlueprint,
+      storyBlueprint,
+      segmentsById,
+      allSegments.length,
+      creativePlan,
+      briefSpec.targetDurationSec != null
+    );
+    console.log(`[pipeline] ─── RÉSUMÉ ÉDITORIAL ───`);
+    for (const line of editorialSummary) console.log(`[pipeline] ${line}`);
+
+    return { finalRender, proxyRender, qcReport, editBlueprint, briefSpec, styleProfile, warnings, editorialSummary };
   } finally {
     // Auto-cleanup temporary work directory (with retry for Remotion cache lock)
     try {

@@ -13,6 +13,7 @@ import type { Db } from "@video-editor/db";
 import type { ModelRouter } from "@video-editor/model-router";
 import { recordProviderCall } from "@video-editor/cost-ledger";
 import { parseAndValidateJson } from "./llm-json.js";
+import { resolveTargetDurationSec } from "./duration-policy.js";
 import { z } from "zod";
 
 function editScore(s: Segment): number {
@@ -145,7 +146,10 @@ function heuristicStoryBeats(
   }
 
   const remaining = chronological.filter((s) => s.id !== hook.id);
-  const budgetSec = Math.max(5, brief.targetDurationSec - styleProfile.hookDuration - 2);
+  // Durée cible : la demande explicite, sinon dérivée du contenu utile
+  // (jamais un défaut arbitraire). Le budget de sélection en découle.
+  const target = brief.targetDurationSec ?? resolveTargetDurationSec(brief, segments).targetSec;
+  const budgetSec = Math.max(3, target - styleProfile.hookDuration - 1);
   const byScore = [...remaining].sort((a, b) => editScore(b) - editScore(a));
 
   const picked: Segment[] = [];
@@ -208,14 +212,16 @@ async function llmStoryBeats(
       narrativeInterest: s.narrativeInterest,
     },
   }));
+  const targetForPrompt = brief.targetDurationSec ?? resolveTargetDurationSec(brief, segments).targetSec;
   const prompt = `Brief: ${JSON.stringify(brief)}\nStyle: ${JSON.stringify(styleProfile)}\nSegments disponibles (utilise UNIQUEMENT ces ids, n'en invente aucun):\n${JSON.stringify(compactSegments)}`;
   const result = await router.llm.complete({
     system: `Tu es le Story Director d'un monteur vidéo IA. Construis le storytelling à
 partir des segments fournis. Réponds UNIQUEMENT avec un JSON:
 {"beats":[{"role":"hook"|"context"|"development"|"tension"|"proof"|"conclusion"|"cta","segmentIds":["..."]}]}
 Règles : chaque segmentId DOIT exister dans la liste fournie. La durée totale
-des segments choisis doit approcher ${brief.targetDurationSec}s. Supprime les
-répétitions et hésitations. Priorité : clarté, rétention, naturel.`,
+des segments choisis doit approcher ${targetForPrompt}s (NE dépasse jamais la
+durée réelle du contenu — pas de remplissage). Supprime les répétitions et
+hésitations. Priorité : clarté, rétention, naturel.`,
     prompt,
     maxTokens: 1200,
   });
