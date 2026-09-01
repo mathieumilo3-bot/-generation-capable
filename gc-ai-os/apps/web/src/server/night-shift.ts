@@ -4,6 +4,7 @@ import { getRuntime } from "./runtime";
 const DEFAULT_PROMPT = `Operate as JARVIS autonomous night-shift pilot. Work continuously until the deadline or until every achievable objective is verified. CODED ≠ DONE; VERIFIED = DONE. Inspect real repository state before acting. Plan work, execute with available agents/tools, run tests and builds, inspect failures, repair them, retry within bounded limits, and never claim success without executable evidence. Prioritize JARVIS, the AI video editor, Commercial Radar and Mourad. Keep changes clean, reversible and documented. Never disable tests, invent evidence, silently swallow failures, or loop forever. Critical destructive, financial, credential, irreversible production or human-approval actions must be blocked and recorded for owner review. Non-critical failures should self-heal and continue with the next safe mission. Preserve durable checkpoints so a process restart resumes rather than duplicates work.`;
 
 const PROJECTS = ["JARVIS", "AI video editor", "Commercial Radar", "Mourad"];
+const MAX_RECOVERY_PASSES = 20;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -59,7 +60,8 @@ export async function runNightShift(runId: string): Promise<void> {
     nightStore.markRunning(run.id);
 
     try {
-      if (new Date(run.deadline).getTime() <= Date.now()) {
+      const deadlineMs = new Date(run.deadline).getTime();
+      if (!Number.isFinite(deadlineMs) || deadlineMs <= Date.now()) {
         nightStore.finish(run.id, "stopped", "Night shift deadline already elapsed.");
         return;
       }
@@ -77,15 +79,44 @@ export async function runNightShift(runId: string): Promise<void> {
         nightStore.attachObjective(run.id, objectiveId);
       }
 
-      const result = await runtime.goalEngine.pursue(objectiveId);
-      if (result.halted) {
-        nightStore.finish(run.id, "blocked", result.haltReason ?? "Execution halted by runtime safeguards.");
-      } else if (result.objective.status === "achieved") {
-        nightStore.finish(run.id, "completed");
-      } else if (result.objective.status === "awaiting_validation") {
-        nightStore.finish(run.id, "blocked", "One or more missions require human validation.");
-      } else {
-        nightStore.finish(run.id, "failed", "Objective did not reach an achieved state.");
+      // A single pursue() can legitimately leave non-critical missions in
+      // `failed` after their per-mission retry budget is exhausted. Keep the
+      // durable Night Shift alive and re-enter the GoalEngine so those
+      // missions get another bounded recovery pass instead of terminating
+      // the entire overnight run on the first recoverable failure.
+      for (let pass = 1; pass <= MAX_RECOVERY_PASSES; pass += 1) {
+        if (Date.now() >= deadlineMs) {
+          nightStore.finish(run.id, "stopped", `Night shift deadline reached after ${pass - 1} recovery passes.`);
+          return;
+        }
+
+        const result = await runtime.goalEngine.pursue(objectiveId);
+
+        if (result.halted) {
+          nightStore.finish(run.id, "blocked", result.haltReason ?? "Execution halted by runtime safeguards.");
+          return;
+        }
+
+        if (result.objective.status === "achieved") {
+          nightStore.finish(run.id, "completed");
+          return;
+        }
+
+        if (result.objective.status === "awaiting_validation") {
+          nightStore.finish(run.id, "blocked", "One or more missions require human validation.");
+          return;
+        }
+
+        // `failed` is recoverable here: pursue() is idempotent for completed
+        // missions and retries unfinished missions from durable state.
+        if (pass === MAX_RECOVERY_PASSES) {
+          nightStore.finish(
+            run.id,
+            "failed",
+            `Objective remained unachieved after ${MAX_RECOVERY_PASSES} bounded recovery passes.`,
+          );
+          return;
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
