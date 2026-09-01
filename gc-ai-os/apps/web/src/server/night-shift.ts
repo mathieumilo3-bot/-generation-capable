@@ -11,8 +11,7 @@ declare global {
 }
 
 function store(): SqliteNightShiftStore {
-  const runtime = getRuntime();
-  return new SqliteNightShiftStore(runtime.store.connection);
+  return new SqliteNightShiftStore(getRuntime().store.connection);
 }
 
 export function getNightShiftSnapshot() {
@@ -29,7 +28,7 @@ export function startNightShift(input: {
   prompt?: string;
   deadline?: string;
   projects?: string[];
-}): ReturnType<typeof store>["latest"] extends never ? never : string {
+}): string {
   const existing = store().resumable();
   if (existing) {
     void runNightShift(existing.id);
