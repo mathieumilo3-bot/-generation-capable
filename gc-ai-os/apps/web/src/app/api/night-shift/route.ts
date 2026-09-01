@@ -13,7 +13,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as StartBody | null;
-  const prompt = body?.prompt?.trim();
+  const prompt = body?.prompt?.trim() || DEFAULT_PROMPT;
   const projects = Array.isArray(body?.projects) ? body.projects.filter((value): value is string => typeof value === "string" && value.trim().length > 0) : undefined;
 
   if (body?.deadline) {
