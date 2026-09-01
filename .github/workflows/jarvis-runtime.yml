@@ -1,0 +1,76 @@
+name: JARVIS Runtime
+
+on:
+  pull_request:
+    paths:
+      - "gc-ai-os/**"
+      - ".github/workflows/jarvis-runtime.yml"
+  push:
+    branches: [main]
+    paths:
+      - "gc-ai-os/**"
+      - ".github/workflows/jarvis-runtime.yml"
+
+jobs:
+  verify-and-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gc-ai-os
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: gc-ai-os/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: Runtime smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @gc-ai-os/web start > /tmp/jarvis-next.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/api/health >/tmp/jarvis-health.json; then
+              test -s /tmp/jarvis-health.json
+              grep -q '"ok":true' /tmp/jarvis-health.json
+              curl --fail --silent http://127.0.0.1:3000/login >/dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/jarvis-next.log
+          exit 1
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify-and-smoke
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      FLY_APP: gc-jarvis-night-shift
+      RUNTIME_URL: https://gc-jarvis-night-shift.fly.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Provision app and persistent volume
+        run: |
+          set -euo pipefail
+          if ! flyctl apps list --json | python -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if any(x.get("Name")=="gc-jarvis-night-shift" for x in data) else 1)'; then
+            flyctl apps create "$FLY_APP" --yes
+          fi
+          if ! flyctl volumes list --app "$FLY_APP" --json | python -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if any(x.get("name")=="jarvis_data" or x.get("Name")=="jarvis_data" for x in data) else 1)'; then
+            flyctl volumes create jarvis_data --app "$FLY_APP" --region cdg --size 10 --yes
+          fi
+      - name: Deploy persistent JARVIS
+        run: flyctl deploy --config gc-ai-os/fly.toml --app "$FLY_APP" --remote-only --wait-timeout 10m
+      - name: Verify public JARVIS
+        run: curl --fail --retry 20 --retry-delay 3 --retry-connrefused "$RUNTIME_URL/api/health"
