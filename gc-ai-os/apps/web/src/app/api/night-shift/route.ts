@@ -23,6 +23,10 @@ export async function POST(request: Request) {
     }
   }
 
-  const runId = startNightShift({ prompt, deadline: body?.deadline, projects });
+  const input: { prompt: string; deadline?: string; projects?: string[] } = { prompt };
+  if (body?.deadline) input.deadline = body.deadline;
+  if (projects?.length) input.projects = projects;
+
+  const runId = startNightShift(input);
   return NextResponse.json({ runId, ...(await getNightShiftSnapshot()) }, { status: 202 });
 }
