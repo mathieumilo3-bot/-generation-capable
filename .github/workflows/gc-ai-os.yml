@@ -32,13 +32,11 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-  deploy-runtime-and-ui:
+  deploy-persistent-runtime:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: verify
     runs-on: ubuntu-latest
     env:
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: 045a06ee-a132-4fe0-a87d-0acd33bdc5d0
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       FLY_APP: gc-jarvis-night-shift
       RUNTIME_URL: https://gc-jarvis-night-shift.fly.dev
@@ -48,38 +46,18 @@ jobs:
       - name: Install Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Provision Fly app
+      - name: Provision Fly app and volume
         run: |
           set -euo pipefail
           if ! flyctl apps list --json | python -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if any(x.get("Name")=="gc-jarvis-night-shift" for x in data) else 1)'; then
             flyctl apps create "$FLY_APP" --yes
           fi
-          if ! flyctl volumes list --app "$FLY_APP" --json | python -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if any(x.get("name")=="jarvis_data" for x in data) else 1)'; then
+          if ! flyctl volumes list --app "$FLY_APP" --json | python -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if any(x.get("name")=="jarvis_data" or x.get("Name")=="jarvis_data" for x in data) else 1)'; then
             flyctl volumes create jarvis_data --app "$FLY_APP" --region cdg --size 10 --yes
           fi
-
-      - name: Rotate runtime owner token
-        id: runtime-token
-        shell: bash
-        run: |
-          set -euo pipefail
-          token="$(openssl rand -hex 32)"
-          echo "token=$token" >> "$GITHUB_OUTPUT"
-          flyctl secrets set "JARVIS_OWNER_TOKEN=$token" --app "$FLY_APP"
 
       - name: Deploy persistent JARVIS runtime
         run: flyctl deploy --config gc-ai-os/fly.toml --app "$FLY_APP" --remote-only --wait-timeout 10m
 
-      - name: Verify persistent runtime
+      - name: Verify public runtime
         run: curl --fail --retry 10 --retry-delay 3 --retry-connrefused "$RUNTIME_URL/api/health"
-
-      - name: Configure Netlify runtime bridge
-        working-directory: gc-ai-os
-        run: |
-          set -euo pipefail
-          npx --yes netlify-cli@latest env:set JARVIS_RUNTIME_URL "$RUNTIME_URL" --context production --scope functions
-          npx --yes netlify-cli@latest env:set JARVIS_OWNER_TOKEN "${{ steps.runtime-token.outputs.token }}" --context production --scope functions --secret
-
-      - name: Deploy Night Shift UI to Netlify
-        working-directory: gc-ai-os
-        run: npx --yes netlify-cli@latest deploy --build --prod --site "$NETLIFY_SITE_ID"
