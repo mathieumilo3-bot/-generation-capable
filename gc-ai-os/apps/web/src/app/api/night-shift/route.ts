@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { getNightShiftSnapshot, startNightShift, DEFAULT_PROMPT, PROJECTS } from "@/server/night-shift";
+import {
+  getNightShiftSnapshot,
+  resumeNightShiftOnBoot,
+  startNightShift,
+  DEFAULT_PROMPT,
+  PROJECTS,
+} from "@/server/night-shift";
 
 interface StartBody {
   prompt?: string;
@@ -8,8 +14,13 @@ interface StartBody {
 }
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET() {
+  // Route-bound recovery avoids importing the Node-only Night Shift runtime from
+  // Next's global instrumentation bundle while still recovering resumable work
+  // whenever the persistent service receives traffic.
+  resumeNightShiftOnBoot();
   return NextResponse.json({ ...(await getNightShiftSnapshot()), defaults: { prompt: DEFAULT_PROMPT, projects: PROJECTS } });
 }
 
