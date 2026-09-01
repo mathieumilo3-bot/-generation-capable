@@ -1,0 +1,10 @@
+[build]
+  command = "pnpm --filter @gc-ai-os/web build"
+  publish = "apps/web/.next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--version"
+
+[functions]
+  node_bundler = "esbuild"
