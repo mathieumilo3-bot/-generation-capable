@@ -1,7 +1,7 @@
 import { SqliteNightShiftStore } from "@gc-ai-os/runtime";
 import { getRuntime } from "./runtime";
 
-const DEFAULT_PROMPT = `Operate as JARVIS autonomous night-shift pilot. Work continuously until the deadline or until every achievable objective is verified. CODED ≠ DONE; VERIFIED = DONE. Inspect real repository state before acting. Plan work, execute with the available agents/tools, run tests and builds, inspect failures, repair them, retry within bounded limits, and never claim success without executable evidence. Prioritize the AI video editor, Commercial Radar, Mourad and JARVIS itself. Keep changes clean, reversible and documented. Never disable tests, invent evidence, silently swallow failures, or loop forever. Critical destructive, financial, credential, irreversible production or human-approval actions must be blocked and recorded for owner review. Non-critical failures should self-heal and continue with the next safe mission. Preserve durable checkpoints so a process restart resumes rather than duplicates work.`;
+const DEFAULT_PROMPT = `Operate as JARVIS autonomous night-shift pilot. Work continuously until the deadline or until every achievable objective is verified. CODED ≠ DONE; VERIFIED = DONE. Inspect real repository state before acting. Plan work, execute with available agents/tools, run tests and builds, inspect failures, repair them, retry within bounded limits, and never claim success without executable evidence. Prioritize JARVIS, the AI video editor, Commercial Radar and Mourad. Keep changes clean, reversible and documented. Never disable tests, invent evidence, silently swallow failures, or loop forever. Critical destructive, financial, credential, irreversible production or human-approval actions must be blocked and recorded for owner review. Non-critical failures should self-heal and continue with the next safe mission. Preserve durable checkpoints so a process restart resumes rather than duplicates work.`;
 
 const PROJECTS = ["JARVIS", "AI video editor", "Commercial Radar", "Mourad"];
 
@@ -14,13 +14,13 @@ function store(): SqliteNightShiftStore {
   return new SqliteNightShiftStore(getRuntime().store.connection);
 }
 
-export function getNightShiftSnapshot() {
+export async function getNightShiftSnapshot() {
   const runtime = getRuntime();
   const run = store().latest();
   if (!run) return { run: null, objective: null, missions: [] };
 
-  const objective = run.objectiveId ? runtime.goalStore.get(run.objectiveId) : undefined;
-  const missions = run.objectiveId ? runtime.goalStore.listMissionsForObjective(run.objectiveId) : [];
+  const objective = run.objectiveId ? await runtime.goalStore.get(run.objectiveId) : undefined;
+  const missions = run.objectiveId ? await runtime.goalStore.listMissionsForObjective(run.objectiveId) : [];
   return { run, objective: objective ?? null, missions };
 }
 
