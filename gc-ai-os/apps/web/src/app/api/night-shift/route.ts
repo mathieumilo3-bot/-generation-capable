@@ -8,7 +8,7 @@ interface StartBody {
 }
 
 export async function GET() {
-  return NextResponse.json({ ...getNightShiftSnapshot(), defaults: { prompt: DEFAULT_PROMPT, projects: PROJECTS } });
+  return NextResponse.json({ ...(await getNightShiftSnapshot()), defaults: { prompt: DEFAULT_PROMPT, projects: PROJECTS } });
 }
 
 export async function POST(request: Request) {
@@ -24,5 +24,5 @@ export async function POST(request: Request) {
   }
 
   const runId = startNightShift({ prompt, deadline: body?.deadline, projects });
-  return NextResponse.json({ runId, ...getNightShiftSnapshot() }, { status: 202 });
+  return NextResponse.json({ runId, ...(await getNightShiftSnapshot()) }, { status: 202 });
 }
