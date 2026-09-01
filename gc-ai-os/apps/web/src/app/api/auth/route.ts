@@ -3,12 +3,13 @@ import { isOwnerToken, OWNER_COOKIE } from "@/server/owner-auth";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { token?: string } | null;
-  if (!isOwnerToken(body?.token)) {
+  const token = body?.token ?? "";
+  if (!(await isOwnerToken(token))) {
     return NextResponse.json({ error: "Identifiant JARVIS invalide." }, { status: 401 });
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(OWNER_COOKIE, body!.token!, {
+  response.cookies.set(OWNER_COOKIE, token, {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
