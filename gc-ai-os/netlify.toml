@@ -1,3 +1,4 @@
+# Independent JARVIS deployment: keep the Next runtime plugin explicit for API routes.
 [build]
   command = "pnpm --filter @gc-ai-os/web build"
   publish = "apps/web/.next"
