@@ -1,14 +1,13 @@
-import { createHash, timingSafeEqual } from "node:crypto";
-
-// High-entropy owner token. Only its SHA-256 digest is stored in source control.
-// The raw token is intentionally not persisted by the application.
 const OWNER_TOKEN_SHA256 = "acfc0baca30f02edf7ee20743e7d283d0a47e5f3813978c78b570cd83128bab3";
 
-export function isOwnerToken(value: string | null | undefined): boolean {
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function isOwnerToken(value: string | null | undefined): Promise<boolean> {
   if (!value) return false;
-  const actual = createHash("sha256").update(value).digest();
-  const expected = Buffer.from(OWNER_TOKEN_SHA256, "hex");
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
+  return (await sha256Hex(value)) === OWNER_TOKEN_SHA256;
 }
 
 export const OWNER_COOKIE = "jarvis_session";
