@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const OWNER_COOKIE = "jarvis_session";
 const OWNER_TOKEN_SHA256 = "acfc0baca30f02edf7ee20743e7d283d0a47e5f3813978c78b570cd83128bab3";
+const NETLIFY_PRIVATE_MODE = process.env.JARVIS_NETLIFY_PRIVATE_MODE === "1";
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -10,6 +11,11 @@ async function sha256Hex(value: string): Promise<string> {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (NETLIFY_PRIVATE_MODE) {
+    return NextResponse.next();
+  }
+
   if (pathname === "/login" || pathname === "/api/auth" || pathname === "/api/health" || pathname.startsWith("/_next/")) {
     return NextResponse.next();
   }
