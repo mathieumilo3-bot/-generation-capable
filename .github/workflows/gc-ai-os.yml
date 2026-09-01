@@ -1,0 +1,32 @@
+name: GC AI OS
+
+on:
+  pull_request:
+    paths:
+      - "gc-ai-os/**"
+      - ".github/workflows/gc-ai-os.yml"
+  push:
+    branches: [main]
+    paths:
+      - "gc-ai-os/**"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gc-ai-os
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: gc-ai-os/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
