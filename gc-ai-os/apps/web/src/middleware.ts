@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { OWNER_COOKIE } from "./server/owner-auth";
 
+const OWNER_COOKIE = "jarvis_session";
 const OWNER_TOKEN_SHA256 = "acfc0baca30f02edf7ee20743e7d283d0a47e5f3813978c78b570cd83128bab3";
 
 async function sha256Hex(value: string): Promise<string> {
