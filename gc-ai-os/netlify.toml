@@ -1,4 +1,5 @@
 # Independent JARVIS deployment: keep the Next runtime plugin explicit for API routes.
+# CI verification trigger after the lockfile refresh.
 [build]
   command = "pnpm --filter @gc-ai-os/web build"
   publish = "apps/web/.next"
