@@ -79,10 +79,6 @@ create table if not exists audit_log (
   executed_at text not null
 );
 
--- ---------------------------------------------------------------------
--- Moteur d'objectifs (voir docs/gc-ai-os/10-moteur-objectifs.md)
--- ---------------------------------------------------------------------
-
 create table if not exists objectives (
   id text primary key,
   title text not null,
@@ -143,10 +139,6 @@ create table if not exists deliverables (
 
 create index if not exists deliverables_objective_idx on deliverables (objective_id);
 
--- ---------------------------------------------------------------------
--- Télémétrie et arbitrages (voir 12-competences.md, 13-directeur-general.md)
--- ---------------------------------------------------------------------
-
 create table if not exists agent_skills (
   agent_id text not null,
   skill text not null,
@@ -172,14 +164,6 @@ create table if not exists executive_decisions (
 );
 
 create index if not exists executive_decisions_objective_idx on executive_decisions (objective_id);
-
--- ---------------------------------------------------------------------
--- GC AI Factory (voir 11-factory.md) — agents déclaratifs, pas de code
--- ---------------------------------------------------------------------
-
--- ---------------------------------------------------------------------
--- Étage exécutif (voir 14-executive-brain.md, 15-human-brain.md)
--- ---------------------------------------------------------------------
 
 create table if not exists metric_readings (
   metric_id text primary key,
@@ -217,4 +201,21 @@ create table if not exists published_agents (
   created_by text not null,
   created_at text not null
 );
+
+create table if not exists night_shift_runs (
+  id text primary key,
+  title text not null,
+  prompt text not null,
+  projects text not null default '[]',
+  deadline text not null,
+  objective_id text,
+  status text not null default 'queued',
+  started_at text,
+  finished_at text,
+  last_error text,
+  created_at text not null,
+  updated_at text not null
+);
+
+create index if not exists night_shift_runs_status_idx on night_shift_runs (status, created_at);
 `;
