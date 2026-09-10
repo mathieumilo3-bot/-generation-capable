@@ -15,7 +15,10 @@ exports.handler = async (event) => {
     const limit = Math.min(Math.max(Number(url.searchParams.get('limit') || 50), 1), 100);
     const r = await supabaseAdminRequest(`/rest/v1/ai_coaching_reports?select=*&order=created_at.desc&limit=${limit}`);
     if (!r.ok) return jsonResponse(500, { error: 'READ_FAILED' });
-    return jsonResponse(200, { reports: await r.json() });
+    const reports = await r.json();
+    const replies = await supabaseAdminRequest('/rest/v1/ai_coaching_replies?select=id,report_id,user_id,admin_email,sender_type,message,created_at,read_at,is_training_signal,training_category&order=created_at.asc&limit=1000');
+    const rules = await supabaseAdminRequest('/rest/v1/ai_coaching_rules?select=id,title,rule_text,category,active,priority,source_reply_id,created_at,updated_at&order=updated_at.desc&limit=200');
+    return jsonResponse(200, { reports: Array.isArray(reports) ? reports : [], replies: replies.ok ? await replies.json() : [], rules: rules.ok ? await rules.json() : [] });
   }
 
   let payload;
