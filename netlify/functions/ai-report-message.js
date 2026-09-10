@@ -1,6 +1,32 @@
 const { verifySessionToken, supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
+const { sendToSubscription } = require('./_lib/notifications/webpush');
 
 const MAX_MESSAGE = 12000;
+
+async function notifyAdmins(memberEmail, reportId, message) {
+  try {
+    const adminsResp = await supabaseAdminRequest('/rest/v1/admins?select=email');
+    if (!adminsResp.ok) return;
+    const admins = await adminsResp.json();
+    for (const admin of Array.isArray(admins) ? admins : []) {
+      const email = (admin.email || '').toLowerCase(); if (!email) continue;
+      const usersResp = await supabaseAdminRequest(`/auth/v1/admin/users?email=${encodeURIComponent(email)}`);
+      if (!usersResp.ok) continue;
+      const users = await usersResp.json();
+      const user = Array.isArray(users?.users) ? users.users.find(u => (u.email || '').toLowerCase() === email) : null;
+      if (!user?.id) continue;
+      const subsResp = await supabaseAdminRequest(`/rest/v1/push_subscriptions?user_id=eq.${user.id}&revoked_at=is.null&select=id,endpoint,p256dh,auth_key`);
+      if (!subsResp.ok) continue;
+      const subs = await subsResp.json(); let sent = false;
+      for (const sub of Array.isArray(subs) ? subs : []) {
+        const r = await sendToSubscription(sub, { title:'💬 Nouveau message membre', body:`${memberEmail} a répondu à ton échange IA.`, tag:'gc-ai-member-'+reportId, url:'/.netlify/functions/admin-ai-reports-page' });
+        if (r.ok) sent = true;
+        if (r.expired) await supabaseAdminRequest(`/rest/v1/push_subscriptions?id=eq.${sub.id}`, { method:'PATCH', headers:{Prefer:'return=minimal'}, body:JSON.stringify({revoked_at:new Date().toISOString()}) });
+      }
+      await supabaseAdminRequest('/rest/v1/notification_log',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({audience:'admin',user_id:user.id,category:'admin.ai.reply',event_key:`ai-member-message:${reportId}`,title:'Nouveau message membre',body:`${memberEmail} a répondu à son échange IA.`,status:sent?'sent':'skipped_no_subscription',metadata:{report_id:reportId}})});
+    }
+  } catch(e){ console.error('[ai-report-message] admin notification:',e); }
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return jsonResponse(405, { error: 'Method not allowed' });
@@ -27,5 +53,6 @@ exports.handler = async (event) => {
   });
   if (!r.ok) return jsonResponse(500, { error: 'MESSAGE_SAVE_FAILED' });
   const rows = await r.json();
+  await notifyAdmins(identity.email, reportId, message);
   return jsonResponse(200, { ok: true, message_id: Array.isArray(rows) ? rows[0]?.id || null : null });
 };
