@@ -1,22 +1,22 @@
 // tutorial.js
-// Academy compatibility + condensed four-chapter flow.
+// Academy compatibility + condensed sourced four-chapter flow.
 (function(global){
   'use strict';
 
   global.GCTuto={start:function(){},startIfFirstVisit:function(){},hasSeen:function(){return true;},reset:function(){},close:function(){}};
-
   function getModules(){try{if(typeof MODULES!=='undefined'&&MODULES)return MODULES;}catch(e){}return global.MODULES||{};}
   function getState(){try{if(typeof STATE!=='undefined'&&STATE)return STATE;}catch(e){}return global.STATE||{};}
   function esc(v){if(typeof global.escapeHtml==='function')return global.escapeHtml(String(v==null?'':v));return String(v==null?'':v).replace(/[&<>\"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'})[c];});}
 
-  // Temporary curriculum: the former Modules 04-06 are hidden, not deleted.
-  // Former Module 07 becomes visible Chapter 04 so the learner sees one coherent 4-step path.
-  var ACTIVE=[1,2,3,7];
+  // Temporary active curriculum: 01/03/07 are hidden because their current
+  // records do not contain a reliable YouTube source. Their data is preserved.
+  // The four sourced modules become the visible, coherent path.
+  var ACTIVE=[2,4,5,6];
   var DISPLAY={
-    1:{num:'01',title:'Décision & Engagement'},
-    2:{num:'02',title:'Mental & Discipline'},
-    3:{num:'03',title:'Communication & Impact'},
-    7:{num:'04',title:'Closing & Certitude'}
+    2:{num:'01',title:'Mental & Discipline'},
+    4:{num:'02',title:'Valeur & Préparation'},
+    5:{num:'03',title:'Prospection'},
+    6:{num:'04',title:'Entretien de vente'}
   };
   function activeModules(){var src=getModules();return ACTIVE.map(function(id){return src[id]||src[String(id)];}).filter(Boolean);}
 
@@ -44,14 +44,14 @@
     var done=mods.filter(function(m){return m.status==='done'||Number(m.pct)>=100;}).length;
     var total=Math.round(mods.reduce(function(a,m){return a+Math.max(0,Math.min(100,Number(m.pct)||0));},0)/mods.length);
     var unlocked=!!getState().module1Validated;
-    var rows=mods.map(function(m,i){var id=ACTIVE[i],d=DISPLAY[id],p=Math.max(0,Math.min(100,Number(m.pct)||0)),isDone=m.status==='done'||p>=100,locked=id!==1&&!unlocked;var label=locked?'Verrouillé':isDone?'Terminé':p?'En cours':'À commencer';return '<button class="gc-ac-row '+(isDone?'is-done':'')+'" type="button" '+(locked?'disabled':'')+' data-gc-module="'+id+'"><span class="gc-ac-num">'+(isDone?'✓':d.num)+'</span><span class="gc-ac-copy"><span class="gc-ac-name">'+esc(d.title)+'</span><span class="gc-ac-sub">'+esc(m.mission||'')+'</span><span class="gc-ac-meter"><span style="width:'+p+'%"></span></span></span><span class="gc-ac-meta">'+label+' <span class="gc-ac-chevron">›</span></span></button>';}).join('');
+    var rows=mods.map(function(m,i){var id=ACTIVE[i],d=DISPLAY[id],p=Math.max(0,Math.min(100,Number(m.pct)||0)),isDone=m.status==='done'||p>=100,locked=id!==2&&!unlocked;var label=locked?'Verrouillé':isDone?'Terminé':p?'En cours':'À commencer';return '<button class="gc-ac-row '+(isDone?'is-done':'')+'" type="button" '+(locked?'disabled':'')+' data-gc-module="'+id+'"><span class="gc-ac-num">'+(isDone?'✓':d.num)+'</span><span class="gc-ac-copy"><span class="gc-ac-name">'+esc(d.title)+'</span><span class="gc-ac-sub">'+esc(m.mission||'')+'</span><span class="gc-ac-meter"><span style="width:'+p+'%"></span></span></span><span class="gc-ac-meta">'+label+' <span class="gc-ac-chevron">›</span></span></button>';}).join('');
     page.innerHTML='<div class="gc-ac-wrap"><div class="gc-ac-head"><div><div class="gc-ac-kicker">Académie</div><div class="gc-ac-title">Ton parcours</div></div><div class="gc-ac-progress"><div>'+done+' / 4 chapitres terminés</div><div class="gc-ac-progressbar"><span style="width:'+total+'%"></span></div></div></div><div class="gc-ac-list">'+rows+'</div></div>';
     page.querySelectorAll('[data-gc-module]').forEach(function(b){b.onclick=function(){openModule(Number(b.dataset.gcModule));};});return true;
   }
 
   function openModule(id){
     var src=getModules(),m=src[id]||src[String(id)];if(!m||ACTIVE.indexOf(Number(id))<0)return;
-    if(id!==1&&!getState().module1Validated){if(typeof global.openGateModal==='function')global.openGateModal();if(typeof global.toast==='function')global.toast('🔑 Termine le Module 01 pour débloquer la suite');return;}
+    if(id!==2&&!getState().module1Validated){if(typeof global.openGateModal==='function')global.openGateModal();if(typeof global.toast==='function')global.toast('🔑 Termine le Chapitre 01 pour débloquer la suite');return;}
     var d=DISPLAY[id],title=document.getElementById('mod-detail-title'),sub=document.getElementById('mod-detail-sub'),badge=document.getElementById('mod-detail-badge');
     if(title)title.textContent='Chapitre '+d.num;if(sub)sub.textContent='— '+d.title;if(badge)badge.textContent='';
     renderDetail(id,m,d);if(typeof global.go==='function')global.go('module-detail',null);global.scrollTo(0,0);
