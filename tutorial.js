@@ -74,7 +74,7 @@
       #page-module-detail .gc-video-title{font-size:14px;font-weight:750;line-height:1.3}
       #page-module-detail .gc-video-desc{font-size:11.5px;color:var(--t3);margin-top:4px;line-height:1.4}
       #page-module-detail .gc-video-state{font-size:11px;color:var(--t3);white-space:nowrap}
-      #page-module-detail .gc-resource{display:flex;align-items:center;gap:12px;padding:14px 15px;border:1px solid var(--b);border-radius:12px;background:var(--bg1);text-decoration:none;color:inherit}
+      #page-module-detail .gc-resource{display:flex;align-items:center;gap:12px;padding:14px 15px;border:1px solid var(--b);border-radius:12px;background:var(--bg1);text-decoration:none;color:inherit;width:100%;cursor:pointer;text-align:left;font-family:inherit}
       #page-module-detail .gc-resource:hover{border-color:var(--bh)}
       #page-module-detail .gc-resource-icon{font-size:20px;flex:0 0 auto}
       #page-module-detail .gc-resource-copy{min-width:0;flex:1}
@@ -82,6 +82,13 @@
       #page-module-detail .gc-resource-desc{font-size:11px;color:var(--t3);margin-top:3px}
       #page-module-detail .gc-resource-action{font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap}
       #page-module-detail .gc-empty{font-size:13px;color:var(--t3);padding:16px 0}
+      #page-module-detail .gc-flow-back{display:inline-flex;align-items:center;gap:7px;margin:0 0 22px;border:1px solid var(--b);background:rgba(255,255,255,.04);color:var(--t2);border-radius:10px;padding:9px 13px;font:600 12px inherit;cursor:pointer}
+      #page-module-detail .gc-flow-back:hover{border-color:var(--bh);color:var(--t1)}
+      #page-module-detail .gc-flow-nav{display:flex;gap:10px;margin-top:34px;padding-top:20px;border-top:1px solid var(--b)}
+      #page-module-detail .gc-flow-nav button{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--b);background:var(--bg1);color:var(--t1);border-radius:11px;padding:13px 12px;font:650 12px inherit;cursor:pointer}
+      #page-module-detail .gc-flow-nav button:hover{border-color:var(--bh);background:var(--bg2)}
+      #page-module-detail .gc-flow-nav button:disabled{opacity:.28;cursor:default}
+      #page-module-detail .gc-flow-nav .gc-flow-next{border-color:rgba(201,168,76,.28);color:var(--gold2)}
       @media(max-width:640px){
         #page-academie .gc-ac-wrap,#page-module-detail .gc-simple-wrap{padding:22px 16px 64px}
         #page-academie .gc-ac-head{align-items:flex-start;flex-direction:column;margin-bottom:20px}
@@ -94,6 +101,7 @@
         #page-module-detail .gc-simple-title{font-size:27px}
         #page-module-detail .gc-video-row{padding:13px}
         #page-module-detail .gc-video-state{display:none}
+        #page-module-detail .gc-flow-nav button{padding:12px 8px;font-size:11px}
       }
     `;
     document.head.appendChild(style);
@@ -233,11 +241,59 @@
       renderSimpleModule(num);
       if (typeof global.go === 'function') global.go('module-detail', null);
       global.scrollTo(0, 0);
+      global.setTimeout(function(){ renderModuleNavigation(num); }, 0);
     }
 
     simpleOpenModPage.__gcSimpleModule = true;
     global.openModPage = simpleOpenModPage;
     return true;
+  }
+
+  function renderModuleNavigation(num) {
+    var page = document.getElementById('mod-detail-content');
+    if (!page) return;
+    var mods = moduleList();
+    var index = mods.findIndex(function(m){ return parseInt(m.num,10) === Number(num); });
+    if (index < 0) return;
+
+    var oldBack = page.querySelector('.gc-flow-back');
+    if (oldBack) oldBack.remove();
+    var oldNav = page.querySelector('.gc-flow-nav');
+    if (oldNav) oldNav.remove();
+
+    var back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'gc-flow-back';
+    back.textContent = '‹  Tous les modules';
+    back.addEventListener('click', function(){
+      if (typeof global.go === 'function') global.go('academie', null);
+      global.scrollTo(0, 0);
+    });
+    page.insertBefore(back, page.firstChild);
+
+    var nav = document.createElement('div');
+    nav.className = 'gc-flow-nav';
+
+    var prev = document.createElement('button');
+    prev.type = 'button';
+    prev.textContent = index > 0 ? '‹  Module ' + mods[index - 1].num : '‹  Début';
+    prev.disabled = index === 0;
+    prev.addEventListener('click', function(){
+      if (index > 0 && typeof global.openModPage === 'function') global.openModPage(parseInt(mods[index - 1].num,10));
+    });
+
+    var next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'gc-flow-next';
+    next.textContent = index < mods.length - 1 ? 'Module ' + mods[index + 1].num + '  ›' : 'Fin  ›';
+    next.disabled = index === mods.length - 1;
+    next.addEventListener('click', function(){
+      if (index < mods.length - 1 && typeof global.openModPage === 'function') global.openModPage(parseInt(mods[index + 1].num,10));
+    });
+
+    nav.appendChild(prev);
+    nav.appendChild(next);
+    page.appendChild(nav);
   }
 
   function installReliableVideoReplay() {
