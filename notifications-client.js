@@ -45,7 +45,7 @@
     if (session && session.access_token) headers.Authorization = 'Bearer ' + session.access_token;
     const resp = await fetch('/.netlify/functions/' + path, Object.assign({}, options, { headers }));
     let data = null;
-    try { data = await resp.json(); } catch (e) { /* réponse non-JSON (ex: page HTML de désinscription) */ }
+    try { data = await resp.json(); } catch (e) { /* réponse non-JSON */ }
     return { ok: resp.ok, status: resp.status, data };
   }
 
@@ -98,8 +98,6 @@
     });
     return true;
   }
-
-  // ── Modale de réglages ──────────────────────────────────────────────────
 
   const STYLE = `
     #gcnotif-bell{position:fixed;bottom:20px;right:20px;z-index:9998;width:52px;height:52px;
@@ -177,8 +175,6 @@
   function renderSettingsForm(overlay, session, data) {
     const prefs = data.preferences;
     const categories = data.availableCategories || [];
-    const hourOptions = Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${h === prefs.active_hours_start ? '' : ''}>${String(h).padStart(2, '0')}h</option>`);
-
     const modal = document.createElement('div');
     modal.id = 'gcnotif-modal';
     modal.innerHTML = `
@@ -221,7 +217,7 @@
       const enabled = modal.querySelector('#gcnotif-enabled').checked;
       if (enabled) {
         const granted = await enablePush(session);
-        if (!granted) return; // l'utilisateur a refusé / navigateur non supporté — inutile d'enregistrer un état incohérent
+        if (!granted) return;
       }
       const categoriesPayload = {};
       modal.querySelectorAll('.gcnotif-cat').forEach(el => {
@@ -241,8 +237,6 @@
     };
   }
 
-  // ── Capture prospect (mission section 3) ────────────────────────────────
-
   async function captureLead(email, firstName, source) {
     try {
       await fetch('/.netlify/functions/capture-lead', {
@@ -250,10 +244,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email || '', first_name: firstName || '', source: source || 'signup_modal' }),
       });
-    } catch (e) { /* best-effort, ne doit jamais gêner le parcours d'inscription */ }
+    } catch (e) {}
   }
-
-  // ── Bouton "Oui" de la notification "objectif du jour" ──────────────────
 
   async function handleGoalActionFromUrl() {
     const params = new URLSearchParams(window.location.search);
@@ -268,7 +260,14 @@
     notify('🎯 Objectif du jour confirmé — bonne prospection !');
   }
 
-  // ── Cycle de vie ─────────────────────────────────────────────────────────
+  function loadAiReportBridge() {
+    if (document.querySelector('script[data-gc-ai-report-bridge]')) return;
+    const script = document.createElement('script');
+    script.src = '/ai-report-client.js';
+    script.defer = true;
+    script.dataset.gcAiReportBridge = '1';
+    document.head.appendChild(script);
+  }
 
   async function refreshBellVisibility() {
     const session = await getSession();
@@ -278,15 +277,13 @@
 
   function init() {
     registerServiceWorker();
+    loadAiReportBridge();
     refreshBellVisibility();
     handleGoalActionFromUrl();
 
     if (window.supa && window.supa.auth && typeof window.supa.auth.onAuthStateChange === 'function') {
       window.supa.auth.onAuthStateChange(() => refreshBellVisibility());
     } else {
-      // window.supa peut être initialisé juste après ce script — un court
-      // sondage suffit, pas besoin d'une dépendance d'ordre de chargement plus
-      // stricte pour un simple affichage/masquage de bouton.
       let attempts = 0;
       const poll = setInterval(() => {
         attempts++;
