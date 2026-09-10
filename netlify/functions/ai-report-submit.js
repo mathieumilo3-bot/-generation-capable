@@ -1,10 +1,10 @@
-// Collecte les résultats des outils IA pour que l'équipe Génération Capable
-// puisse les relire et faire un retour humain au vendeur.
+// Collecte les résultats IA avec le contexte exact de la requête pour permettre une supervision humaine fiable.
 const { verifySessionToken, supabaseAdminRequest, jsonResponse } = require('./_lib/supabase-admin');
 const { sendToSubscription } = require('./_lib/notifications/webpush');
 
 const MAX_RESULT = 30000;
-const MAX_PROMPT = 4000;
+const MAX_PROMPT = 20000;
+const MAX_SYSTEM = 20000;
 function clean(v, max) { return typeof v === 'string' ? v.trim().slice(0, max) : ''; }
 
 async function notifyAdmins(report) {
@@ -41,7 +41,29 @@ exports.handler = async (event) => {
   let payload; try { payload = JSON.parse(event.body || '{}'); } catch { return jsonResponse(400, { error: 'INVALID_JSON' }); }
   const resultText = clean(payload.result_text, MAX_RESULT);
   if (!resultText) return jsonResponse(400, { error: 'RESULT_REQUIRED' });
-  const report = { user_id:identity.id,user_email:identity.email,user_name:clean(payload.user_name,160)||null,tool:clean(payload.tool,100)||'Outil IA',prompt_excerpt:clean(payload.prompt_excerpt,MAX_PROMPT)||null,result_text:resultText,source:payload.source==='manual_share'?'manual_share':'ai_tool',shared_with_admin:true,shared_at:new Date().toISOString(),metadata:payload.metadata&&typeof payload.metadata==='object'?payload.metadata:{} };
+
+  const inputMessages = Array.isArray(payload.input_messages) ? payload.input_messages.slice(0, 40) : [];
+  const systemPrompt = clean(payload.system_prompt, MAX_SYSTEM) || null;
+  const responsePayload = payload.response_payload && typeof payload.response_payload === 'object' ? payload.response_payload : null;
+  const report = {
+    user_id: identity.id,
+    user_email: identity.email,
+    user_name: clean(payload.user_name,160) || null,
+    tool: clean(payload.tool,100) || 'Outil IA',
+    prompt_excerpt: clean(payload.prompt_excerpt,MAX_PROMPT) || null,
+    result_text: resultText,
+    source: payload.source === 'manual_share' ? 'manual_share' : 'ai_tool',
+    shared_with_admin: true,
+    shared_at: new Date().toISOString(),
+    input_messages: inputMessages,
+    system_prompt: systemPrompt,
+    response_payload: responsePayload,
+    provider: clean(payload.provider,60) || null,
+    model: clean(payload.model,120) || null,
+    conversation_key: clean(payload.conversation_key,160) || null,
+    status: clean(payload.status,40) || 'completed',
+    metadata: payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}
+  };
   const r = await supabaseAdminRequest('/rest/v1/ai_coaching_reports',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(report)});
   if (!r.ok) { console.error('[ai-report-submit] Supabase:',r.status,await r.text().catch(()=>'')); return jsonResponse(500,{error:'SAVE_FAILED'}); }
   const rows=await r.json(); const saved=Array.isArray(rows)?rows[0]:null; if(saved) await notifyAdmins(saved);
