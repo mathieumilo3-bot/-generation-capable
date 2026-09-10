@@ -11,6 +11,24 @@
     close: function () {}
   };
 
+  // MODULES and STATE are declared with top-level `let` in index.html.
+  // They are global lexical bindings, not window properties. Reading only
+  // window.MODULES/window.STATE therefore made the Academy stay forever on
+  // "Chargement des modules..." even after Supabase had finished loading.
+  function getModules() {
+    try {
+      if (typeof MODULES !== 'undefined' && MODULES) return MODULES;
+    } catch (e) {}
+    return global.MODULES || {};
+  }
+
+  function getState() {
+    try {
+      if (typeof STATE !== 'undefined' && STATE) return STATE;
+    } catch (e) {}
+    return global.STATE || {};
+  }
+
   function addAcademyStyles() {
     if (document.getElementById('gc-academy-classic-styles')) return;
     var style = document.createElement('style');
@@ -57,10 +75,11 @@
   }
 
   function moduleList() {
-    if (!global.MODULES) return [];
-    return Object.keys(global.MODULES)
+    var source = getModules();
+    if (!source || typeof source !== 'object') return [];
+    return Object.keys(source)
       .filter(function (k) { return /^\d+$/.test(k); })
-      .map(function (k) { return global.MODULES[k]; })
+      .map(function (k) { return source[k]; })
       .filter(Boolean)
       .sort(function (a,b) { return parseInt(a.num,10) - parseInt(b.num,10); });
   }
@@ -79,7 +98,8 @@
 
     var completed = mods.filter(function(m){ return m.status === 'done' || Number(m.pct) >= 100; }).length;
     var totalPct = Math.round(mods.reduce(function(sum,m){ return sum + Math.max(0, Math.min(100, Number(m.pct) || 0)); }, 0) / mods.length);
-    var unlocked = !!(global.STATE && global.STATE.module1Validated);
+    var state = getState();
+    var unlocked = !!(state && state.module1Validated);
 
     var rows = mods.map(function(m){
       var n = parseInt(m.num,10);
@@ -133,7 +153,8 @@
     var original = global.openVideo;
 
     function openVideoReplay(modNum, vidIdx) {
-      var m = global.MODULES && global.MODULES[modNum];
+      var modules = getModules();
+      var m = modules && modules[modNum];
       var v = m && m.videos && m.videos[vidIdx];
       if (!v) return;
 
@@ -143,8 +164,7 @@
       }
 
       // The legacy simulated player needs a duration. Never call it with an
-      // undefined duration: that is what produced the visible "undefined" /
-      // broken replay state in Module 01.
+      // undefined duration: that is what produced the visible broken state.
       if (!v.dur) {
         if (typeof global.toast === 'function') global.toast('Cette vidéo n’a pas encore de source de lecture configurée.');
         return;
@@ -172,14 +192,19 @@
     }
     renderAcademyClassic();
     installReliableVideoReplay();
+
+    // Supabase loading is asynchronous and can legitimately take more than
+    // five seconds on a mobile connection. Keep the UI waiting until the
+    // actual MODULES binding is populated instead of stopping at 5 seconds.
     var attempts = 0;
     var timer = global.setInterval(function(){
       attempts++;
       var rendered = renderAcademyClassic();
       installReliableVideoReplay();
       cleanModuleDetail();
-      if (rendered || attempts >= 10) global.clearInterval(timer);
+      if (rendered || attempts >= 120) global.clearInterval(timer);
     }, 500);
+
     global.setTimeout(function(){ cleanModuleDetail(); }, 1200);
   }
 
