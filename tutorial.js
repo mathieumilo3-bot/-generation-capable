@@ -122,7 +122,7 @@
     page.querySelectorAll('.mod-video-wrap').forEach(function(card){
       card.querySelectorAll('div').forEach(function(el){
         if (el.textContent && el.textContent.trim().toLowerCase() === 'undefined') {
-          el.textContent = 'Durée non renseignée';
+          el.style.display = 'none';
         }
       });
     });
@@ -166,6 +166,10 @@
 
   function boot() {
     addAcademyStyles();
+    if (typeof global.renderGameMap === 'function' && !global.renderGameMap.__gcClassicAcademy) {
+      global.renderGameMap = function(){ renderAcademyClassic(); };
+      global.renderGameMap.__gcClassicAcademy = true;
+    }
     renderAcademyClassic();
     installReliableVideoReplay();
     var attempts = 0;
