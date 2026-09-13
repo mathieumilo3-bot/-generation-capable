@@ -7,7 +7,7 @@ reprise de la progression via localStorage) mais il n'a pas de vidéo réelle
 tant que ces deux fichiers ne sont pas déposés ici :
 
   assets/vsl/generation-capable-vsl.mp4   — la présentation (VSL)
-  assets/vsl/poster.jpg                   — image affichée avant lecture
+  assets/vsl/poster.png                   — image affichée avant lecture (déjà en place)
 
 Recommandations :
   - Format vidéo : MP4 (H.264 + AAC), 1080p suffit largement pour du mobile.
