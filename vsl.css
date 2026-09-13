@@ -194,7 +194,7 @@ html{ scroll-behavior: smooth; }
 }
 
 /* ---------------------------------- Who / covers ------------------------ */
-.who{ padding: 84px 0 20px; }
+.who{ padding: 90px 0 80px; border-top: 1px solid var(--cream-line); }
 .who-grid{
   display:grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
   margin-bottom: 72px;
