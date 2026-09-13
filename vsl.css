@@ -307,30 +307,17 @@ html{ scroll-behavior: smooth; }
   box-shadow: 0 0 0 3px rgba(11,11,12,.35);
 }
 
-/* Unlock card */
+/* CTA card (réservation) — toujours actif, pas de verrou */
 .unlock-card{
   max-width: 860px; margin: 22px auto 0;
-  background: var(--paper);
-  border: 1px solid var(--cream-line);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-line);
   border-radius: var(--radius-md);
   padding: 20px 22px;
-  transition: border-color .3s var(--ease), background .3s var(--ease);
 }
-.unlock-card[data-state="unlocked"]{
-  border-color: var(--gold-line);
-  background: var(--gold-soft);
-}
-.unlock-row{ display:flex; align-items:center; gap:16px; }
-.unlock-icon{ font-size: 20px; line-height:1; flex:none; }
+.unlock-row{ display:flex; align-items:center; gap:16px; justify-content: space-between; flex-wrap: wrap; }
 .unlock-title{ font-size: 15px; font-weight: 600; margin: 0 0 8px; }
 .unlock-sub{ font-size: 13.5px; color: var(--text-ink-soft); margin:0; }
-.unlock-progress-track{
-  height: 4px; border-radius: 2px; background: var(--cream-line); overflow:hidden; max-width: 320px;
-}
-.unlock-progress-fill{
-  height:100%; width:0%; background: var(--gold); transition: width .2s linear;
-}
-.unlock-unlocked{ justify-content: space-between; flex-wrap: wrap; }
 .btn-unlocked{ flex: none; }
 
 /* Unlock transition pulse when just completed */
@@ -498,5 +485,5 @@ html{ scroll-behavior: smooth; }
   .btn-primary{ width:100%; }
   .hero-actions .btn-primary{ width:100%; }
   .q-actions .btn-primary{ width:100%; }
-  .unlock-unlocked{ flex-direction: column; align-items: stretch; }
+  .unlock-row{ flex-direction: column; align-items: stretch; }
 }

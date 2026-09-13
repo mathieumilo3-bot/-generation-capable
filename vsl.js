@@ -299,7 +299,7 @@
         state.videoCompleted = true;
         saveState();
         trackEvent('video_completed');
-        unlockApplication(false);
+        pulseCtaCard();
       }
     }
 
@@ -378,35 +378,19 @@
     });
 
     updatePlayIcon();
-
-    if (state.videoCompleted) unlockApplication(true);
   }
 
-  // ------------------------------------------------------------------ unlock
+  // ------------------------------------------------------------------ cta card
+  //
+  // Réserver un appel ne dépend plus d'avoir terminé la vidéo : le bouton est
+  // actif dès l'arrivée sur la page. On garde juste un petit clin d'œil
+  // visuel quand la vidéo se termine.
 
-  function unlockApplication(silent) {
+  function pulseCtaCard() {
     var card = qs('#unlock-card');
-    if (card.dataset.state === 'unlocked') return;
-    card.dataset.state = 'unlocked';
-    qs('.unlock-locked', card).hidden = true;
-    var unlockedRow = qs('.unlock-unlocked', card);
-    unlockedRow.hidden = false;
-    if (!silent) {
-      card.classList.add('just-unlocked');
-      setTimeout(function () { card.classList.remove('just-unlocked'); }, 650);
-    }
-  }
-
-  function initUnlockProgress() {
-    var video = qs('#vsl-video');
-    var fill = qs('#unlock-progress-fill');
-    if (!video || !fill) return;
-    video.addEventListener('timeupdate', function () {
-      var dur = video.duration || 0;
-      var pct = dur > 0 ? clamp(video.currentTime / dur, 0, 1) : 0;
-      fill.style.width = (pct * 100) + '%';
-    });
-    if (state.videoCompleted) fill.style.width = '100%';
+    if (!card) return;
+    card.classList.add('just-unlocked');
+    setTimeout(function () { card.classList.remove('just-unlocked'); }, 650);
   }
 
   // ------------------------------------------------------------------ application funnel
@@ -704,8 +688,7 @@
       initCalendlyWidget();
       return;
     }
-    if (state.videoCompleted) unlockApplication(true);
-    if (state.applicationStarted && state.videoCompleted && state.step >= 0) {
+    if (state.applicationStarted && state.step >= 0) {
       revealApplicationSection(true);
       renderStep(Math.min(state.step, QUESTIONS.length - 1), false);
     }
@@ -729,7 +712,6 @@
     trackEvent('page_view');
     wireNav();
     initVideo();
-    initUnlockProgress();
     listenToCalendly();
     restoreUi();
   }
