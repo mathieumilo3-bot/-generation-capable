@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Génération Capable — Deviens capable de vendre</title>
+<meta name="description" content="Un accompagnement commercial pour entrepreneurs et indépendants ambitieux : prospection, rendez-vous, closing. Candidature en 5 questions, appel stratégique sur rendez-vous.">
+<meta name="robots" content="noindex, follow">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0b0b0c">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/vsl.css">
+
+<!-- Open Graph minimal — pas d'image générique par défaut tant qu'aucun
+     visuel de marque n'a été fourni pour ce tunnel. -->
+<meta property="og:title" content="Génération Capable — Deviens capable de vendre">
+<meta property="og:description" content="Un accompagnement commercial pour entrepreneurs et indépendants ambitieux. Regarde la présentation, puis candidate.">
+<meta property="og:type" content="website">
+</head>
+<body>
+
+<a class="skip-link" href="#vsl-main">Aller au contenu</a>
+
+<header class="gc-nav">
+  <div class="gc-nav-inner">
+    <span class="gc-wordmark">GÉNÉRATION <strong>CAPABLE</strong></span>
+    <a class="gc-nav-cta" href="#vsl-video-section" data-nav-cta>Voir la présentation</a>
+  </div>
+</header>
+
+<main id="vsl-main">
+
+  <!-- ============================= HERO ============================= -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-inner">
+      <p class="eyebrow">Accompagnement commercial — candidature privée</p>
+      <h1 id="hero-title" class="hero-title">Deviens capable<br>de vendre.</h1>
+      <p class="hero-sub">
+        Un accompagnement pour les entrepreneurs et indépendants ambitieux qui veulent
+        construire une vraie capacité commerciale — prospection, rendez-vous, closing —
+        que tu partes de zéro ou que tu vendes déjà tous les jours.
+      </p>
+      <div class="hero-actions">
+        <button type="button" class="btn-primary" data-scroll-to="vsl-video-section">
+          Regarder la présentation
+        </button>
+        <p class="hero-microline">9 minutes. Aucune inscription requise pour regarder.</p>
+      </div>
+    </div>
+    <div class="hero-fade" aria-hidden="true"></div>
+  </section>
+
+  <!-- ============================= POUR QUI ============================= -->
+  <section class="who" aria-labelledby="who-title">
+    <div class="section-inner">
+      <h2 id="who-title" class="section-kicker">Pour qui</h2>
+      <div class="who-grid">
+        <article class="who-card">
+          <span class="who-card-index">01</span>
+          <h3>Tu démarres</h3>
+          <p>Tu as une offre — ou tu es en train de la construire — et tu n'as encore
+          vendu que rarement, voire jamais.</p>
+        </article>
+        <article class="who-card">
+          <span class="who-card-index">02</span>
+          <h3>Tu vends déjà</h3>
+          <p>Tu as des clients et un flux de prospection, mais tu sens que tu plafonnes
+          en rendez-vous ou au moment de closer.</p>
+        </article>
+        <article class="who-card">
+          <span class="who-card-index">03</span>
+          <h3>Tu veux performer</h3>
+          <p>Tu vends bien, mais tu veux passer un cap et devenir un vrai performer
+          commercial — plus d'assurance, plus de rigueur, plus de résultats.</p>
+        </article>
+      </div>
+
+      <div class="covers">
+        <h2 class="section-kicker">Ce que couvre l'accompagnement</h2>
+        <ul class="covers-list">
+          <li>Clarifier et structurer ton offre</li>
+          <li>Prospection — terrain, digital, réseau</li>
+          <li>Prise de rendez-vous</li>
+          <li>Conduite d'un rendez-vous de vente</li>
+          <li>Gestion des objections et des hésitations</li>
+          <li>Closing</li>
+          <li>Discipline et rigueur commerciale au quotidien</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= VSL ============================= -->
+  <section class="vsl-section" id="vsl-video-section" aria-labelledby="vsl-title">
+    <div class="section-inner">
+      <h2 id="vsl-title" class="vsl-title">La méthode, en une vidéo.</h2>
+      <p class="vsl-sub">
+        Regarde la présentation en entier — elle t'explique comment fonctionne
+        l'accompagnement, et pour qui il est fait. Ta candidature s'ouvre à la fin.
+      </p>
+
+      <div class="video-frame" id="video-frame" tabindex="0" aria-label="Lecteur vidéo — présentation Génération Capable">
+        <video
+          id="vsl-video"
+          playsinline
+          preload="metadata"
+          poster="/assets/vsl/poster.jpg"
+        >
+          <source src="/assets/vsl/generation-capable-vsl.mp4" type="video/mp4">
+        </video>
+
+        <div class="video-overlay" id="video-overlay">
+          <button type="button" class="video-play-btn" id="video-play-btn" aria-label="Lire la vidéo">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
+
+        <div class="video-controls" id="video-controls">
+          <button type="button" class="vc-btn" id="vc-playpause" aria-label="Lecture / Pause">
+            <svg class="ic-play" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="ic-pause" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" hidden><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+          </button>
+          <span class="vc-time" id="vc-time" aria-hidden="true">0:00 / 0:00</span>
+          <div class="vc-bar" id="vc-bar" role="slider" tabindex="0" aria-label="Progression de la vidéo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="vc-bar-buffered" id="vc-bar-buffered"></div>
+            <div class="vc-bar-progress" id="vc-bar-progress"></div>
+            <div class="vc-bar-knob" id="vc-bar-knob"></div>
+          </div>
+          <button type="button" class="vc-btn" id="vc-mute" aria-label="Couper / rétablir le son">
+            <svg class="ic-unmuted" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 5V4L8 9H4z"/></svg>
+            <svg class="ic-muted" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" hidden><path d="M4 9v6h4l5 5V4L8 9H4zm11.5 3L18 9.5 19.5 11 17 13.5 19.5 16 18 17.5 15.5 15 13 17.5 11.5 16 14 13.5 11.5 11 13 9.5z"/></svg>
+          </button>
+          <button type="button" class="vc-btn" id="vc-fullscreen" aria-label="Plein écran">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bloc candidature : verrouillé jusqu'à la fin de la vidéo -->
+      <div class="unlock-card" id="unlock-card" data-state="locked">
+        <div class="unlock-row unlock-locked">
+          <span class="unlock-icon" aria-hidden="true">🔒</span>
+          <div>
+            <p class="unlock-title">Termine la vidéo pour débloquer ta candidature</p>
+            <div class="unlock-progress-track" aria-hidden="true">
+              <div class="unlock-progress-fill" id="unlock-progress-fill"></div>
+            </div>
+          </div>
+        </div>
+        <div class="unlock-row unlock-unlocked" hidden>
+          <div>
+            <p class="unlock-title">Ta candidature est débloquée</p>
+            <p class="unlock-sub">5 questions, deux minutes — pour personnaliser ton appel.</p>
+          </div>
+          <button type="button" class="btn-primary btn-unlocked" id="start-application-btn">
+            Commencer ma candidature →
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= CANDIDATURE ============================= -->
+  <section class="application-section" id="application-section" hidden aria-labelledby="application-title">
+    <div class="section-inner section-inner-narrow">
+
+      <div class="application-progress" id="application-progress">
+        <div class="ap-bar-track">
+          <div class="ap-bar-fill" id="ap-bar-fill"></div>
+        </div>
+        <span class="ap-bar-label" id="ap-bar-label">Question 1/5</span>
+      </div>
+
+      <h2 id="application-title" class="visually-hidden">Candidature Génération Capable</h2>
+
+      <div id="application-steps" class="application-steps"></div>
+    </div>
+  </section>
+
+  <!-- ============================= TRANSITION ============================= -->
+  <section class="transition-section" id="transition-section" hidden aria-live="polite">
+    <div class="transition-inner">
+      <p class="transition-kicker">Candidature envoyée</p>
+      <h2 class="transition-title">Dernière étape.</h2>
+      <p class="transition-sub">Choisis le créneau de ton appel stratégique avec l'équipe Génération Capable.</p>
+    </div>
+  </section>
+
+  <!-- ============================= CALENDLY ============================= -->
+  <section class="calendly-section" id="calendly-section" hidden aria-labelledby="calendly-title">
+    <div class="section-inner section-inner-narrow">
+      <h2 id="calendly-title" class="calendly-title">Réserve ton appel stratégique</h2>
+      <p class="calendly-sub">30 minutes, en visio (Google Meet). Tu recevras la confirmation par email et SMS.</p>
+
+      <div class="calendly-frame">
+        <div class="calendly-loading" id="calendly-loading">
+          <span class="spinner" aria-hidden="true"></span>
+          <p>Chargement du calendrier…</p>
+        </div>
+        <div id="calendly-embed" class="calendly-embed"></div>
+        <div class="calendly-fallback" id="calendly-fallback" hidden>
+          <p>Le calendrier n'a pas pu se charger ici (réseau ou bloqueur de publicité).</p>
+          <a id="calendly-fallback-link" class="btn-primary" href="https://calendly.com/ledorvenenzo50/appel-decouverte-generation-capable" target="_blank" rel="noopener">
+            Ouvrir le calendrier dans un nouvel onglet
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= CONFIRMATION ============================= -->
+  <section class="confirmation-section" id="confirmation-section" hidden aria-labelledby="confirmation-title">
+    <div class="confirmation-inner">
+      <span class="confirmation-check" aria-hidden="true">✓</span>
+      <h2 id="confirmation-title" class="confirmation-title">C'est réservé.</h2>
+      <p class="confirmation-line">Ton appel stratégique est confirmé.</p>
+      <p class="confirmation-sub">Tu vas recevoir les informations de ton rendez-vous par email et SMS.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="gc-footer">
+  <div class="gc-footer-inner">
+    <span>Génération Capable — Candidature pour l'accompagnement commercial.</span>
+    <span>© <span id="footer-year"></span> generationcapable.fr</span>
+  </div>
+</footer>
+
+<script src="/vsl.js" defer></script>
+</body>
+</html>
