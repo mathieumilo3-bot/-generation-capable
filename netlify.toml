@@ -82,6 +82,11 @@
   status = 404
 
 [[redirects]]
+  from = "/vsl"
+  to = "/vsl.html"
+  status = 200
+
+[[redirects]]
   from = "/:slug"
   to = "/index.html?ref=:slug"
   status = 200
