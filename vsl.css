@@ -153,44 +153,36 @@ html{ scroll-behavior: smooth; }
 .gc-nav-cta:hover{ color: var(--gold-deep); }
 
 /* ---------------------------------- Hero -------------------------------- */
+/* Hero volontairement compact : le titre, la vidéo et le CTA de réservation
+   doivent tenir dans (à peu près) le premier écran, sans grand bloc à part. */
 .hero{
   position: relative;
   background: var(--ink);
   color: var(--text-cream);
-  padding: 76px 24px 96px;
-  overflow:hidden;
+  padding: 30px 24px 22px;
 }
 .hero-inner{
-  max-width: 760px; margin: 0 auto; position: relative; z-index: 2;
+  max-width: 760px; margin: 0 auto;
   text-align:center;
 }
 .eyebrow{
-  font-size: 12.5px; font-weight: 700; letter-spacing:.14em; text-transform: uppercase;
-  color: var(--gold); margin: 0 0 22px;
+  font-size: 11.5px; font-weight: 700; letter-spacing:.14em; text-transform: uppercase;
+  color: var(--gold); margin: 0 0 10px;
 }
 .hero-title{
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(2.4rem, 8vw, 4.4rem);
-  line-height: 1.05;
+  font-size: clamp(1.7rem, 6.4vw, 2.6rem);
+  line-height: 1.15;
   letter-spacing: -.01em;
-  margin: 0 0 26px;
+  margin: 0 0 10px;
 }
 .hero-sub{
-  font-size: 17px;
-  line-height: 1.65;
+  font-size: 14.5px;
+  line-height: 1.5;
   color: var(--text-cream-soft);
-  max-width: 560px;
-  margin: 0 auto 40px;
-}
-.hero-actions{ display:flex; flex-direction: column; align-items:center; gap:14px; }
-.hero-actions .btn-primary{ background: var(--gold); border-color: var(--gold); color:#1c1409; }
-.hero-actions .btn-primary:hover{ background: var(--gold-deep); border-color: var(--gold-deep); }
-.hero-microline{ font-size: 13px; color: rgba(247,242,233,.45); margin:0; }
-.hero-fade{
-  position:absolute; left:0; right:0; bottom:0; height: 120px;
-  background: linear-gradient(180deg, transparent, rgba(0,0,0,.28));
-  pointer-events:none;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 /* ---------------------------------- Who / covers ------------------------ */
@@ -228,14 +220,14 @@ html{ scroll-behavior: smooth; }
 }
 
 /* ---------------------------------- VSL section -------------------------- */
-.vsl-section{ padding: 88px 0 60px; }
+.vsl-section{ padding: 36px 0 60px; }
 .vsl-title{
   font-family: var(--font-display); font-weight: 500;
-  font-size: clamp(1.9rem, 5vw, 2.6rem); text-align:center; margin: 0 0 16px;
+  font-size: clamp(1.5rem, 4.2vw, 2rem); text-align:center; margin: 0 0 8px;
 }
 .vsl-sub{
-  text-align:center; max-width: 520px; margin: 0 auto 44px;
-  color: var(--text-ink-soft); font-size: 15.5px; line-height:1.65;
+  text-align:center; max-width: 480px; margin: 0 auto 24px;
+  color: var(--text-ink-soft); font-size: 14px; line-height:1.55;
 }
 
 .video-frame{
@@ -466,9 +458,9 @@ html{ scroll-behavior: smooth; }
 @media (max-width: 760px){
   .who-grid{ grid-template-columns: 1fr; }
   .covers-list{ grid-template-columns: 1fr; }
-  .hero{ padding: 56px 20px 76px; }
-  .who{ padding: 60px 0 8px; }
-  .vsl-section{ padding: 64px 0 44px; }
+  .hero{ padding: 22px 20px 18px; }
+  .who{ padding: 56px 0 56px; }
+  .vsl-section{ padding: 32px 0 40px; }
   .application-section{ padding: 64px 0 76px; }
   .transition-section{ padding: 90px 24px; }
   .calendly-section{ padding: 64px 0 80px; }
@@ -480,10 +472,8 @@ html{ scroll-behavior: smooth; }
 
 @media (max-width: 420px){
   .section-inner{ padding: 0 18px; }
-  .hero-title{ font-size: clamp(2.1rem, 9.5vw, 2.6rem); }
   .who-card, .unlock-card{ padding: 20px 18px; }
   .btn-primary{ width:100%; }
-  .hero-actions .btn-primary{ width:100%; }
   .q-actions .btn-primary{ width:100%; }
   .unlock-row{ flex-direction: column; align-items: stretch; }
 }
