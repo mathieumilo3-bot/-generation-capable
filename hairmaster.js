@@ -4,8 +4,8 @@
    Principes tenus dans tout ce fichier :
    • Aucune dépendance, aucun tiers, aucune requête réseau — y compris le
      calendrier de réservation, entièrement simulé côté client.
-   • Aucune photo de patient : le visuel comparatif du hero est un diagramme
-     de densité capillaire généré en SVG, purement abstrait.
+   • Aucune photo de patient : les seules photos du site sont deux recadrages
+     d'une même photo réelle du cabinet (sans visage), voir hairmaster.html.
    • Tout est facultatif : sans JavaScript la page reste entièrement lisible,
      et un message de repli remplace le calendrier interactif.
    ========================================================================= */
@@ -80,92 +80,6 @@
     }, { rootMargin: '0px 0px -10% 0px', threshold: 0.08 });
 
     items.forEach(function (el) { io.observe(el); });
-  })();
-
-  /* -------------------------------------------------- diagramme comparatif
-     Deux SVG superposés : « after » (dense) en fond, « before » (clairsemé)
-     au-dessus, découpé par clip-path selon la position du curseur. Aucune
-     photo — uniquement des points générés, à l'intérieur d'un dôme abstrait
-     représentant le cuir chevelu vu de face. */
-  (function compareDiagram() {
-    var panel = $('#compare');
-    var range = $('#compare-range', panel || document);
-    var afterSvg = $('#diagram-after');
-    var beforeSvg = $('#diagram-before');
-    if (!panel || !range || !afterSvg || !beforeSvg) return;
-
-    var NS = 'http://www.w3.org/2000/svg';
-    var DOME_D = 'M20,258 C20,120 60,20 160,20 C260,20 300,120 300,258 Z';
-
-    // Points clé (x,y) définissant la ligne de la chevelure : avant = ligne
-    // reculée façon golfes temporaux, après = ligne plus basse et régulière.
-    var BEFORE_POINTS = [[26, 58], [90, 96], [160, 118], [230, 96], [294, 58]];
-    var AFTER_POINTS = [[26, 142], [80, 178], [160, 198], [240, 178], [294, 142]];
-
-    function hairlineY(points, x) {
-      for (var i = 0; i < points.length - 1; i++) {
-        var a = points[i], b = points[i + 1];
-        if (x >= a[0] && x <= b[0]) {
-          var t = (x - a[0]) / (b[0] - a[0]);
-          return a[1] + (b[1] - a[1]) * t;
-        }
-      }
-      return points[points.length - 1][1];
-    }
-
-    function hairlinePathD(points) {
-      return points.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p[0] + ',' + p[1]; }).join(' ');
-    }
-
-    function buildDiagram(svg, points, rowGap, seedPrefix, gapProbability, dotClass) {
-      while (svg.firstChild) svg.removeChild(svg.firstChild);
-
-      var defs = document.createElementNS(NS, 'defs');
-      var clip = document.createElementNS(NS, 'clipPath');
-      clip.id = seedPrefix + '-clip';
-      var clipShape = document.createElementNS(NS, 'path');
-      clipShape.setAttribute('d', DOME_D);
-      clip.appendChild(clipShape);
-      defs.appendChild(clip);
-      svg.appendChild(defs);
-
-      var dome = document.createElementNS(NS, 'path');
-      dome.setAttribute('d', DOME_D);
-      dome.setAttribute('class', 'diagram-dome');
-      svg.appendChild(dome);
-
-      var g = document.createElementNS(NS, 'g');
-      g.setAttribute('clip-path', 'url(#' + seedPrefix + '-clip)');
-      if (dotClass) g.setAttribute('class', dotClass);
-
-      for (var x = 28; x <= 292; x += 9) {
-        var hy = hairlineY(points, x);
-        for (var y = 26; y <= hy; y += rowGap) {
-          var key = seedPrefix + ':' + x + ':' + y;
-          if (gapProbability && seeded(key + ':gap') < gapProbability) continue;
-          var jx = x + (seeded(key + ':x') - 0.5) * 3;
-          var jy = y + (seeded(key + ':y') - 0.5) * 3;
-          var c = document.createElementNS(NS, 'circle');
-          c.setAttribute('cx', jx.toFixed(1));
-          c.setAttribute('cy', jy.toFixed(1));
-          c.setAttribute('r', '1.3');
-          g.appendChild(c);
-        }
-      }
-      svg.appendChild(g);
-
-      var hairline = document.createElementNS(NS, 'path');
-      hairline.setAttribute('d', hairlinePathD(points));
-      hairline.setAttribute('class', 'diagram-hairline');
-      svg.appendChild(hairline);
-    }
-
-    buildDiagram(afterSvg, AFTER_POINTS, 8, 'after', 0, null);
-    buildDiagram(beforeSvg, BEFORE_POINTS, 15, 'before', 0.22, null);
-
-    function sync() { panel.style.setProperty('--pos', range.value + '%'); }
-    range.addEventListener('input', sync);
-    sync();
   })();
 
   /* ----------------------------------------------------- carrousel d'avis */
@@ -415,7 +329,7 @@
         showStep('done');
         submitBtn.disabled = false;
         submitSpinner.hidden = true;
-        submitLabel.textContent = 'Confirmer le rendez-vous';
+        submitLabel.textContent = 'Confirmer ma demande de devis';
       }, 650);
     });
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hair Master — Greffe capillaire à Marseille &amp; Paris</title>
 <meta name="description" content="Hair Master, clinique de greffe capillaire à Marseille et Paris. Diagnostic personnalisé, techniques FUE et DHI, suivi médical, consultations confidentielles.">
-<meta name="theme-color" content="#0d0b10">
+<meta name="theme-color" content="#ffffff">
 <meta name="robots" content="noindex, follow">
 
 <link rel="icon" href="/favicon.ico">
@@ -23,9 +23,12 @@
 <meta name="twitter:description" content="Redessinez votre ligne. Diagnostic personnalisé, consultations confidentielles.">
 <meta name="twitter:image" content="/assets/hairmaster/og-cover.jpg">
 
+<!-- Visuel du hero = élément LCP : demandé avant même l'analyse du CSS. -->
+<link rel="preload" as="image" href="/assets/hairmaster/clinique-salle.webp" fetchpriority="high">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/hairmaster.css">
 
 <!-- Posée avant le premier rendu : le CSS ne masque les blocs à révéler que si
@@ -52,7 +55,7 @@
       <a href="#faq">FAQ</a>
     </nav>
 
-    <a class="btn btn-gold btn-sm nav-cta" href="#reserver">Réserver ma consultation</a>
+    <a class="btn btn-blue btn-sm nav-cta" href="#reserver">Demander un devis</a>
   </div>
 </header>
 
@@ -62,8 +65,8 @@
 <!-- ================================ HERO ================================
      Aucune photo de patient reprise du compte : ce sont des visages
      identifiables liés à un acte médical, pas des piscines ni du matériel.
-     Le visuel du hero est un diagramme de densité capillaire, entièrement
-     abstrait et généré en SVG — comparaison avant/après sans aucun visage. -->
+     Le visuel du hero est la photo réelle du cabinet (recadrée pour retirer
+     le texte de la story Instagram d'origine) — aucun visage, aucun patient. -->
 <section class="hero" aria-labelledby="hero-title">
   <div class="hero-glow" aria-hidden="true"></div>
 
@@ -80,13 +83,13 @@
 
       <p class="hero-lead reveal" data-reveal-delay="2">
         Une équipe médicale dédiée à la greffe capillaire : diagnostic précis,
-        geste maîtrisé, résultat qui reste discret. Sur rendez-vous, à Marseille
-        et à Paris.
+        geste maîtrisé, résultat qui reste discret. Devis gratuit, sur
+        rendez-vous, à Marseille et à Paris.
       </p>
 
       <div class="hero-actions reveal" data-reveal-delay="3">
-        <a class="btn btn-gold" href="#reserver">
-          Réserver ma consultation
+        <a class="btn btn-blue" href="#reserver">
+          Demander mon devis gratuit
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5.5 15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
         <a class="btn btn-ghost" href="#offrir">Offrir une consultation</a>
@@ -98,18 +101,17 @@
     </div>
 
     <div class="hero-visual reveal" data-reveal-delay="2">
-      <div class="compare" id="compare">
-        <div class="compare-panel">
-          <svg id="diagram-after" class="diagram" viewBox="0 0 320 260" aria-hidden="true"></svg>
-          <svg id="diagram-before" class="diagram diagram-front" viewBox="0 0 320 260" aria-hidden="true"></svg>
-          <div class="compare-divider" aria-hidden="true"></div>
-          <span class="compare-tag compare-tag-before">Avant</span>
-          <span class="compare-tag compare-tag-after">Après</span>
-        </div>
-        <input type="range" class="compare-range" id="compare-range" min="0" max="100" value="50"
-               aria-label="Comparer la densité capillaire avant et après">
+      <figure class="shot shot-hero">
+        <img src="/assets/hairmaster/clinique-salle.webp" width="428" height="243"
+             fetchpriority="high" decoding="async"
+             alt="Salle de soin de la clinique Hair Master, avec fauteuil médical, chariot d'instruments et lampe d'examen.">
+      </figure>
+      <div class="hero-badge">
+        <span class="hero-badge-icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20"><path d="M10 2.5 16.5 5v5c0 4-2.8 6.6-6.5 7.5C6.3 16.6 3.5 14 3.5 10V5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m7.3 10 1.9 1.9 3.5-3.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div><b>Devis gratuit</b><span>Réponse sous 24h</span></div>
       </div>
-      <p class="compare-caption">Diagramme de densité — illustration, pas une photo de patient.</p>
     </div>
   </div>
 
@@ -158,7 +160,7 @@
 <!-- ============================== LE SUIVI ============================== -->
 <section class="section section-tint" id="processus" aria-labelledby="processus-title">
   <div class="shell">
-    <p class="kicker kicker-gold reveal">Le suivi</p>
+    <p class="kicker reveal">Le suivi</p>
     <h2 id="processus-title" class="section-title reveal" data-reveal-delay="1">
       Quatre étapes. Aucune surprise.
     </h2>
@@ -167,28 +169,37 @@
       y compris ce qui se passe après l'intervention.
     </p>
 
-    <ol class="timeline">
-      <li class="phase reveal" data-reveal-delay="1">
-        <span class="phase-num" aria-hidden="true">01</span>
-        <h3>Diagnostic capillaire</h3>
-        <p>Analyse de la zone donneuse, de la densité et du calendrier de chute. Un plan personnalisé, pas un devis générique.</p>
-      </li>
-      <li class="phase reveal" data-reveal-delay="2">
-        <span class="phase-num" aria-hidden="true">02</span>
-        <h3>Plan de greffe</h3>
-        <p>Nombre de greffons déterminé au cas près, technique choisie selon votre situation — FUE ou DHI.</p>
-      </li>
-      <li class="phase reveal" data-reveal-delay="3">
-        <span class="phase-num" aria-hidden="true">03</span>
-        <h3>Intervention</h3>
-        <p>Sous anesthésie locale, en clinique. Prélèvement et implantation greffon par greffon, dans le respect du sens de pousse.</p>
-      </li>
-      <li class="phase reveal" data-reveal-delay="4">
-        <span class="phase-num" aria-hidden="true">04</span>
-        <h3>Suivi &amp; repousse</h3>
-        <p>Protocole de soin détaillé, points de contrôle à 3, 6 et 12 mois. Les résultats varient selon chaque patient.</p>
-      </li>
-    </ol>
+    <div class="suivi">
+      <figure class="shot suivi-photo reveal">
+        <img src="/assets/hairmaster/clinique-detail.webp" width="418" height="141"
+             loading="lazy" decoding="async"
+             alt="Détail du fauteuil médical de la clinique Hair Master.">
+        <figcaption>Cabinet médical — Marseille &amp; Paris</figcaption>
+      </figure>
+
+      <ol class="timeline">
+        <li class="phase reveal" data-reveal-delay="1">
+          <span class="phase-num" aria-hidden="true">01</span>
+          <h3>Diagnostic capillaire</h3>
+          <p>Analyse de la zone donneuse, de la densité et du calendrier de chute. Un plan personnalisé, pas un devis générique.</p>
+        </li>
+        <li class="phase reveal" data-reveal-delay="2">
+          <span class="phase-num" aria-hidden="true">02</span>
+          <h3>Plan de greffe</h3>
+          <p>Nombre de greffons déterminé au cas près, technique choisie selon votre situation — FUE ou DHI.</p>
+        </li>
+        <li class="phase reveal" data-reveal-delay="3">
+          <span class="phase-num" aria-hidden="true">03</span>
+          <h3>Intervention</h3>
+          <p>Sous anesthésie locale, en clinique. Prélèvement et implantation greffon par greffon, dans le respect du sens de pousse.</p>
+        </li>
+        <li class="phase reveal" data-reveal-delay="4">
+          <span class="phase-num" aria-hidden="true">04</span>
+          <h3>Suivi &amp; repousse</h3>
+          <p>Protocole de soin détaillé, points de contrôle à 3, 6 et 12 mois. Les résultats varient selon chaque patient.</p>
+        </li>
+      </ol>
+    </div>
   </div>
 </section>
 
@@ -218,7 +229,7 @@
       </ul>
 
       <div class="hero-actions reveal" data-reveal-delay="5">
-        <a class="btn btn-gold" href="#reserver">
+        <a class="btn btn-blue" href="#reserver">
           Réserver une consultation à offrir
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5.5 15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
@@ -330,16 +341,16 @@
 </section>
 
 <!-- =============================== RÉSERVATION =============================== -->
-<section class="section section-deep section-book" id="reserver" aria-labelledby="reserver-title">
+<section class="section section-blue section-book" id="reserver" aria-labelledby="reserver-title">
   <div class="shell shell-narrow">
-    <p class="kicker kicker-gold reveal">Consultation de diagnostic</p>
-    <h2 id="reserver-title" class="book-title reveal" data-reveal-delay="1">Prenons rendez-vous.</h2>
+    <p class="kicker reveal">Devis gratuit</p>
+    <h2 id="reserver-title" class="book-title reveal" data-reveal-delay="1">Demandez votre devis.</h2>
     <p class="book-lead reveal" data-reveal-delay="2">
-      30 minutes pour un diagnostic honnête — que vous consultiez pour vous-même
-      ou pour quelqu'un que vous accompagnez.
+      30 minutes pour un diagnostic honnête et un devis chiffré — que vous
+      consultiez pour vous-même ou pour quelqu'un que vous accompagnez.
     </p>
 
-    <ul class="ticks ticks-light reveal" data-reveal-delay="3">
+    <ul class="ticks reveal" data-reveal-delay="3">
       <li>Analyse de votre densité et de votre zone donneuse</li>
       <li>Un plan de greffe chiffré, sans engagement</li>
       <li>Consultation confidentielle, à Marseille ou à Paris</li>
@@ -404,9 +415,9 @@
 
           <div class="booker-form-actions">
             <button type="button" class="btn btn-outline" id="booker-back">Retour</button>
-            <button type="submit" class="btn btn-gold" id="booker-submit">
+            <button type="submit" class="btn btn-blue" id="booker-submit">
               <span class="btn-spinner" id="booker-submit-spinner" hidden aria-hidden="true"></span>
-              <span id="booker-submit-label">Confirmer le rendez-vous</span>
+              <span id="booker-submit-label">Confirmer ma demande de devis</span>
             </button>
           </div>
         </form>
@@ -475,17 +486,17 @@
     </nav>
     <p class="footer-legal">
       <span>© <span id="year">2026</span> Hair Master</span>
-      <span class="footer-demo">Maquette de démonstration — avis patients illustratifs, chiffres à titre d'exemple, diagramme de densité illustratif (aucune photo de patient réutilisée). Un diagnostic médical préalable est nécessaire avant toute intervention.</span>
+      <span class="footer-demo">Maquette de démonstration — avis patients illustratifs, chiffres à titre d'exemple. Les photos du cabinet sont réelles (issues du compte de la clinique) ; aucune photo de patient n'est utilisée. Un diagnostic médical préalable est nécessaire avant toute intervention.</span>
     </p>
   </div>
 </footer>
 
 <div class="mobile-bar" id="mobile-bar" hidden>
   <div>
-    <b>Consultation de diagnostic</b>
+    <b>Devis gratuit</b>
     <span>Discrétion garantie</span>
   </div>
-  <a class="btn btn-gold btn-sm" href="#reserver">Réserver</a>
+  <a class="btn btn-blue btn-sm" href="#reserver">Devis</a>
 </div>
 
 <script src="/hairmaster.js" defer></script>
