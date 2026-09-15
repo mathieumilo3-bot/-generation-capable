@@ -99,6 +99,14 @@
   to = "/techpiscine.html"
   status = 200
 
+# Maquette de démonstration Hair Master — même raison de figurer avant le
+# "/:slug" attrape-tout : sinon /hairmaster serait pris pour un slug de
+# parrainage.
+[[redirects]]
+  from = "/hairmaster"
+  to = "/hairmaster.html"
+  status = 200
+
 [[redirects]]
   from = "/:slug"
   to = "/index.html?ref=:slug"
