@@ -86,6 +86,19 @@
   to = "/vsl.html"
   status = 200
 
+# Site vitrine de démonstration. Ces deux règles doivent rester AVANT la règle
+# attrape-tout "/:slug" ci-dessous, sinon /showcase serait interprété comme un
+# slug de parrainage et renverrait la page d'accueil.
+[[redirects]]
+  from = "/showcase"
+  to = "/showcase.html"
+  status = 200
+
+[[redirects]]
+  from = "/demo"
+  to = "/showcase.html"
+  status = 200
+
 [[redirects]]
   from = "/:slug"
   to = "/index.html?ref=:slug"
