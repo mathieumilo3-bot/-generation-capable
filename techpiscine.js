@@ -2,10 +2,12 @@
    Tech Piscine — site vitrine (maquette de démonstration)
 
    Principes tenus dans tout ce fichier :
-   • Aucune dépendance. Le seul tiers chargé est le widget Calendly, et il ne
-     l'est qu'au moment où le visiteur approche de la section « devis ».
+   • Aucune dépendance, aucun tiers, aucune requête réseau — y compris le
+     calendrier de réservation, entièrement simulé côté client (voir plus
+     bas) : pratique pour une démonstration, rien à configurer côté serveur.
    • Tout est facultatif : sans JavaScript la page reste entièrement lisible,
-     la galerie ouvre les photos normalement et le lien Calendly reste direct.
+     la galerie ouvre les photos normalement et un message de repli remplace
+     le calendrier interactif.
    • Les écritures de style pendant le scroll passent uniquement par des
      transform / opacity, jamais par des propriétés qui déclenchent un reflow.
    ========================================================================= */
@@ -195,89 +197,234 @@
     scrollTasks.push(update);
   })();
 
-  /* ------------------------------------------------------------- Calendly
-     ~100 Ko de script tiers : chargés uniquement quand la section approche,
-     avec un repli explicite si le réseau ou un bloqueur les empêche. */
-  (function calendly() {
-    var host = $('#calendly-embed');
-    var state = $('#calendly-state');
-    var fallback = $('#calendly-fallback');
-    if (!host) return;
+  /* ------------------------------------------------ calendrier de réservation
+     Simulation complète côté client : calendrier, créneaux, formulaire et
+     confirmation. Rien n'est envoyé nulle part — les créneaux « déjà pris »
+     viennent d'un hachage déterministe de la date (même jour ⇒ mêmes
+     créneaux à chaque rechargement), pas d'un vrai planning. */
+  (function booker() {
+    var root = $('#booker');
+    if (!root) return;
 
-    var url = host.getAttribute('data-calendly-url');
-    var started = false;
-    var settled = false;
+    var calGrid = $('#cal-grid', root);
+    var calMonth = $('#cal-month', root);
+    var prevBtn = $('#cal-prev', root);
+    var nextBtn = $('#cal-next', root);
+    var slotsGrid = $('#slots-grid', root);
+    var slotsLabel = $('#slots-label', root);
+    var pickPanel = $('#booker-pick', root);
+    var formPanel = $('#booker-form', root);
+    var donePanel = $('#booker-done', root);
+    var formSummary = $('#booker-form-summary', root);
+    var backBtn = $('#booker-back', root);
+    var submitBtn = $('#booker-submit', root);
+    var submitSpinner = $('#booker-submit-spinner', root);
+    var submitLabel = $('#booker-submit-label', root);
+    var againBtn = $('#booker-again', root);
+    var nameInput = $('#bk-name', root);
+    var doneName = $('#done-name', root);
+    var doneSummary = $('#done-summary', root);
+    var tabs = $$('.booker-step', root);
 
-    function showFallback() {
-      if (settled) return;
-      settled = true;
-      if (state) state.hidden = true;
-      if (fallback) fallback.hidden = false;
+    var MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+      'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    var WEEKDAYS_LONG = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
+    var today = startOfDay(new Date());
+    var viewMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    var lastMonth = addMonths(startOfDay(new Date(today.getFullYear(), today.getMonth(), 1)), 1);
+
+    var selectedDate = null;
+    var selectedSlot = null;
+
+    function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+    function sameDay(a, b) {
+      return !!a && !!b && a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    }
+    function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, 1); }
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function dateKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+    function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    // Hachage déterministe (FNV-1a) : même chaîne ⇒ toujours le même nombre
+    // entre 0 et 1. Sert uniquement à simuler des créneaux déjà pris, de façon
+    // stable — pas un générateur cryptographique, ce n'en est pas l'usage.
+    function seeded(str) {
+      var h = 2166136261;
+      for (var i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return ((h >>> 0) % 1000) / 1000;
     }
 
-    function showWidget() {
-      if (settled) return;
-      settled = true;
-      if (state) state.hidden = true;
+    function buildMonthCells(month) {
+      var first = new Date(month.getFullYear(), month.getMonth(), 1);
+      var offset = (first.getDay() + 6) % 7; // semaine commençant le lundi
+      var daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+      var cells = [];
+      for (var i = 0; i < offset; i++) cells.push(null);
+      for (var d = 1; d <= daysInMonth; d++) cells.push(new Date(month.getFullYear(), month.getMonth(), d));
+      return cells;
     }
 
-    function loadAsset(tag, attrs) {
-      return new Promise(function (resolve, reject) {
-        var el = document.createElement(tag);
-        Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
-        el.onload = resolve;
-        el.onerror = function () { reject(new Error('Ressource Calendly indisponible')); };
-        document.head.appendChild(el);
+    function renderCalendar() {
+      calMonth.textContent = MONTHS[viewMonth.getMonth()] + ' ' + viewMonth.getFullYear();
+      calGrid.innerHTML = '';
+
+      buildMonthCells(viewMonth).forEach(function (date) {
+        if (!date) {
+          var pad = document.createElement('span');
+          pad.className = 'cal-day cal-day-pad';
+          pad.setAttribute('aria-hidden', 'true');
+          calGrid.appendChild(pad);
+          return;
+        }
+
+        var disabled = date < today || date.getDay() === 0; // passé, ou dimanche (fermé)
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'cal-day' + (sameDay(date, today) ? ' is-today' : '');
+        cell.textContent = date.getDate();
+        cell.disabled = disabled;
+        cell.setAttribute('aria-pressed', String(sameDay(date, selectedDate)));
+        cell.setAttribute('aria-label', WEEKDAYS_LONG[date.getDay()] + ' ' + date.getDate() + ' ' + MONTHS[date.getMonth()]);
+        if (!disabled) cell.addEventListener('click', function () { selectDate(date); });
+        calGrid.appendChild(cell);
+      });
+
+      prevBtn.disabled = viewMonth.getTime() <= new Date(today.getFullYear(), today.getMonth(), 1).getTime();
+      nextBtn.disabled = viewMonth.getTime() >= lastMonth.getTime();
+    }
+
+    function slotsFor(date) {
+      var isSaturday = date.getDay() === 6;
+      var hours = isSaturday ? [8, 9, 10, 11] : [8, 9, 10, 11, 14, 15, 16];
+      var isToday = sameDay(date, today);
+      var nowHour = new Date().getHours();
+
+      var list = hours
+        .filter(function (h) { return !isToday || h > nowHour; })
+        .map(function (h) { return { hour: h, label: pad2(h) + 'h00', taken: seeded(dateKey(date) + '-' + h) < 0.22 }; });
+
+      // Évite qu'une journée paraisse entièrement complète (ce qui ressemblerait
+      // à un bug plutôt qu'à un vrai planning chargé) : deux créneaux au moins
+      // restent ouverts quand la journée en propose.
+      var free = list.filter(function (s) { return !s.taken; });
+      for (var i = 0; free.length < 2 && i < list.length; i++) {
+        if (list[i].taken) { list[i].taken = false; free = list.filter(function (s) { return !s.taken; }); }
+      }
+      return list;
+    }
+
+    function renderSlots() {
+      slotsGrid.innerHTML = '';
+
+      if (!selectedDate) {
+        slotsLabel.textContent = 'Choisissez d’abord une date.';
+        return;
+      }
+
+      slotsLabel.textContent = capitalize(WEEKDAYS_LONG[selectedDate.getDay()]) + ' ' + selectedDate.getDate() +
+        ' ' + MONTHS[selectedDate.getMonth()] + ' — créneaux disponibles';
+
+      var list = slotsFor(selectedDate);
+      if (!list.length) {
+        var empty = document.createElement('p');
+        empty.className = 'booker-slots-empty';
+        empty.textContent = 'Plus de créneau ce jour-là — choisissez une autre date.';
+        slotsGrid.appendChild(empty);
+        return;
+      }
+
+      list.forEach(function (s) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'slot-btn';
+        btn.textContent = s.label;
+        btn.disabled = s.taken;
+        btn.setAttribute('aria-pressed', String(s.label === selectedSlot));
+        if (!s.taken) btn.addEventListener('click', function () { selectSlot(s.label); });
+        slotsGrid.appendChild(btn);
       });
     }
 
-    function init() {
-      if (started) return;
-      started = true;
-
-      loadAsset('link', {
-        rel: 'stylesheet',
-        href: 'https://assets.calendly.com/assets/external/widget.css'
-      }).catch(function () { /* la feuille tierce n'est pas bloquante */ });
-
-      loadAsset('script', {
-        src: 'https://assets.calendly.com/assets/external/widget.js',
-        async: 'async'
-      }).then(function () {
-        if (!window.Calendly) throw new Error('Calendly absent après chargement');
-        window.Calendly.initInlineWidget({
-          url: url + '?hide_gdpr_banner=1&background_color=ffffff&text_color=0b2433&primary_color=0b7099',
-          parentElement: host
-        });
-        // Le widget ne signale sa disponibilité que par postMessage : filet de
-        // sécurité si aucun message n'arrive.
-        setTimeout(function () {
-          if (host.querySelector('iframe')) showWidget();
-          else showFallback();
-        }, 6000);
-      }).catch(showFallback);
+    function selectDate(date) {
+      selectedDate = date;
+      selectedSlot = null;
+      renderCalendar();
+      renderSlots();
     }
 
-    window.addEventListener('message', function (e) {
-      if (typeof e.origin !== 'string' || e.origin.indexOf('calendly.com') === -1) return;
-      var data = e.data;
-      if (!data || typeof data.event !== 'string' || data.event.indexOf('calendly.') !== 0) return;
-      showWidget();
+    function selectSlot(label) {
+      selectedSlot = label;
+      renderSlots();
+      // Léger délai : le visiteur voit son créneau se surligner avant que la
+      // vue ne change, plutôt qu'un remplacement instantané et déroutant.
+      window.setTimeout(function () { showStep('form'); }, 320);
+    }
+
+    function summaryText() {
+      return capitalize(WEEKDAYS_LONG[selectedDate.getDay()]) + ' ' + selectedDate.getDate() + ' ' +
+        MONTHS[selectedDate.getMonth()] + ' à ' + selectedSlot + '.';
+    }
+
+    function showStep(name) {
+      pickPanel.hidden = name !== 'pick';
+      formPanel.hidden = name !== 'form';
+      donePanel.hidden = name !== 'done';
+      tabs.forEach(function (t) { t.classList.toggle('is-active', t.getAttribute('data-step') === name); });
+
+      if (name === 'form') {
+        formSummary.textContent = 'Rendez-vous le ' + summaryText();
+        if (nameInput) nameInput.focus({ preventScroll: true });
+      }
+      if (name === 'done') donePanel.focus({ preventScroll: true });
+    }
+
+    prevBtn.addEventListener('click', function () { viewMonth = addMonths(viewMonth, -1); renderCalendar(); });
+    nextBtn.addEventListener('click', function () { viewMonth = addMonths(viewMonth, 1); renderCalendar(); });
+    backBtn.addEventListener('click', function () { showStep('pick'); });
+
+    formPanel.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!selectedDate || !selectedSlot) return;
+
+      var name = nameInput.value.trim();
+      var phone = $('#bk-phone', root).value.trim();
+      if (!name || !phone) {
+        (name ? $('#bk-phone', root) : nameInput).focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitSpinner.hidden = false;
+      submitLabel.textContent = 'Confirmation…';
+
+      // Simule le court aller-retour d'une vraie prise de rendez-vous, sans
+      // aucune requête réelle : rien n'est transmis.
+      window.setTimeout(function () {
+        doneName.textContent = name.split(' ')[0];
+        doneSummary.textContent = 'Rendez-vous confirmé — ' + summaryText() +
+          ' Notre équipe vous rappelle pour valider les derniers détails.';
+        showStep('done');
+        submitBtn.disabled = false;
+        submitSpinner.hidden = true;
+        submitLabel.textContent = 'Confirmer le rendez-vous';
+      }, 650);
     });
 
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (entries, obs) {
-        if (!entries[0].isIntersecting) return;
-        obs.disconnect();
-        init();
-      }, { rootMargin: '600px 0px' }).observe(host);
-    } else {
-      init();
-    }
+    againBtn.addEventListener('click', function () {
+      selectedSlot = null;
+      formPanel.reset();
+      renderSlots();
+      showStep('pick');
+    });
 
-    // Un clic sur un CTA doit garantir que le calendrier est déjà en route,
-    // même si le visiteur saute directement en bas de page.
-    $$('a[href="#devis"]').forEach(function (a) { a.addEventListener('click', init); });
+    renderCalendar();
+    renderSlots();
+    showStep('pick');
   })();
 
   /* ----------------------------------------------------------------- divers */
