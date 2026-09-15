@@ -86,17 +86,17 @@
   to = "/vsl.html"
   status = 200
 
-# Site vitrine de démonstration. Ces deux règles doivent rester AVANT la règle
-# attrape-tout "/:slug" ci-dessous, sinon /showcase serait interprété comme un
-# slug de parrainage et renverrait la page d'accueil.
+# Maquette de démonstration Tech Piscine. Ces deux règles doivent rester AVANT
+# la règle attrape-tout "/:slug" ci-dessous, sinon /techpiscine serait
+# interprété comme un slug de parrainage et renverrait la page d'accueil.
 [[redirects]]
-  from = "/showcase"
-  to = "/showcase.html"
+  from = "/techpiscine"
+  to = "/techpiscine.html"
   status = 200
 
 [[redirects]]
   from = "/demo"
-  to = "/showcase.html"
+  to = "/techpiscine.html"
   status = 200
 
 [[redirects]]

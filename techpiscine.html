@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tech Piscine — Construction et entretien de piscines en Guyane</title>
+<meta name="description" content="Tech Piscine conçoit, construit, rénove et entretient votre piscine en Guyane. Magasin, pièces détachées et livraison rapide. Devis gratuit.">
+<meta name="theme-color" content="#0b2433">
+<meta name="robots" content="noindex, follow">
+
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Tech Piscine">
+<meta property="og:title" content="Tech Piscine — Construction et entretien de piscines en Guyane">
+<meta property="og:description" content="De la terre nue au premier plongeon. Construction, rénovation, entretien, magasin et livraison rapide en Guyane.">
+<meta property="og:image" content="/assets/techpiscine/og-cover.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tech Piscine — Construction et entretien de piscines en Guyane">
+<meta name="twitter:description" content="De la terre nue au premier plongeon. Guyane — devis gratuit.">
+<meta name="twitter:image" content="/assets/techpiscine/og-cover.jpg">
+
+<!-- Visuel du hero = élément LCP : demandé avant même l'analyse du CSS. -->
+<link rel="preload" as="image" href="/assets/techpiscine/realisation.webp" fetchpriority="high">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/techpiscine.css">
+
+<!-- Posée avant le premier rendu : le CSS ne masque les blocs à révéler que si
+     le JavaScript est réellement disponible (sinon, page entièrement visible). -->
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Aller au contenu</a>
+<div class="reading-progress" aria-hidden="true"><i id="reading-progress-bar"></i></div>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="wordmark" href="#top" aria-label="Tech Piscine — retour en haut">
+      <img class="wordmark-logo" src="/assets/techpiscine/logo.webp" width="256" height="256"
+           alt="" decoding="async">
+      <span class="wordmark-text">TECH <b>PISCINE</b></span>
+    </a>
+
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#services">Nos métiers</a>
+      <a href="#chantier">Le chantier</a>
+      <a href="#realisations">Réalisations</a>
+      <a href="#magasin">Le magasin</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <a class="btn btn-accent btn-sm nav-cta" href="#devis">Demander un devis</a>
+  </div>
+</header>
+
+<main id="main">
+<span id="top"></span>
+
+<!-- ================================ HERO ================================
+     Le fond est entièrement en CSS (dégradé + reflets animés) plutôt qu'une
+     photo plein cadre : les visuels disponibles font 428 px de large, les
+     étirer sur toute la largeur d'un écran de bureau les rendrait flous. -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="caustics" aria-hidden="true"><i></i><i></i><i></i></div>
+
+  <div class="shell hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow reveal">
+        <span class="eyebrow-dot" aria-hidden="true"></span>
+        Guyane · Construction, rénovation, entretien
+      </p>
+
+      <h1 id="hero-title" class="hero-title reveal" data-reveal-delay="1">
+        De la terre nue<br>au premier <em>plongeon</em>.
+      </h1>
+
+      <p class="hero-lead reveal" data-reveal-delay="2">
+        Tech Piscine conçoit, construit et entretient votre piscine en Guyane.
+        Un seul interlocuteur du terrassement au traitement de l'eau — et un
+        magasin pour tout le reste.
+      </p>
+
+      <div class="hero-actions reveal" data-reveal-delay="3">
+        <a class="btn btn-accent" href="#devis">
+          Demander un devis
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5.5 15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="#realisations">Voir nos réalisations</a>
+      </div>
+
+      <ul class="hero-chips reveal" data-reveal-delay="4">
+        <li>Devis gratuit</li>
+        <li>Livraison rapide</li>
+        <li>Magasin en ligne</li>
+      </ul>
+    </div>
+
+    <div class="hero-visual reveal" data-reveal-delay="2">
+      <figure class="shot shot-hero">
+        <img src="/assets/techpiscine/realisation.webp" width="428" height="406"
+             fetchpriority="high" decoding="async"
+             alt="Piscine réalisée par Tech Piscine : bassin bleu, terrasse carrelée, mobilier de jardin et talus végétalisé.">
+        <figcaption>Réalisation Tech Piscine</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="shell">
+    <ul class="strip reveal">
+      <li><b>Construction</b><span>Béton, liner, hors-sol</span></li>
+      <li><b>Rénovation</b><span>Liner, étanchéité, filtration</span></li>
+      <li><b>Entretien</b><span>Au contrat ou ponctuel</span></li>
+      <li><b>Magasin</b><span>Produits, pièces, livraison</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================== NOS MÉTIERS ============================== -->
+<section class="section section-light" id="services" aria-labelledby="services-title">
+  <div class="shell">
+    <p class="kicker reveal">Nos métiers</p>
+    <h2 id="services-title" class="section-title reveal" data-reveal-delay="1">
+      Trois façons de s'occuper de votre eau.
+    </h2>
+    <p class="section-lead reveal" data-reveal-delay="2">
+      Construire, remettre à neuf, ou simplement garder l'eau claire toute
+      l'année. Vous n'avez qu'un seul numéro à composer.
+    </p>
+
+    <div class="service-grid">
+      <article class="service reveal" data-reveal-delay="1">
+        <figure class="shot">
+          <img src="/assets/techpiscine/chantier.webp" width="278" height="284"
+               loading="lazy" decoding="async"
+               alt="Deux techniciens Tech Piscine déroulant un liner dans un bassin en cours de finition.">
+        </figure>
+        <div class="service-body">
+          <h3>Construire</h3>
+          <p>On prend le terrain tel qu'il est. Implantation, terrassement, ferraillage, structure, étanchéité, plage et local technique.</p>
+          <ul class="ticks">
+            <li>Béton armé, coque ou hors-sol bois</li>
+            <li>Local technique dimensionné dès l'étude</li>
+            <li>Margelles, plage et abords finis</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="service reveal" data-reveal-delay="2">
+        <figure class="shot">
+          <img src="/assets/techpiscine/eau-2.webp" width="428" height="571"
+               loading="lazy" decoding="async"
+               alt="Reflets du soleil sur l'eau d'un bassin remis à neuf.">
+        </figure>
+        <div class="service-body">
+          <h3>Rénover</h3>
+          <p>Une piscine qui a vécu n'est pas une piscine perdue. On diagnostique, on reprend ce qui fuit, on remplace ce qui a fait son temps.</p>
+          <ul class="ticks">
+            <li>Changement de liner et reprise d'étanchéité</li>
+            <li>Pompe, filtration, canalisations</li>
+            <li>Remise en route et équilibrage de l'eau</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="service reveal" data-reveal-delay="3">
+        <figure class="shot">
+          <img src="/assets/techpiscine/eau.webp" width="428" height="571"
+               loading="lazy" decoding="async"
+               alt="Gros plan sur une eau de piscine limpide bordée d'une plage en bois.">
+        </figure>
+        <div class="service-body">
+          <h3>Entretenir</h3>
+          <p>Sous climat guyanais, une piscine laissée seule tourne vite. Passage régulier ou ponctuel, avec un compte rendu à chaque visite.</p>
+          <ul class="ticks">
+            <li>Analyse et traitement de l'eau</li>
+            <li>Nettoyage du bassin et des filtres</li>
+            <li>Dépannage pompe et filtration</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== LE CHANTIER ============================== -->
+<section class="section section-deep" id="chantier" aria-labelledby="chantier-title">
+  <div class="shell">
+    <p class="kicker kicker-accent reveal">Le chantier</p>
+    <h2 id="chantier-title" class="section-title reveal" data-reveal-delay="1">
+      Ce qui se passe, dans l'ordre.
+    </h2>
+    <p class="section-lead reveal" data-reveal-delay="2">
+      Aucune étape n'est une surprise : vous savez dès le devis qui intervient,
+      quand, et ce qui reste à faire.
+    </p>
+
+    <ol class="timeline">
+      <li class="phase reveal" data-reveal-delay="1">
+        <span class="phase-num" aria-hidden="true">01</span>
+        <h3>Visite et devis</h3>
+        <p>On vient voir le terrain : l'accès, la pente, l'exposition, l'arrivée d'eau et le passage des engins. Le devis est détaillé, et gratuit.</p>
+      </li>
+      <li class="phase reveal" data-reveal-delay="2">
+        <span class="phase-num" aria-hidden="true">02</span>
+        <h3>Terrassement et structure</h3>
+        <p>Implantation au cordeau, creusement, ferraillage puis coulage. Le local technique est positionné à cette étape, pas après coup.</p>
+      </li>
+      <li class="phase reveal" data-reveal-delay="3">
+        <span class="phase-num" aria-hidden="true">03</span>
+        <h3>Étanchéité et finitions</h3>
+        <p>Pose du liner, margelles, plage, raccordement de la filtration. C'est l'étape où la piscine cesse d'être un chantier.</p>
+      </li>
+      <li class="phase reveal" data-reveal-delay="4">
+        <span class="phase-num" aria-hidden="true">04</span>
+        <h3>Mise en eau et prise en main</h3>
+        <p>Remplissage, équilibrage, réglage de la filtration. On vous montre les gestes à faire pour garder cette eau-là.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================= RÉALISATIONS =============================
+     Chaque vignette est un lien vers l'image : sans JavaScript, le clic
+     l'ouvre normalement ; avec, elle s'ouvre dans la visionneuse. -->
+<section class="section section-light" id="realisations" aria-labelledby="realisations-title">
+  <div class="shell">
+    <p class="kicker reveal">Réalisations</p>
+    <h2 id="realisations-title" class="section-title reveal" data-reveal-delay="1">
+      Des chantiers, pas des images de catalogue.
+    </h2>
+    <p class="section-lead reveal" data-reveal-delay="2">
+      Toutes les photos de cette page viennent de chantiers et du magasin
+      Tech Piscine.
+    </p>
+
+    <div class="gallery" id="gallery">
+      <a class="tile reveal" href="/assets/techpiscine/realisation.webp"
+         data-caption="Bassin terminé, terrasse et abords">
+        <img src="/assets/techpiscine/realisation.webp" width="428" height="406" loading="lazy" decoding="async"
+             alt="Piscine terminée avec terrasse carrelée, mobilier et talus planté.">
+        <span class="tile-zoom" aria-hidden="true"></span>
+      </a>
+      <a class="tile reveal" data-reveal-delay="1" href="/assets/techpiscine/chantier.webp"
+         data-caption="Pose du liner par l'équipe Tech Piscine">
+        <img src="/assets/techpiscine/chantier.webp" width="278" height="284" loading="lazy" decoding="async"
+             alt="Deux techniciens déroulant un liner dans un bassin.">
+        <span class="tile-zoom" aria-hidden="true"></span>
+      </a>
+      <a class="tile reveal" data-reveal-delay="2" href="/assets/techpiscine/magasin.webp"
+         data-caption="Le magasin : produits, pompes et robots">
+        <img src="/assets/techpiscine/magasin.webp" width="428" height="320" loading="lazy" decoding="async"
+             alt="Rayons du magasin Tech Piscine : produits d'entretien, pompes et robots.">
+        <span class="tile-zoom" aria-hidden="true"></span>
+      </a>
+      <a class="tile reveal" href="/assets/techpiscine/hors-sol.webp"
+         data-caption="Piscine hors-sol en bois, en magasin">
+        <img src="/assets/techpiscine/hors-sol.webp" width="428" height="261" loading="lazy" decoding="async"
+             alt="Piscine hors-sol en bois montée et remplie dans le magasin.">
+        <span class="tile-zoom" aria-hidden="true"></span>
+      </a>
+      <a class="tile reveal" data-reveal-delay="1" href="/assets/techpiscine/eau.webp"
+         data-caption="Eau équilibrée et plage bois">
+        <img src="/assets/techpiscine/eau.webp" width="428" height="571" loading="lazy" decoding="async"
+             alt="Eau de piscine limpide bordée d'une plage en bois.">
+        <span class="tile-zoom" aria-hidden="true"></span>
+      </a>
+      <a class="tile reveal" data-reveal-delay="2" href="/assets/techpiscine/eau-2.webp"
+         data-caption="Reflets — bassin entretenu">
+        <img src="/assets/techpiscine/eau-2.webp" width="428" height="571" loading="lazy" decoding="async"
+             alt="Reflets du soleil sur l'eau d'un bassin entretenu.">
+        <span class="tile-zoom" aria-hidden="true"></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== LE MAGASIN ============================== -->
+<section class="section section-tint" id="magasin" aria-labelledby="magasin-title">
+  <div class="shell shop">
+    <figure class="shot shop-photo reveal">
+      <img src="/assets/techpiscine/magasin.webp" width="428" height="431" loading="lazy" decoding="async"
+           alt="Intérieur du magasin Tech Piscine : piscine hors-sol en bois, pompes et produits d'entretien en rayon.">
+    </figure>
+
+    <div class="shop-copy">
+      <p class="kicker reveal">Le magasin</p>
+      <h2 id="magasin-title" class="section-title reveal" data-reveal-delay="1">
+        Le magasin continue en ligne.
+      </h2>
+      <p class="reveal" data-reveal-delay="2">
+        Produits d'entretien, pompes, filtres, robots, pièces détachées,
+        piscines hors-sol en bois, jeux et accessoires. Si vous entretenez
+        vous-même votre bassin, vous trouvez tout ici.
+      </p>
+      <p class="reveal" data-reveal-delay="3">
+        Une pièce vous manque ? Envoyez-nous la référence ou une photo, on
+        vous dit tout de suite si c'est en stock.
+      </p>
+
+      <ul class="ticks ticks-2 reveal" data-reveal-delay="4">
+        <li>Traitement de l'eau et analyse</li>
+        <li>Pompes, filtres et robots</li>
+        <li>Pièces détachées</li>
+        <li>Hors-sol bois et accessoires</li>
+      </ul>
+
+      <p class="shop-note reveal" data-reveal-delay="5">
+        <b>Livraison rapide</b> partout en Guyane.
+      </p>
+
+      <div class="hero-actions reveal" data-reveal-delay="5">
+        <a class="btn btn-dark" href="https://www.instagram.com/techpiscine/" target="_blank" rel="noopener">
+          Écrire sur Instagram
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6.5 3.5h7a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-7a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="14.2" cy="5.9" r="1" fill="currentColor"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================== AVIS ===============================
+     DÉMO : témoignages illustratifs, signalés en pied de page. À remplacer
+     par de vrais avis clients avant toute mise en ligne. -->
+<section class="section section-light" id="avis" aria-labelledby="avis-title">
+  <div class="shell">
+    <div class="avis-head">
+      <div>
+        <p class="kicker reveal">Ils ont sauté dedans</p>
+        <h2 id="avis-title" class="section-title reveal" data-reveal-delay="1">Ce qu'en disent nos clients.</h2>
+      </div>
+      <div class="carousel-nav reveal" data-reveal-delay="2">
+        <button type="button" class="round-btn" data-carousel-prev aria-label="Avis précédents">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="round-btn" data-carousel-next aria-label="Avis suivants">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4.5 13.5 10 8 15.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="carousel" id="avis-carousel" tabindex="0" role="region" aria-label="Avis clients — défilement horizontal">
+    <div class="carousel-track">
+      <article class="avis-card">
+        <div class="stars" role="img" aria-label="5 sur 5">★★★★★</div>
+        <blockquote>« Terrain en pente, accès compliqué, et le chantier a tenu les délais. L'équipe nettoyait tout en partant chaque soir. »</blockquote>
+        <footer><span class="avatar" aria-hidden="true">JL</span><div><b>Jean-Luc P.</b><span>Rémire-Montjoly</span></div></footer>
+      </article>
+
+      <article class="avis-card">
+        <div class="stars" role="img" aria-label="5 sur 5">★★★★★</div>
+        <blockquote>« Liner changé en deux jours sur une piscine de dix ans. On dirait une piscine neuve, pour une fraction du prix. »</blockquote>
+        <footer><span class="avatar" aria-hidden="true">MA</span><div><b>Marie-Ange C.</b><span>Matoury</span></div></footer>
+      </article>
+
+      <article class="avis-card">
+        <div class="stars" role="img" aria-label="5 sur 5">★★★★★</div>
+        <blockquote>« Je suis passé au contrat d'entretien après une saison des pluies catastrophique. Depuis, l'eau est claire et je n'y pense plus. »</blockquote>
+        <footer><span class="avatar" aria-hidden="true">SD</span><div><b>Steeve D.</b><span>Cayenne</span></div></footer>
+      </article>
+
+      <article class="avis-card">
+        <div class="stars" role="img" aria-label="5 sur 5">★★★★★</div>
+        <blockquote>« Pompe morte un samedi matin. J'ai envoyé la photo de l'étiquette, la pièce était au magasin l'après-midi. »</blockquote>
+        <footer><span class="avatar" aria-hidden="true">KB</span><div><b>Kevin B.</b><span>Kourou</span></div></footer>
+      </article>
+
+      <article class="avis-card">
+        <div class="stars" role="img" aria-label="5 sur 5">★★★★★</div>
+        <blockquote>« Ils m'ont expliqué comment traiter moi-même plutôt que de me vendre un contrat. C'est la raison pour laquelle j'y retourne. »</blockquote>
+        <footer><span class="avatar" aria-hidden="true">NF</span><div><b>Nadège F.</b><span>Macouria</span></div></footer>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================================ FAQ ================================ -->
+<section class="section section-tint" id="faq" aria-labelledby="faq-title">
+  <div class="shell shell-narrow">
+    <p class="kicker reveal">Questions fréquentes</p>
+    <h2 id="faq-title" class="section-title reveal" data-reveal-delay="1">Avant de nous appeler.</h2>
+
+    <div class="faq">
+      <details class="faq-item reveal" data-reveal-delay="1">
+        <summary>Combien de temps prend une construction ?<span class="faq-chevron" aria-hidden="true"></span></summary>
+        <div class="faq-body"><p>Cela dépend du bassin et de l'accès au terrain. La fourchette vous est donnée lors de la visite, avec les étapes datées — et c'est cette fourchette qui figure au devis.</p></div>
+      </details>
+
+      <details class="faq-item reveal" data-reveal-delay="2">
+        <summary>Quel budget faut-il prévoir ?<span class="faq-chevron" aria-hidden="true"></span></summary>
+        <div class="faq-body"><p>Trop de paramètres pour un prix au mètre carré : dimensions, type de bassin, terrassement, plage, local technique. Le devis est gratuit et détaillé ligne par ligne, sans forfait flou.</p></div>
+      </details>
+
+      <details class="faq-item reveal" data-reveal-delay="3">
+        <summary>Intervenez-vous partout en Guyane ?<span class="faq-chevron" aria-hidden="true"></span></summary>
+        <div class="faq-body"><p>Oui, sur l'île de Cayenne et les communes alentour. Pour les chantiers plus éloignés, dites-nous où : on vous répond franchement sur ce qu'on peut tenir.</p></div>
+      </details>
+
+      <details class="faq-item reveal" data-reveal-delay="4">
+        <summary>Faut-il une autorisation d'urbanisme ?<span class="faq-chevron" aria-hidden="true"></span></summary>
+        <div class="faq-body"><p>Selon la surface du bassin et la présence d'un abri, une déclaration préalable ou un permis peut être exigé. On vous indique le régime applicable à votre projet dès la visite.</p></div>
+      </details>
+
+      <details class="faq-item reveal" data-reveal-delay="5">
+        <summary>Que comprend un contrat d'entretien ?<span class="faq-chevron" aria-hidden="true"></span></summary>
+        <div class="faq-body"><p>Passage régulier, analyse et correction de l'eau, nettoyage du bassin et des filtres, contrôle de la filtration, et un compte rendu à chaque visite. La fréquence s'adapte à l'usage et à la saison.</p></div>
+      </details>
+
+      <details class="faq-item reveal" data-reveal-delay="6">
+        <summary>Vendez-vous aux particuliers qui entretiennent eux-mêmes ?<span class="faq-chevron" aria-hidden="true"></span></summary>
+        <div class="faq-body"><p>Bien sûr. Le magasin est ouvert à tous : produits, pièces détachées, matériel. Et on prend le temps d'expliquer comment s'en servir.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- =============================== DEVIS =============================== -->
+<section class="section section-deep section-book" id="devis" aria-labelledby="devis-title">
+  <div class="shell shell-narrow">
+    <p class="kicker kicker-accent reveal">Devis gratuit</p>
+    <h2 id="devis-title" class="book-title reveal" data-reveal-delay="1">Prenons rendez-vous.</h2>
+    <p class="book-lead reveal" data-reveal-delay="2">
+      Choisissez un créneau : on fait le point sur votre projet, et on convient
+      d'une visite sur place si c'est pertinent.
+    </p>
+
+    <ul class="ticks ticks-light reveal" data-reveal-delay="3">
+      <li>Étude de votre terrain et de vos contraintes</li>
+      <li>Devis détaillé et gratuit, sans engagement</li>
+      <li>Construction, rénovation ou simple entretien</li>
+    </ul>
+
+    <!-- ⚠️ À REMPLACER avant de montrer la page au client : ce lien est celui
+         d'un autre compte. Une seule valeur à changer, ici. -->
+    <div class="calendly-wrap reveal" data-reveal-delay="4">
+      <div class="calendly-state" id="calendly-state">
+        <span class="spinner" aria-hidden="true"></span>
+        <p>Chargement du calendrier…</p>
+      </div>
+      <div id="calendly-embed" class="calendly-embed"
+           data-calendly-url="https://calendly.com/ledorvenenzo50/appel-decouverte-generation-capable"></div>
+      <div class="calendly-fallback" id="calendly-fallback" hidden>
+        <p>Le calendrier ne peut pas s'afficher ici — un bloqueur de contenu ou le réseau l'empêche.</p>
+        <a class="btn btn-dark" id="calendly-fallback-link"
+           href="https://calendly.com/ledorvenenzo50/appel-decouverte-generation-capable"
+           target="_blank" rel="noopener">Ouvrir le calendrier dans un nouvel onglet</a>
+      </div>
+    </div>
+
+    <p class="book-note">
+      Vous préférez écrire ? <a href="https://www.instagram.com/techpiscine/" target="_blank" rel="noopener">@techpiscine</a> sur Instagram.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="shell footer-inner">
+    <div class="footer-brand">
+      <img src="/assets/techpiscine/logo.webp" width="256" height="256" alt="" loading="lazy" decoding="async">
+      <p>Tech Piscine — construction, rénovation et entretien de piscines en Guyane.</p>
+    </div>
+    <nav class="footer-links" aria-label="Liens de pied de page">
+      <a href="#services">Nos métiers</a>
+      <a href="#realisations">Réalisations</a>
+      <a href="#magasin">Le magasin</a>
+      <a href="#faq">FAQ</a>
+      <a href="#devis">Demander un devis</a>
+      <a href="https://www.instagram.com/techpiscine/" target="_blank" rel="noopener">Instagram</a>
+    </nav>
+    <p class="footer-legal">
+      <span>© <span id="year">2026</span> Tech Piscine</span>
+      <span class="footer-demo">Maquette de démonstration — les avis clients sont illustratifs, et les coordonnées (téléphone, adresse, horaires) restent à compléter.</span>
+    </p>
+  </div>
+</footer>
+
+<div class="mobile-bar" id="mobile-bar" hidden>
+  <div>
+    <b>Devis gratuit</b>
+    <span>Sans engagement</span>
+  </div>
+  <a class="btn btn-accent btn-sm" href="#devis">Demander</a>
+</div>
+
+<!-- Visionneuse d'images. <dialog> fournit nativement le piégeage du focus et
+     la fermeture par Échap — inutile de les réimplémenter. -->
+<dialog class="lightbox" id="lightbox" aria-label="Visionneuse de photos">
+  <button type="button" class="lightbox-close" id="lightbox-close" aria-label="Fermer la visionneuse">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+  <button type="button" class="lightbox-arrow lightbox-prev" id="lightbox-prev" aria-label="Photo précédente">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 7.5 12l7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <figure class="lightbox-figure">
+    <img id="lightbox-img" alt="">
+    <figcaption id="lightbox-caption"></figcaption>
+  </figure>
+  <button type="button" class="lightbox-arrow lightbox-next" id="lightbox-next" aria-label="Photo suivante">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+</dialog>
+
+<script src="/techpiscine.js" defer></script>
+</body>
+</html>
