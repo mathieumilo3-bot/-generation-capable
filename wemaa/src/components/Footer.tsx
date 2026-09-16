@@ -1,20 +1,19 @@
 import { Link } from "react-router-dom";
 import { brand, contact, footer } from "../data/content";
+import { Logo } from "./Logo";
 
 export function Footer() {
   return (
     <footer className="border-t border-or/10 bg-noir">
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10">
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <Link to="/" className="font-serif text-xl tracking-[0.15em] text-ivoire">
-              WEMAA <span className="text-or">SERVICES</span>
+            <Link to="/" className="inline-flex items-center gap-3" aria-label={brand.name}>
+              <Logo size="lg" />
             </Link>
-            <p className="mt-4 text-xs tracking-[0.15em] text-ivoire/50">
-              {brand.tagline.toUpperCase()}
-            </p>
+            <p className="mt-4 max-w-[220px] text-xs tracking-[0.1em] text-ivoire/50">{footer.tagline}</p>
 
-            <div className="mt-6 flex gap-4">
+            <div className="mt-6 flex gap-3">
               {contact.socials.map((s) => (
                 <a
                   key={s.label}
@@ -36,7 +35,7 @@ export function Footer() {
               <ul className="mt-5 space-y-3">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    {link.href.startsWith("/#") ? (
+                    {link.href.startsWith("/#") || link.href === "#" ? (
                       <a href={link.href} className="text-sm text-ivoire/60 transition-colors hover:text-or">
                         {link.label}
                       </a>
@@ -52,7 +51,7 @@ export function Footer() {
           ))}
 
           <div>
-            <h3 className="text-xs font-medium tracking-[0.2em] text-ivoire">COORDONNÉES</h3>
+            <h3 className="text-xs font-medium tracking-[0.2em] text-ivoire">CONTACT</h3>
             <ul className="mt-5 space-y-3 text-sm text-ivoire/60">
               <li>{contact.phone}</li>
               <li>{contact.email}</li>
@@ -65,13 +64,7 @@ export function Footer() {
           <p className="text-xs text-ivoire/40">
             © {new Date().getFullYear()} {brand.name}. Tous droits réservés.
           </p>
-          <div className="flex gap-6">
-            {footer.legal.map((l) => (
-              <a key={l.label} href={l.href} className="text-xs text-ivoire/40 transition-colors hover:text-or">
-                {l.label}
-              </a>
-            ))}
-          </div>
+          <p className="text-xs text-ivoire/40">{footer.bottomNote}</p>
         </div>
       </div>
     </footer>

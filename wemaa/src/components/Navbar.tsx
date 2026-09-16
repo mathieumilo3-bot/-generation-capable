@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { brand, nav } from "../data/content";
 import { useScrolled } from "../hooks/useScrolled";
 import { GoldButton } from "./Button";
+import { Logo } from "./Logo";
 
 export function Navbar() {
   const scrolled = useScrolled(30);
@@ -24,13 +25,13 @@ export function Navbar() {
   }, [open]);
 
   const handleNavClick = (event: MouseEvent, href: string) => {
+    if (!href.startsWith("/#")) return; // navigation normale (ex. /devis)
+
     const hash = href.replace("/", "");
+    event.preventDefault();
     if (location.pathname === "/") {
-      event.preventDefault();
-      const el = document.querySelector(hash);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.querySelector(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
     } else {
-      event.preventDefault();
       navigate(href);
     }
   };
@@ -44,21 +45,31 @@ export function Navbar() {
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-10">
-        <Link to="/" className="font-serif text-xl tracking-[0.15em] text-ivoire">
-          WEMAA <span className="text-or">SERVICES</span>
+        <Link to="/" aria-label={brand.name}>
+          <Logo />
         </Link>
 
         <nav className="hidden items-center gap-9 lg:flex">
-          {nav.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
-              className="text-sm tracking-wide text-ivoire/80 transition-colors duration-300 hover:text-or"
-            >
-              {item.label}
-            </a>
-          ))}
+          {nav.map((item) =>
+            item.href.startsWith("/#") ? (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
+                className="text-sm tracking-wide text-ivoire/80 transition-colors duration-300 hover:text-or"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.href}
+                to={item.href}
+                className="text-sm tracking-wide text-ivoire/80 transition-colors duration-300 hover:text-or"
+              >
+                {item.label}
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="hidden lg:block">
@@ -94,19 +105,32 @@ export function Navbar() {
         }`}
       >
         <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6">
-          {nav.map((item, i) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
-              style={{ transitionDelay: open ? `${i * 60}ms` : "0ms" }}
-              className={`font-serif text-3xl text-ivoire transition-all duration-500 hover:text-or ${
-                open ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-              }`}
-            >
-              {item.label}
-            </a>
-          ))}
+          {nav.map((item, i) =>
+            item.href.startsWith("/#") ? (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
+                style={{ transitionDelay: open ? `${i * 60}ms` : "0ms" }}
+                className={`font-serif text-3xl text-ivoire transition-all duration-500 hover:text-or ${
+                  open ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+                }`}
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.href}
+                to={item.href}
+                style={{ transitionDelay: open ? `${i * 60}ms` : "0ms" }}
+                className={`font-serif text-3xl text-ivoire transition-all duration-500 hover:text-or ${
+                  open ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ),
+          )}
           <GoldButton href="/devis" className="mt-4">
             Demander un devis
           </GoldButton>

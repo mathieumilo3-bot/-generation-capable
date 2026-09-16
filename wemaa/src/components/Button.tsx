@@ -12,6 +12,11 @@ type ButtonProps = CommonProps & {
   type?: "button" | "submit";
 };
 
+type OutlineButtonProps = ButtonProps & {
+  /** "onDark" (défaut) pour un fond sombre, "onLight" pour un fond clair/crème. */
+  tone?: "onDark" | "onLight";
+};
+
 const isExternalOrAnchor = (href: string) => href.startsWith("#") || href.startsWith("/#");
 
 /** CTA principal doré — le bouton le plus visible du site. */
@@ -41,8 +46,16 @@ export function GoldButton({ href, onClick, type = "button", children, className
 }
 
 /** Bouton discret, contour doré, pour les CTA secondaires. */
-export function OutlineButton({ href, onClick, type = "button", children, className = "" }: ButtonProps) {
-  const classes = `group inline-flex items-center gap-2.5 rounded-full border border-or/40 px-7 py-3.5 text-sm font-medium tracking-wide text-ivoire transition-all duration-300 hover:border-or hover:bg-or/10 ${className}`;
+export function OutlineButton({
+  href,
+  onClick,
+  type = "button",
+  children,
+  className = "",
+  tone = "onDark",
+}: OutlineButtonProps) {
+  const toneClasses = tone === "onLight" ? "border-charbon/25 text-charbon" : "border-or/40 text-ivoire";
+  const classes = `group inline-flex items-center gap-2.5 rounded-full border px-7 py-3.5 text-sm font-medium tracking-wide transition-all duration-300 hover:border-or hover:bg-or/10 ${toneClasses} ${className}`;
 
   if (href) {
     if (isExternalOrAnchor(href)) {

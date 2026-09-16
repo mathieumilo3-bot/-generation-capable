@@ -13,6 +13,13 @@
   --color-or-clair: #e4cd94;
   --color-or-fonce: #8f7136;
 
+  /* Sections claires (fond crème avec texte sombre chaleureux) */
+  --color-charbon: #201c15;
+  --color-charbon-soft: #4a443a;
+  --color-carte: #fffdf8;
+  --color-creme: #f3ede0;
+  --color-creme-soft: #ebe2cf;
+
   --animate-fade-up: fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   --animate-fade-in: fade-in 1.1s ease forwards;
 

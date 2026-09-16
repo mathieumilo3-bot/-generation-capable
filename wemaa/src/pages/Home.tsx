@@ -6,7 +6,10 @@ import { About } from "../components/About";
 import { Stats } from "../components/Stats";
 import { Portfolio } from "../components/Portfolio";
 import { Testimonials } from "../components/Testimonials";
+import { ProcessSteps } from "../components/ProcessSteps";
 import { CtaFinal } from "../components/CtaFinal";
+import { ctaFinal } from "../data/content";
+import { images } from "../data/images";
 
 export function Home() {
   const location = useLocation();
@@ -28,7 +31,13 @@ export function Home() {
       <Stats />
       <Portfolio />
       <Testimonials />
-      <CtaFinal />
+      <ProcessSteps />
+      <CtaFinal
+        title={ctaFinal.title}
+        subtitle={ctaFinal.subtitle}
+        cta={ctaFinal.cta}
+        image={images.ctaFinal}
+      />
     </>
   );
 }

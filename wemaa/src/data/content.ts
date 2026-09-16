@@ -4,7 +4,7 @@
 
 export const brand = {
   name: "Wemaa Services",
-  tagline: "Événements • Coordination • Excellence",
+  tagline: "Création & coordination d'événements",
 };
 
 export const nav = [
@@ -12,20 +12,20 @@ export const nav = [
   { label: "Nos expertises", href: "/#expertises" },
   { label: "Nos réalisations", href: "/#realisations" },
   { label: "À propos", href: "/#apropos" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Contact", href: "/devis" },
 ];
 
 export const hero = {
   label: "Wemaa Services",
-  titleLine1: "Créons ensemble des événements",
-  titleHighlight: "inoubliables.",
+  title: "Création & coordination d'événements d'exception",
   subtitle:
-    "Wemaa Services, votre partenaire de confiance pour l'organisation, la coordination et la mise en place de vos événements privés et professionnels.",
+    "Mariages, événements professionnels, coordination, personnel événementiel... Nous donnons vie à vos plus beaux projets.",
   cta: "Planifier mon événement",
   reassurance: [
-    "Une équipe expérimentée",
-    "Un accompagnement sur mesure",
-    "Des événements qui marquent",
+    { icon: "ear", label: "Écoute & conseil personnalisé" },
+    { icon: "team", label: "Une équipe expérimentée" },
+    { icon: "check", label: "Une organisation sans faille" },
+    { icon: "heart", label: "Des souvenirs inoubliables" },
   ],
 };
 
@@ -33,6 +33,7 @@ export type ServiceItem = {
   id: string;
   title: string;
   description: string;
+  icon: "heart" | "briefcase" | "check" | "team";
   imageKey: "serviceMariages" | "serviceProfessionnels" | "serviceCoordination" | "servicePersonnel";
 };
 
@@ -40,40 +41,47 @@ export const services: ServiceItem[] = [
   {
     id: "mariages",
     title: "Mariages",
-    description: "Des instants uniques, une organisation parfaite.",
+    description: "Un jour unique, une organisation parfaite.",
+    icon: "heart",
     imageKey: "serviceMariages",
   },
   {
     id: "evenements-professionnels",
     title: "Événements professionnels",
-    description: "Séminaires, galas, lancements de produits, soirées d'entreprise.",
+    description: "Séminaires, galas, lancements...",
+    icon: "briefcase",
     imageKey: "serviceProfessionnels",
   },
   {
     id: "coordination-organisation",
-    title: "Coordination & organisation",
-    description: "De la conception à la réalisation, nous vous accompagnons à chaque étape.",
+    title: "Coordination d'événements",
+    description: "De l'idée à la réalisation, on s'occupe de tout.",
+    icon: "check",
     imageKey: "serviceCoordination",
   },
   {
     id: "personnel-evenementiel",
     title: "Personnel événementiel",
-    description: "Des équipes qualifiées pour un service irréprochable, du début à la fin.",
+    description: "Des équipes qualifiées, pour un service irréprochable.",
+    icon: "team",
     imageKey: "servicePersonnel",
   },
 ];
 
 export const servicesSection = {
-  title: "Une offre complète pour chaque moment important.",
+  eyebrow: "Nos expertises",
+  title: "Des services sur mesure pour chaque occasion",
+  subtitle:
+    "Que vous soyez un particulier ou une entreprise, nous vous accompagnons à chaque étape de votre événement avec professionnalisme et créativité.",
 };
 
-export const about = {
-  title: "Plus qu'un événement,\nune expérience.",
+export const team = {
+  eyebrow: "À propos",
+  title: "Une équipe passionnée,\nà votre service",
   paragraphs: [
-    "Wemaa Services est une agence spécialisée dans la création et la coordination d'événements sur mesure.",
-    "Avec une équipe expérimentée et passionnée, nous mettons tout en œuvre pour transformer vos idées en moments inoubliables.",
+    "Chez Wemaa Services, nous croyons que chaque détail compte. Notre équipe met tout en œuvre pour faire de votre événement un moment unique et inoubliable.",
   ],
-  cta: "Notre histoire",
+  cta: "Découvrir notre équipe",
 };
 
 export type Stat = {
@@ -82,22 +90,27 @@ export type Stat = {
 };
 
 // Valeurs facilement modifiables — à ajuster avec les chiffres réels de Wemaa Services.
+export const statsSection = {
+  title: "Wemaa Services en quelques chiffres",
+};
+
 export const stats: Stat[] = [
-  { value: "5+", label: "Années d'expérience" },
-  { value: "300+", label: "Événements réalisés" },
-  { value: "100%", label: "Clients satisfaits" },
-  { value: "24/7", label: "Équipe à votre écoute" },
+  { value: "100+", label: "Événements réalisés" },
+  { value: "5", label: "Années d'expérience" },
+  { value: "95%", label: "Clients satisfaits" },
+  { value: "1", label: "Équipe passionnée" },
 ];
 
 export const portfolioSection = {
-  title: "Des événements qui parlent d'eux-mêmes.",
+  eyebrow: "Nos réalisations",
+  title: "Chaque événement est une histoire unique",
+  subtitle: "Découvrez un aperçu de nos dernières réalisations et laissez-vous inspirer.",
   cta: "Voir toutes nos réalisations",
 };
 
 export type Testimonial = {
   id: string;
   name: string;
-  role: string;
   quote: string;
   rating: number;
 };
@@ -106,60 +119,71 @@ export type Testimonial = {
 export const testimonials: Testimonial[] = [
   {
     id: "t1",
-    name: "Camille R.",
-    role: "Mariage — témoignage fictif, à remplacer",
+    name: "Aminata & Moussa",
     quote:
-      "Une organisation d'une fluidité incroyable. Chaque détail avait été pensé, nous n'avons eu qu'à profiter de notre journée.",
+      "Une équipe au top ! Notre mariage a été au-delà de nos attentes. Tout était parfait, du début à la fin.",
     rating: 5,
   },
   {
     id: "t2",
-    name: "Julien M.",
-    role: "Séminaire d'entreprise — témoignage fictif, à remplacer",
+    name: "Sophie L.",
     quote:
-      "Une équipe professionnelle et réactive du premier échange jusqu'au jour J. Nos invités ont été bluffés par la qualité de la mise en place.",
+      "Professionnalisme, écoute et disponibilité. Notre événement d'entreprise a été un vrai succès. Merci encore !",
     rating: 5,
   },
   {
     id: "t3",
-    name: "Sarah B.",
-    role: "Réception privée — témoignage fictif, à remplacer",
+    name: "Karim B.",
     quote:
-      "Wemaa Services a su comprendre exactement ce que nous voulions et l'a sublimé. Un vrai accompagnement sur mesure, de bout en bout.",
+      "Une organisation impeccable, une équipe souriante et très professionnelle. Je recommande Wemaa Services les yeux fermés.",
     rating: 5,
   },
 ];
 
 export const testimonialsSection = {
   eyebrow: "Ils nous font confiance",
-  title: "Leur satisfaction est notre plus belle réussite.",
+  title: "Leur satisfaction, notre plus belle récompense",
   disclaimer: "Témoignages fictifs à titre d'exemple — à remplacer par de vrais avis clients.",
 };
 
+export type ProcessStep = {
+  number: string;
+  title: string;
+  description: string;
+};
+
+export const processSection = {
+  title: "Le processus est simple",
+  steps: [
+    { number: "1", title: "Votre demande", description: "Remplissez le formulaire" },
+    { number: "2", title: "Échange", description: "Nous discutons de votre projet" },
+    { number: "3", title: "Proposition", description: "Vous recevez un devis sur mesure" },
+    { number: "4", title: "L'événement", description: "On s'occupe du reste !" },
+  ] as ProcessStep[],
+};
+
 export const ctaFinal = {
-  title: "Prêt à donner vie à votre projet ?",
+  title: "Prêt à créer un événement inoubliable ?",
   subtitle: "Parlons ensemble de votre événement et créons quelque chose d'exceptionnel.",
   cta: "Demander un devis",
 };
 
+export const ctaMid = {
+  title: "Votre événement mérite l'excellence",
+  subtitle: "Wemaa Services, plus qu'un prestataire, un partenaire de confiance.",
+  cta: "Demander un devis",
+};
+
 export const quotePage = {
+  eyebrow: "Contact",
   title: "Parlons de votre événement",
   subtitle:
     "Remplissez ce formulaire en quelques secondes et notre équipe vous recontactera rapidement pour discuter de votre projet.",
   submitLabel: "Envoyer ma demande",
   perks: [
-    {
-      title: "Réponse rapide",
-      detail: "Sous 24 à 48h",
-    },
-    {
-      title: "Devis personnalisé",
-      detail: "Selon vos besoins",
-    },
-    {
-      title: "Conseil offert",
-      detail: "Sans engagement",
-    },
+    { icon: "lock", label: "Vos données sont sécurisées" },
+    { icon: "clock", label: "Réponse sous 24h" },
+    { icon: "chat", label: "Sans engagement" },
   ],
   eventTypes: [
     "Mariage",
@@ -179,42 +203,38 @@ export const quotePage = {
 };
 
 export const contact = {
-  phone: "+33 1 23 45 67 89",
+  phone: "+33 6 12 34 56 78",
   email: "contact@wemaaservices.fr",
   location: "Paris, France",
   socials: [
     { label: "Instagram", href: "https://instagram.com" },
+    { label: "Facebook", href: "https://facebook.com" },
     { label: "TikTok", href: "https://tiktok.com" },
-    { label: "LinkedIn", href: "https://linkedin.com" },
+    { label: "WhatsApp", href: "https://wa.me/33612345678" },
   ],
 };
 
 export const footer = {
+  tagline: "Création & coordination d'événements",
   columns: [
     {
       title: "Nos expertises",
       links: [
         { label: "Mariages", href: "/#expertises" },
         { label: "Événements professionnels", href: "/#expertises" },
-        { label: "Coordination & organisation", href: "/#expertises" },
+        { label: "Coordination d'événements", href: "/#expertises" },
         { label: "Personnel événementiel", href: "/#expertises" },
       ],
     },
     {
-      title: "Réalisations",
-      links: [{ label: "Voir la galerie", href: "/realisations" }],
-    },
-    {
-      title: "À propos",
-      links: [{ label: "Notre histoire", href: "/#apropos" }],
-    },
-    {
-      title: "Contact",
-      links: [{ label: "Demander un devis", href: "/devis" }],
+      title: "Liens utiles",
+      links: [
+        { label: "À propos", href: "/#apropos" },
+        { label: "Nos réalisations", href: "/realisations" },
+        { label: "Contact", href: "/devis" },
+        { label: "Mentions légales", href: "#" },
+      ],
     },
   ],
-  legal: [
-    { label: "Mentions légales", href: "#" },
-    { label: "Politique de confidentialité", href: "#" },
-  ],
+  bottomNote: "Créé avec ♥ pour vos plus beaux événements",
 };

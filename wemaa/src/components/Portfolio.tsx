@@ -1,48 +1,40 @@
 import { useState } from "react";
 import { portfolioSection } from "../data/content";
 import { images } from "../data/images";
-import { GoldButton } from "./Button";
+import { OutlineButton } from "./Button";
 import { Img } from "./Img";
 import { Lightbox } from "./Lightbox";
 import { Reveal } from "./Reveal";
 
-const preview = images.portfolio.slice(0, 6);
+const preview = images.portfolio.slice(0, 4);
 
 export function Portfolio() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="realisations" className="bg-noir py-28 lg:py-36">
+    <section id="realisations" className="bg-ivoire py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <Reveal className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
-          <div className="max-w-xl">
-            <p className="mb-4 flex items-center gap-3 text-xs font-medium tracking-[0.35em] text-or">
-              <span className="h-px w-8 bg-or" />
-              RÉALISATIONS
-            </p>
-            <h2 className="text-balance font-serif text-4xl leading-tight text-ivoire sm:text-5xl">
-              {portfolioSection.title}
-            </h2>
-          </div>
-          <GoldButton href="/realisations" className="shrink-0">
-            {portfolioSection.cta}
-            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-          </GoldButton>
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <p className="mb-4 flex items-center justify-center gap-3 text-xs font-medium tracking-[0.35em] text-or-fonce">
+            <span className="h-px w-8 bg-or-fonce" />
+            {portfolioSection.eyebrow.toUpperCase()}
+            <span className="h-px w-8 bg-or-fonce" />
+          </p>
+          <h2 className="text-balance font-serif text-4xl leading-tight text-charbon sm:text-5xl">
+            {portfolioSection.title}
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-charbon-soft">
+            {portfolioSection.subtitle}
+          </p>
         </Reveal>
 
-        <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 lg:gap-5">
+        <div className="mt-14 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
           {preview.map((photo, i) => (
-            <Reveal
-              key={photo.id}
-              delay={(i % 3) * 100}
-              className={i === 0 ? "col-span-2 lg:col-span-1 lg:row-span-2" : ""}
-            >
+            <Reveal key={photo.id} delay={i * 100}>
               <button
                 type="button"
                 onClick={() => setOpenIndex(i)}
-                className={`group relative block w-full overflow-hidden rounded-xl border border-or/10 transition-colors duration-500 hover:border-or/40 ${
-                  i === 0 ? "aspect-[4/5] lg:h-full" : "aspect-[4/3]"
-                }`}
+                className="group relative block aspect-[3/4] w-full overflow-hidden rounded-xl ring-1 ring-charbon/10 transition-all duration-500 hover:ring-or/40"
               >
                 <Img
                   src={photo.src}
@@ -57,6 +49,13 @@ export function Portfolio() {
             </Reveal>
           ))}
         </div>
+
+        <Reveal className="mt-14 flex justify-center">
+          <OutlineButton href="/realisations" tone="onLight">
+            {portfolioSection.cta}
+            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+          </OutlineButton>
+        </Reveal>
       </div>
 
       {openIndex !== null && (

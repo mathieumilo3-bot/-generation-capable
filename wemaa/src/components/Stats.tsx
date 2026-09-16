@@ -1,5 +1,6 @@
-import { stats } from "../data/content";
+import { stats, statsSection } from "../data/content";
 import { useCountUp } from "../hooks/useCountUp";
+import { Reveal } from "./Reveal";
 
 function StatItem({ value, label }: { value: string; label: string }) {
   const { ref, display } = useCountUp<HTMLDivElement>(value);
@@ -13,11 +14,16 @@ function StatItem({ value, label }: { value: string; label: string }) {
 
 export function Stats() {
   return (
-    <section className="border-y border-or/10 bg-noir-soft py-16">
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-y-12 px-6 lg:grid-cols-4 lg:px-10">
-        {stats.map((stat) => (
-          <StatItem key={stat.label} {...stat} />
-        ))}
+    <section className="border-y border-or/10 bg-noir-soft py-16 lg:py-20">
+      <div className="mx-auto max-w-6xl px-6 lg:px-10">
+        <Reveal className="mb-12 text-center">
+          <h2 className="font-serif text-2xl text-ivoire sm:text-3xl">{statsSection.title}</h2>
+        </Reveal>
+        <div className="grid grid-cols-2 gap-y-12 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <StatItem key={stat.label} {...stat} />
+          ))}
+        </div>
       </div>
     </section>
   );

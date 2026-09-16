@@ -11,14 +11,20 @@ npm install
 npm run dev
 ```
 
-Puis ouvrir l'URL affichée (ex. `http://localhost:5173/wemaa/`).
+Puis ouvrir l'URL affichée (ex. `http://localhost:5173/`).
 
-## Build de production
+## Build de production (fichier `index.html` autonome)
 
 ```bash
-npm run build   # sortie dans wemaa/dist
-npm run preview # servir le build localement
+npm run build   # génère wemaa/dist/index.html + assets, prêt à déployer/ouvrir
+npm run preview # servir ce build en local pour vérifier avant envoi
 ```
+
+`dist/` contient un site statique complet (`index.html` + `assets/*.css` + `*.js`) :
+il suffit de déposer ce dossier sur n'importe quel hébergement statique
+(Netlify, Vercel, simple FTP...) pour que le site soit en ligne. Un fichier
+`_redirects` est inclus pour que les URL `/devis` et `/realisations`
+fonctionnent aussi en accès direct sur Netlify.
 
 ## Structure
 

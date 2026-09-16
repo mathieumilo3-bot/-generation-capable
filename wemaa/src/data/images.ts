@@ -38,9 +38,10 @@ export const images = {
   serviceCoordination: unsplash("photo-1478146059778-26028b07395a", 1200),
   servicePersonnel: unsplash("photo-1519167758481-83f550bb49b3", 1200),
 
-  aboutPortrait: unsplash("photo-1556125574-d7f27ec36a06", 1400),
+  teamPhoto: unsplash("photo-1556125574-d7f27ec36a06", 1800),
 
   ctaFinal: unsplash("photo-1465495976277-4387d4b0b4c6", 2400),
+  ctaMid: unsplash("photo-1606216794074-735e91aa2c92", 1800),
 
   portfolio,
 } as const;
