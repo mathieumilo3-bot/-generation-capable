@@ -28,7 +28,7 @@ export const TEARDOWNS: Teardown[] = [
       points: [
         "Un seul message d'entrée, centré sur le problème le plus fréquent des clients du cabinet",
         "Prise de rendez-vous en trois questions, directement sous le premier écran",
-        "Preuve de méthode (process en étapes) plutôt qu'une liste de compétences",
+        "Preuve de méthode (processus en étapes) plutôt qu'une liste de compétences",
       ],
     },
     why: [

@@ -23,7 +23,7 @@ export default function AcquisitionPage() {
         },
         {
           heading: "Réseaux sociaux comme canal, pas comme vitrine",
-          body: "Chaque publication doit ramener vers un point de conversion unique, plutôt que de se disperser en engagement sans suite.",
+          body: "Chaque publication doit ramener vers un point de conversion unique, plutôt que de se disperser en engagements sans lendemain.",
         },
         {
           heading: "Mesurée dès le premier jour",

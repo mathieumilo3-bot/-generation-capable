@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { BreadcrumbJsonLd } from "@/components/schema/JsonLd";
-import { SITE_URL } from "@/lib/constants";
+import { PRIMARY_CTA_LABEL, SITE_URL } from "@/lib/constants";
 import { getSectorBySlug, SECTORS } from "@/lib/data/sectors";
 
 type Props = { params: Promise<{ secteur: string }> };
@@ -40,7 +40,7 @@ export default async function SectorPage({ params }: Props) {
       />
       <Eyebrow>{sector.label}</Eyebrow>
       <h1 className="font-display text-balance mt-4 max-w-2xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-        Un système digital pensé pour {sector.name.toLowerCase()}.
+        Un système digital pensé pour {sector.forPhrase}.
       </h1>
 
       <div className="mt-14 grid gap-10 lg:grid-cols-2">
@@ -78,7 +78,7 @@ export default async function SectorPage({ params }: Props) {
           trackEvent="cta_clicked"
           trackPayload={{ location: `sector_${sector.slug}` }}
         >
-          Analyser mon entreprise →
+          {PRIMARY_CTA_LABEL} →
         </Button>
       </div>
     </Section>

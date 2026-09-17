@@ -3,6 +3,7 @@ import { Section, Eyebrow } from "@/components/ui/Section";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
+  description: "Politique de confidentialité et traitement des données de Génération Capable.",
   robots: { index: false, follow: true },
   alternates: { canonical: "/politique-de-confidentialite" },
 };

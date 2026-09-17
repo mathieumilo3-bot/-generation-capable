@@ -3,6 +3,7 @@ import { Section, Eyebrow } from "@/components/ui/Section";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
+  description: "Informations légales relatives à Génération Capable.",
   robots: { index: false, follow: true },
   alternates: { canonical: "/mentions-legales" },
 };

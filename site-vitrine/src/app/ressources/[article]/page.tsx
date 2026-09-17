@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/schema/JsonLd";
-import { SITE_URL } from "@/lib/constants";
+import { PRIMARY_CTA_LABEL, SITE_URL } from "@/lib/constants";
 import { ARTICLES, getArticleBySlug } from "@/lib/data/articles";
 
 type Props = { params: Promise<{ article: string }> };
@@ -66,7 +66,7 @@ export default async function ArticlePage({ params }: Props) {
             trackEvent="cta_clicked"
             trackPayload={{ location: `article_${article.slug}` }}
           >
-            Analyser mon entreprise →
+            {PRIMARY_CTA_LABEL} →
           </Button>
         </div>
       </article>

@@ -1,7 +1,7 @@
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { BreadcrumbJsonLd } from "@/components/schema/JsonLd";
-import { SITE_URL } from "@/lib/constants";
+import { PRIMARY_CTA_LABEL, SITE_URL } from "@/lib/constants";
 
 export type PillarBlock = { heading: string; body: string };
 
@@ -57,7 +57,7 @@ export function PillarPage({
             trackEvent="cta_clicked"
             trackPayload={{ location: ctaContext }}
           >
-            Analyser mon entreprise →
+            {PRIMARY_CTA_LABEL} →
           </Button>
         </div>
       </div>

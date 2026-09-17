@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Reveal } from "@/components/ui/Reveal";
@@ -30,11 +30,16 @@ const STEPS = [
 
 export function Method() {
   const ref = useRef<HTMLDivElement>(null);
+  const shouldReduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start 0.75", "end 0.4"],
   });
-  const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+  const lineHeight = useTransform(
+    scrollYProgress,
+    [0, 1],
+    shouldReduceMotion ? ["100%", "100%"] : ["0%", "100%"]
+  );
 
   return (
     <Section id="methode" className="py-24 sm:py-32">

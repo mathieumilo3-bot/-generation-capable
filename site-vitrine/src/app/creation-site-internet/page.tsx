@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function CreationSiteInternetPage() {
   return (
     <PillarPage
-      eyebrow="Presence"
+      eyebrow="System 01"
       title="Création de site internet"
       intro="Un site n'est pas une brochure. C'est l'actif digital qui porte votre crédibilité et déclenche la première action du visiteur."
       path="/creation-site-internet"

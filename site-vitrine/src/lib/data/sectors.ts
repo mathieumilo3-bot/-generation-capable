@@ -2,6 +2,8 @@ export type Sector = {
   slug: string;
   name: string;
   label: string;
+  /** Grammatically correct French phrase for "pensé pour ___" (with article). */
+  forPhrase: string;
   problem: string;
   recommendedSystem: string;
   example: string;
@@ -13,6 +15,7 @@ export const SECTORS: Sector[] = [
     slug: "restaurants",
     name: "Restaurants",
     label: "Restauration",
+    forPhrase: "les restaurants",
     problem:
       "Une carte attractive et de bons avis ne suffisent pas si la page d'accueil ne pousse personne à réserver dans les dix premières secondes.",
     recommendedSystem:
@@ -26,8 +29,9 @@ export const SECTORS: Sector[] = [
     slug: "cabinets",
     name: "Cabinets",
     label: "Cabinets & professions réglementées",
+    forPhrase: "les cabinets et professions réglementées",
     problem:
-      "La confiance se joue avant le premier échange. Un site daté ou une prise de contact compliquée renvoie un doute sur le sérieux du cabinet.",
+      "La confiance se joue avant le premier échange. Un site daté ou une prise de contact compliquée jette un doute sur le sérieux du cabinet.",
     recommendedSystem:
       "Un système de présence sobre et crédible, associé à une prise de rendez-vous qualifiée qui filtre les demandes en amont.",
     example:
@@ -39,6 +43,7 @@ export const SECTORS: Sector[] = [
     slug: "immobilier",
     name: "Immobilier",
     label: "Immobilier",
+    forPhrase: "l'immobilier",
     problem:
       "Le volume d'annonces et de portails dilue la marque de l'agence. Le visiteur retient le bien, rarement l'agence qui l'a diffusé.",
     recommendedSystem:
@@ -52,6 +57,7 @@ export const SECTORS: Sector[] = [
     slug: "beaute",
     name: "Beauté",
     label: "Beauté & bien-être",
+    forPhrase: "la beauté et le bien-être",
     problem:
       "Instagram génère de l'attention, mais la prise de rendez-vous reste souvent manuelle, par message, avec des allers-retours qui font perdre des clientes.",
     recommendedSystem:
@@ -65,6 +71,7 @@ export const SECTORS: Sector[] = [
     slug: "artisans",
     name: "Artisans",
     label: "Artisans & métiers manuels",
+    forPhrase: "les artisans et métiers manuels",
     problem:
       "Le bouche-à-oreille fonctionne, mais il ne suffit plus à remplir un planning toute l'année, et il ne se voit pas en ligne.",
     recommendedSystem:
@@ -78,8 +85,9 @@ export const SECTORS: Sector[] = [
     slug: "services",
     name: "Services",
     label: "Entreprises de services",
+    forPhrase: "les entreprises de services",
     problem:
-      "L'offre est parfois difficile à expliquer en une phrase, et le site tente de tout dire à la fois, au risque de ne convaincre de rien.",
+      "L'offre est parfois difficile à expliquer en une phrase, et le site tente de tout dire à la fois, au risque de ne convaincre personne.",
     recommendedSystem:
       "Une architecture de présence qui hiérarchise l'offre par problème client, connectée à un système de qualification avant rendez-vous.",
     example:
@@ -91,6 +99,7 @@ export const SECTORS: Sector[] = [
     slug: "coachs",
     name: "Coachs",
     label: "Coachs & indépendants",
+    forPhrase: "les coachs et indépendants",
     problem:
       "L'activité repose sur la personne, mais la présence en ligne ressemble à un CV plutôt qu'à un système qui déclenche la prise de contact.",
     recommendedSystem:
@@ -104,6 +113,7 @@ export const SECTORS: Sector[] = [
     slug: "entreprises-locales",
     name: "Entreprises locales",
     label: "Entreprises locales",
+    forPhrase: "les entreprises locales",
     problem:
       "La visibilité locale dépend de fiches et d'avis dispersés sur plusieurs plateformes, sans point central qui convertit vraiment.",
     recommendedSystem:

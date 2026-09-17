@@ -37,7 +37,7 @@ const EMPTY_STATE: FormState = {
 const TOTAL_STEPS = 4;
 
 function inputClass() {
-  return "w-full rounded-xl border border-[var(--color-border-strong)] bg-transparent px-5 py-4 text-base text-[var(--color-text)] outline-none transition-colors duration-200 placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)]";
+  return "w-full rounded-xl border border-[var(--color-border-strong)] bg-transparent px-5 py-4 text-base text-[var(--color-text)] outline-none transition-colors duration-200 placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40";
 }
 
 export function AuditFunnel() {
@@ -133,10 +133,19 @@ export function AuditFunnel() {
   return (
     <div className="mx-auto max-w-xl">
       <div className="mb-10">
-        <div className="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-[0.2em] text-[var(--color-muted)]">
+        <div
+          className="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-[0.2em] text-[var(--color-muted)]"
+          aria-live="polite"
+        >
           <span>Étape {step} / {TOTAL_STEPS}</span>
         </div>
-        <div className="h-[3px] w-full overflow-hidden rounded-full bg-[var(--color-border)]">
+        <div
+          className="h-[3px] w-full overflow-hidden rounded-full bg-[var(--color-border)]"
+          role="progressbar"
+          aria-valuenow={step}
+          aria-valuemin={1}
+          aria-valuemax={TOTAL_STEPS}
+        >
           <motion.div
             className="h-full rounded-full bg-[var(--color-accent)]"
             animate={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
@@ -162,7 +171,12 @@ export function AuditFunnel() {
                 L&apos;adresse de votre site actuel, ou de votre page
                 principale (réseaux sociaux si vous n&apos;avez pas de site).
               </p>
+              <label htmlFor="audit-site-url" className="sr-only">
+                Votre site
+              </label>
               <input
+                id="audit-site-url"
+                name="siteUrl"
                 autoFocus
                 type="text"
                 inputMode="url"
@@ -170,6 +184,15 @@ export function AuditFunnel() {
                 className={`${inputClass()} mt-6`}
                 value={data.siteUrl}
                 onChange={(e) => update("siteUrl", e.target.value)}
+                onKeyDown={(e) => {
+                  // A form with a single text field submits implicitly on
+                  // Enter even with no visible submit button — intercept it
+                  // so Enter advances the wizard instead of submitting.
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    goNext();
+                  }
+                }}
               />
             </motion.div>
           )}
@@ -189,11 +212,16 @@ export function AuditFunnel() {
                 Choisissez le secteur qui correspond le mieux à votre
                 entreprise.
               </p>
-              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div
+                role="group"
+                aria-label="Secteur d'activité"
+                className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3"
+              >
                 {[...SECTORS.map((s) => s.name), "Autre"].map((option) => (
                   <button
                     type="button"
                     key={option}
+                    aria-pressed={data.secteur === option}
                     onClick={() => update("secteur", option)}
                     className={`rounded-xl border px-4 py-3 text-sm transition-colors duration-200 ${
                       data.secteur === option
@@ -222,11 +250,12 @@ export function AuditFunnel() {
               <p className="mt-2 text-sm text-[var(--color-muted)]">
                 Quel est le résultat le plus important pour vous aujourd&apos;hui ?
               </p>
-              <div className="mt-6 flex flex-col gap-3">
+              <div role="group" aria-label="Objectif principal" className="mt-6 flex flex-col gap-3">
                 {OBJECTIVES.map((option) => (
                   <button
                     type="button"
                     key={option}
+                    aria-pressed={data.objectif === option}
                     onClick={() => update("objectif", option)}
                     className={`rounded-xl border px-5 py-4 text-left text-sm transition-colors duration-200 ${
                       data.objectif === option
@@ -256,31 +285,55 @@ export function AuditFunnel() {
                 Pour vous transmettre votre audit personnellement.
               </p>
               <div className="mt-6 flex flex-col gap-4">
+                <label htmlFor="audit-nom" className="sr-only">
+                  Nom complet
+                </label>
                 <input
+                  id="audit-nom"
+                  name="nom"
                   required
                   type="text"
+                  autoComplete="name"
                   placeholder="Nom complet"
                   className={inputClass()}
                   value={data.nom}
                   onChange={(e) => update("nom", e.target.value)}
                 />
+                <label htmlFor="audit-entreprise" className="sr-only">
+                  Entreprise
+                </label>
                 <input
+                  id="audit-entreprise"
+                  name="entreprise"
                   type="text"
+                  autoComplete="organization"
                   placeholder="Entreprise"
                   className={inputClass()}
                   value={data.entreprise}
                   onChange={(e) => update("entreprise", e.target.value)}
                 />
+                <label htmlFor="audit-email" className="sr-only">
+                  Email
+                </label>
                 <input
+                  id="audit-email"
+                  name="email"
                   required
                   type="email"
+                  autoComplete="email"
                   placeholder="Email"
                   className={inputClass()}
                   value={data.email}
                   onChange={(e) => update("email", e.target.value)}
                 />
+                <label htmlFor="audit-telephone" className="sr-only">
+                  Téléphone
+                </label>
                 <input
+                  id="audit-telephone"
+                  name="telephone"
                   type="tel"
+                  autoComplete="tel"
                   placeholder="Téléphone"
                   className={inputClass()}
                   value={data.telephone}
@@ -312,6 +365,7 @@ export function AuditFunnel() {
 
           {step < TOTAL_STEPS ? (
             <button
+              key="continue-btn"
               type="button"
               onClick={goNext}
               disabled={!canAdvance()}
@@ -321,6 +375,7 @@ export function AuditFunnel() {
             </button>
           ) : (
             <button
+              key="submit-btn"
               type="submit"
               disabled={submitting}
               className="inline-flex items-center justify-center rounded-full bg-[var(--color-text)] px-7 py-3.5 text-sm font-medium text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"

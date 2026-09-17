@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -10,13 +10,14 @@ import { PRIMARY_CTA_LABEL } from "@/lib/constants";
 
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
+  const shouldReduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
   });
-  const gridY = useTransform(scrollYProgress, [0, 1], [0, 60]);
-  const contentY = useTransform(scrollYProgress, [0, 1], [0, -40]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const gridY = useTransform(scrollYProgress, [0, 1], shouldReduceMotion ? [0, 0] : [0, 60]);
+  const contentY = useTransform(scrollYProgress, [0, 1], shouldReduceMotion ? [0, 0] : [0, -40]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.8], shouldReduceMotion ? [1, 1] : [1, 0]);
 
   return (
     <div ref={ref} className="relative overflow-hidden">

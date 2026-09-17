@@ -45,17 +45,36 @@ npm run lint    # ESLint
   n'existe — voir le commentaire dans le fichier : aucun client, résultat ou
   témoignage n'est jamais inventé.
 - `src/app/api/audit/route.ts` — endpoint de réception du formulaire d'audit.
-  Aucun CRM/email n'est branché : le handler valide la requête et répond
-  200/4xx, prêt à être complété sans changement côté client.
+  Valide la requête puis envoie, via Resend (`generationcapable.fr`, domaine
+  déjà vérifié DKIM/SPF), un email de notification au propriétaire du
+  business et un email de confirmation au prospect. Sans les variables
+  d'environnement ci-dessous, il valide toujours la requête mais journalise
+  au lieu d'envoyer (utile en dev local sans secrets).
 - `src/lib/tracking.ts` — wrapper `dataLayer` no-op pour les événements
   (`audit_started`, `form_started`, `audit_completed`, `cta_clicked`, …), en
   attendant le branchement d'un outil d'analytics.
 
+## Variables d'environnement
+
+Copier `.env.example` en `.env.local` et renseigner :
+
+- `RESEND_API_KEY` — clé Resend `sending_access` restreinte au domaine
+  `generationcapable.fr` (créée pour ce formulaire).
+- `AUDIT_NOTIFY_EMAIL` — adresse qui reçoit chaque nouvelle demande d'audit.
+- `RESEND_FROM_EMAIL` — optionnel, expéditeur par défaut
+  `Génération Capable <audit@generationcapable.fr>`.
+
+Ces mêmes variables doivent être configurées sur la plateforme de
+déploiement (Netlify, Vercel, …) avant mise en production.
+
 ## À faire avant mise en production publique
 
 - Compléter `/mentions-legales` et `/politique-de-confidentialite` avec les
-  informations réelles de l'entité.
-- Brancher `POST /api/audit` sur un CRM / une notification email réelle.
+  informations réelles de l'entité (SIRET, adresse, directeur de
+  publication, hébergeur) — volontairement laissées en placeholder, aucune
+  information légale n'a été inventée.
+- Configurer `RESEND_API_KEY` / `AUDIT_NOTIFY_EMAIL` sur la plateforme de
+  déploiement (voir ci-dessus).
 - Remplacer `SITE_URL` dans `src/lib/constants.ts` par le domaine définitif
   si différent de `generationcapable.fr`.
 - Publier de vrais cas clients dans `src/lib/data/case-studies.ts` au fur et

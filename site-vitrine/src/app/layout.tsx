@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter_Tight, Manrope } from "next/font/google";
+import { MotionConfig } from "framer-motion";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -52,11 +53,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${interTight.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
-        <OrganizationJsonLd />
-        <WebSiteJsonLd />
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <MotionConfig reducedMotion="user">
+          <OrganizationJsonLd />
+          <WebSiteJsonLd />
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </MotionConfig>
       </body>
     </html>
   );

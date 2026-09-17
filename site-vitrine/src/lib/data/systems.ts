@@ -42,6 +42,6 @@ export const SYSTEMS: System[] = [
     headline: "Faire évoluer le système avec les résultats.",
     description:
       "Un système digital n'est jamais figé. Il se mesure, s'ajuste, et s'améliore avec la donnée réelle.",
-    capabilities: ["Optimisation", "Tracking", "Stratégie", "Accompagnement"],
+    capabilities: ["Optimisation", "Suivi", "Stratégie", "Accompagnement"],
   },
 ];

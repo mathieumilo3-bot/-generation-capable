@@ -1,6 +1,7 @@
 import { Section } from "@/components/ui/Section";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
+import { PRIMARY_CTA_LABEL } from "@/lib/constants";
 
 export function FinalCTA() {
   return (
@@ -21,7 +22,7 @@ export function FinalCTA() {
             trackEvent="cta_clicked"
             trackPayload={{ location: "final_cta" }}
           >
-            Analyser mon entreprise →
+            {PRIMARY_CTA_LABEL} →
           </Button>
         </div>
 

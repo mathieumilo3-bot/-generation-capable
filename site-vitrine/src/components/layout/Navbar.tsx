@@ -19,7 +19,7 @@ export function Navbar() {
           {SITE_NAME}
         </Link>
 
-        <nav className="hidden items-center gap-9 md:flex">
+        <nav className="hidden items-center gap-9 lg:flex">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -31,7 +31,7 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <Button
             href="/audit"
             variant="primary"
@@ -48,7 +48,7 @@ export function Navbar() {
           aria-label="Ouvrir le menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 md:hidden"
+          className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 lg:hidden"
         >
           <span
             className={`h-px w-5 bg-[var(--color-text)] transition-transform duration-300 ${open ? "translate-y-[3.5px] rotate-45" : ""}`}
@@ -66,7 +66,7 @@ export function Navbar() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-bg)] md:hidden"
+            className="overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-bg)] lg:hidden"
           >
             <nav className="flex flex-col gap-1 px-6 py-6">
               {NAV_LINKS.map((link) => (

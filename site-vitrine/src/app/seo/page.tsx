@@ -19,7 +19,7 @@ export default function SeoPage() {
       blocks={[
         {
           heading: "Une architecture technique excellente",
-          body: "Metadata, sitemap, robots, structure de titres, performance : les fondations techniques conditionnent tout le reste.",
+          body: "Métadonnées, sitemap, robots, structure de titres, performance : les fondations techniques conditionnent tout le reste.",
         },
         {
           heading: "Un maillage pensé dès la conception",
