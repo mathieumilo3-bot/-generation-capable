@@ -1,0 +1,114 @@
+{
+  "_lisezMoi": [
+    "FICHIER UNIQUE À MODIFIER pour tout ce qui est « information entreprise ».",
+    "Les valeurs ci-dessous alimentent À LA FOIS le HTML généré (liens tel:, WhatsApp,",
+    "données structurées Google, mentions légales) et le JavaScript du simulateur",
+    "(assets/js/config.generated.js). Après CHAQUE modification :  npm run build:netcare",
+    "",
+    "⚠️ Les valeurs marquées À_REMPLACER sont des espaces réservés. Le script de build",
+    "   les signale à chaque exécution tant qu'elles n'ont pas été renseignées."
+  ],
+
+  "domaine": "https://www.netandcare.fr",
+  "basePath": "",
+
+  "entreprise": {
+    "nom": "Net & Care",
+    "baseline": "Nettoyage textile & remise en état — Cannes, Antibes, Grasse",
+    "descriptionCourte": "Nettoyage professionnel de canapés, matelas, tapis et moquettes à domicile à Cannes, Antibes, Grasse et alentours. Devis gratuit en 60 secondes.",
+    "villeBase": "Cannes",
+    "codePostalBase": "06400",
+    "adresse": "À_REMPLACER — adresse postale",
+    "raisonSociale": "À_REMPLACER — raison sociale complète (ex. Net & Care SASU)",
+    "siret": "À_REMPLACER — numéro SIRET",
+    "formeJuridique": "À_REMPLACER — forme juridique",
+    "tva": "À_REMPLACER — numéro de TVA intracommunautaire (ou « TVA non applicable, art. 293 B du CGI »)",
+    "directeurPublication": "À_REMPLACER — nom du responsable de publication",
+    "hebergeur": "Netlify, Inc. — 512 2nd Street, Suite 200, San Francisco, CA 94107, USA",
+    "anneeCreation": "2023",
+    "geo": { "latitude": 43.5528, "longitude": 7.0174 },
+    "horaires": [
+      { "jours": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "ouverture": "08:00", "fermeture": "19:00" },
+      { "jours": ["Saturday"], "ouverture": "09:00", "fermeture": "17:00" }
+    ],
+    "horairesTexte": "Lun–Ven 8h–19h · Sam 9h–17h"
+  },
+
+  "contact": {
+    "telephone": "+33600000000",
+    "telephoneAffichage": "06 00 00 00 00",
+    "whatsapp": "33600000000",
+    "email": "contact@netandcare.fr",
+    "emailDevis": "À_REMPLACER — email qui reçoit les demandes de devis",
+    "instagram": "https://www.instagram.com/netandcare",
+    "googleBusiness": "À_REMPLACER — lien de la fiche Google Business Profile",
+    "googleAvis": "À_REMPLACER — lien « laisser un avis » Google"
+  },
+
+  "preuve": {
+    "noteGoogle": "5,0",
+    "nombreAvis": 0,
+    "afficherNoteDansSchema": false,
+    "_note": "afficherNoteDansSchema reste à false tant que les avis ne sont pas réels et vérifiables : publier une note inventée dans les données structurées est une violation des règles Google (et peut faire sanctionner la fiche)."
+  },
+
+  "zones": {
+    "principales": ["Cannes", "Antibes", "Grasse"],
+    "communes": [
+      "Cannes", "Le Cannet", "Mandelieu-la-Napoule", "Mougins", "Théoule-sur-Mer",
+      "Antibes", "Juan-les-Pins", "Vallauris", "Golfe-Juan", "Biot",
+      "Grasse", "Mouans-Sartoux", "Valbonne", "Pégomas", "Auribeau-sur-Siagne",
+      "Villeneuve-Loubet", "Cagnes-sur-Mer", "Saint-Laurent-du-Var"
+    ],
+    "zone2": ["Villeneuve-Loubet", "Cagnes-sur-Mer", "Saint-Laurent-du-Var"],
+    "rayonKm": 30
+  },
+
+  "tarifs": {
+    "_note": [
+      "Grille INDICATIVE utilisée par le simulateur pour afficher une fourchette.",
+      "Le site n'annonce jamais un prix ferme : il affiche « estimation indicative »",
+      "et précise que le montant est confirmé par Net & Care après analyse.",
+      "Montants en euros TTC. À ajuster librement — aucune autre partie du code ne",
+      "contient de prix en dur."
+    ],
+    "devise": "€",
+    "amplitude": 0.12,
+    "arrondi": 5,
+    "prestations": {
+      "canape": { "base": 39, "parPlace": 28, "min": 79 },
+      "fauteuil": { "base": 0, "parUnite": 45, "min": 45 },
+      "chaise": { "base": 0, "parUnite": 15, "min": 60 },
+      "matelas": { "base": 49, "parPlace": 20, "min": 69 },
+      "tapis": { "base": 0, "parM2": 18, "min": 60 },
+      "moquette": { "base": 0, "parM2": 7, "min": 120 },
+      "chantier": { "base": 0, "parM2": 6, "min": 250 }
+    },
+    "etat": {
+      "leger": 1,
+      "normal": 1.12,
+      "important": 1.3,
+      "taches": 1.45
+    },
+    "options": {
+      "acariens": 25,
+      "impermeabilisation": 35,
+      "urgence": 30
+    },
+    "deplacementZone2": 20
+  },
+
+  "delais": {
+    "rappel": "moins de 2 h en journée",
+    "intervention": "sous 48 h",
+    "sechage": "4 à 6 h",
+    "_noteCourt": "Versions courtes, utilisées dans le bandeau de chiffres où seule une valeur brève reste lisible.",
+    "interventionCourt": "48 h",
+    "sechageCourt": "4 à 6 h"
+  },
+
+  "analytics": {
+    "ga4": "",
+    "metaPixel": ""
+  }
+}

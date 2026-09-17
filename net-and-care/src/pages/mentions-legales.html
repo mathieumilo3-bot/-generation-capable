@@ -1,0 +1,57 @@
+<!--@
+{
+  "slug": "mentions-legales",
+  "title": "Mentions légales | Net & Care",
+  "description": "Mentions légales du site Net & Care, entreprise de nettoyage textile à Cannes.",
+  "robots": "noindex, follow",
+  "priorite": 0.2
+}
+@-->
+<section class="section">
+  <div class="wrap legal">
+    <nav class="crumb" aria-label="Fil d'ariane" style="padding-top:0"><a href="/">Accueil</a> › <span>Mentions légales</span></nav>
+    <h1>Mentions légales</h1>
+
+    <p class="todo"><strong>À compléter avant la mise en ligne.</strong> Les informations
+      d'identification de l'entreprise se renseignent dans
+      <code>net-and-care/site.config.json</code>, puis <code>npm run build:netcare</code>.</p>
+
+    <h2>Éditeur du site</h2>
+    <p>
+      {{raisonSociale}}<br>
+      {{formeJuridique}}<br>
+      {{adresse}}<br>
+      SIRET : {{siret}}<br>
+      TVA : {{tva}}<br>
+      Téléphone : <a href="tel:{{tel}}">{{telAffichage}}</a><br>
+      Email : <a href="mailto:{{email}}">{{email}}</a>
+    </p>
+
+    <h2>Directeur de la publication</h2>
+    <p>{{directeurPublication}}</p>
+
+    <h2>Hébergement</h2>
+    <p>{{hebergeur}}</p>
+
+    <h2>Propriété intellectuelle</h2>
+    <p>L'ensemble des contenus présents sur ce site (textes, visuels, éléments graphiques,
+      structure) est protégé par le droit d'auteur. Toute reproduction, même partielle,
+      sans autorisation écrite préalable est interdite.</p>
+
+    <h2>Responsabilité</h2>
+    <p>Les estimations affichées par le simulateur de devis sont fournies à titre indicatif.
+      Elles sont calculées automatiquement à partir des informations saisies par le visiteur
+      et ne constituent en aucun cas un devis contractuel. Seul le devis confirmé par
+      {{nom}} après analyse de la demande engage l'entreprise.</p>
+
+    <h2>Litiges</h2>
+    <p>Conformément à l'article L612-1 du code de la consommation, tout consommateur peut
+      recourir gratuitement à un médiateur de la consommation en vue de la résolution amiable
+      d'un litige. Les coordonnées du médiateur retenu par l'entreprise sont communiquées sur
+      demande et figureront sur les devis et factures.</p>
+
+    <h2>Données personnelles</h2>
+    <p>Le traitement des données collectées via le simulateur de devis est décrit dans la
+      <a href="/confidentialite">politique de confidentialité</a>.</p>
+  </div>
+</section>

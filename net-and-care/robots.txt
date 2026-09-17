@@ -1,0 +1,6 @@
+# Net & Care — https://www.netandcare.fr
+User-agent: *
+Allow: /
+Disallow: /.netlify/
+
+Sitemap: https://www.netandcare.fr/sitemap.xml

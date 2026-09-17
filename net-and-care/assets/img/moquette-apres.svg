@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900" role="img" aria-label="Moquette de bureau — après nettoyage (visuel provisoire)">
+  <defs>
+    <linearGradient id="mur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6f7f4"/>
+      <stop offset="1" stop-color="#eceee8"/>
+    </linearGradient>
+    <filter id="flou"><feGaussianBlur stdDeviation="26"/></filter>
+    <filter id="fibre" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="3"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.12"/></feComponentTransfer>
+    </filter>
+    <radialGradient id="lum" cx="50%" cy="26%" r="80%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.1"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="900" fill="url(#mur)"/>
+  <ellipse cx="600" cy="726" rx="500" ry="52" fill="#000" opacity=".12"/>
+  
+    <rect x="90" y="250" width="1020" height="440" rx="10" fill="#a9b6a6"/>
+    <g stroke="#919d8f" stroke-width="3" opacity=".35">
+      <path d="M110 250v440"/><path d="M140 250v440"/><path d="M170 250v440"/><path d="M200 250v440"/><path d="M230 250v440"/><path d="M260 250v440"/><path d="M290 250v440"/><path d="M320 250v440"/><path d="M350 250v440"/><path d="M380 250v440"/><path d="M410 250v440"/><path d="M440 250v440"/><path d="M470 250v440"/><path d="M500 250v440"/><path d="M530 250v440"/><path d="M560 250v440"/><path d="M590 250v440"/><path d="M620 250v440"/><path d="M650 250v440"/><path d="M680 250v440"/><path d="M710 250v440"/><path d="M740 250v440"/><path d="M770 250v440"/><path d="M800 250v440"/><path d="M830 250v440"/><path d="M860 250v440"/><path d="M890 250v440"/><path d="M920 250v440"/><path d="M950 250v440"/><path d="M980 250v440"/><path d="M1010 250v440"/><path d="M1040 250v440"/><path d="M1070 250v440"/><path d="M1100 250v440"/>
+    </g>
+  
+    <g opacity=".35">
+      <path d="M240 330c120-34 300-34 420 0" stroke="#ffffff" stroke-width="16" fill="none" stroke-linecap="round"/>
+      <path d="M700 350c90-22 180-22 260 0" stroke="#ffffff" stroke-width="12" fill="none" stroke-linecap="round"/>
+    </g>
+  <rect width="1200" height="900" fill="url(#lum)"/>
+  <rect width="1200" height="900" filter="url(#fibre)" opacity=".75"/>
+
+  <g opacity=".62">
+    <rect x="28" y="824" width="250" height="48" rx="12" fill="#07202b" opacity=".55"/>
+    <text x="48" y="854" font-family="Helvetica,Arial,sans-serif" font-size="22" fill="#ffffff">Visuel provisoire</text>
+  </g>
+</svg>

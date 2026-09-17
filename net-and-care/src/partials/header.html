@@ -1,0 +1,52 @@
+<header class="header" id="header">
+  <div class="wrap header__inner">
+    <a class="logo" href="/" aria-label="{{nom}} — accueil">
+      <svg class="logo__mark" viewBox="0 0 48 48" role="img" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#0e7c86"/><stop offset="1" stop-color="#12b3a8"/>
+          </linearGradient>
+        </defs>
+        <rect width="48" height="48" rx="13" fill="url(#lg)"/>
+        <path d="M24 11c-4.6 4.9-8 9.3-8 13.6a8 8 0 0 0 16 0C32 20.3 28.6 15.9 24 11z" fill="#fff" opacity=".95"/>
+        <path d="M17.5 30.5c2.6 2 4.9 2.6 6.5 2.6s3.9-.6 6.5-2.6" stroke="#0e4557" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="logo__text">
+        <span class="logo__name">Net&nbsp;&amp;&nbsp;Care</span>
+        <span class="logo__tag">Nettoyage textile</span>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="{{home}}#prestations">Prestations</a>
+      <a href="{{home}}#resultats">Avant / après</a>
+      <a href="{{home}}#zones">Zones</a>
+      <a href="{{home}}#avis">Avis</a>
+      <a href="{{home}}#faq">FAQ</a>
+    </nav>
+
+    <div class="header__actions">
+      <a class="header__phone" href="tel:{{tel}}" data-track="tel-header">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+        {{telAffichage}}
+      </a>
+      <a class="btn btn--primary header__cta" href="{{home}}#simulateur" data-track="cta-header">Obtenir mon devis</a>
+    </div>
+
+    <details class="menu">
+      <summary aria-label="Ouvrir le menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </summary>
+      <div class="menu__panel">
+        <a href="{{home}}#prestations">Prestations</a>
+        <a href="{{home}}#resultats">Avant / après</a>
+        <a href="{{home}}#zones">Zones d'intervention</a>
+        <a href="{{home}}#avis">Avis clients</a>
+        <a href="{{home}}#faq">FAQ</a>
+        <hr>
+        <a href="tel:{{tel}}" data-track="tel-menu">Appeler le {{telAffichage}}</a>
+        <a class="btn btn--primary btn--block" href="/devis" data-track="cta-menu">Obtenir mon devis</a>
+      </div>
+    </details>
+  </div>
+</header>

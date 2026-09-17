@@ -1,0 +1,105 @@
+# ===========================================================================
+# Net & Care — configuration Netlify du site client.
+# ---------------------------------------------------------------------------
+# DÉPLOIEMENT : créer sur Netlify un site dont le RÉPERTOIRE DE BASE est
+# « net-and-care ». Ce fichier est alors lu, et rien au-dessus du dossier
+# n'entre dans le déploiement — le site Net & Care est totalement indépendant
+# de generationcapable.fr (pas de règles de redirection héritées, pas de
+# tâches planifiées dupliquées).
+#
+# Aucune commande de build : les pages HTML sont générées en amont par
+# « npm run build:netcare » et versionnées dans le dépôt. Netlify ne fait que
+# servir des fichiers statiques — c'est ce qui rend le site rapide et sa mise
+# en ligne impossible à casser.
+# ===========================================================================
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+  command = ""
+
+# --- En-têtes de sécurité --------------------------------------------------
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains"
+    Cross-Origin-Opener-Policy = "same-origin"
+
+# Les fichiers d'habillage ne changent qu'à la régénération du site : ils
+# peuvent être mis en cache longtemps. Les pages HTML, elles, gardent le
+# cache par défaut de Netlify (revalidation à chaque visite) pour qu'une
+# correction de contenu soit visible immédiatement.
+[[headers]]
+  for = "/assets/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, must-revalidate"
+
+[[headers]]
+  for = "/assets/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+# config.generated.js contient le numéro de téléphone et la grille tarifaire :
+# une mise à jour doit se voir tout de suite, pas dans une semaine.
+[[headers]]
+  for = "/assets/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+# Les demandes de devis contiennent des photos du domicile du prospect :
+# aucune mise en cache par un intermédiaire, aucune indexation.
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
+    X-Robots-Tag = "noindex, nofollow"
+
+# --- URL canoniques --------------------------------------------------------
+# Une page doit exister à UNE seule adresse. Netlify s'en charge nativement
+# (option « Pretty URLs », active par défaut) : /devis.html est redirigé en
+# 301 vers /devis, et /index.html vers /. Aucune règle n'est écrite ici — une
+# redirection manuelle sur un chemin qui correspond à un fichier réel ne
+# s'appliquerait pas, et en la forçant on risquerait une boucle. Les balises
+# <link rel="canonical"> de chaque page ferment le sujet côté Google.
+
+# Raccourcis utiles en communication (flyer, Instagram, carte de visite).
+[[redirects]]
+  from = "/estimation"
+  to = "/devis"
+  status = 301
+
+[[redirects]]
+  from = "/canape"
+  to = "/nettoyage-canape-cannes"
+  status = 301
+
+[[redirects]]
+  from = "/matelas"
+  to = "/nettoyage-matelas-cannes"
+  status = 301
+
+[[redirects]]
+  from = "/tapis"
+  to = "/nettoyage-tapis-cannes"
+  status = 301
+
+# Chemins systématiquement sondés par des robots : 404 immédiat plutôt qu'une
+# page complète servie pour rien.
+[[redirects]]
+  from = "/wp-admin/*"
+  to = "/404-vide"
+  status = 404
+
+[[redirects]]
+  from = "/wp-login.php"
+  to = "/404-vide"
+  status = 404
+
+[[redirects]]
+  from = "/.env"
+  to = "/404-vide"
+  status = 404

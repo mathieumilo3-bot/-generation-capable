@@ -1,0 +1,83 @@
+<!--@
+{
+  "slug": "devis",
+  "title": "Devis nettoyage textile à Cannes — estimation en 60 s | Net & Care",
+  "description": "Obtenez une estimation immédiate pour le nettoyage de votre canapé, matelas, tapis ou moquette à Cannes, Antibes et Grasse. Devis gratuit, réponse en moins de 2 h.",
+  "priorite": 0.9,
+  "simTitre": "Votre devis en 60 secondes",
+  "simSousTitre": "Prestation, dimensions, état, photos : tout ce qu'il faut pour un prix juste.",
+  "fil": [
+    { "nom": "Accueil", "href": "/" },
+    { "nom": "Demander un devis", "href": "/devis" }
+  ],
+  "faq": [
+    {
+      "q": "Le devis est-il payant ?",
+      "r": "<p>Non. L'estimation en ligne comme le devis confirmé par Net &amp; Care sont gratuits et sans engagement, déplacement d'évaluation compris.</p>"
+    },
+    {
+      "q": "Dois-je envoyer une photo ?",
+      "r": "<p>Ce n'est pas obligatoire, mais c'est ce qui accélère le plus votre devis : avec une photo, Net &amp; Care confirme un prix ferme sans passer chez vous au préalable.</p>"
+    },
+    {
+      "q": "Que deviennent mes informations ?",
+      "r": "<p>Elles servent uniquement à traiter votre demande de devis et à vous rappeler. Elles ne sont ni revendues ni utilisées à d'autres fins. Voir la <a href=\"/confidentialite\">politique de confidentialité</a>.</p>"
+    }
+  ]
+}
+@-->
+<div class="wrap">
+  <nav class="crumb" aria-label="Fil d'ariane">
+    <a href="/">Accueil</a> › <span>Demander un devis</span>
+  </nav>
+</div>
+
+<section class="section section--tight">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Devis gratuit</span>
+      <h1>Estimez votre nettoyage, puis recevez votre devis</h1>
+      <p>Canapé, matelas, tapis, moquette ou fin de chantier — à Cannes, Antibes, Grasse
+        et alentours. Estimation immédiate à l'écran, prix ferme confirmé par
+        Net&nbsp;&amp;&nbsp;Care en {{delaiRappel}}.</p>
+    </div>
+
+    {{> simulateur}}
+
+    <div class="cards cards--3" style="margin-top:44px">
+      <article class="card">
+        <span class="card__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        <h3>Réponse rapide</h3>
+        <p>Votre demande arrive directement chez Net&nbsp;&amp;&nbsp;Care, photos comprises. Rappel en {{delaiRappel}}.</p>
+      </article>
+      <article class="card">
+        <span class="card__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <h3>Prix tenu</h3>
+        <p>Le montant confirmé avant l'intervention est celui que vous payez. Aucun supplément le jour J.</p>
+      </article>
+      <article class="card">
+        <span class="card__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        <h3>Données protégées</h3>
+        <p>Vos coordonnées servent uniquement à traiter cette demande. Jamais de revente, jamais de démarchage.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section--mist">
+  <div class="wrap">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Questions fréquentes</span>
+      <h2>À propos du devis</h2>
+    </div>
+    <div class="faq">
+{{faqHtml}}
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <a class="btn btn--wa btn--lg" href="{{waUrl}}" target="_blank" rel="noopener" data-track="wa-devis">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.6-2c-.2-.3 0-.5.1-.6l.5-.6.3-.5v-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.3-.6-.4zM12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2z"/></svg>
+        Poser ma question sur WhatsApp
+      </a>
+    </div>
+  </div>
+</section>
