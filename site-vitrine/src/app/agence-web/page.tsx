@@ -1,0 +1,35 @@
+import type { Metadata } from "next";
+import { PillarPage } from "@/components/sections/PillarPage";
+
+export const metadata: Metadata = {
+  title: "Agence web — sans le devenir",
+  description:
+    "Génération Capable n'est pas une agence web de plus. Nous concevons des systèmes digitaux orientés résultats, pas des sites vitrines isolés.",
+  alternates: { canonical: "/agence-web" },
+};
+
+export default function AgenceWebPage() {
+  return (
+    <PillarPage
+      eyebrow="Positionnement"
+      title="Une agence web, mais pas comme les autres."
+      intro="La plupart des agences web livrent un site et s'arrêtent là. Nous construisons le système qui l'entoure — acquisition, conversion, qualification — parce qu'un site seul ne suffit plus à générer des opportunités."
+      path="/agence-web"
+      ctaContext="pillar_agence_web"
+      blocks={[
+        {
+          heading: "Une méthode, pas un catalogue",
+          body: "Analyser, construire, connecter, optimiser : chaque projet suit la même méthode, pensée pour produire un résultat mesurable plutôt qu'une simple livraison.",
+        },
+        {
+          heading: "Quatre systèmes qui fonctionnent ensemble",
+          body: "Presence, Acquisition, Conversion et Growth ne sont pas des prestations séparées : ce sont les composants d'un même système, conçus pour s'articuler.",
+        },
+        {
+          heading: "Orientés opportunités commerciales",
+          body: "L'objectif n'est jamais l'esthétique seule : c'est la transformation de la visibilité, du trafic et de l'attention en prises de contact réelles.",
+        },
+      ]}
+    />
+  );
+}

@@ -1,0 +1,34 @@
+import { Section } from "@/components/ui/Section";
+import { Reveal } from "@/components/ui/Reveal";
+import { Button } from "@/components/ui/Button";
+
+export function FinalCTA() {
+  return (
+    <Section tone="black" className="py-28 text-center sm:py-36">
+      <Reveal className="flex flex-col items-center">
+        <h2 className="font-display text-balance max-w-3xl text-3xl font-semibold leading-[1.15] tracking-tight sm:text-5xl lg:text-6xl">
+          Et si votre présence
+          <br />
+          commençait enfin
+          <br />
+          à travailler pour vous ?
+        </h2>
+
+        <div className="mt-10">
+          <Button
+            href="/audit"
+            variant="primary"
+            trackEvent="cta_clicked"
+            trackPayload={{ location: "final_cta" }}
+          >
+            Analyser mon entreprise →
+          </Button>
+        </div>
+
+        <p className="mt-5 text-sm text-[var(--color-muted)]">
+          Diagnostic initial sans engagement.
+        </p>
+      </Reveal>
+    </Section>
+  );
+}
