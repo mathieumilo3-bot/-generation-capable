@@ -1,0 +1,58 @@
+# Site Netlify "gc-setter" (ID 5c20f4b0-764e-43b5-88e5-4401375873b2).
+#
+# Deux surfaces sur le MÊME site, adossées à la MÊME table Supabase
+# (public.setter_applications) :
+#   /          -> index.html    page publique de candidature (rôle anon, INSERT)
+#   /admin     -> admin.html    dashboard privé (Supabase Auth + RLS)
+#   /onboarding-> onboarding.html  page remise au candidat accepté
+#
+# Netlify sert toujours un fichier réel avant d'appliquer une règle de
+# redirection : /index.html, /sw.js et /manifest.webmanifest continuent d'être
+# servis normalement.
+
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/onboarding"
+  to = "/onboarding.html"
+  status = 200
+
+# Le service worker ne doit jamais être mis en cache : sinon une mise à jour du
+# dashboard reste invisible sur les iPhone qui ont installé la PWA.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "no-cache"
+
+# L'espace admin affiche des données personnelles de candidats : jamais de
+# cache intermédiaire, jamais d'indexation.
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"

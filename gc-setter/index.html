@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rejoindre l’équipe setter — Generation Capable</title>
+<meta name="description" content="Candidature pour rejoindre l’équipe de setters Generation Capable.">
+<meta name="theme-color" content="#0b0e14">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<style>
+:root{--bg:#0b0e14;--surface:#141925;--surface-2:#1c2231;--line:#262f42;--text:#e8ecf5;--muted:#8d99b2;--accent:#4f8cff;--ok:#2fbf71;--ko:#ff5d5d;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+[hidden]{display:none!important}
+.wrap{max-width:660px;margin:0 auto;padding:32px 18px 64px}
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:26px}
+.brand-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(140deg,var(--accent),#8a5cff);display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff}
+.brand span.t{font-weight:600;font-size:15px}
+h1{font-size:27px;line-height:1.25;letter-spacing:-.02em;margin:0 0 12px}
+.lede{color:var(--muted);margin:0 0 30px}
+fieldset{border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 18px;background:var(--surface)}
+legend{padding:0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+label{display:block;font-size:13px;color:var(--muted);margin:16px 0 6px}
+fieldset > label:first-of-type{margin-top:4px}
+.req::after{content:" *";color:var(--ko)}
+input[type=text],input[type=email],input[type=tel],input[type=url],input[type=number],select,textarea{width:100%;padding:11px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{min-height:96px;resize:vertical}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:6px}
+.check{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;font-size:14px;color:var(--text);cursor:pointer}
+.check input{margin:3px 0 0;accent-color:var(--accent);flex:0 0 auto}
+.consent{margin-top:14px}
+button.submit{width:100%;padding:15px;margin-top:8px;border:0;border-radius:12px;background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+button.submit:disabled{opacity:.55;cursor:progress}
+.msg{margin-top:16px;font-size:14px;min-height:20px}
+.msg.err{color:var(--ko)}
+.done{text-align:center;padding:56px 20px}
+.done .tick{font-size:44px;line-height:1}
+.done h2{margin:14px 0 8px;font-size:22px}
+.done p{color:var(--muted);margin:0}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <span class="brand-mark">GC</span>
+    <span class="t">Generation Capable</span>
+  </div>
+
+  <div id="form-view">
+    <h1>Rejoins l’équipe setter</h1>
+    <p class="lede">
+      On recrute des setters sérieux, réguliers et à l’aise en conversation.
+      Remplis ce formulaire honnêtement : on lit chaque candidature.
+    </p>
+
+    <form id="application" novalidate>
+
+      <fieldset>
+        <legend>Toi</legend>
+
+        <label class="req" for="full_name">Nom et prénom</label>
+        <input id="full_name" name="full_name" type="text" required autocomplete="name">
+
+        <label class="req" for="email">E-mail</label>
+        <input id="email" name="email" type="email" required autocomplete="email" inputmode="email">
+
+        <label class="req" for="phone">WhatsApp</label>
+        <input id="phone" name="phone" type="tel" required autocomplete="tel" placeholder="+33 6 12 34 56 78">
+
+        <label for="socials">Instagram</label>
+        <input id="socials" name="socials" type="text" placeholder="@ton_compte">
+
+        <label class="req" for="country">Pays</label>
+        <input id="country" name="country" type="text" required autocomplete="country-name">
+      </fieldset>
+
+      <fieldset>
+        <legend>Ton expérience</legend>
+
+        <label class="req" for="setting_since">Depuis combien de temps fais-tu du setting ?</label>
+        <select id="setting_since" name="setting_since" required>
+          <option value="">Choisir…</option>
+          <option>Je débute</option>
+          <option>Moins de 6 mois</option>
+          <option>6 à 12 mois</option>
+          <option>1 à 2 ans</option>
+          <option>2 à 3 ans</option>
+          <option>Plus de 3 ans</option>
+        </select>
+
+        <label class="req" for="experience">Raconte ton expérience</label>
+        <textarea id="experience" name="experience" required
+          placeholder="Pour qui as-tu setté, dans quelle niche, sur quel panier moyen ?"></textarea>
+
+        <label>Plateformes que tu utilises</label>
+        <div class="checks" id="platforms">
+          <label class="check"><input type="checkbox" value="Instagram"> Instagram</label>
+          <label class="check"><input type="checkbox" value="WhatsApp"> WhatsApp</label>
+          <label class="check"><input type="checkbox" value="LinkedIn"> LinkedIn</label>
+          <label class="check"><input type="checkbox" value="TikTok"> TikTok</label>
+          <label class="check"><input type="checkbox" value="Facebook"> Facebook</label>
+          <label class="check"><input type="checkbox" value="E-mail"> E-mail</label>
+        </div>
+
+        <label class="check consent" style="max-width:none">
+          <input type="checkbox" id="high_ticket_experience">
+          J’ai déjà setté sur du high-ticket (offre à 2 000 € ou plus)
+        </label>
+
+        <label for="daily_conversations">Conversations que tu tiens par jour</label>
+        <input id="daily_conversations" name="daily_conversations" type="number" min="0" max="500" inputmode="numeric">
+
+        <label for="meetings_generated">RDV générés sur ton meilleur mois</label>
+        <input id="meetings_generated" name="meetings_generated" type="number" min="0" max="1000" inputmode="numeric">
+
+        <label for="demonstrable_results">Résultats que tu peux prouver</label>
+        <textarea id="demonstrable_results" name="demonstrable_results"
+          placeholder="Chiffres, captures, témoignages de tes clients…"></textarea>
+
+        <label for="proof_url">Lien vers une preuve (Drive, Notion, Loom…)</label>
+        <input id="proof_url" name="proof_url" type="url" placeholder="https://">
+      </fieldset>
+
+      <fieldset>
+        <legend>Ta disponibilité</legend>
+
+        <label class="req" for="availability">Quand peux-tu commencer ?</label>
+        <select id="availability" name="availability" required>
+          <option value="">Choisir…</option>
+          <option value="immediate">Immédiatement</option>
+          <option value="2_weeks">Sous 2 semaines</option>
+          <option value="1_month">Sous 1 mois</option>
+          <option value="later">Plus tard</option>
+        </select>
+
+        <label for="start_date">Date de démarrage souhaitée</label>
+        <input id="start_date" name="start_date" type="text" placeholder="Ex. 1er octobre">
+
+        <label class="req" for="days_per_week">Combien de jours par semaine ?</label>
+        <select id="days_per_week" name="days_per_week" required>
+          <option value="">Choisir…</option>
+          <option>1 à 2 jours</option>
+          <option>3 jours</option>
+          <option>4 jours</option>
+          <option>5 jours</option>
+          <option>6 jours et plus</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend>Questionnaire</legend>
+
+        <label class="req" for="situation_1">
+          Un prospect qualifié te répond « je vais réfléchir ». Qu’est-ce que tu lui écris ?
+        </label>
+        <textarea id="situation_1" name="situation_1" required
+          placeholder="Écris ton message, mot pour mot."></textarea>
+
+        <label class="req" for="situation_2">
+          Un prospect chaud ne répond plus depuis 5 jours. Ton message de relance ?
+        </label>
+        <textarea id="situation_2" name="situation_2" required
+          placeholder="Écris ton message, mot pour mot."></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>Motivation</legend>
+
+        <label class="req" for="motivation">Pourquoi veux-tu rejoindre Generation Capable ?</label>
+        <textarea id="motivation" name="motivation" required></textarea>
+
+        <label for="why_you">Pourquoi devrait-on te choisir toi ?</label>
+        <textarea id="why_you" name="why_you"></textarea>
+
+        <label for="source">Comment as-tu connu Generation Capable ?</label>
+        <select id="source" name="source">
+          <option value="">Choisir…</option>
+          <option>Instagram</option>
+          <option>TikTok</option>
+          <option>YouTube</option>
+          <option>Bouche à oreille</option>
+          <option>Un setter de l’équipe</option>
+          <option>Autre</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend>Engagements</legend>
+        <label class="check consent">
+          <input type="checkbox" id="security_accepted" required>
+          Je m’engage à respecter la charte de sécurité : pas de promesse de gains,
+          pas de message trompeur, aucune donnée client partagée à l’extérieur.
+        </label>
+        <label class="check consent">
+          <input type="checkbox" id="remuneration_accepted" required>
+          J’ai compris que la rémunération est à la performance et j’accepte ce modèle.
+        </label>
+      </fieldset>
+
+      <button class="submit" id="submit" type="submit">Envoyer ma candidature</button>
+      <p class="msg" id="msg" role="status"></p>
+    </form>
+
+    <footer>Generation Capable — tes données servent uniquement à traiter ta candidature.</footer>
+  </div>
+
+  <div id="done-view" class="done" hidden>
+    <div class="tick">✅</div>
+    <h2>Candidature envoyée</h2>
+    <p>On l’a bien reçue. Si ton profil correspond, on te recontacte sur WhatsApp.</p>
+  </div>
+
+</div>
+
+<script src="/vendor/supabase.js"></script>
+<script type="module">
+// Le formulaire écrit directement dans public.setter_applications, avec la clé
+// publishable (rôle anon). La policy "public can submit application" n'autorise
+// que l'INSERT : personne ne peut relire les candidatures avec cette clé.
+// C'est cette même table que lit le dashboard sur /admin.
+const { createClient } = window.supabase;
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, APPLICATIONS_TABLE } from '/gc-config.js';
+
+const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+const form = document.getElementById('application');
+const msg = document.getElementById('msg');
+const btn = document.getElementById('submit');
+
+const val = (id) => document.getElementById(id).value.trim() || null;
+const num = (id) => {
+  const v = document.getElementById(id).value.trim();
+  return v === '' ? null : Number(v);
+};
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  msg.className = 'msg';
+  msg.textContent = '';
+
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    msg.className = 'msg err';
+    msg.textContent = 'Il manque des réponses obligatoires.';
+    return;
+  }
+
+  const platforms = [...document.querySelectorAll('#platforms input:checked')]
+    .map((i) => i.value)
+    .join(', ') || null;
+
+  btn.disabled = true;
+  btn.textContent = 'Envoi en cours…';
+
+  const { error } = await sb.from(APPLICATIONS_TABLE).insert({
+    full_name: val('full_name'),
+    email: val('email'),
+    phone: val('phone'),
+    socials: val('socials'),
+    country: val('country'),
+    experience: val('experience'),
+    setting_since: val('setting_since'),
+    high_ticket_experience: document.getElementById('high_ticket_experience').checked,
+    platforms,
+    daily_conversations: num('daily_conversations'),
+    meetings_generated: num('meetings_generated'),
+    demonstrable_results: val('demonstrable_results'),
+    proof_url: val('proof_url'),
+    availability: val('availability'),
+    start_date: val('start_date'),
+    days_per_week: val('days_per_week'),
+    situation_1: val('situation_1'),
+    situation_2: val('situation_2'),
+    motivation: val('motivation'),
+    why_you: val('why_you'),
+    source: val('source'),
+    security_accepted: document.getElementById('security_accepted').checked,
+    remuneration_accepted: document.getElementById('remuneration_accepted').checked,
+    status: 'received',
+  });
+
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = 'Envoyer ma candidature';
+    msg.className = 'msg err';
+    msg.textContent = `Envoi impossible : ${error.message}`;
+    return;
+  }
+
+  document.getElementById('form-view').hidden = true;
+  document.getElementById('done-view').hidden = false;
+  window.scrollTo({ top: 0 });
+});
+</script>
+</body>
+</html>

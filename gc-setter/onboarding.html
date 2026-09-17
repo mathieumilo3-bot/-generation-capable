@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>GC Setter — Bienvenue</title>
+<meta name="theme-color" content="#0b0e14">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+<div class="login">
+  <section class="login-card" style="max-width:520px">
+    <div class="brand">
+      <span class="brand-mark">GC</span>
+      <h1>Onboarding setter</h1>
+    </div>
+    <div id="content">
+      <p class="login-sub">Chargement…</p>
+    </div>
+  </section>
+</div>
+
+<script src="/vendor/supabase.js"></script>
+<script type="module">
+// Page remise au candidat une fois sa candidature acceptée.
+// Elle n'interroge PAS la table directement : le rôle anon n'a aucun droit de
+// lecture sur setter_applications. Elle passe par la fonction SECURITY DEFINER
+// get_setter_onboarding(), qui ne renvoie que les champs d'accueil et
+// uniquement si la candidature est au statut 'accepted'.
+const { createClient } = window.supabase;
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '/gc-config.js';
+
+const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const box = document.getElementById('content');
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const token = new URLSearchParams(location.search).get('token');
+
+function fail(msg) {
+  box.innerHTML = `<p class="msg err">${esc(msg)}</p>`;
+}
+
+if (!token) {
+  fail('Lien incomplet. Demandez à votre contact GC de vous renvoyer votre lien d’onboarding.');
+} else {
+  const { data, error } = await sb.rpc('get_setter_onboarding', { p_token: token });
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (error) {
+    fail('Lien invalide ou expiré.');
+  } else if (!row) {
+    fail('Ce lien n’est pas (ou plus) actif. Si votre candidature vient d’être acceptée, réessayez dans quelques instants.');
+  } else {
+    const links = [
+      ['Groupe WhatsApp', row.whatsapp_invite_url],
+      ['Contrat à signer', row.contract_url],
+      ['Guide du setter', row.guide_url],
+    ].filter(([, url]) => url);
+
+    box.innerHTML = `
+      <p class="login-sub">Bienvenue ${esc(row.full_name || '')} — votre candidature est acceptée. 🎉</p>
+      <dl style="margin:0">
+        <div class="field"><dt>Statut</dt><dd>Accepté${row.accepted_at ? ' le ' + esc(new Date(row.accepted_at).toLocaleDateString('fr-FR')) : ''}</dd></div>
+        <div class="field"><dt>Compte</dt><dd>${esc(row.email || '')}</dd></div>
+      </dl>
+      ${links.length
+        ? `<h3 style="font-size:13px;color:var(--muted);margin:18px 0 8px">Vos étapes</h3>
+           <dl style="margin:0">${links.map(([label, url]) =>
+             `<div class="field"><dt>${esc(label)}</dt><dd><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Ouvrir</a></dd></div>`).join('')}</dl>`
+        : `<p class="msg ok">Votre espace est ouvert. Votre contact GC vous transmet les accès (groupe WhatsApp, contrat, guide) dans les prochaines heures.</p>`}
+    `;
+  }
+}
+</script>
+</body>
+</html>

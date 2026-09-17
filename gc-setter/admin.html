@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>GC Setter — Espace admin</title>
+<meta name="theme-color" content="#0b0e14">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GC Setter">
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+
+<!-- ====================== CONNEXION ====================== -->
+<section id="login" class="login">
+  <form class="login-card" id="login-form">
+    <div class="brand">
+      <span class="brand-mark">GC</span>
+      <h1>GC Setter — Espace admin</h1>
+    </div>
+    <p class="login-sub">Accès réservé. Les candidatures arrivent en direct depuis la page publique.</p>
+
+    <label for="email">E-mail administrateur</label>
+    <input id="email" type="email" autocomplete="username" required inputmode="email" placeholder="vous@exemple.com">
+
+    <div id="pw-block">
+      <label for="password">Mot de passe</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••">
+    </div>
+
+    <div id="otp-block" hidden>
+      <label for="otp">Code reçu par e-mail (6 chiffres)</label>
+      <input id="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
+    </div>
+
+    <button class="btn" id="login-submit" type="submit">Se connecter</button>
+    <button class="btn btn-ghost" id="otp-request" type="button">Recevoir un code par e-mail</button>
+    <p class="msg" id="login-msg" role="status"></p>
+  </form>
+</section>
+
+<!-- ====================== DASHBOARD ====================== -->
+<main id="app" hidden>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">GC</span>
+        <h1>Candidatures</h1>
+      </div>
+      <button class="icon-btn" id="notif-btn" type="button" title="Notifications" aria-label="Notifications">🔔</button>
+      <button class="icon-btn" id="refresh-btn" type="button" title="Rafraîchir" aria-label="Rafraîchir">↻</button>
+      <button class="icon-btn" id="logout-btn" type="button" title="Se déconnecter" aria-label="Se déconnecter">⎋</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <button class="notif-banner" id="notif-banner" type="button" hidden>
+      🔔 Activer les notifications
+    </button>
+
+    <nav class="filters" id="filters" aria-label="Filtrer les candidatures">
+      <button class="chip" data-filter="pending"  aria-pressed="true">À traiter <span class="n" data-count="pending">0</span></button>
+      <button class="chip" data-filter="accepted" aria-pressed="false">Acceptées <span class="n" data-count="accepted">0</span></button>
+      <button class="chip" data-filter="rejected" aria-pressed="false">Refusées <span class="n" data-count="rejected">0</span></button>
+      <button class="chip" data-filter="all"      aria-pressed="false">Toutes <span class="n" data-count="all">0</span></button>
+    </nav>
+
+    <div class="search">
+      <input id="search" type="search" placeholder="Rechercher un nom, un e-mail, un pays…" autocomplete="off">
+    </div>
+
+    <div class="list" id="list"></div>
+  </div>
+</main>
+
+<dialog class="detail" id="detail">
+  <div class="detail-head">
+    <h2 id="detail-title">Candidature</h2>
+    <button class="icon-btn" id="detail-close" type="button">Fermer</button>
+  </div>
+  <div class="detail-body" id="detail-body"></div>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="/vendor/supabase.js"></script>
+<script type="module" src="/admin.js"></script>
+</body>
+</html>
