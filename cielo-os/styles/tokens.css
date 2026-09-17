@@ -1,0 +1,96 @@
+/* ==========================================================================
+   CIELO OS — Design tokens
+   Direction artistique : noir profond, hairlines, typographie très large,
+   un seul accent (coucher de soleil méditerranéen).
+   ========================================================================== */
+
+:root {
+  /* --- Surfaces ------------------------------------------------------- */
+  --black: #050505;
+  --surface-0: #0a0a0a;
+  --surface-1: #111111;
+  --surface-2: #161616;
+
+  /* Cartes translucides : glassmorphism volontairement très faible. */
+  --glass: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.032) 0%,
+    rgba(255, 255, 255, 0.012) 100%
+  );
+  --glass-hover: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.055) 0%,
+    rgba(255, 255, 255, 0.018) 100%
+  );
+
+  /* --- Texte ---------------------------------------------------------- */
+  --white: #ffffff;
+  --muted: #b7b7b7;
+  --muted-2: rgba(183, 183, 183, 0.62);
+  --muted-3: rgba(183, 183, 183, 0.34);
+
+  /* --- Accent --------------------------------------------------------- */
+  --accent: #d6a85f;
+  --accent-dim: #a8823f;
+  --accent-soft: rgba(214, 168, 95, 0.14);
+  --accent-line: rgba(214, 168, 95, 0.32);
+  --accent-glow: rgba(214, 168, 95, 0.1);
+
+  /* --- Lignes --------------------------------------------------------- */
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --line-soft: rgba(255, 255, 255, 0.04);
+
+  /* --- Rayons --------------------------------------------------------- */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-full: 999px;
+
+  /* --- Ombres (discrètes) --------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 18px 40px -24px rgba(0, 0, 0, 0.9);
+  --shadow-lg: 0 40px 90px -50px rgba(0, 0, 0, 1);
+
+  /* --- Typographie ---------------------------------------------------- */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "SF Mono", "JetBrains Mono", "Roboto Mono", ui-monospace, Menlo,
+    monospace;
+
+  --fs-display: clamp(40px, 6.4vw, 84px);
+  --fs-h1: clamp(28px, 3.6vw, 44px);
+  --fs-h2: clamp(22px, 2.2vw, 28px);
+  --fs-metric: clamp(30px, 3vw, 44px);
+  --fs-metric-sm: clamp(22px, 1.9vw, 28px);
+  --fs-body: 14px;
+  --fs-sm: 13px;
+  --fs-xs: 12px;
+  --fs-label: 10.5px;
+
+  --ls-display: -0.045em;
+  --ls-tight: -0.03em;
+  --ls-label: 0.2em;
+
+  /* --- Espacement ----------------------------------------------------- */
+  --gutter: clamp(20px, 3.4vw, 56px);
+  --sidebar-w: 248px;
+  --topbar-h: 72px;
+  --max-w: 1560px;
+
+  /* --- Mouvement ------------------------------------------------------ */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --t-fast: 180ms;
+  --t-med: 340ms;
+  --t-slow: 640ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 1ms;
+    --t-med: 1ms;
+    --t-slow: 1ms;
+  }
+}

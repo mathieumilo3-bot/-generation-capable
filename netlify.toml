@@ -86,6 +86,16 @@
   to = "/vsl.html"
   status = 200
 
+# Prototype CIELO OS (dossier /cielo-os). Sans cette règle, /cielo-os — un
+# chemin à segment unique — tomberait dans le catch-all /:slug ci-dessous et
+# renverrait la page d'accueil au lieu du prototype. Le chemin avec slash
+# (/cielo-os/) est servi directement par le fichier, il n'est pas concerné.
+# Règle placée AVANT le catch-all : Netlify applique la première qui matche.
+[[redirects]]
+  from = "/cielo-os"
+  to = "/cielo-os/index.html"
+  status = 200
+
 [[redirects]]
   from = "/:slug"
   to = "/index.html?ref=:slug"
