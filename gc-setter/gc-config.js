@@ -11,7 +11,6 @@ export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_i_WcXEjzpUPMRhzabs8FvA_6
 // Garde-fou d'interface uniquement : affiche "accès refusé" sans attendre un
 // aller-retour réseau. L'autorisation qui compte est celle de la RLS.
 export const ADMIN_EMAILS = [
-  'ledorvenzo50@gmail.com',
   'ledorvenenzo50@gmail.com',
 ];
 

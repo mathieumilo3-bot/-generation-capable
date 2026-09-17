@@ -26,7 +26,7 @@ create table if not exists public.setter_admins (
 alter table public.setter_admins enable row level security;
 
 insert into public.setter_admins (email) values
-  ('ledorvenzo50@gmail.com')
+  ('ledorvenenzo50@gmail.com')
 on conflict (email) do nothing;
 
 -- SECURITY DEFINER : les policies doivent pouvoir lire setter_admins même quand
