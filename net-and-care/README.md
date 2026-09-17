@@ -3,12 +3,27 @@
 Site vitrine **orienté conversion** pour Net & Care, entreprise de nettoyage textile
 et de remise en état basée à Cannes (Antibes, Grasse et alentours).
 
-Le site n'est pas une vitrine : c'est un outil de génération de demandes de devis.
-Le parcours visé, de bout en bout :
+**Le système de devis de Net & Care, c'est WhatsApp.** Il fonctionne, on ne le
+remplace pas. Le site construit les portes d'entrée qui manquent autour, et tout
+ramène au même endroit :
 
 ```
-Google / Instagram → Site → Simulateur → Demande qualifiée → WhatsApp / rappel → Client
+Google   →  pages locales  ─┐
+TikTok   →  /avant-apres   ─┼→  WhatsApp / appel  →  Client
+Direct   →  accueil        ─┘        ↑
+                          estimation en ligne (facultative)
 ```
+
+| Porte | Ce qu'elle capte | Où elle mène |
+|---|---|---|
+| **Google** | Intention forte : « nettoyage canapé Cannes » | 7 pages locales → estimation ou WhatsApp |
+| **Site** | Vérification : « est-ce que cette entreprise est sérieuse ? » | Preuve, avis, zones → WhatsApp |
+| **TikTok** | Curiosité : quelqu'un qui ne vous connaissait pas | `/avant-apres` → WhatsApp en un geste |
+
+L'estimation en ligne **qualifie** (prestation, dimensions, état, photos, ville)
+mais n'est jamais un passage obligé : un bouton « Envoyer sur WhatsApp » est
+présent à chaque étape et part avec ce qui a déjà été saisi. Quelqu'un qui veut
+écrire tout de suite écrit tout de suite.
 
 Chaque élément de page a une fonction commerciale. Tout ce qui n'en avait pas a été
 laissé de côté.
@@ -27,6 +42,7 @@ le script de build les rappelle à chaque exécution.
 | **Email de réception des devis** | `site.config.json` → `contact.emailDevis` *(ou la variable Netlify `NETCARE_DEVIS_EMAIL`)* | Les demandes n'arrivent nulle part |
 | **Informations légales** (raison sociale, SIRET, adresse, TVA) | `site.config.json` → `entreprise` | Mentions légales incomplètes — obligation légale |
 | **Photos réelles et avis Google** | `assets/img/` et `src/data/avis.js` | Le site affiche des visuels et des avis d'exemple |
+| **Comptes TikTok et Instagram** | `site.config.json` → `contact.tiktok` / `instagram` | Les liens réseaux pointent vers des comptes inexistants |
 
 Puis, à chaque modification de `site.config.json` :
 
@@ -87,6 +103,7 @@ net-and-care/
 ├── nettoyage-tapis-cannes.html
 ├── nettoyage-moquette-cannes.html
 ├── nettoyage-fin-de-chantier-cannes.html
+├── avant-apres.html          │  ← porte TikTok (« lien en bio »)
 ├── mentions-legales.html     │  ← PAGES GÉNÉRÉES : ne pas éditer à la main,
 ├── confidentialite.html      │     toute modification serait écrasée au build
 ├── 404.html                  │
@@ -95,8 +112,9 @@ net-and-care/
 │
 ├── src/                      ← LES SOURCES, c'est ici qu'on écrit
 │   ├── layout.html               gabarit commun (head, SEO, scripts)
+│   ├── layout-bio.html           gabarit dépouillé de la page TikTok
 │   ├── partials/                 en-tête, pied de page, barre d'action, simulateur
-│   ├── pages/                    pages rédigées à la main (accueil, devis, légal, 404)
+│   ├── pages/                    pages rédigées à la main (accueil, devis, avant/après, légal)
 │   ├── templates/local.js        gabarit des pages locales
 │   ├── local-pages.js            contenu des 7 pages locales
 │   └── data/                     avis clients, cartes prestations
@@ -120,18 +138,18 @@ net-and-care/
 
 ### Pourquoi un générateur plutôt que des fichiers HTML écrits à la main
 
-Onze pages partagent le même en-tête, le même pied de page et le même simulateur.
-Écrites à la main, changer un numéro de téléphone imposerait onze modifications — et
+Treize pages partagent le même en-tête, le même pied de page et le même simulateur.
+Écrites à la main, changer un numéro de téléphone imposerait treize modifications — et
 une seule oubliée suffit à perdre des appels. Le générateur produit du **HTML statique
 pur, versionné dans le dépôt** : Netlify ne compile rien, et Google indexe du vrai
 contenu, pas une coquille remplie en JavaScript.
 
 ---
 
-## 3. Le simulateur de devis
+## 3. L'estimation en ligne
 
-C'est la pièce centrale. Six étapes, conçues pour être franchies au pouce sur un
-téléphone :
+Six étapes, conçues pour être franchies au pouce sur un téléphone. Son rôle est de
+**qualifier** — pas de remplacer WhatsApp :
 
 | # | Étape | Ce qu'on récupère |
 |---|---|---|
@@ -144,6 +162,19 @@ téléphone :
 
 Puis une confirmation avec un bouton **WhatsApp au message déjà rédigé** (toutes les
 réponses + la référence de la demande).
+
+### Le raccourci WhatsApp, à chaque étape
+
+Sous les boutons de navigation, à toutes les étapes : « Vous préférez écrire
+directement ? → Envoyer sur WhatsApp ». Le message part avec **ce qui a déjà été
+saisi à cet instant précis**, et seulement cela : tant qu'une étape n'a pas été
+franchie, ses valeurs par défaut (« usage courant », « dans la semaine ») ne sont
+pas transmises comme si elles avaient été choisies. Le message est donc exact,
+qu'on parte à l'étape 1 ou à l'étape 5.
+
+C'est ce qui empêche le formulaire de devenir un péage. L'événement
+`devis_whatsapp_direct` remonte l'étape à laquelle le raccourci a été utilisé :
+si beaucoup de monde part à l'étape 2, c'est que l'étape 2 est trop longue.
 
 ### Les prix
 
@@ -166,14 +197,58 @@ en parallèle après un changement de tarif.
 1. **Ne jamais perdre une demande.** Si l'envoi échoue (réseau coupé, fonction
    indisponible), le visiteur reçoit immédiatement un lien WhatsApp pré-rempli avec
    tout ce qu'il a saisi, plus le numéro de téléphone.
-2. **Ne jamais bloquer le parcours.** Photos, email et estimation sont facultatifs.
-   Le seul obstacle réel est nom + téléphone, le minimum pour rappeler quelqu'un.
+2. **Ne jamais bloquer le parcours.** Photos, email et estimation sont facultatifs,
+   et le raccourci WhatsApp est disponible à chaque étape. Le seul obstacle réel
+   est nom + téléphone, le minimum pour rappeler quelqu'un.
 3. **Reprise après interruption.** Les réponses sont conservées 24 h dans le
    navigateur : un appel entrant en pleine saisie ne fait rien perdre.
 
 ---
 
-## 4. Réception des demandes
+## 4. La porte TikTok — `/avant-apres`
+
+Page conçue pour une seule situation : quelqu'un vient de voir un avant / après
+sur TikTok et clique sur le lien en bio. Il ne cherchait rien, il n'a pas
+d'intention d'achat formée — il veut vérifier que c'est réel, puis savoir combien
+pour chez lui.
+
+Elle est donc volontairement différente du reste du site :
+
+- **Aucune navigation.** Pas de menu, pas de liens vers les prestations. Chaque
+  lien supplémentaire est une occasion de partir ailleurs.
+- **La preuve d'abord** : quatre comparateurs avant / après plein écran, en
+  colonne, faits pour le pouce.
+- **Une relance au milieu du parcours**, pas seulement en bas : c'est juste après
+  le deuxième avant / après que l'envie de savoir « combien pour le mien » est la
+  plus forte.
+- **WhatsApp collé en bas de l'écran**, en permanence. L'estimation chiffrée n'est
+  proposée qu'en lien secondaire — ce public-là ne veut pas d'un formulaire.
+
+### L'adresse à mettre dans la bio
+
+```
+netandcare.fr/tiktok
+```
+
+`/tiktok`, `/bio` et `/insta` redirigent tous vers `/avant-apres` (règles dans
+`netlify.toml`). L'intérêt : l'adresse dans la bio ne change jamais, même si la
+page d'atterrissage évolue — et on peut distinguer les sources en ajoutant
+`?utm_source=tiktok`.
+
+### À alimenter
+
+Les quatre comparateurs utilisent les mêmes visuels provisoires que le reste du
+site. **C'est la page qui a le plus besoin des vraies photos** : c'est elle qui
+doit convaincre quelqu'un qui n'a aucune raison de faire confiance. Chaque
+avant / après vient avec une légende (prestation, ville, ce qui a été traité) —
+à réécrire d'après les chantiers réels, dans `src/pages/avant-apres.html`.
+
+Publier une vidéo TikTok sans que le lien en bio mène à cette page, c'est perdre
+le trafic : l'ordre à respecter est mettre le lien, puis publier.
+
+---
+
+## 5. Réception des demandes
 
 `netlify/functions/netcare-devis.js` traite chaque envoi, dans cet ordre :
 
@@ -215,7 +290,7 @@ permet de suivre les demandes directement depuis l'interface Supabase.
 
 ---
 
-## 5. Déploiement
+## 6. Déploiement
 
 Le site est **indépendant de generationcapable.fr**, bien qu'hébergé dans le même
 dépôt. Sur Netlify, créer un site dont le **répertoire de base** est `net-and-care` :
@@ -241,7 +316,7 @@ npm run build:netcare     # met à jour les canonical, le sitemap et robots.txt
 
 ---
 
-## 6. Référencement local
+## 7. Référencement local
 
 ### Ce qui est en place
 
@@ -256,7 +331,9 @@ npm run build:netcare     # met à jour les canonical, le sitemap et robots.txt
 - `sitemap.xml` et `robots.txt` générés automatiquement ; pages légales en `noindex`
   et exclues du sitemap.
 - Maillage interne : chaque page locale renvoie vers les autres prestations et les
-  autres villes.
+  autres villes ; l'accueil et le pied de page renvoient vers `/avant-apres`.
+- `/avant-apres` est indexable : « avant après nettoyage canapé » est une requête
+  réelle, et la page y répond mieux qu'une section d'accueil.
 - Site statique et léger, sans framework : la vitesse est un critère de classement.
 
 ### Ce qui reste à faire — hors site
@@ -277,7 +354,7 @@ Le site ne suffit pas à se classer. Dans l'ordre d'impact :
 
 ---
 
-## 7. Indicateurs
+## 8. Indicateurs
 
 Le site pousse déjà les événements dans `window.dataLayer` — il suffit de brancher
 GA4 (ou Google Tag Manager) en renseignant `analytics.ga4` dans `site.config.json` :
@@ -289,6 +366,7 @@ GA4 (ou Google Tag Manager) en renseignant `analytics.ga4` dans `site.config.jso
 | `devis_prestation` | Prestation choisie | Demande par type de prestation |
 | `devis_photo_ajoutee` | Photo ajoutée | Qualité des demandes |
 | `devis_envoye` | Demande transmise | **Nombre de demandes de devis** |
+| `devis_whatsapp_direct` | Raccourci WhatsApp utilisé (avec l'étape) | Où le formulaire est ressenti comme trop long |
 | `devis_echec_envoi` | Envoi en échec | Incident à surveiller |
 | `clic_contact` | Clic tel / WhatsApp (avec l'emplacement) | Contacts WhatsApp et appels |
 
@@ -297,7 +375,7 @@ Les demandes elles-mêmes sont comptabilisables directement dans la table
 
 ---
 
-## 8. Régénérer les visuels provisoires
+## 9. Régénérer les visuels provisoires
 
 ```bash
 node net-and-care/tools/make-visuals.js      # textures avant / après, favicon, carte

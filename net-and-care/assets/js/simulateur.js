@@ -328,6 +328,55 @@
       return 'https://wa.me/' + CFG.whatsapp + '?text=' + encodeURIComponent(L.join('\n'));
     }
 
+    /* --------------------------------------------- raccourci WhatsApp ---- */
+
+    // Message construit avec ce que le visiteur a RÉELLEMENT renseigné à
+    // l'instant où il clique. Rien n'est deviné : tant qu'une étape n'a pas
+    // été franchie, sa valeur par défaut (« usage courant », « dans la
+    // semaine ») n'est pas envoyée comme si elle avait été choisie.
+    function whatsappExpress() {
+      var s = readState();
+      var est = current >= 5 ? estimate(s) : null;
+      var faits = [];
+
+      if (s.prestation) {
+        faits.push('Prestation : ' + (PRESTATIONS[s.prestation] || s.prestation));
+        if (current > 2) {
+          var d = describe(s);
+          if (d) faits.push('Détail : ' + d);
+          if (s.prestation !== 'autre') faits.push('État : ' + (ETATS[s.etat] || ''));
+          if (s.options.length) {
+            faits.push('Options : ' + s.options.map(function (o) { return OPTIONS[o] || o; }).join(', '));
+          }
+        }
+      }
+      if (s.ville) faits.push('Ville : ' + s.ville);
+      if (current > 3 && s.delai) faits.push('Délai souhaité : ' + s.delai);
+      if (est) faits.push('Estimation vue sur le site : ' + euro(est.bas) + ' – ' + euro(est.haut));
+      if (s.nom) faits.push('Nom : ' + s.nom);
+
+      var L = ['Bonjour Net & Care, je souhaite un devis.'];
+      if (faits.length) {
+        L.push('');
+        faits.forEach(function (f) { L.push('• ' + f); });
+      }
+      L.push('', 'Je peux vous envoyer des photos ici.');
+      return 'https://wa.me/' + CFG.whatsapp + '?text=' + encodeURIComponent(L.join('\n'));
+    }
+
+    var btnExpress = $('[data-sim-wa-express]', root);
+    var blocExpress = $('[data-sim-express]', root);
+
+    function syncExpress() {
+      if (btnExpress) btnExpress.href = whatsappExpress();
+    }
+
+    if (btnExpress) {
+      btnExpress.addEventListener('click', function () {
+        track('devis_whatsapp_direct', { etape: current, prestation: readState().prestation || null });
+      });
+    }
+
     /* ---------------------------------------------------------- validation */
 
     function showError(key, on) {
@@ -392,6 +441,9 @@
 
       var isDone = n > TOTAL;
       if (nav) nav.hidden = isDone;
+      // À la confirmation, le raccourci ferait doublon avec le bouton
+      // WhatsApp de l'écran final.
+      if (blocExpress) blocExpress.hidden = isDone;
       if (bar) bar.style.width = Math.min(100, ((isDone ? TOTAL : n) / TOTAL) * 100) + '%';
       if (elCurrent) elCurrent.textContent = isDone ? TOTAL : n;
       if (elName) {
@@ -402,6 +454,7 @@
       if (btnNextLabel) btnNextLabel.textContent = stepLabel(n);
 
       if (n === 5) paintEstimate(readState());
+      syncExpress();
 
       // Ne pas remonter la page au premier affichage : le simulateur est déjà
       // au bon endroit, et un scroll automatique au chargement est désagréable.
@@ -720,6 +773,7 @@
         if (box) box.hidden = e.target.value !== '__autre';
       }
       if (e.target.name && e.target.name.indexOf('tapis_') === 0) syncDetails();
+      syncExpress();
       save();
     });
 

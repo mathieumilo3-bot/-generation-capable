@@ -213,6 +213,7 @@ const vars = {
   telAffichage: config.contact.telephoneAffichage,
   email: config.contact.email,
   instagram: config.contact.instagram,
+  tiktok: config.contact.tiktok,
   whatsapp: config.contact.whatsapp,
   waUrl: 'https://wa.me/' + config.contact.whatsapp +
     '?text=' + encodeURIComponent(`Bonjour Net & Care, je souhaite un devis pour un nettoyage.`),
@@ -238,8 +239,8 @@ const vars = {
   robots: 'index, follow',
   bodyClass: '',
   preselect: '',
-  simTitre: 'Simulateur de devis',
-  simSousTitre: 'Six questions, une estimation immédiate. Sans engagement.',
+  simTitre: 'Estimation en 60 secondes',
+  simSousTitre: 'Six questions, une fourchette immédiate — puis Net & Care confirme sur WhatsApp ou par téléphone.',
   analytics: ''
 };
 
@@ -249,7 +250,13 @@ if (config.analytics.ga4) {
     `<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${config.analytics.ga4}');</script>`;
 }
 
-const layout = lire(path.join(SRC, 'layout.html'));
+// Deux gabarits : le site complet, et une version dépouillée pour la page
+// « lien en bio » (voir src/layout-bio.html). Une page choisit le sien avec
+// « "layout": "layout-bio" » dans son en-tête JSON.
+const layouts = {
+  layout: lire(path.join(SRC, 'layout.html')),
+  'layout-bio': lire(path.join(SRC, 'layout-bio.html'))
+};
 
 /* ------------------------------------------------------------- génération */
 
@@ -276,13 +283,17 @@ function ecrirePage(page) {
   } else if (page.service) {
     schemas.push(localBusiness());
     schemas.push(serviceSchema(Object.assign({ slug: page.slug }, page.service)));
+  } else if (page.localBusiness) {
+    schemas.push(localBusiness());
   }
   if (page.faq) schemas.push(faqSchema(page.faq));
   if (page.fil) schemas.push(breadcrumbSchema(page.fil));
   ctx.jsonld = schemas.map(bloc).join('\n');
 
+  const gabarit = layouts[page.layout || 'layout'];
+  if (!gabarit) throw new Error(`Gabarit inconnu : ${page.layout}`);
   const corps = rendre(page.body, ctx);
-  const html = rendre(layout, Object.assign(ctx, { body: corps }));
+  const html = rendre(gabarit, Object.assign(ctx, { body: corps }));
 
   const dest = path.join(ROOT, page.slug + '.html');
   fs.writeFileSync(dest, html);

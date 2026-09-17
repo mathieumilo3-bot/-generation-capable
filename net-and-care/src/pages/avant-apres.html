@@ -1,0 +1,158 @@
+<!--@
+{
+  "slug": "avant-apres",
+  "layout": "layout-bio",
+  "localBusiness": true,
+  "title": "Avant / après — nettoyage textile à Cannes | Net & Care",
+  "ogTitle": "Net & Care — les avant / après de nos nettoyages",
+  "description": "Les résultats réels de Net & Care : canapés, matelas, tapis et moquettes nettoyés à Cannes, Antibes et Grasse. Faites glisser pour comparer, puis demandez votre prix.",
+  "priorite": 0.9,
+  "fil": [
+    { "nom": "Accueil", "href": "/" },
+    { "nom": "Avant / après", "href": "/avant-apres" }
+  ]
+}
+@-->
+<section class="bio-hero">
+  <div class="wrap">
+    <span class="bio-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Cannes · Antibes · Grasse
+    </span>
+    <h1>Les avant / après, <em class="accent-serif">en entier</em></h1>
+    <p class="bio-lead">
+      Vous avez vu la vidéo. Voici le résultat complet, sans coupure&nbsp;:
+      faites glisser le curseur sur chaque photo.
+    </p>
+    <ul class="bio-chips">
+      <li>Nettoyage à domicile</li>
+      <li>Devis gratuit</li>
+      <li>Séchage {{delaiSechage}}</li>
+    </ul>
+  </div>
+</section>
+
+<section class="bio-gallery">
+  <div class="wrap">
+
+    <article class="ba bio-item">
+      <div class="ba__viewer" data-ba>
+        <img src="/assets/img/canape-apres.svg" alt="Canapé en tissu après nettoyage par injection-extraction à Cannes" width="1200" height="900" fetchpriority="high">
+        <span class="ba__tag ba__tag--before">Avant</span>
+        <div class="ba__overlay"><img src="/assets/img/canape-avant.svg" alt="Canapé en tissu taché avant l'intervention" width="1200" height="900"></div>
+        <span class="ba__tag ba__tag--after">Après</span>
+        <input class="ba__range" type="range" min="0" max="100" value="50" aria-label="Comparer avant et après sur le canapé">
+        <div class="ba__handle"><span class="ba__knob">‹ ›</span></div>
+      </div>
+      <div class="ba__meta">
+        <h2>Canapé tissu 3 places — Cannes</h2>
+        <p>Assises marquées et auréoles anciennes. Injection-extraction, 1 h 30 sur place.</p>
+      </div>
+    </article>
+
+    <article class="ba bio-item">
+      <div class="ba__viewer" data-ba>
+        <img src="/assets/img/matelas-apres.svg" alt="Matelas après nettoyage et traitement anti-acariens" width="1200" height="900" loading="lazy">
+        <span class="ba__tag ba__tag--before">Avant</span>
+        <div class="ba__overlay"><img src="/assets/img/matelas-avant.svg" alt="Matelas taché avant nettoyage" width="1200" height="900" loading="lazy"></div>
+        <span class="ba__tag ba__tag--after">Après</span>
+        <input class="ba__range" type="range" min="0" max="100" value="50" aria-label="Comparer avant et après sur le matelas">
+        <div class="ba__handle"><span class="ba__knob">‹ ›</span></div>
+      </div>
+      <div class="ba__meta">
+        <h2>Matelas 140 × 190 — Antibes</h2>
+        <p>Transpiration et traces anciennes, plus traitement anti-acariens. Lit réutilisable le soir même.</p>
+      </div>
+    </article>
+
+    <!-- Relance au milieu du parcours : c'est ici que l'envie de savoir
+         « combien pour le mien » est la plus forte, pas en bas de page. -->
+    <div class="bio-cta">
+      <h2>Combien pour le vôtre&nbsp;?</h2>
+      <p>Envoyez une photo sur WhatsApp, vous avez votre prix. C'est la voie la plus rapide.</p>
+      <a class="btn btn--wa btn--lg btn--block" href="{{waUrl}}" target="_blank" rel="noopener" data-track="wa-bio-milieu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.6-2c-.2-.3 0-.5.1-.6l.5-.6.3-.5v-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.3-.6-.4zM12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2z"/></svg>
+        Envoyer ma photo sur WhatsApp
+      </a>
+      <a class="bio-cta__alt" href="/devis" data-track="cta-bio-estimation">ou obtenir une estimation chiffrée en 60 s →</a>
+    </div>
+
+    <article class="ba bio-item">
+      <div class="ba__viewer" data-ba>
+        <img src="/assets/img/tapis-apres.svg" alt="Tapis en laine après nettoyage en profondeur" width="1200" height="900" loading="lazy">
+        <span class="ba__tag ba__tag--before">Avant</span>
+        <div class="ba__overlay"><img src="/assets/img/tapis-avant.svg" alt="Tapis en laine encrassé avant nettoyage" width="1200" height="900" loading="lazy"></div>
+        <span class="ba__tag ba__tag--after">Après</span>
+        <input class="ba__range" type="range" min="0" max="100" value="50" aria-label="Comparer avant et après sur le tapis">
+        <div class="ba__handle"><span class="ba__knob">‹ ›</span></div>
+      </div>
+      <div class="ba__meta">
+        <h2>Tapis en laine 2 × 1,5 m — Grasse</h2>
+        <p>Zone de passage grisée, fibres écrasées. Produit à pH neutre, aucune décoloration.</p>
+      </div>
+    </article>
+
+    <article class="ba bio-item">
+      <div class="ba__viewer" data-ba>
+        <img src="/assets/img/moquette-apres.svg" alt="Moquette de bureau après nettoyage professionnel" width="1200" height="900" loading="lazy">
+        <span class="ba__tag ba__tag--before">Avant</span>
+        <div class="ba__overlay"><img src="/assets/img/moquette-avant.svg" alt="Moquette de bureau encrassée avant nettoyage" width="1200" height="900" loading="lazy"></div>
+        <span class="ba__tag ba__tag--after">Après</span>
+        <input class="ba__range" type="range" min="0" max="100" value="50" aria-label="Comparer avant et après sur la moquette">
+        <div class="ba__handle"><span class="ba__knob">‹ ›</span></div>
+      </div>
+      <div class="ba__meta">
+        <h2>Moquette de bureau — Cannes</h2>
+        <p>Couloir et entrée, les seuls mètres carrés qui donnaient l'air fatigué à l'ensemble.</p>
+      </div>
+    </article>
+
+    <p class="bio-note">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      Visuels provisoires : à remplacer par les photos de chantier réelles (voir README).
+    </p>
+  </div>
+</section>
+
+<section class="bio-steps">
+  <div class="wrap">
+    <h2>Comment ça se passe</h2>
+    <ol>
+      <li><strong>Vous envoyez une photo</strong><span>Sur WhatsApp, avec la ville. Ça prend dix secondes.</span></li>
+      <li><strong>Vous recevez votre prix</strong><span>Un montant ferme, pas une fourchette floue. Sans visite préalable.</span></li>
+      <li><strong>On intervient chez vous</strong><span>Matériel professionnel apporté sur place. Paiement après la prestation.</span></li>
+    </ol>
+  </div>
+</section>
+
+<section class="bio-avis">
+  <div class="wrap">
+    <h2>Ce qu'en disent les clients</h2>
+    <div class="reviews">
+{{avisHtml}}
+    </div>
+  </div>
+</section>
+
+<section class="bio-zones">
+  <div class="wrap">
+    <h2>Où Net&nbsp;&amp;&nbsp;Care se déplace</h2>
+    <p>À domicile, dans un rayon d'environ {{rayonKm}} km autour de {{villeBase}} — déplacement inclus.</p>
+    <ul class="zones-list">
+          {{zonesHtml}}
+    </ul>
+  </div>
+</section>
+
+<section class="bio-final">
+  <div class="wrap">
+    <div class="cta-final">
+      <h2>Votre canapé mérite le même avant / après</h2>
+      <p>Une photo, une ville, et vous avez votre prix.</p>
+      <div class="btn-row" style="flex-direction:column">
+        <a class="btn btn--wa btn--lg btn--block" href="{{waUrl}}" target="_blank" rel="noopener" data-track="wa-bio-final">Demander mon prix sur WhatsApp</a>
+        <a class="btn btn--ghost btn--lg btn--block" href="tel:{{tel}}" data-track="tel-bio-final">Appeler le {{telAffichage}}</a>
+      </div>
+    </div>
+  </div>
+</section>

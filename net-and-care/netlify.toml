@@ -66,7 +66,24 @@
 # s'appliquerait pas, et en la forçant on risquerait une boucle. Les balises
 # <link rel="canonical"> de chaque page ferment le sujet côté Google.
 
-# Raccourcis utiles en communication (flyer, Instagram, carte de visite).
+# Raccourcis utiles en communication (flyer, carte de visite, bio des réseaux).
+# /tiktok est l'adresse à mettre dans la bio TikTok : courte, dictable à
+# l'oral, et modifiable ici si la page d'atterrissage change un jour.
+[[redirects]]
+  from = "/tiktok"
+  to = "/avant-apres"
+  status = 301
+
+[[redirects]]
+  from = "/bio"
+  to = "/avant-apres"
+  status = 301
+
+[[redirects]]
+  from = "/insta"
+  to = "/avant-apres"
+  status = 301
+
 [[redirects]]
   from = "/estimation"
   to = "/devis"
