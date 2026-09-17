@@ -19,8 +19,19 @@
 const fs = require('fs');
 const path = require('path');
 
+/* MODE DÉMO ---------------------------------------------------------------
+   « node tools/build.js --demo » produit une copie du site dans .demo/ dont
+   tous les liens sont RELATIFS (devis.html au lieu de /devis). C'est ce qui
+   permet de la montrer depuis n'importe quelle adresse — un aperçu partagé,
+   un dossier ouvert en local — sans serveur ni règles de redirection.
+
+   Le site réel, lui, garde ses adresses propres : /devis, /avant-apres. On ne
+   dégrade pas la production pour les besoins d'une démonstration.            */
+const DEMO = process.argv.includes('--demo');
+
 const ROOT = path.join(__dirname, '..');
 const SRC = path.join(ROOT, 'src');
+const OUT = DEMO ? path.join(ROOT, '.demo') : ROOT;
 const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'site.config.json'), 'utf8'));
 
 const avis = require(path.join(SRC, 'data', 'avis.js'));
@@ -260,6 +271,28 @@ const layouts = {
 
 /* ------------------------------------------------------------- génération */
 
+// Transforme les adresses absolues du site en chemins relatifs, pour la démo
+// uniquement. Les slugs connus deviennent « slug.html », les fichiers
+// d'habillage perdent leur barre oblique de tête.
+// Bandeau de démonstration : il évite que le client prenne pour définitifs le
+// numéro de téléphone d'exemple, les visuels provisoires et les avis à
+// remplacer. Il dit aussi clairement ce que cette adresse est — un aperçu, pas
+// le site en ligne.
+const BANDEAU = `<div class="demo-bar" role="note">
+  <strong>Aperçu de travail</strong> — photos, avis clients et coordonnées sont des exemples à remplacer.
+</div>
+`;
+
+function relativiser(html) {
+  return html
+    .replace(/(<body[^>]*>)/, '$1\n' + BANDEAU)
+    .replace(/(href|src)="\/assets\//g, '$1="assets/')
+    .replace(/href="\/"/g, 'href="index.html"')
+    .replace(/href="\/#/g, 'href="index.html#')
+    .replace(/href="\/([a-z0-9-]+)(#[^"]*)?"/g, (tout, slug, ancre) =>
+      `href="${slug}.html${ancre || ''}"`);
+}
+
 const ecrites = [];
 
 function ecrirePage(page) {
@@ -295,8 +328,8 @@ function ecrirePage(page) {
   const corps = rendre(page.body, ctx);
   const html = rendre(gabarit, Object.assign(ctx, { body: corps }));
 
-  const dest = path.join(ROOT, page.slug + '.html');
-  fs.writeFileSync(dest, html);
+  fs.mkdirSync(OUT, { recursive: true });
+  fs.writeFileSync(path.join(OUT, page.slug + '.html'), DEMO ? relativiser(html) : html);
   ecrites.push({ slug: page.slug, priorite: page.priorite || 0.7, octets: Buffer.byteLength(html) });
 }
 
@@ -329,19 +362,23 @@ const runtime = {
 };
 delete runtime.tarifs._note;
 
-fs.writeFileSync(path.join(ROOT, 'assets', 'js', 'config.generated.js'),
+runtime.demo = DEMO;
+
+fs.mkdirSync(path.join(OUT, 'assets', 'js'), { recursive: true });
+fs.writeFileSync(path.join(OUT, 'assets', 'js', 'config.generated.js'),
 `/* FICHIER GÉNÉRÉ — ne pas modifier à la main.
    Source : net-and-care/site.config.json · Régénérer : npm run build:netcare */
 window.NETCARE = ${JSON.stringify(runtime, null, 2)};
 `);
 
-/* 4. sitemap.xml + robots.txt ------------------------------------------- */
+/* 4. sitemap.xml + robots.txt -------------------------------------------
+   Sans objet pour une démo : elle n'a pas vocation à être indexée.        */
 const aujourdhui = new Date().toISOString().slice(0, 10);
 // Les pages légales sont en noindex : les déclarer dans le sitemap enverrait
 // à Google un signal contradictoire (« indexe ceci » / « n'indexe pas ceci »).
 const indexables = ecrites.filter((p) => !['mentions-legales', 'confidentialite', '404'].includes(p.slug));
 
-fs.writeFileSync(path.join(ROOT, 'sitemap.xml'),
+if (!DEMO) fs.writeFileSync(path.join(ROOT, 'sitemap.xml'),
 `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${indexables
@@ -355,7 +392,7 @@ ${indexables
 </urlset>
 `);
 
-fs.writeFileSync(path.join(ROOT, 'robots.txt'),
+if (!DEMO) fs.writeFileSync(path.join(ROOT, 'robots.txt'),
 `# ${config.entreprise.nom} — ${domaine}
 User-agent: *
 Allow: /
@@ -363,6 +400,38 @@ Disallow: /.netlify/
 
 Sitemap: ${domaine}/sitemap.xml
 `);
+
+/* 5. Mode démo : habillage copié à côté des pages ------------------------ */
+if (DEMO) {
+  const copier = (relatif) => {
+    const src = path.join(ROOT, relatif);
+    const dest = path.join(OUT, relatif);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(src, dest);
+  };
+
+  copier('assets/js/site.js');
+  copier('assets/js/simulateur.js');
+  for (const f of fs.readdirSync(path.join(ROOT, 'assets', 'img'))) {
+    copier(path.join('assets', 'img', f));
+  }
+
+  // Le style du bandeau est ajouté à la copie, jamais au fichier de
+  // production : le site réel n'a pas à embarquer du CSS de démonstration.
+  fs.mkdirSync(path.join(OUT, 'assets', 'css'), { recursive: true });
+  fs.writeFileSync(path.join(OUT, 'assets', 'css', 'netcare.css'),
+    lire(path.join(ROOT, 'assets', 'css', 'netcare.css')) + `
+/* --- Bandeau d'aperçu (build --demo uniquement) --------------------------- */
+.demo-bar {
+  background: #07202b; color: #9fd8d2;
+  font-size: .78rem; line-height: 1.4; text-align: center;
+  padding: 9px 16px; letter-spacing: .01em;
+}
+.demo-bar strong { color: #fff; font-weight: 700; }
+`);
+
+  console.log('\n  Mode démo : écrit dans net-and-care/.demo/ (liens relatifs).');
+}
 
 /* ------------------------------------------------------------ rapport ---- */
 

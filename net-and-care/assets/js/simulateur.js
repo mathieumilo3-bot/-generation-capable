@@ -728,6 +728,18 @@
         }
       };
 
+      // Aperçu de travail : aucune fonction serveur n'est déployée derrière.
+      // Plutôt que d'afficher une erreur — qui ferait croire à un défaut du
+      // site — on montre l'écran de confirmation en disant ce qui se passerait
+      // réellement en production.
+      if (CFG.demo) {
+        setTimeout(function () {
+          done(true, 'Aperçu : en ligne, cette demande part chez Net & Care par email — ' +
+            'avec toutes vos réponses et vos photos — et le rappel suit en ' + (CFG.delais ? CFG.delais.rappel : 'moins de 2 h') + '.');
+        }, 800);
+        return;
+      }
+
       var timeout = setTimeout(function () { done(false); }, 25000);
 
       fetch(CFG.endpoint, {
