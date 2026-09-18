@@ -19,11 +19,11 @@ function updateConsent(choice: Choice) {
 }
 
 export function ConsentBanner() {
-  const [visible, setVisible] = useState(() =>
-    typeof window !== "undefined" && window.localStorage.getItem(CONSENT_KEY) === null
-  );
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (window.localStorage.getItem(CONSENT_KEY) === null) setVisible(true);
+
     const open = () => setVisible(true);
     window.addEventListener("gc:open-consent", open);
     return () => window.removeEventListener("gc:open-consent", open);
