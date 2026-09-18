@@ -6,7 +6,6 @@ const PUBLIC_ROUTES = [
   "/secteurs",
   "/secteurs/restaurants",
   "/applications",
-  "/cas-clients",
   "/ressources",
   "/ressources/pourquoi-un-beau-site-ne-suffit-plus",
   "/creation-site-internet",
@@ -42,6 +41,14 @@ test.describe("pages", () => {
     await expect(
       page.getByRole("link", { name: /Analyser mon entreprise/ }).filter({ visible: true }).first()
     ).toBeVisible();
+  });
+
+  test("the former /cas-clients URL now leads to /applications", async ({ page }) => {
+    // The two pages had become the same content under two canonicals.
+    await page.goto("/cas-clients");
+    await expect(page).toHaveURL(/\/applications$/);
+    await page.goto("/cas-clients/nimporte-quoi");
+    await expect(page).toHaveURL(/\/applications$/);
   });
 
   test("unknown sector and article slugs 404", async ({ page }) => {

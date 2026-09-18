@@ -19,7 +19,6 @@ export const FOOTER_LINKS = [
   { label: "Systèmes", href: "/#systemes" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Applications", href: "/applications" },
-  { label: "Cas clients", href: "/cas-clients" },
   { label: "Ressources", href: "/ressources" },
   { label: "Audit", href: "/audit" },
 ] as const;

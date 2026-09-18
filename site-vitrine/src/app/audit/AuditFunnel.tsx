@@ -179,9 +179,9 @@ export function AuditFunnel() {
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[var(--color-accent)]">
           <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
         </span>
-        <h1 className="font-display mt-8 text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2 className="font-display mt-8 text-3xl font-semibold tracking-tight sm:text-4xl">
           Votre analyse est en préparation.
-        </h1>
+        </h2>
         <p className="mt-5 text-[15px] leading-relaxed text-[var(--color-muted)]">
           Nous revenons vers vous par email avec les opportunités prioritaires
           identifiées pour {data.entreprise || "votre entreprise"}.
@@ -243,9 +243,9 @@ export function AuditFunnel() {
               exit={{ opacity: 0, x: -24 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
-              <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
                 Votre site
-              </h1>
+              </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
                 L&apos;adresse de votre site actuel, ou de votre page
                 principale (réseaux sociaux si vous n&apos;avez pas de site).
@@ -285,9 +285,9 @@ export function AuditFunnel() {
               exit={{ opacity: 0, x: -24 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
-              <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
                 Votre activité
-              </h1>
+              </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
                 Choisissez le secteur qui correspond le mieux à votre
                 entreprise.
@@ -349,9 +349,9 @@ export function AuditFunnel() {
               exit={{ opacity: 0, x: -24 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
-              <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
                 Votre objectif
-              </h1>
+              </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
                 Quel est le résultat le plus important pour vous aujourd&apos;hui ?
               </p>
@@ -408,9 +408,9 @@ export function AuditFunnel() {
               exit={{ opacity: 0, x: -24 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
-              <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
                 Vos coordonnées
-              </h1>
+              </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
                 Pour vous transmettre votre audit personnellement.
               </p>

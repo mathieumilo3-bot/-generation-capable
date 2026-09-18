@@ -28,6 +28,14 @@ const nextConfig: NextConfig = {
   },
   // No need to advertise the framework and its version.
   poweredByHeader: false,
+  async redirects() {
+    return [
+      // /cas-clients had become a second copy of /applications, down to the
+      // same <title>. One canonical page, the old URLs still resolve.
+      { source: "/cas-clients", destination: "/applications", permanent: true },
+      { source: "/cas-clients/:slug", destination: "/applications", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

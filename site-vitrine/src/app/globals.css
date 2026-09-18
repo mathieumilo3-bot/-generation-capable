@@ -11,7 +11,7 @@
   --color-border: rgba(245, 245, 240, 0.1);
   --color-border-strong: rgba(245, 245, 240, 0.2);
 
-  --container-max: 1240px;
+  --container-max: 1280px;
   --ease-signature: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -90,4 +90,20 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+
+/* Premium surface treatment */
+body {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(214, 183, 122, 0.055), transparent 32rem),
+    var(--color-bg);
+}
+
+section {
+  scroll-margin-top: 5rem;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
 }
