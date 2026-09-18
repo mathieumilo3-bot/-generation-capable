@@ -5,6 +5,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/schema/JsonLd";
+import { Analytics, AnalyticsNoScript } from "@/components/Analytics";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/constants";
 
 /**
@@ -65,7 +66,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="fr"
       className={`${interTight.variable} ${manrope.variable} h-full antialiased`}
     >
+      <head>
+        <Analytics />
+      </head>
       <body className="min-h-full flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
+        <AnalyticsNoScript />
         <MotionConfig reducedMotion="user">
           <OrganizationJsonLd />
           <WebSiteJsonLd />

@@ -27,7 +27,7 @@ export function FinalCTA() {
         </div>
 
         <p className="mt-5 text-sm text-[var(--color-muted)]">
-          Diagnostic initial sans engagement.
+          Diagnostic initial · Sans engagement
         </p>
       </Reveal>
     </Section>

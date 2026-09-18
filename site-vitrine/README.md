@@ -83,16 +83,29 @@ Copier `.env.example` en `.env.local` et renseigner :
 - `AUDIT_NOTIFY_EMAIL` — adresse qui reçoit chaque nouvelle demande d'audit.
 - `RESEND_FROM_EMAIL` — optionnel, expéditeur par défaut
   `Génération Capable <audit@generationcapable.fr>`.
+- `NEXT_PUBLIC_GTM_ID` — optionnel, conteneur Google Tag Manager
+  (`GTM-XXXXXXX`). Laissée vide, aucune balise tierce n'est chargée (vérifié
+  par un test E2E). Renseignée, GA4, les conversions Google Ads et le pixel
+  Meta se branchent depuis l'interface GTM : les évènements du tunnel sont
+  déjà poussés dans `window.dataLayer`.
 
 Ces mêmes variables doivent être configurées sur la plateforme de
 déploiement (Netlify, Vercel, …) avant mise en production.
 
 ## À faire avant mise en production publique
 
-- Compléter `/mentions-legales` et `/politique-de-confidentialite` avec les
-  informations réelles de l'entité (SIRET, adresse, directeur de
-  publication, hébergeur) — volontairement laissées en placeholder, aucune
-  information légale n'a été inventée.
+- **Remplir `src/lib/data/legal.ts`** (bloquant pour toute publicité).
+  C'est le seul fichier à éditer : dénomination, forme juridique, siège,
+  SIREN, directeur de publication et email de contact. `/mentions-legales`
+  se remplit alors toute seule, et `/politique-de-confidentialite` affiche
+  le bon responsable de traitement. Tant qu'il est vide, les deux pages le
+  disent explicitement plutôt que d'afficher un faux identifiant — aucune
+  information légale n'est inventée. Ajouter aussi l'adresse de l'hébergeur
+  (`HOST.adresse`) depuis <https://www.netlify.com/legal/>.
+- Si une mesure d'audience avec cookies est activée via `NEXT_PUBLIC_GTM_ID`,
+  ajouter un bandeau de consentement et mettre à jour la section « Cookies »
+  de la politique de confidentialité. Le Consent Mode v2 est initialisé en
+  `denied` : sans bandeau, les balises restent sans cookie.
 - Configurer `RESEND_API_KEY` / `AUDIT_NOTIFY_EMAIL` sur la plateforme de
   déploiement (voir ci-dessus).
 - Remplacer `SITE_URL` dans `src/lib/constants.ts` par le domaine définitif

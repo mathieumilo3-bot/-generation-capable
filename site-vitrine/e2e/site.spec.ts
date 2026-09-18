@@ -5,6 +5,7 @@ const PUBLIC_ROUTES = [
   "/audit",
   "/secteurs",
   "/secteurs/restaurants",
+  "/applications",
   "/cas-clients",
   "/ressources",
   "/ressources/pourquoi-un-beau-site-ne-suffit-plus",
@@ -105,6 +106,68 @@ test.describe("SEO endpoints", () => {
     const manifest = await (await request.get("/manifest.webmanifest")).json();
     expect(manifest.name).toContain("Génération Capable");
     expect(manifest.theme_color).toBe("#050505");
+  });
+});
+
+test.describe("legal pages", () => {
+  test("mentions légales carry the host and the no-fake-proof statement", async ({ page }) => {
+    await page.goto("/mentions-legales");
+    await expect(page.getByRole("heading", { name: "Mentions légales" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Hébergeur" })).toBeVisible();
+    await expect(page.getByText("Netlify, Inc.")).toBeVisible();
+    await expect(page.getByText("ne décrivent aucune mission réalisée")).toBeVisible();
+    // Nothing may pose as a filled-in identity while the config is empty.
+    await expect(page.getByText(/SIREN|RCS/)).toHaveCount(0);
+  });
+
+  test("the privacy policy states what the form actually does", async ({ page }) => {
+    await page.goto("/politique-de-confidentialite");
+    for (const heading of [
+      "Responsable du traitement",
+      "Données collectées",
+      "Finalité et base légale",
+      "Destinataires et sous-traitants",
+      "Durée de conservation",
+      "Journaux techniques et anti-abus",
+      "Vos droits",
+    ]) {
+      await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+    }
+    await expect(page.getByText("Resend")).toBeVisible();
+    await expect(page.getByRole("link", { name: "cnil.fr" })).toBeVisible();
+  });
+
+  test("the two legal pages link to each other", async ({ page }) => {
+    // Scoped to the body copy: the footer links to both pages on every page.
+    const body = page.locator("main");
+    await page.goto("/mentions-legales");
+    await body.getByRole("link", { name: "politique de confidentialité" }).click();
+    await expect(page).toHaveURL(/politique-de-confidentialite/);
+    await body.getByRole("link", { name: "mentions légales" }).click();
+    await expect(page).toHaveURL(/mentions-legales/);
+  });
+});
+
+test.describe("analytics", () => {
+  test("loads no third-party tag while NEXT_PUBLIC_GTM_ID is unset", async ({ page }) => {
+    const thirdParty: string[] = [];
+    page.on("request", (req) => {
+      const url = new URL(req.url());
+      if (!["localhost", "127.0.0.1"].includes(url.hostname)) thirdParty.push(req.url());
+    });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    expect(thirdParty).toEqual([]);
+  });
+
+  test("the funnel events land on a dataLayer a tag manager can read", async ({ page }) => {
+    await page.goto("/");
+    // landing_view is pushed from an effect, so poll rather than sample once.
+    const firstEntryKeys = () =>
+      page.evaluate(() => Object.keys((window.dataLayer ?? [])[0] ?? {}).sort());
+
+    await expect.poll(firstEntryKeys).toContain("event");
+    expect(await firstEntryKeys()).toContain("timestamp");
   });
 });
 

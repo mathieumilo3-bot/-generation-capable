@@ -15,7 +15,7 @@ export default function AppleIcon() {
           alignItems: "center",
           justifyContent: "center",
           background: "#050505",
-          color: "#c9a876",
+          color: "#e5b94a",
           fontFamily: "sans-serif",
         }}
       >
@@ -28,7 +28,7 @@ export default function AppleIcon() {
             marginTop: 10,
             width: 34,
             height: 2,
-            background: "#c9a876",
+            background: "#e5b94a",
           }}
         />
       </div>

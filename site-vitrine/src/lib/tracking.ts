@@ -4,7 +4,15 @@
  * present yet, so this can ship ahead of the analytics integration.
  */
 export type TrackingEvent =
+  | "landing_view"
+  | "hero_cta_click"
+  | "instant_check_started"
+  | "instant_check_completed"
   | "audit_started"
+  | "audit_step_1"
+  | "audit_step_2"
+  | "audit_step_3"
+  | "audit_step_4"
   | "audit_completed"
   | "cta_clicked"
   | "form_started"

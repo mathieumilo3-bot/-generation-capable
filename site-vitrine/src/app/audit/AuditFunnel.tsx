@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { SECTORS } from "@/lib/data/sectors";
 import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
-import { track } from "@/lib/tracking";
+import { track, type TrackingEvent } from "@/lib/tracking";
 
 type FormState = {
   siteUrl: string;
@@ -55,26 +55,42 @@ export function AuditFunnel() {
   const [secteurAutre, setSecteurAutre] = useState("");
   const [objectifAutre, setObjectifAutre] = useState("");
   const started = useRef(false);
+  const engaged = useRef(false);
 
   useEffect(() => {
     if (!started.current) {
       started.current = true;
       track("audit_started");
-      track("form_started");
+      track("audit_step_1");
     }
+
+    // Arriving from the homepage tool: ?site= carries the address already
+    // typed there, so the visitor never types it twice. Read from the URL
+    // directly rather than useSearchParams, which would opt this page out of
+    // static rendering.
+    const fromHomepage =
+      new URLSearchParams(window.location.search).get("site")?.trim().slice(0, FIELD_LIMITS.siteUrl) ??
+      "";
 
     // The first field is autofocused, so someone can start typing before
     // React hydrates. A controlled input would throw those keystrokes away
     // on its first render, so adopt whatever the DOM already holds.
     const input = document.getElementById(SITE_URL_FIELD_ID) as HTMLInputElement | null;
-    const typedBeforeHydration = input?.value ?? "";
-    if (typedBeforeHydration) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from the DOM, which React cannot observe during hydration
-      setData((prev) => (prev.siteUrl ? prev : { ...prev, siteUrl: typedBeforeHydration }));
+    const prefill = input?.value || fromHomepage;
+    if (prefill) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from the DOM and the URL, neither of which React can observe during hydration
+      setData((prev) => (prev.siteUrl ? prev : { ...prev, siteUrl: prefill }));
     }
   }, []);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
+    // form_started means the visitor engaged, not that the page loaded — on a
+    // page whose only content is the form, the latter would just duplicate
+    // audit_started and tell an ad platform nothing about intent.
+    if (!engaged.current) {
+      engaged.current = true;
+      track("form_started");
+    }
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -98,7 +114,9 @@ export function AuditFunnel() {
 
   function goNext() {
     if (!canAdvance()) return;
-    setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+    const next = Math.min(step + 1, TOTAL_STEPS);
+    setStep(next);
+    track(`audit_step_${next}` as TrackingEvent);
   }
 
   function goBack() {

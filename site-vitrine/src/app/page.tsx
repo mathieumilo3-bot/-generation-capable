@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { Hero } from "@/components/sections/Hero";
-import { Problem } from "@/components/sections/Problem";
+import { InstantCheck } from "@/components/sections/InstantCheck";
+import { Recommendation } from "@/components/sections/Recommendation";
 import { SystemArchitecture } from "@/components/sections/SystemArchitecture";
-import { AuditDemo } from "@/components/sections/AuditDemo";
 import { Method } from "@/components/sections/Method";
 import { Systems } from "@/components/sections/Systems";
-import { Teardowns } from "@/components/sections/Teardowns";
-import { SectorsPreview } from "@/components/sections/SectorsPreview";
-import { CaseStudiesPreview } from "@/components/sections/CaseStudiesPreview";
-import { ContentPreview } from "@/components/sections/ContentPreview";
+import { Applications } from "@/components/sections/Applications";
 import { FinalCTA } from "@/components/sections/FinalCTA";
+import { LandingView } from "@/components/sections/LandingView";
 import { ServiceJsonLd } from "@/components/schema/JsonLd";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 
@@ -19,6 +17,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+/**
+ * The homepage is a single argument, in order: here is the promise, here is
+ * what your presence produces, here is what we would change, here is the
+ * system behind it, here is what it looks like for you, here is the next step.
+ */
 export default function Home() {
   return (
     <>
@@ -27,16 +30,15 @@ export default function Home() {
         description={SITE_DESCRIPTION}
         url={SITE_URL}
       />
+      <LandingView />
+
       <Hero />
-      <Problem />
+      <InstantCheck />
+      <Recommendation />
       <SystemArchitecture />
-      <AuditDemo />
       <Method />
       <Systems />
-      <Teardowns />
-      <SectorsPreview />
-      <CaseStudiesPreview />
-      <ContentPreview />
+      <Applications />
       <FinalCTA />
     </>
   );
