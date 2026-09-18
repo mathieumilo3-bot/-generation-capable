@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FOOTER_LINKS, LEGAL_LINKS, SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
+import { CookieSettingsButton } from "@/components/layout/CookieSettingsButton";
 
 export function Footer() {
   return (
@@ -34,13 +35,7 @@ export function Footer() {
                 {link.label}
               </Link>
             ))}
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new Event("gc:open-consent"))}
-              className="hover:text-[var(--color-text)]"
-            >
-              Gérer mes cookies
-            </button>
+            <CookieSettingsButton />
           </div>
         </div>
       </div>
