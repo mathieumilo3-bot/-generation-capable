@@ -8,17 +8,13 @@ const CONSENT_KEY = "gc-revenue-consent-v1";
 type Choice = "accepted" | "refused";
 
 function updateConsent(choice: Choice) {
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push([
-    "consent",
-    "update",
-    {
-      ad_storage: choice === "accepted" ? "granted" : "denied",
-      ad_user_data: choice === "accepted" ? "granted" : "denied",
-      ad_personalization: choice === "accepted" ? "granted" : "denied",
-      analytics_storage: choice === "accepted" ? "granted" : "denied",
-    },
-  ]);
+  const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag;
+  gtag?.("consent", "update", {
+    ad_storage: choice === "accepted" ? "granted" : "denied",
+    ad_user_data: choice === "accepted" ? "granted" : "denied",
+    ad_personalization: choice === "accepted" ? "granted" : "denied",
+    analytics_storage: choice === "accepted" ? "granted" : "denied",
+  });
   window.localStorage.setItem(CONSENT_KEY, choice);
 }
 
