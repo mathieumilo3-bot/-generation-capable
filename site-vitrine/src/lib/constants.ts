@@ -9,14 +9,14 @@ export const PRIMARY_CTA_LABEL = "Analyser mon entreprise";
 
 export const NAV_LINKS = [
   { label: "Méthode", href: "/#methode" },
-  { label: "Systèmes", href: "/#systemes" },
+  { label: "Systèmes", href: "/#systeme" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Applications", href: "/cas-clients" },
 ] as const;
 
 export const FOOTER_LINKS = [
   { label: "Méthode", href: "/#methode" },
-  { label: "Systèmes", href: "/#systemes" },
+  { label: "Systèmes", href: "/#systeme" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Applications", href: "/cas-clients" },
   { label: "Ressources", href: "/ressources" },
