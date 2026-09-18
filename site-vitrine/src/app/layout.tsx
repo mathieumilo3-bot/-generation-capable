@@ -7,16 +7,24 @@ import { Footer } from "@/components/layout/Footer";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/schema/JsonLd";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/constants";
 
+/**
+ * `optional` rather than `swap`: the headline is huge, so a late font swap
+ * re-wraps it and drags the whole page up (measured CLS 0.21 on a throttled
+ * phone, over the 0.1 budget). Both faces are preloaded, so on a normal
+ * connection they still arrive inside the block period and get used; on a
+ * slow one the visitor keeps the metric-matched fallback for that view
+ * instead of watching the page jump.
+ */
 const interTight = Inter_Tight({
   variable: "--font-inter-tight",
   subsets: ["latin"],
-  display: "swap",
+  display: "optional",
 });
 
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
-  display: "swap",
+  display: "optional",
 });
 
 export const metadata: Metadata = {
