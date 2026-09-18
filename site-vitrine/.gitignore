@@ -40,6 +40,11 @@ yarn-error.log*
 /blob-report
 /playwright/.cache
 
+# netlify
+.netlify
+# archive temporaire créée par le déploiement Netlify
+deploy-*.zip
+
 # vercel
 .vercel
 
