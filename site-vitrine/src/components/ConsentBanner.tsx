@@ -43,8 +43,7 @@ export function ConsentBanner() {
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">
         Nous utilisons des technologies de mesure d&apos;audience et, si vous
         l&apos;acceptez, de publicité pour comprendre les performances du site.
-        Vous pouvez accepter ou refuser. Votre choix peut être modifié
-        ultérieurement depuis la politique de confidentialité.
+        Vous pouvez accepter ou refuser. Votre choix peut être modifié ultérieurement via « Gérer mes cookies » dans le pied de page.
       </p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <button
