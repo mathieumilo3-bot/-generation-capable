@@ -11,7 +11,7 @@ export const NAV_LINKS = [
   { label: "Méthode", href: "/#methode" },
   { label: "Systèmes", href: "/#systemes" },
   { label: "Secteurs", href: "/secteurs" },
-  { label: "Cas clients", href: "/cas-clients" },
+  { label: "Applications", href: "/cas-clients" },
 ] as const;
 
 export const FOOTER_LINKS = [
