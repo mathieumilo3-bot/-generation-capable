@@ -34,6 +34,13 @@ export function Footer() {
                 {link.label}
               </Link>
             ))}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("gc:open-consent"))}
+              className="hover:text-[var(--color-text)]"
+            >
+              Gérer mes cookies
+            </button>
           </div>
         </div>
       </div>
