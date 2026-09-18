@@ -32,14 +32,23 @@ export function Button({
   onClick,
   ...props
 }: ButtonProps) {
-  return (
-    <Link
-      className={`${base} ${variants[variant]} ${className}`}
-      onClick={(e) => {
-        if (trackEvent) track(trackEvent, trackPayload);
-        onClick?.(e);
-      }}
-      {...props}
-    />
-  );
+  const classes = `${base} ${variants[variant]} ${className}`;
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (trackEvent) track(trackEvent, trackPayload);
+    onClick?.(e);
+  };
+
+  // Native anchors handle hash navigation reliably, including cross-route
+  // links such as /#systeme. Next's router should not own these interactions.
+  if (typeof props.href === "string" && props.href.includes("#")) {
+    return (
+      <a
+        {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        className={classes}
+        onClick={handleClick}
+      />
+    );
+  }
+
+  return <Link className={classes} onClick={handleClick} {...props} />;
 }
