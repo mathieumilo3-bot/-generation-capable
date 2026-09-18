@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 const CONSENT_KEY = "gc-revenue-consent-v1";
@@ -19,10 +19,23 @@ function updateConsent(choice: Choice) {
 }
 
 export function ConsentBanner() {
-  const [visible, setVisible] = useState(false);
+  const visible = useSyncExternalStore(
+    (onStoreChange) => {
+      const open = () => onStoreChange();
+      const storage = () => onStoreChange();
+      window.addEventListener("gc:open-consent", open);
+      window.addEventListener("storage", storage);
+      return () => {
+        window.removeEventListener("gc:open-consent", open);
+        window.removeEventListener("storage", storage);
+      };
+    },
+    () => window.localStorage.getItem(CONSENT_KEY) === null,
+    () => false,
+  );
 
   useEffect(() => {
-    const open = () => setVisible(true);
+    const open = () => window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
     window.addEventListener("gc:open-consent", open);
     return () => window.removeEventListener("gc:open-consent", open);
   }, []);
@@ -48,7 +61,7 @@ export function ConsentBanner() {
           type="button"
           onClick={() => {
             updateConsent("accepted");
-            setVisible(false);
+            window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
           }}
           className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-text)] px-5 text-sm font-medium text-[var(--color-bg)] transition-colors hover:bg-[var(--color-accent)]"
         >
