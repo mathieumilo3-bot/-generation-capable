@@ -15,6 +15,11 @@ Tout ce qu'il faut pour envoyer, relancer et closer. À copier-coller tel quel.
 > le diagnostic qui donne envie de cliquer sur la maquette. Dans l'autre sens,
 > elle regarde un joli site et n'a aucune raison de vous rappeler.
 
+> **Elle regarde, elle ne repart pas avec.** Elle peut naviguer l'aperçu et le
+> montrer à quelqu'un en interne. Mais nulle part on ne lui dit qu'elle le
+> garde qu'elle signe ou non — la version finale (photos réelles, nom de
+> domaine, agenda connecté, SEO) est un livrable, pas un cadeau de démarchage.
+
 ---
 
 ## 1. L'email d'envoi
@@ -55,7 +60,6 @@ Tout ce qu'il faut pour envoyer, relancer et closer. À copier-coller tel quel.
 >
 > Si l'analyse vous parle, je vous propose 20 minutes pour qu'on regarde ça
 > ensemble — sans engagement, et sans présentation de quarante diapositives.
-> Vous repartez avec la maquette dans tous les cas.
 >
 > Bien à vous,
 > [Prénom]
@@ -98,8 +102,8 @@ Tout ce qu'il faut pour envoyer, relancer et closer. À copier-coller tel quel.
 
 > Bonjour Sabine, je clos ma relance ici pour ne pas vous encombrer.
 >
-> La maquette reste en ligne et elle est à vous, que l'on travaille ensemble ou
-> non. Si un jour le sujet redevient d'actualité, vous savez où me trouver.
+> L'aperçu reste consultable si vous voulez le remontrer à quelqu'un en interne.
+> Si un jour le sujet redevient d'actualité, vous savez où me trouver.
 >
 > Et bravo sincèrement pour les 350 avis — c'est ce qui a rendu ce travail
 > intéressant à faire.
@@ -190,5 +194,9 @@ autant que la séduire sur ce qu'on refait.
    ils viennent de sources publiques et peuvent avoir bougé. Si elle vous
    corrige sur un chiffre, dites simplement « merci, je corrige » — votre
    crédibilité tient à ça.
-5. **Laisser la maquette.** Elle est à elle, qu'elle signe ou non. C'est ce qui
-   fait que la relance à J+8 ne ressemble pas à de la pression.
+5. **Ne pas promettre qu'elle "garde" la maquette.** Elle peut la consulter et
+   la remontrer en interne tant que le lien est actif — c'est un aperçu de
+   direction, pas le livrable fini. La version finale (ses vraies photos, son
+   nom de domaine, son agenda connecté, le SEO) n'existe que si elle signe.
+   C'est ce qui protège la valeur du travail, sans que la relance à J+8
+   ressemble pour autant à une menace.
