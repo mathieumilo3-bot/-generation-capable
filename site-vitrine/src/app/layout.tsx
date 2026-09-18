@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter_Tight, Manrope } from "next/font/google";
 import { MotionConfig } from "framer-motion";
 import "./globals.css";
@@ -46,6 +46,11 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#050505",
+  colorScheme: "dark",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -56,8 +61,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <MotionConfig reducedMotion="user">
           <OrganizationJsonLd />
           <WebSiteJsonLd />
+          <a
+            href="#contenu"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-6 focus:z-[60] focus:rounded-full focus:bg-[var(--color-text)] focus:px-6 focus:py-3 focus:text-sm focus:font-medium focus:text-[var(--color-bg)]"
+          >
+            Aller au contenu principal
+          </a>
           <Navbar />
-          <main className="flex-1">{children}</main>
+          <main id="contenu" className="flex-1">
+            {children}
+          </main>
           <Footer />
         </MotionConfig>
       </body>

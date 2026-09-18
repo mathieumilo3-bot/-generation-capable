@@ -22,9 +22,20 @@ npm run dev
 Ouvrir [http://localhost:3000](http://localhost:3000).
 
 ```bash
-npm run build   # build de production
-npm run lint    # ESLint
+npm run build     # build de production
+npm run lint      # ESLint
+npm run test      # tests unitaires (Vitest)
+npm run test:e2e  # tests end-to-end (Playwright, desktop + mobile)
+npm run verify    # lint + tests unitaires + build
 ```
+
+Les tests tournent aussi automatiquement en CI sur chaque PR touchant
+`site-vitrine/` (voir `.github/workflows/site-vitrine-ci.yml`).
+
+> Note pour les tests locaux : utiliser `http://localhost:3000` et non
+> `http://127.0.0.1:3000`. Sur certains environnements le WebSocket HMR de
+> Next est bloqué sur `127.0.0.1`, ce qui empêche l'hydratation côté client
+> et fait échouer les tests pour une raison sans rapport avec le code.
 
 ## Architecture
 
@@ -47,9 +58,15 @@ npm run lint    # ESLint
 - `src/app/api/audit/route.ts` — endpoint de réception du formulaire d'audit.
   Valide la requête puis envoie, via Resend (`generationcapable.fr`, domaine
   déjà vérifié DKIM/SPF), un email de notification au propriétaire du
-  business et un email de confirmation au prospect. Sans les variables
-  d'environnement ci-dessous, il valide toujours la requête mais journalise
-  au lieu d'envoyer (utile en dev local sans secrets).
+  business et un email de confirmation au prospect. En développement, sans
+  les variables d'environnement ci-dessous, il journalise au lieu d'envoyer ;
+  en production il répond 500 plutôt que d'avaler silencieusement un lead.
+- `src/lib/audit-submission.ts` — validation et gabarits d'emails, isolés du
+  handler pour être testables sans réseau (typage strict des champs, limites
+  de longueur, échappement HTML, nettoyage du sujet, honeypot anti-bot).
+- `src/lib/rate-limit.ts` — limitation de débit par IP (5 envois / 10 min).
+  Empêche que le formulaire serve de relais pour envoyer des emails à des
+  adresses arbitraires depuis le domaine vérifié.
 - `src/lib/tracking.ts` — wrapper `dataLayer` no-op pour les événements
   (`audit_started`, `form_started`, `audit_completed`, `cta_clicked`, …), en
   attendant le branchement d'un outil d'analytics.

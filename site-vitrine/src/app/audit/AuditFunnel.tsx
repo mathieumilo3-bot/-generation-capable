@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { SECTORS } from "@/lib/data/sectors";
+import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
 import { track } from "@/lib/tracking";
 
 const OBJECTIVES = [
@@ -35,6 +36,7 @@ const EMPTY_STATE: FormState = {
 };
 
 const TOTAL_STEPS = 4;
+const SITE_URL_FIELD_ID = "audit-site-url";
 
 function inputClass() {
   return "w-full rounded-xl border border-[var(--color-border-strong)] bg-transparent px-5 py-4 text-base text-[var(--color-text)] outline-none transition-colors duration-200 placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40";
@@ -46,6 +48,7 @@ export function AuditFunnel() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState("");
   const started = useRef(false);
 
   useEffect(() => {
@@ -53,6 +56,16 @@ export function AuditFunnel() {
       started.current = true;
       track("audit_started");
       track("form_started");
+    }
+
+    // The first field is autofocused, so someone can start typing before
+    // React hydrates. A controlled input would throw those keystrokes away
+    // on its first render, so adopt whatever the DOM already holds.
+    const input = document.getElementById(SITE_URL_FIELD_ID) as HTMLInputElement | null;
+    const typedBeforeHydration = input?.value ?? "";
+    if (typedBeforeHydration) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from the DOM, which React cannot observe during hydration
+      setData((prev) => (prev.siteUrl ? prev : { ...prev, siteUrl: typedBeforeHydration }));
     }
   }, []);
 
@@ -76,6 +89,16 @@ export function AuditFunnel() {
     setStep((s) => Math.max(s - 1, 1));
   }
 
+  function errorMessageFor(status: number): string {
+    if (status === 429) {
+      return "Trop de demandes envoyées depuis cette connexion. Merci de réessayer dans quelques minutes.";
+    }
+    if (status === 422 || status === 413) {
+      return "Certaines informations semblent incorrectes. Vérifiez votre email et réessayez.";
+    }
+    return "Votre demande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez.";
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (submitting) return;
@@ -86,10 +109,13 @@ export function AuditFunnel() {
       const res = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, [HONEYPOT_FIELD]: honeypot }),
       });
 
-      if (!res.ok) throw new Error("submission_failed");
+      if (!res.ok) {
+        setError(errorMessageFor(res.status));
+        return;
+      }
 
       track("audit_completed");
       track("form_completed");
@@ -155,6 +181,20 @@ export function AuditFunnel() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* Hidden from people and assistive tech; bots fill it and get dropped. */}
+        <div aria-hidden className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden">
+          <label htmlFor={HONEYPOT_FIELD}>Ne pas remplir</label>
+          <input
+            id={HONEYPOT_FIELD}
+            name={HONEYPOT_FIELD}
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+        </div>
+
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div
@@ -171,15 +211,16 @@ export function AuditFunnel() {
                 L&apos;adresse de votre site actuel, ou de votre page
                 principale (réseaux sociaux si vous n&apos;avez pas de site).
               </p>
-              <label htmlFor="audit-site-url" className="sr-only">
+              <label htmlFor={SITE_URL_FIELD_ID} className="sr-only">
                 Votre site
               </label>
               <input
-                id="audit-site-url"
+                id={SITE_URL_FIELD_ID}
                 name="siteUrl"
                 autoFocus
                 type="text"
                 inputMode="url"
+                maxLength={FIELD_LIMITS.siteUrl}
                 placeholder="https://votre-entreprise.fr"
                 className={`${inputClass()} mt-6`}
                 value={data.siteUrl}
@@ -293,6 +334,7 @@ export function AuditFunnel() {
                   name="nom"
                   required
                   type="text"
+                  maxLength={FIELD_LIMITS.nom}
                   autoComplete="name"
                   placeholder="Nom complet"
                   className={inputClass()}
@@ -306,6 +348,7 @@ export function AuditFunnel() {
                   id="audit-entreprise"
                   name="entreprise"
                   type="text"
+                  maxLength={FIELD_LIMITS.entreprise}
                   autoComplete="organization"
                   placeholder="Entreprise"
                   className={inputClass()}
@@ -320,6 +363,7 @@ export function AuditFunnel() {
                   name="email"
                   required
                   type="email"
+                  maxLength={FIELD_LIMITS.email}
                   autoComplete="email"
                   placeholder="Email"
                   className={inputClass()}
@@ -333,6 +377,7 @@ export function AuditFunnel() {
                   id="audit-telephone"
                   name="telephone"
                   type="tel"
+                  maxLength={FIELD_LIMITS.telephone}
                   autoComplete="tel"
                   placeholder="Téléphone"
                   className={inputClass()}

@@ -1,142 +1,129 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import {
+  buildConfirmationEmail,
+  buildNotificationEmail,
+  parseAuditSubmission,
+  type AuditSubmission,
+} from "@/lib/audit-submission";
+import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
-export type AuditSubmission = {
-  siteUrl: string;
-  secteur: string;
-  objectif: string;
-  nom: string;
-  entreprise: string;
-  email: string;
-  telephone: string;
-};
+/** Reject oversized bodies before parsing them. A real submission is < 1 KB. */
+const MAX_BODY_BYTES = 8 * 1024;
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const SEND_TIMEOUT_MS = 10_000;
 
-const REQUIRED_FIELDS: (keyof AuditSubmission)[] = ["siteUrl", "secteur", "objectif", "email"];
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DEFAULT_FROM = "Génération Capable <audit@generationcapable.fr>";
 
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => {
-    switch (char) {
-      case "&":
-        return "&amp;";
-      case "<":
-        return "&lt;";
-      case ">":
-        return "&gt;";
-      case '"':
-        return "&quot;";
-      default:
-        return "&#39;";
-    }
-  });
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label}_timeout`)), ms)
+    ),
+  ]);
 }
 
-function buildNotificationEmail(data: AuditSubmission) {
-  const rows: [string, string][] = [
-    ["Site", data.siteUrl],
-    ["Secteur", data.secteur],
-    ["Objectif", data.objectif],
-    ["Nom", data.nom || "—"],
-    ["Entreprise", data.entreprise || "—"],
-    ["Email", data.email],
-    ["Téléphone", data.telephone || "—"],
-  ];
+async function sendEmails(submission: AuditSubmission, apiKey: string, notifyEmail: string) {
+  const resend = new Resend(apiKey);
+  const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
+  const notification = buildNotificationEmail(submission);
 
-  const text = rows.map(([label, value]) => `${label} : ${value}`).join("\n");
-  const html = `
-    <div style="font-family: sans-serif; color: #111;">
-      <h2 style="margin-bottom: 16px;">Nouvelle demande Capable Audit</h2>
-      <table cellpadding="6" style="border-collapse: collapse;">
-        ${rows
-          .map(
-            ([label, value]) =>
-              `<tr><td style="color:#666; padding-right: 16px;">${escapeHtml(label)}</td><td><strong>${escapeHtml(value)}</strong></td></tr>`
-          )
-          .join("")}
-      </table>
-    </div>
-  `;
+  const sent = await withTimeout(
+    resend.emails.send({
+      from: fromEmail,
+      to: notifyEmail,
+      replyTo: submission.email,
+      subject: notification.subject,
+      text: notification.text,
+      html: notification.html,
+    }),
+    SEND_TIMEOUT_MS,
+    "notification"
+  );
 
-  return { text, html };
-}
+  if (sent.error) throw new Error(sent.error.message || "notification_failed");
 
-/**
- * Wired to a real Resend sending domain (generationcapable.fr). Requires
- * RESEND_API_KEY and AUDIT_NOTIFY_EMAIL at runtime — without them the route
- * still validates input but skips sending (logs instead), so local dev
- * without secrets doesn't break. See README for setup.
- */
-export async function POST(request: Request) {
-  let body: Partial<AuditSubmission>;
-
+  // Best effort: the business has been notified, so a failed courtesy copy to
+  // the visitor must not turn their successful submission into an error.
   try {
-    body = await request.json();
+    const confirmation = buildConfirmationEmail(submission);
+    const copy = await withTimeout(
+      resend.emails.send({
+        from: fromEmail,
+        to: submission.email,
+        subject: confirmation.subject,
+        text: confirmation.text,
+        html: confirmation.html,
+      }),
+      SEND_TIMEOUT_MS,
+      "confirmation"
+    );
+    if (copy.error) {
+      console.error("[audit] confirmation email failed (non-blocking):", copy.error.message);
+    }
+  } catch (error) {
+    console.error("[audit] confirmation email failed (non-blocking):", error);
+  }
+}
+
+export async function POST(request: Request) {
+  const ip = clientIpFrom(request);
+  const limit = rateLimit(`audit:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
+  }
+
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const missing = REQUIRED_FIELDS.filter((key) => !body[key]?.toString().trim());
-  if (missing.length > 0) {
-    return NextResponse.json({ error: "missing_fields", missing }, { status: 422 });
+  const parsed = parseAuditSubmission(payload);
+
+  if (!parsed.ok) {
+    // Answer a bot with the same success shape a human gets: no signal to
+    // iterate against, and no email sent.
+    if (parsed.error === "rejected_as_bot") {
+      return NextResponse.json({ status: "received" }, { status: 200 });
+    }
+    const status = parsed.error === "invalid_payload" ? 400 : 422;
+    return NextResponse.json(parsed, { status });
   }
 
-  const email = body.email!.toString().trim();
-  if (!EMAIL_PATTERN.test(email)) {
-    return NextResponse.json({ error: "invalid_email" }, { status: 422 });
-  }
-
-  const submission: AuditSubmission = {
-    siteUrl: body.siteUrl!.toString().trim(),
-    secteur: body.secteur!.toString().trim(),
-    objectif: body.objectif!.toString().trim(),
-    nom: (body.nom ?? "").toString().trim(),
-    entreprise: (body.entreprise ?? "").toString().trim(),
-    email,
-    telephone: (body.telephone ?? "").toString().trim(),
-  };
-
+  const submission = parsed.value;
   const apiKey = process.env.RESEND_API_KEY;
   const notifyEmail = process.env.AUDIT_NOTIFY_EMAIL;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "Génération Capable <audit@generationcapable.fr>";
 
   if (!apiKey || !notifyEmail) {
-    console.warn(
-      "[audit] RESEND_API_KEY or AUDIT_NOTIFY_EMAIL not set — submission received but no email sent:",
-      submission
-    );
+    // In production this would silently swallow a real lead, so it has to
+    // fail loudly. Locally it just logs, so the funnel stays testable
+    // without secrets.
+    if (process.env.NODE_ENV === "production") {
+      console.error("[audit] RESEND_API_KEY / AUDIT_NOTIFY_EMAIL missing — submission dropped");
+      return NextResponse.json({ error: "not_configured" }, { status: 500 });
+    }
+    console.warn(`[audit] email not configured — submission from ${submission.email} logged only`);
     return NextResponse.json({ status: "received", emailed: false }, { status: 200 });
   }
 
-  const resend = new Resend(apiKey);
-  const { text, html } = buildNotificationEmail(submission);
-
-  const notification = await resend.emails.send({
-    from: fromEmail,
-    to: notifyEmail,
-    replyTo: submission.email,
-    subject: `Nouvelle demande d'audit — ${submission.entreprise || submission.nom || submission.email}`,
-    text,
-    html,
-  });
-
-  if (notification.error) {
-    console.error("[audit] Resend notification failed:", notification.error);
+  try {
+    await sendEmails(submission, apiKey, notifyEmail);
+  } catch (error) {
+    console.error("[audit] notification email failed:", error);
     return NextResponse.json({ error: "email_failed" }, { status: 502 });
-  }
-
-  // Confirmation to the lead is best-effort: the lead's own submission
-  // already succeeded (the business was notified), so a failure here
-  // shouldn't surface as an error to the visitor.
-  const confirmation = await resend.emails.send({
-    from: fromEmail,
-    to: submission.email,
-    subject: "Votre demande d'audit a bien été reçue",
-    text: `Bonjour${submission.nom ? " " + submission.nom : ""},\n\nNous avons bien reçu votre demande d'audit pour ${submission.siteUrl}. Nous revenons vers vous rapidement avec les opportunités prioritaires identifiées.\n\nGénération Capable`,
-    html: `<p>Bonjour${submission.nom ? " " + escapeHtml(submission.nom) : ""},</p><p>Nous avons bien reçu votre demande d'audit pour <strong>${escapeHtml(submission.siteUrl)}</strong>. Nous revenons vers vous rapidement avec les opportunités prioritaires identifiées.</p><p>Génération Capable</p>`,
-  });
-
-  if (confirmation.error) {
-    console.error("[audit] Resend confirmation failed (non-blocking):", confirmation.error);
   }
 
   return NextResponse.json({ status: "received", emailed: true }, { status: 200 });
