@@ -123,8 +123,9 @@ test.describe("legal pages", () => {
     await expect(page.getByRole("heading", { name: "Hébergeur" })).toBeVisible();
     await expect(page.getByText("Netlify, Inc.")).toBeVisible();
     await expect(page.getByText("ne décrivent aucune mission réalisée")).toBeVisible();
-    // Nothing may pose as a filled-in identity while the config is empty.
-    await expect(page.getByText(/SIREN|RCS/)).toHaveCount(0);
+    // The verified SIREN is intentionally shown; RCS stays absent until verified.
+    await expect(page.getByText("981 319 957")).toBeVisible();
+    await expect(page.getByText(/^RCS$/)).toHaveCount(0);
   });
 
   test("the privacy policy states what the form actually does", async ({ page }) => {
