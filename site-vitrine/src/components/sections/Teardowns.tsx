@@ -13,9 +13,8 @@ export function Teardowns() {
           Nous préférons montrer.
         </h2>
         <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)]">
-          Génération Capable démarre. Plutôt que d&apos;inventer des résultats,
-          nous reconstruisons des pages d&apos;accueil à titre de démonstration —
-          un concept illustratif, pas un client réel.
+          Nous décomposons des architectures digitales et des parcours pour montrer concrètement
+          comment une présence peut mieux orienter l’attention vers une action.
         </p>
       </Reveal>
 
@@ -57,7 +56,7 @@ export function Teardowns() {
 
             <div className="border-t border-[var(--color-border)] p-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-muted)]">
-                Pourquoi ?
+                Ce que nous cherchons
               </p>
               <ul className="mt-4 flex flex-col gap-3">
                 {teardown.why.map((reason) => (
