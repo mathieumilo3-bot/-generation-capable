@@ -71,7 +71,7 @@ export function Hero() {
             </div>
 
             <div className="mt-12 grid w-full max-w-xl grid-cols-2 border-y border-[var(--color-border)] sm:grid-cols-4 sm:border-y-0 sm:border-l">
-              {CAPABILITIES.map((item, index) => (
+              {CAPABILITIES.map((item) => (
                 <div
                   key={item}
                   className="flex items-center gap-2 border-b border-[var(--color-border)] py-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)] last:border-b-0 sm:border-b-0 sm:border-r sm:px-4 sm:py-2 first:sm:pl-5 last:sm:border-r-0"
