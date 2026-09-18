@@ -114,6 +114,13 @@ export function InstantCheck() {
                   >
                     Recevoir mon diagnostic →
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => setStarted(false)}
+                    className="inline-flex items-center justify-center rounded-xl border border-[var(--color-border-strong)] px-5 py-3 text-sm font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40"
+                  >
+                    Recommencer
+                  </button>
                   <span className="text-xs text-[var(--color-muted)]">
                     Votre adresse est déjà préremplie · Quelques minutes · Sans engagement
                   </span>
