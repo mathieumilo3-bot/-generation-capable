@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { Hero } from "@/components/sections/Hero";
+import { ValueStrip } from "@/components/sections/ValueStrip";
 import { Problem } from "@/components/sections/Problem";
+import { SystemDemo } from "@/components/sections/SystemDemo";
 import { SystemArchitecture } from "@/components/sections/SystemArchitecture";
 import { AuditDemo } from "@/components/sections/AuditDemo";
 import { Method } from "@/components/sections/Method";
-import { Systems } from "@/components/sections/Systems";
-import { Teardowns } from "@/components/sections/Teardowns";
+import { Objections } from "@/components/sections/Objections";
 import { SectorsPreview } from "@/components/sections/SectorsPreview";
 import { CaseStudiesPreview } from "@/components/sections/CaseStudiesPreview";
-import { ContentPreview } from "@/components/sections/ContentPreview";
+import { FAQ } from "@/components/sections/FAQ";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { ServiceJsonLd } from "@/components/schema/JsonLd";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
@@ -28,15 +29,16 @@ export default function Home() {
         url={SITE_URL}
       />
       <Hero />
+      <ValueStrip />
       <Problem />
+      <SystemDemo />
       <SystemArchitecture />
       <AuditDemo />
       <Method />
-      <Systems />
-      <Teardowns />
+      <Objections />
       <SectorsPreview />
       <CaseStudiesPreview />
-      <ContentPreview />
+      <FAQ />
       <FinalCTA />
     </>
   );
