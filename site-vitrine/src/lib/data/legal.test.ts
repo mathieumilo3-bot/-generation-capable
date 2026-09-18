@@ -21,22 +21,19 @@ const FILLED: LegalEntity = {
 };
 
 describe("legal entity", () => {
-  it("ships empty rather than with invented identity details", () => {
-    // Section 18 of the brief: nothing on this site may be fabricated, and a
-    // fake SIREN would be both a lie and a legal liability.
+  it("ships the verified identity details and keeps only unknown fields empty", () => {
     expect(isLegalEntityComplete(LEGAL_ENTITY)).toBe(false);
-    expect(legalRows(LEGAL_ENTITY)).toEqual([]);
+    expect(legalRows(LEGAL_ENTITY).map((row) => row.label)).toEqual([
+      "Dénomination sociale",
+      "Forme juridique",
+      "Siège social",
+      "SIREN / SIRET",
+      "Directeur de la publication",
+    ]);
   });
 
   it("names exactly what is still missing", () => {
-    expect(missingLegalFields(LEGAL_ENTITY)).toEqual([
-      "denomination",
-      "formeJuridique",
-      "siege",
-      "siren",
-      "directeurPublication",
-      "email",
-    ]);
+    expect(missingLegalFields(LEGAL_ENTITY)).toEqual(["email"]);
   });
 
   it("is complete once the mandatory fields are filled", () => {
@@ -57,7 +54,6 @@ describe("legal entity", () => {
       "Directeur de la publication",
       "Email",
     ]);
-    // Téléphone was left empty, so it never reaches the page.
     expect(labels).not.toContain("Téléphone");
   });
 
