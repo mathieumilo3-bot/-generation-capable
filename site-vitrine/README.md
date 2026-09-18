@@ -70,6 +70,9 @@ Les tests tournent aussi automatiquement en CI sur chaque PR touchant
 - `src/lib/tracking.ts` — wrapper `dataLayer` no-op pour les événements
   (`audit_started`, `form_started`, `audit_completed`, `cta_clicked`, …), en
   attendant le branchement d'un outil d'analytics.
+- `next.config.ts` — en-têtes de sécurité envoyés sur toutes les réponses
+  (nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP,
+  HSTS) et `no-store` / `noindex` sur `/api/*`.
 
 ## Variables d'environnement
 
@@ -96,3 +99,19 @@ déploiement (Netlify, Vercel, …) avant mise en production.
   si différent de `generationcapable.fr`.
 - Publier de vrais cas clients dans `src/lib/data/case-studies.ts` au fur et
   à mesure (jamais de données fictives).
+
+## Pistes d'amélioration identifiées
+
+- **Content-Security-Policy.** Volontairement absente : l'App Router injecte
+  des scripts inline, une CSP utile suppose donc des nonces générés par
+  requête dans un middleware. À faire comme un chantier dédié, avec la suite
+  E2E comme garde-fou — une CSP en `unsafe-inline` n'apporterait qu'une
+  fausse sécurité.
+- **Limitation de débit partagée.** `src/lib/rate-limit.ts` garde son état en
+  mémoire : sur une plateforme serverless, chaque instance a son compteur.
+  Suffisant pour casser un flood, à remplacer par un store partagé (Redis /
+  Upstash) si le trafic le justifie.
+- **Persistance des demandes.** Une demande d'audit n'existe aujourd'hui que
+  sous forme d'email. Si l'envoi échoue, le visiteur voit une erreur et peut
+  réessayer, mais rien n'est conservé côté serveur. Brancher un CRM ou une
+  table Supabase rendrait la capture durable.
