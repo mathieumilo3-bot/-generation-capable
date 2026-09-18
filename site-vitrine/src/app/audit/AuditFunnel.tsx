@@ -7,14 +7,6 @@ import { SECTORS } from "@/lib/data/sectors";
 import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
 import { track } from "@/lib/tracking";
 
-const OBJECTIVES = [
-  "Plus de demandes",
-  "Plus de rendez-vous",
-  "Plus de visibilité",
-  "Meilleure image",
-  "Autre",
-];
-
 type FormState = {
   siteUrl: string;
   secteur: string;
@@ -39,6 +31,14 @@ const TOTAL_STEPS = 4;
 const SITE_URL_FIELD_ID = "audit-site-url";
 const OTHER_OPTION = "Autre";
 const PRECISION_MAX_LENGTH = 60;
+
+const OBJECTIVES = [
+  "Plus de demandes",
+  "Plus de rendez-vous",
+  "Plus de visibilité",
+  "Meilleure image",
+  OTHER_OPTION,
+];
 
 function inputClass() {
   return "w-full rounded-xl border border-[var(--color-border-strong)] bg-transparent px-5 py-4 text-base text-[var(--color-text)] outline-none transition-colors duration-200 placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40";
