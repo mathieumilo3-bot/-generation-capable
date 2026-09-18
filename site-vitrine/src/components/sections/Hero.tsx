@@ -31,7 +31,7 @@ export function Hero() {
         className="pointer-events-none absolute left-1/2 top-[-10%] h-[420px] w-[620px] -translate-x-1/2 rounded-full bg-[var(--color-accent)]/[0.06] blur-[120px]"
       />
 
-      <Section className="relative pt-28 pb-24 sm:pt-36 sm:pb-32">
+      <Section className="relative pt-20 pb-20 sm:pt-28 sm:pb-28">
         <motion.div style={{ y: contentY, opacity: contentOpacity }}>
           <div className="flex flex-col items-start">
             <Badge>Digital Revenue Systems</Badge>
@@ -39,12 +39,12 @@ export function Hero() {
             <h1 className="font-display text-balance mt-8 max-w-4xl text-[2.75rem] font-semibold leading-[1.05] tracking-tight text-[var(--color-text)] sm:text-6xl lg:text-[5rem]">
               Votre présence digitale
               <br />
-              devrait travailler <span className="gold-text">pour vous.</span>
+              doit <span className="gold-text">générer.</span>
             </h1>
 
             <p className="text-balance mt-8 max-w-xl text-lg leading-relaxed text-[var(--color-muted)]">
-              Nous concevons des systèmes digitaux qui transforment votre
-              visibilité en opportunités commerciales.
+              GC conçoit des sites et des systèmes digitaux qui transforment votre
+              visibilité en prises de contact, rendez-vous et opportunités commerciales.
             </p>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
