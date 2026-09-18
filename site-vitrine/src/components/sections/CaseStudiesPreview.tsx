@@ -1,42 +1,46 @@
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
-import { CASE_STUDIES } from "@/lib/data/case-studies";
+
+const EXAMPLES = [
+  ["LOCAL", "Entreprise locale", "Visibilité, preuve, prise de contact et qualification réunies dans un parcours unique."],
+  ["SERVICE", "Entreprise de services", "Offre clarifiée, objections traitées et visiteur orienté vers le bon prochain pas."],
+  ["EXPERT", "Expert / indépendant", "Attention issue des réseaux transformée en découverte, qualification et rendez-vous."],
+];
 
 export function CaseStudiesPreview() {
   return (
     <Section className="py-24 sm:py-32">
       <Reveal>
-        <Eyebrow>Cas clients</Eyebrow>
-        <h2 className="font-display text-balance mt-4 max-w-2xl text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
-          Des transformations,
+        <Eyebrow>Applications</Eyebrow>
+        <h2 className="font-display text-balance mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
+          Des architectures adaptées
           <br />
-          <span className="text-[var(--color-muted)]">pas des promesses.</span>
+          <span className="text-[var(--color-muted)]">à votre modèle commercial.</span>
         </h2>
       </Reveal>
 
-      <Reveal delay={0.1}>
-        <div className="mt-14 rounded-2xl border border-dashed border-[var(--color-border-strong)] p-10 text-center sm:p-16">
-          {CASE_STUDIES.length === 0 ? (
-            <>
-              <p className="font-display text-2xl font-medium text-[var(--color-text)]">
-                Premières transformations
-              </p>
-              <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-[var(--color-muted)]">
-                Génération Capable démarre son activité. Les cas clients
-                publiés ici seront exclusivement de vraies réalisations,
-                documentées avec le contexte, l&apos;intervention et les
-                résultats mesurés.
-              </p>
-              <div className="mt-8">
-                <Button href="/audit" variant="secondary">
-                  Devenir une première transformation →
-                </Button>
+      <div className="mt-12 grid gap-4 md:grid-cols-3">
+        {EXAMPLES.map(([type, title, text], index) => (
+          <Reveal key={title} delay={index * 0.08}>
+            <article className="group h-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-7 transition-all duration-500 hover:-translate-y-1 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-raised)] sm:p-8">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--color-accent)]">{type}</span>
+                <span className="text-xs text-[var(--color-muted)]">0{index + 1}</span>
               </div>
-            </>
-          ) : (
-            <p className="text-[var(--color-muted)]">Cas clients à venir.</p>
-          )}
+              <h3 className="font-display mt-16 text-2xl font-semibold tracking-tight">{title}</h3>
+              <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">{text}</p>
+            </article>
+          </Reveal>
+        ))}
+      </div>
+
+      <Reveal delay={0.15}>
+        <div className="mt-10 flex flex-col items-start justify-between gap-5 border-t border-[var(--color-border)] pt-8 sm:flex-row sm:items-center">
+          <p className="max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">
+            Chaque système part de votre offre, de votre marché et du comportement attendu du prospect.
+          </p>
+          <Button href="/audit" variant="secondary">Faire analyser mon entreprise →</Button>
         </div>
       </Reveal>
     </Section>
