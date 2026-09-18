@@ -37,6 +37,8 @@ const EMPTY_STATE: FormState = {
 
 const TOTAL_STEPS = 4;
 const SITE_URL_FIELD_ID = "audit-site-url";
+const OTHER_OPTION = "Autre";
+const PRECISION_MAX_LENGTH = 60;
 
 function inputClass() {
   return "w-full rounded-xl border border-[var(--color-border-strong)] bg-transparent px-5 py-4 text-base text-[var(--color-text)] outline-none transition-colors duration-200 placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40";
@@ -49,6 +51,9 @@ export function AuditFunnel() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
+  // "Autre" on its own tells the business nothing, so it asks for a précision.
+  const [secteurAutre, setSecteurAutre] = useState("");
+  const [objectifAutre, setObjectifAutre] = useState("");
   const started = useRef(false);
 
   useEffect(() => {
@@ -75,9 +80,20 @@ export function AuditFunnel() {
 
   function canAdvance() {
     if (step === 1) return data.siteUrl.trim().length > 3;
-    if (step === 2) return data.secteur.trim().length > 0;
-    if (step === 3) return data.objectif.trim().length > 0;
+    if (step === 2) {
+      if (data.secteur === OTHER_OPTION) return secteurAutre.trim().length > 1;
+      return data.secteur.trim().length > 0;
+    }
+    if (step === 3) {
+      if (data.objectif === OTHER_OPTION) return objectifAutre.trim().length > 1;
+      return data.objectif.trim().length > 0;
+    }
     return true;
+  }
+
+  /** Folds the précision into the value so the email reads naturally. */
+  function withPrecision(value: string, precision: string) {
+    return value === OTHER_OPTION ? `${OTHER_OPTION} — ${precision.trim()}` : value;
   }
 
   function goNext() {
@@ -109,7 +125,12 @@ export function AuditFunnel() {
       const res = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, [HONEYPOT_FIELD]: honeypot }),
+        body: JSON.stringify({
+          ...data,
+          secteur: withPrecision(data.secteur, secteurAutre),
+          objectif: withPrecision(data.objectif, objectifAutre),
+          [HONEYPOT_FIELD]: honeypot,
+        }),
       });
 
       if (!res.ok) {
@@ -258,7 +279,7 @@ export function AuditFunnel() {
                 aria-label="Secteur d'activité"
                 className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3"
               >
-                {[...SECTORS.map((s) => s.name), "Autre"].map((option) => (
+                {[...SECTORS.map((s) => s.name), OTHER_OPTION].map((option) => (
                   <button
                     type="button"
                     key={option}
@@ -274,6 +295,31 @@ export function AuditFunnel() {
                   </button>
                 ))}
               </div>
+
+              {data.secteur === OTHER_OPTION && (
+                <div className="mt-4">
+                  <label htmlFor="audit-secteur-autre" className="sr-only">
+                    Précisez votre secteur
+                  </label>
+                  <input
+                    id="audit-secteur-autre"
+                    name="secteurAutre"
+                    autoFocus
+                    type="text"
+                    maxLength={PRECISION_MAX_LENGTH}
+                    placeholder="Précisez votre secteur"
+                    className={inputClass()}
+                    value={secteurAutre}
+                    onChange={(e) => setSecteurAutre(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        goNext();
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -308,6 +354,31 @@ export function AuditFunnel() {
                   </button>
                 ))}
               </div>
+
+              {data.objectif === OTHER_OPTION && (
+                <div className="mt-4">
+                  <label htmlFor="audit-objectif-autre" className="sr-only">
+                    Précisez votre objectif
+                  </label>
+                  <input
+                    id="audit-objectif-autre"
+                    name="objectifAutre"
+                    autoFocus
+                    type="text"
+                    maxLength={PRECISION_MAX_LENGTH}
+                    placeholder="Précisez votre objectif"
+                    className={inputClass()}
+                    value={objectifAutre}
+                    onChange={(e) => setObjectifAutre(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        goNext();
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </motion.div>
           )}
 

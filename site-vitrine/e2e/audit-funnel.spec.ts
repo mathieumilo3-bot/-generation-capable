@@ -85,6 +85,40 @@ test.describe("Capable Audit funnel", () => {
     expect(requests).toHaveLength(0);
   });
 
+  test("asks what \"Autre\" means and sends it with the answer", async ({ page }) => {
+    const requests: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/api/audit")) requests.push(req.postData() ?? "");
+    });
+
+    await fillStepOne(page);
+    await page.getByRole("button", { name: /Continuer/ }).click();
+
+    await page.getByRole("button", { name: "Autre", exact: true }).click();
+    // "Autre" alone says nothing, so the step stays blocked until specified.
+    await expect(page.getByRole("button", { name: /Continuer/ })).toBeDisabled();
+    await page.getByLabel("Précisez votre secteur").fill("Toiletteur canin");
+    await expect(page.getByRole("button", { name: /Continuer/ })).toBeEnabled();
+    await page.getByRole("button", { name: /Continuer/ }).click();
+
+    await page.getByRole("button", { name: "Autre", exact: true }).click();
+    await expect(page.getByRole("button", { name: /Continuer/ })).toBeDisabled();
+    await page.getByLabel("Précisez votre objectif").fill("Recruter des franchisés");
+    await page.getByRole("button", { name: /Continuer/ }).click();
+
+    await page.getByLabel("Nom complet").fill("Marie");
+    await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
+    await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "Votre analyse est en préparation." })
+    ).toBeVisible();
+
+    const payload = JSON.parse(requests[0]);
+    expect(payload.secteur).toBe("Autre — Toiletteur canin");
+    expect(payload.objectif).toBe("Autre — Recruter des franchisés");
+  });
+
   test("blocks advancing until the step is answered", async ({ page }) => {
     await expect(page.getByRole("button", { name: /Continuer/ })).toBeDisabled();
     await fillStepOne(page);

@@ -108,6 +108,31 @@ test.describe("SEO endpoints", () => {
   });
 });
 
+test.describe("security headers", () => {
+  test("pages carry the baseline hardening headers", async ({ request }) => {
+    const headers = (await request.get("/")).headers();
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("SAMEORIGIN");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(headers["permissions-policy"]).toContain("geolocation=()");
+    expect(headers["cross-origin-opener-policy"]).toBe("same-origin");
+    expect(headers["strict-transport-security"]).toContain("max-age=");
+  });
+
+  test("does not advertise the framework", async ({ request }) => {
+    expect((await request.get("/")).headers()["x-powered-by"]).toBeUndefined();
+  });
+
+  test("the audit endpoint is never cached or indexed", async ({ request }) => {
+    const res = await request.post("/api/audit", {
+      headers: { "X-Forwarded-For": "198.51.100.77" },
+      data: { siteUrl: "", secteur: "", objectif: "", email: "" },
+    });
+    expect(res.headers()["cache-control"]).toContain("no-store");
+    expect(res.headers()["x-robots-tag"]).toContain("noindex");
+  });
+});
+
 test.describe("accessibility", () => {
   test("a skip link is the first stop for keyboard users", async ({ page }) => {
     await page.goto("/");
