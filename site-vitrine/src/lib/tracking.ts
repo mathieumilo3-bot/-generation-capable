@@ -1,7 +1,6 @@
 /**
- * Thin wrapper around a future analytics provider (Plausible, GA4, Meta CAPI…).
- * Every call is a no-op if `window.dataLayer` / the provider script isn't
- * present yet, so this can ship ahead of the analytics integration.
+ * Lightweight event layer. It writes to dataLayer when a provider is present,
+ * so the site can measure the full commercial funnel instead of only clicks.
  */
 export type TrackingEvent =
   | "landing_view"
@@ -18,7 +17,10 @@ export type TrackingEvent =
   | "form_started"
   | "form_completed"
   | "booking_started"
-  | "booking_completed";
+  | "booking_completed"
+  | "generate_lead"
+  | "qualify_lead"
+  | "working_lead";
 
 type EventPayload = Record<string, string | number | boolean | undefined>;
 
