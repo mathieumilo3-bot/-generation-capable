@@ -33,7 +33,7 @@ test.describe("homepage", () => {
       "Voici ce que votre prospect",
       "Nous ne construisons pas",
       "Quatre systèmes.",
-      "Questions fréquentes",
+      "Avant de nous parler.",
       "commençait enfin",
     ];
     const positions = expected.map((needle) => order.findIndex((h) => h?.includes(needle)));
@@ -54,15 +54,16 @@ test.describe("instant check", () => {
   test("reveals the four diagnostic axes", async ({ page }) => {
     await page.goto("/");
     await runInstantCheck(page);
+    const result = page.locator("#analyse");
     for (const axis of ["ATTIRER", "COMPRENDRE", "CONVAINCRE", "CONVERTIR"]) {
-      await expect(page.getByText(axis, { exact: true })).toBeVisible();
+      await expect(result.getByText(axis, { exact: true }).first()).toBeVisible();
     }
   });
 
   test("hands the URL to the real audit funnel", async ({ page }) => {
     await page.goto("/");
     await runInstantCheck(page);
-    await page.getByRole("link", { name: /Recevoir mon diagnostic/ }).click();
+    await page.locator("#analyse").getByRole("link", { name: /Recevoir mon diagnostic/ }).click();
     await expect(page).toHaveURL(/\/audit\?site=/);
     await expect(page.getByLabel("Votre site")).toHaveValue("https://mon-restaurant.fr");
   });
