@@ -71,7 +71,7 @@ export function ConsentBanner() {
           type="button"
           onClick={() => {
             updateConsent("refused");
-            setVisible(false);
+            window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
           }}
           className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border-strong)] px-5 text-sm font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-accent)]"
         >
