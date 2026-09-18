@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ComponentPropsWithoutRef } from "react";
+import type { AnchorHTMLAttributes, ComponentPropsWithoutRef, MouseEvent } from "react";
 import { track, type TrackingEvent } from "@/lib/tracking";
 
 type Variant = "primary" | "secondary" | "ghost";
@@ -33,7 +33,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const classes = `${base} ${variants[variant]} ${className}`;
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
     if (trackEvent) track(trackEvent, trackPayload);
     onClick?.(e);
   };
@@ -43,7 +43,7 @@ export function Button({
   if (typeof props.href === "string" && props.href.includes("#")) {
     return (
       <a
-        {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        {...(props as AnchorHTMLAttributes<HTMLAnchorElement>)}
         className={classes}
         onClick={handleClick}
       />
