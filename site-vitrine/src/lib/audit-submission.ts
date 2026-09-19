@@ -226,18 +226,39 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
   return { subject, text, html };
 }
 
-export function buildConfirmationEmail(data: AuditSubmission) {
+export function buildConfirmationEmail(data: AuditSubmission, reportSummary?: ReportEmailSummary | null) {
   const greeting = data.nom ? `Bonjour ${data.nom},` : "Bonjour,";
+  const priorities = reportSummary?.topLeaks.slice(0, 3) ?? [];
+  const prioritiesText = priorities.length
+    ? `\n\nLes priorités détectées :\n${priorities.map((item, i) => `${i + 1}. ${item.title}`).join("\n")}`
+    : "";
+  const prioritiesHtml = priorities.length
+    ? `<div style="margin:20px 0;padding:18px;border:1px solid #e5b94a;border-radius:12px;">
+        <p style="margin:0 0 10px;font-weight:700;">Vos priorités détectées</p>
+        <ol style="margin:0;padding-left:20px;">${priorities.map((item) => `<li style="margin:6px 0;">${escapeHtml(item.title)}</li>`).join("")}</ol>
+      </div>`
+    : "";
 
   const text = `${greeting}
 
-Nous avons bien reçu votre demande d'audit pour ${data.siteUrl}. Nous revenons vers vous rapidement avec les opportunités prioritaires identifiées.
+Votre diagnostic pour ${data.siteUrl} est prêt.${prioritiesText}
+
+Le diagnostic vous montre les principaux points de friction. Si vous souhaitez transformer ces constats en plan d'action, répondez simplement à cet email : nous repartirons directement de votre audit, sans vous demander de tout réexpliquer.
+
+Voir votre diagnostic : https://generation-capable-vitrine.netlify.app/audit
 
 Génération Capable`;
 
-  const html = `<p>${escapeHtml(greeting)}</p>
-<p>Nous avons bien reçu votre demande d'audit pour <strong>${escapeHtml(data.siteUrl)}</strong>. Nous revenons vers vous rapidement avec les opportunités prioritaires identifiées.</p>
-<p>Génération Capable</p>`;
+  const html = `<div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:620px;margin:auto;">
+<p>${escapeHtml(greeting)}</p>
+<h2 style="margin:12px 0;">Votre diagnostic est prêt.</h2>
+<p>Nous avons analysé <strong>${escapeHtml(data.siteUrl)}</strong> afin d'identifier les points de friction les plus importants.</p>
+${prioritiesHtml}
+<p>Le diagnostic vous donne les constats. Si vous souhaitez les transformer en plan d'action, répondez simplement à cet email : nous repartirons directement de votre audit, sans vous demander de tout réexpliquer.</p>
+<p style="margin:26px 0;"><a href="https://generation-capable-vitrine.netlify.app/audit" style="background:#111;color:#fff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;">Revoir mon diagnostic</a></p>
+<p style="color:#666;font-size:13px;">Sans engagement · Votre audit est déjà préparé.</p>
+<p>Génération Capable</p>
+</div>`;
 
-  return { subject: "Votre demande d'audit a bien été reçue", text, html };
+  return { subject: "Votre diagnostic Génération Capable est prêt", text, html };
 }
