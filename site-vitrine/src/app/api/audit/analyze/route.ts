@@ -16,10 +16,10 @@ const MAX_BODY_BYTES = 2 * 1024; // siteUrl + secteur + objectif, generously.
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const FIELD_LIMITS = { siteUrl: 300, secteur: 120, objectif: 120 };
-// A little above the probe's own internal timeout (5s) so the engine always
-// has the chance to return its own graceful "degraded" report before this
-// outer guard would fire instead.
-const ANALYZE_TIMEOUT_MS = 14_000;
+// The engine can spend up to ~5s probing the site, then up to 30s on the
+// structured OpenAI synthesis. Keep the outer guard above both stages while
+// staying below Netlify's 60s synchronous execution limit.
+const ANALYZE_TIMEOUT_MS = 45_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
