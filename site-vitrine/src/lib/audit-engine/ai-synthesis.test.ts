@@ -139,6 +139,7 @@ describe("OpenAI audit synthesis", () => {
     expect(result?.opportunities[0].findingId).toBe("trust_missing_proof");
     expect(result?.model).toBe("gpt-5.6-sol");
 
+    if (!requestBody) throw new Error("OpenAI request was not captured");
     const body = requestBody as {
       model: string;
       input: string;
