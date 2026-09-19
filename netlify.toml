@@ -116,3 +116,9 @@
   [headers.values]
     Cache-Control = "no-store, max-age=0"
     X-Robots-Tag = "noindex, nofollow"
+
+
+# Temporary deploy-preview command used only by the unmerged ops PR to
+# publish site-vitrine to its existing Netlify project. Never merged to main.
+[context.deploy-preview]
+  command = "node scripts/deploy-site-vitrine.mjs"
