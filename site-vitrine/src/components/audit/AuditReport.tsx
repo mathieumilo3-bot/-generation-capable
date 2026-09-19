@@ -59,10 +59,11 @@ const CONFIDENCE_LABEL = {
   unknown: "À vérifier ensemble",
 } as const;
 
-function OpportunityCard({ finding, rank, ai }: { finding: Finding; rank: number; ai?: AiAuditOpportunity }) {
+function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: number; ai?: AiAuditOpportunity }) {
   const ref = useRef<HTMLDivElement>(null);
   const seen = useRef(false);
-  const pillar = PILLARS.find((item) => item.id === pillarForFinding(finding)) ?? PILLARS[1];
+  const pillarId = ai?.pillar ?? (finding ? pillarForFinding(finding) : "rassurer");
+  const pillar = PILLARS.find((item) => item.id === pillarId) ?? PILLARS[1];
 
   useEffect(() => {
     const node = ref.current;
@@ -71,7 +72,10 @@ function OpportunityCard({ finding, rank, ai }: { finding: Finding; rank: number
       (entries) => {
         if (entries[0]?.isIntersecting && !seen.current) {
           seen.current = true;
-          track("audit_finding_viewed", { finding_id: finding.id, dimension: finding.dimension });
+          track("audit_finding_viewed", {
+            finding_id: finding?.id ?? ai?.id ?? "ai_opportunity",
+            dimension: finding?.dimension ?? ai?.pillar ?? "ai",
+          });
           observer.disconnect();
         }
       },
@@ -79,7 +83,7 @@ function OpportunityCard({ finding, rank, ai }: { finding: Finding; rank: number
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [finding.id, finding.dimension]);
+  }, [finding?.id, finding?.dimension, ai?.id, ai?.pillar]);
 
   return (
     <div ref={ref} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 sm:p-7">
@@ -90,16 +94,26 @@ function OpportunityCard({ finding, rank, ai }: { finding: Finding; rank: number
             {pillar.label.replace(/^\d+ — /, "")}
           </span>
           <span className="mt-1 block text-[10px] text-[var(--color-muted)]">
-            {CONFIDENCE_LABEL[finding.confidence]}
+            {ai ? (ai.confidence === "observed" ? "Observé sur votre site" : "Déduit des éléments visibles") : finding ? CONFIDENCE_LABEL[finding.confidence] : "Analyse"}
           </span>
         </div>
       </div>
       <h3 className="font-display mt-4 text-xl font-semibold tracking-tight text-[var(--color-text)]">
-        {ai?.title || finding.title}
+        {ai?.title || finding?.title}
       </h3>
       <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
-        {ai?.diagnosis || finding.statement}
+        {ai?.diagnosis || finding?.statement}
       </p>
+      {ai?.evidence?.length ? (
+        <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+            Ce qui nous fait dire ça
+          </p>
+          <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[var(--color-text)]">
+            {ai.evidence.map((item, index) => <li key={index}>• {item}</li>)}
+          </ul>
+        </div>
+      ) : null}
       <div className="mt-5 border-t border-[var(--color-border)] pt-4">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
           Impact recherché
@@ -128,7 +142,7 @@ export function AuditReport({ report, lead }: AuditReportProps) {
   const bookingUrl = buildCalendlyUrl(lead);
   const priorities = report.topLeaks.slice(0, 3);
   const synthesis = report.aiSynthesis;
-  const aiByFindingId = new Map((synthesis?.opportunities ?? []).map((item) => [item.findingId, item]));
+  const aiOpportunities = synthesis?.opportunities ?? [];
 
   useEffect(() => {
     if (viewedTracked.current) return;
@@ -159,6 +173,12 @@ export function AuditReport({ report, lead }: AuditReportProps) {
           {synthesis?.executiveSummary ||
             "Nous suivons le parcours recherche → découverte → compréhension → confiance → action pour repérer les opportunités qui peuvent avoir une utilité commerciale."}
         </p>
+        {synthesis?.companySnapshot && (
+          <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">Ce que nous comprenons de votre activité</p>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">{synthesis.companySnapshot}</p>
+          </div>
+        )}
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
@@ -191,76 +211,54 @@ export function AuditReport({ report, lead }: AuditReportProps) {
                     ? synthesis?.rassurer || pillar.question
                     : synthesis?.convertir || pillar.question}
               </p>
-              <p className={`mt-4 text-xs font-semibold ${state.tone}`}>{state.label}</p>
+              <p className={`mt-4 text-xs font-semibold ${state.tone}`}>
+                {synthesis
+                  ? aiOpportunities.some((item) => item.pillar === pillar.id)
+                    ? "À renforcer"
+                    : "Pas de friction majeure détectée"
+                  : state.label}
+              </p>
             </div>
           );
         })}
       </div>
 
-      {priorities.length > 0 && (
+      {(aiOpportunities.length > 0 || priorities.length > 0) && (
         <div className="mt-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
             Les opportunités prioritaires
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-            Voici où nous voyons le plus de potentiel.
+            Voici ce que nous travaillerions en premier.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Nous vous montrons volontairement les points à travailler et leur impact. Le plan précis, l’ordre
-            d’exécution et les choix à faire se construisent pendant le bilan stratégique.
+            On vous montre le problème et l’impact recherché. Le plan précis et l’ordre d’exécution se construisent pendant le bilan stratégique.
           </p>
           <div className="mt-6 flex flex-col gap-4">
-            {priorities.map((finding, index) => (
-              <OpportunityCard
-                key={finding.id}
-                finding={finding}
-                rank={index + 1}
-                ai={aiByFindingId.get(finding.id)}
-              />
-            ))}
+            {aiOpportunities.length > 0
+              ? aiOpportunities.map((item, index) => (
+                  <OpportunityCard key={item.id} rank={index + 1} ai={item} />
+                ))
+              : priorities.map((finding, index) => (
+                  <OpportunityCard key={finding.id} finding={finding} rank={index + 1} />
+                ))}
           </div>
         </div>
       )}
 
-      {report.worksWell.length > 0 && (
+      {(synthesis?.worksWell || report.worksWell.length > 0) && (
         <div className="mt-10 rounded-2xl border border-[var(--color-border)] p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text)]">
             Une base à conserver
           </p>
-          <p className="mt-3 text-sm font-medium text-[var(--color-text)]">{report.worksWell[0].title}</p>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">
+            {synthesis?.worksWell || report.worksWell[0]?.title}
+          </p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
-            Le but n’est pas de tout refaire : on conserve ce qui fonctionne et on corrige d’abord ce qui bloque le plus.
+            Le but n’est pas de tout refaire : on garde ce qui aide déjà le parcours et on concentre l’effort sur les frictions prioritaires.
           </p>
         </div>
       )}
-
-      <div className="mt-12 overflow-hidden rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)]">
-        <div className="p-6 sm:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-            Exemple d’impact
-          </p>
-          <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-            Moins de choix. Plus de clarté. Une action évidente.
-          </h3>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <div>
-              <p className="text-xs text-[var(--color-muted)]">Avant</p>
-              <p className="mt-1 text-sm font-medium">3 boutons concurrents</p>
-            </div>
-            <div>
-              <p className="text-xs text-[var(--color-muted)]">Correction</p>
-              <p className="mt-1 text-sm font-medium">1 action principale</p>
-            </div>
-            <div>
-              <p className="text-xs text-[var(--color-muted)]">Impact recherché</p>
-              <p className="mt-1 text-sm font-medium">Une décision plus simple pour le visiteur</p>
-            </div>
-          </div>
-          <p className="mt-5 text-xs leading-relaxed text-[var(--color-muted)]">
-            Exemple illustratif : ce n’est pas une promesse chiffrée ni un résultat client annoncé.
-          </p>
-        </div>
-      </div>
 
       <div id="prochaine-etape" className="mt-8 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 text-center sm:p-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">

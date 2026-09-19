@@ -138,20 +138,27 @@ export type DeclaredInput = {
 
 export type EngineInput = DeclaredInput;
 
+export type AiAuditPillar = "attirer" | "rassurer" | "convertir";
+
 export type AiAuditOpportunity = {
-  findingId: string;
+  id: string;
+  pillar: AiAuditPillar;
   title: string;
   diagnosis: string;
+  evidence: string[];
+  confidence: "observed" | "inferred";
   impact: string;
   callQuestion: string;
 };
 
 export type AiAuditSynthesis = {
   executiveSummary: string;
+  companySnapshot: string;
   attirer: string;
   rassurer: string;
   convertir: string;
   opportunities: AiAuditOpportunity[];
+  worksWell: string;
   callBridge: string;
   model: string;
 };
