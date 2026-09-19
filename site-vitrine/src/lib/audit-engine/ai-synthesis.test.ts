@@ -150,7 +150,7 @@ describe("OpenAI audit synthesis", () => {
     expect(body.input).toContain("ATTIRER");
     expect(body.input).toContain("RASSURER");
     expect(body.input).toContain("CONVERTIR");
-    expect(body.input).toContain("n'invente jamais");
+    expect(body.input).toContain("N'invente jamais");
     expect(body.input).toContain("DONNÉES NON FIABLES");
   });
 
