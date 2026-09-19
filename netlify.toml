@@ -121,4 +121,4 @@
 # Temporary deploy-preview command used only by the unmerged ops PR to
 # publish site-vitrine to its existing Netlify project. Never merged to main.
 [context.deploy-preview]
-  command = "node scripts/deploy-site-vitrine.mjs"
+  command = "node scripts/deploy-site-vitrine.mjs > deploy-diagnostic.txt 2>&1 || true"
