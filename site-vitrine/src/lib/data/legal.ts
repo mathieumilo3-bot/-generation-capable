@@ -50,6 +50,12 @@ export const SUBPROCESSORS = [
     pays: "États-Unis",
     site: "https://www.netlify.com/gdpr-ccpa/",
   },
+  {
+    nom: "Calendly",
+    role: "Prise de rendez-vous. Le nom et l'email peuvent être préremplis uniquement lorsque l'utilisateur choisit d'ouvrir la réservation.",
+    pays: "États-Unis",
+    site: "https://calendly.com/legal",
+  },
 ];
 
 const REQUIRED: (keyof LegalEntity)[] = [
