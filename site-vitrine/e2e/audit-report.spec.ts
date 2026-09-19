@@ -87,6 +87,14 @@ async function mockAnalyze(page: Page, report: unknown = MOCK_REPORT, opts: { de
 }
 
 async function completeFunnel(page: Page) {
+  // Consent is a real blocking UI. Funnel tests make the same legitimate
+  // choice a visitor must make instead of bypassing pointer-event checks.
+  const consent = page.getByRole("dialog", { name: "Préférences de confidentialité" });
+  if (await consent.isVisible().catch(() => false)) {
+    await consent.getByRole("button", { name: "Accepter", exact: true }).click();
+    await expect(consent).toBeHidden();
+  }
+
   await page.getByLabel("Votre site").fill("https://mon-restaurant.fr");
   await page.getByRole("button", { name: /Continuer/ }).click();
   await page.getByRole("button", { name: "Restaurants", exact: true }).click();
