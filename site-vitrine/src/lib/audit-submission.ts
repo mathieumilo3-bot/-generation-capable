@@ -1,3 +1,5 @@
+import { buildCalendlyUrl } from "@/lib/booking";
+
 export type AuditSubmission = {
   siteUrl: string;
   secteur: string;
@@ -184,7 +186,14 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
         ].filter(Boolean)
       : [];
 
-  const text = [...rows.map(([label, value]) => `${label} : ${value}`), ...summaryLines].join("\n");
+  const actionLines = [
+    "",
+    "Action commerciale :",
+    `Répondre : mailto:${data.email}`,
+    data.telephone ? `Appeler : tel:${data.telephone.replace(/[^+\d]/g, "")}` : "",
+  ].filter(Boolean);
+
+  const text = [...rows.map(([label, value]) => `${label} : ${value}`), ...summaryLines, ...actionLines].join("\n");
 
   const summaryHtml =
     reportSummary && reportSummary.topLeaks.length > 0
@@ -210,8 +219,11 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
   </div>`
       : "";
 
+  const replyHref = `mailto:${encodeURIComponent(data.email)}?subject=${encodeURIComponent("Votre diagnostic Génération Capable")}`;
+  const phoneHref = data.telephone ? `tel:${data.telephone.replace(/[^+\d]/g, "")}` : "";
+
   const html = `<div style="font-family: sans-serif; color: #111;">
-  <h2 style="margin-bottom: 16px;">Nouvelle demande Capable Audit</h2>
+  <h2 style="margin-bottom: 16px;">Nouveau lead Capable Audit</h2>
   <table cellpadding="6" style="border-collapse: collapse;">
     ${rows
       .map(
@@ -221,6 +233,11 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
       .join("")}
   </table>
   ${summaryHtml}
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid #ddd;">
+    <p style="margin:0 0 10px;font-weight:700;">Action commerciale</p>
+    <a href="${escapeHtml(replyHref)}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:11px 15px;border-radius:8px;margin:0 8px 8px 0;">Répondre au prospect</a>
+    ${phoneHref ? `<a href="${escapeHtml(phoneHref)}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:10px 15px;border-radius:8px;">Appeler</a>` : ""}
+  </div>
 </div>`;
 
   return { subject, text, html };
@@ -229,36 +246,55 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
 export function buildConfirmationEmail(data: AuditSubmission, reportSummary?: ReportEmailSummary | null) {
   const greeting = data.nom ? `Bonjour ${data.nom},` : "Bonjour,";
   const priorities = reportSummary?.topLeaks.slice(0, 3) ?? [];
-  const prioritiesText = priorities.length
-    ? `\n\nLes priorités détectées :\n${priorities.map((item, i) => `${i + 1}. ${item.title}`).join("\n")}`
+  const diagnosticReady = priorities.length > 0;
+  const bookingUrl = buildCalendlyUrl({ nom: data.nom, email: data.email });
+
+  const prioritiesText = diagnosticReady
+    ? `\n\nVos priorités détectées :\n${priorities.map((item, i) => `${i + 1}. ${item.title}`).join("\n")}`
     : "";
-  const prioritiesHtml = priorities.length
+  const prioritiesHtml = diagnosticReady
     ? `<div style="margin:20px 0;padding:18px;border:1px solid #e5b94a;border-radius:12px;">
         <p style="margin:0 0 10px;font-weight:700;">Vos priorités détectées</p>
         <ol style="margin:0;padding-left:20px;">${priorities.map((item) => `<li style="margin:6px 0;">${escapeHtml(item.title)}</li>`).join("")}</ol>
       </div>`
     : "";
 
+  const statusText = diagnosticReady
+    ? `Votre diagnostic pour ${data.siteUrl} est prêt.`
+    : `Votre demande d'audit pour ${data.siteUrl} a bien été reçue. Nous préparons votre diagnostic.`;
+
+  const nextStepText = diagnosticReady
+    ? "Vous pouvez maintenant choisir un créneau pour transformer ces constats en plan d'action. Nous repartirons directement de votre audit."
+    : "Vous pouvez déjà choisir un créneau. Nous préparerons l'échange à partir des informations que vous venez de transmettre.";
+
   const text = `${greeting}
 
-Votre diagnostic pour ${data.siteUrl} est prêt.${prioritiesText}
+${statusText}${prioritiesText}
 
-Le diagnostic vous montre les principaux points de friction. Si vous souhaitez transformer ces constats en plan d'action, répondez simplement à cet email : nous repartirons directement de votre audit, sans vous demander de tout réexpliquer.
+${nextStepText}
 
-Voir votre diagnostic : https://generation-capable-vitrine.netlify.app/audit
+Choisir mon créneau : ${bookingUrl}
 
 Génération Capable`;
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:620px;margin:auto;">
 <p>${escapeHtml(greeting)}</p>
-<h2 style="margin:12px 0;">Votre diagnostic est prêt.</h2>
-<p>Nous avons analysé <strong>${escapeHtml(data.siteUrl)}</strong> afin d'identifier les points de friction les plus importants.</p>
+<h2 style="margin:12px 0;">${diagnosticReady ? "Votre diagnostic est prêt." : "Votre demande d'audit est bien reçue."}</h2>
+<p>${diagnosticReady
+  ? `Nous avons analysé <strong>${escapeHtml(data.siteUrl)}</strong> afin d'identifier les points de friction les plus importants.`
+  : `Nous préparons le diagnostic de <strong>${escapeHtml(data.siteUrl)}</strong> à partir des informations que vous venez de transmettre.`}</p>
 ${prioritiesHtml}
-<p>Le diagnostic vous donne les constats. Si vous souhaitez les transformer en plan d'action, répondez simplement à cet email : nous repartirons directement de votre audit, sans vous demander de tout réexpliquer.</p>
-<p style="margin:26px 0;"><a href="https://generation-capable-vitrine.netlify.app/audit" style="background:#111;color:#fff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;">Revoir mon diagnostic</a></p>
-<p style="color:#666;font-size:13px;">Sans engagement · Votre audit est déjà préparé.</p>
+<p>${escapeHtml(nextStepText)}</p>
+<p style="margin:26px 0;"><a href="${escapeHtml(bookingUrl)}" style="background:#111;color:#fff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;">Choisir mon créneau</a></p>
+<p style="color:#666;font-size:13px;">Sans engagement · Votre contexte est déjà transmis · L'échange part de votre audit</p>
 <p>Génération Capable</p>
 </div>`;
 
-  return { subject: "Votre diagnostic Génération Capable est prêt", text, html };
+  return {
+    subject: diagnosticReady
+      ? "Votre diagnostic Génération Capable est prêt"
+      : "Votre demande d'audit a bien été reçue",
+    text,
+    html,
+  };
 }
