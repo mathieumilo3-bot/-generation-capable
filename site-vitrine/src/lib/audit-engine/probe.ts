@@ -195,6 +195,7 @@ export function parseHtmlSignals(html: string): Omit<SiteSignals, "reachable" | 
   }
 
   const foundActionWords = ACTION_WORDS.filter((word) => text.toLowerCase().includes(word));
+  const textExcerpt = text.slice(0, 8_000);
 
   return {
     title: titleMatch ? observed(stripTagsToText(titleMatch[1]).slice(0, 200), "balise <title>") : unknown("balise <title> absente"),
@@ -229,6 +230,9 @@ export function parseHtmlSignals(html: string): Omit<SiteSignals, "reachable" | 
     guaranteeSignalPresent: observed(GUARANTEE_MARKERS.some((p) => p.test(text)), "marqueurs de garantie dans le texte"),
     urgencySignalPresent: observed(URGENCY_MARKERS.some((p) => p.test(text)), "marqueurs d'urgence/rareté dans le texte"),
     legalNoticeLinkPresent: observed(LEGAL_MARKERS.some((p) => p.test(lowerHtml)), "lien ou mention légale détecté"),
+    textExcerpt: textExcerpt
+      ? observed(textExcerpt, "extrait borné du texte public de la page")
+      : unknown("aucun texte public exploitable"),
   };
 }
 
