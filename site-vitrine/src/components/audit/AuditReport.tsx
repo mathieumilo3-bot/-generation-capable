@@ -4,26 +4,65 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { track } from "@/lib/tracking";
-import { DIMENSION_LABELS } from "@/lib/audit-engine/types";
 import { buildCalendlyUrl } from "@/lib/booking";
-import type { Confidence, Finding, Report } from "@/lib/audit-engine/types";
+import type { Dimension, Finding, Report } from "@/lib/audit-engine/types";
 
-const CONFIDENCE_LABEL: Record<Confidence, string> = {
+type PillarId = "attirer" | "rassurer" | "convertir";
+
+const PILLARS: {
+  id: PillarId;
+  label: string;
+  question: string;
+  dimensions: Dimension[];
+  impact: string;
+}[] = [
+  {
+    id: "attirer",
+    label: "01 — Attirer",
+    question: "Être trouvé par des prospects qui ne connaissent pas encore l’entreprise.",
+    dimensions: ["acquisition", "positioning"],
+    impact: "Créer davantage d’occasions d’être découvert au bon moment.",
+  },
+  {
+    id: "rassurer",
+    label: "02 — Rassurer",
+    question: "Faire comprendre l’offre rapidement et donner les preuves nécessaires pour avancer.",
+    dimensions: ["positioning", "psychology", "offer", "trust", "social_proof", "price_value"],
+    impact: "Réduire l’hésitation et rendre la décision plus simple.",
+  },
+  {
+    id: "convertir",
+    label: "03 — Convertir",
+    question: "Rendre la prochaine action évidente : contacter, demander un devis ou réserver.",
+    dimensions: ["funnel", "conversion", "retention", "business_model"],
+    impact: "Transformer plus facilement l’intérêt en demande concrète.",
+  },
+];
+
+function pillarForFinding(finding: Finding): PillarId {
+  return PILLARS.find((pillar) => pillar.dimensions.includes(finding.dimension))?.id ?? "rassurer";
+}
+
+function pillarState(report: Report, pillarId: PillarId) {
+  const pillar = PILLARS.find((item) => item.id === pillarId)!;
+  const leaks = report.topLeaks.filter((finding) => pillar.dimensions.includes(finding.dimension));
+  const strengths = report.worksWell.filter((finding) => pillar.dimensions.includes(finding.dimension));
+
+  if (leaks.length > 0) return { label: "À renforcer", tone: "text-[var(--color-accent)]" };
+  if (strengths.length > 0) return { label: "Base présente", tone: "text-[var(--color-text)]" };
+  return { label: "À approfondir", tone: "text-[var(--color-muted)]" };
+}
+
+const CONFIDENCE_LABEL = {
   observed: "Observé sur votre site",
   inferred: "Déduit",
-  unknown: "Non vérifiable automatiquement",
-};
+  unknown: "À vérifier ensemble",
+} as const;
 
-const CONFIDENCE_DOT: Record<Confidence, string> = {
-  observed: "bg-[var(--color-accent)]",
-  inferred: "border border-[var(--color-accent)]",
-  unknown: "border border-[var(--color-muted)]",
-};
-
-/** Fires audit_finding_viewed once, the first time this finding actually scrolls into view. */
-function FindingCard({ finding, rank }: { finding: Finding; rank?: number }) {
+function OpportunityCard({ finding, rank }: { finding: Finding; rank: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const seen = useRef(false);
+  const pillar = PILLARS.find((item) => item.id === pillarForFinding(finding)) ?? PILLARS[1];
 
   useEffect(() => {
     const node = ref.current;
@@ -44,45 +83,27 @@ function FindingCard({ finding, rank }: { finding: Finding; rank?: number }) {
 
   return (
     <div ref={ref} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 sm:p-7">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          {rank !== undefined && (
-            <span className="font-display text-sm text-[var(--color-accent)]">
-              {String(rank).padStart(2, "0")}
-            </span>
-          )}
-          <h3 className="font-display text-lg font-semibold tracking-tight text-[var(--color-text)]">
-            {finding.title}
-          </h3>
+      <div className="flex items-center justify-between gap-4">
+        <span className="font-display text-sm text-[var(--color-accent)]">{String(rank).padStart(2, "0")}</span>
+        <div className="text-right">
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+            {pillar.label.replace(/^\d+ — /, "")}
+          </span>
+          <span className="mt-1 block text-[10px] text-[var(--color-muted)]">
+            {CONFIDENCE_LABEL[finding.confidence]}
+          </span>
         </div>
-        <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-muted)]">
-          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${CONFIDENCE_DOT[finding.confidence]}`} />
-          {CONFIDENCE_LABEL[finding.confidence]}
-        </span>
       </div>
-
+      <h3 className="font-display mt-4 text-xl font-semibold tracking-tight text-[var(--color-text)]">
+        {finding.title}
+      </h3>
       <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">{finding.statement}</p>
-
-      {finding.evidence.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-1.5">
-          {finding.evidence.map((item) => (
-            <li key={item} className="flex gap-2 text-xs text-[var(--color-muted)]">
-              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--color-border-strong)]" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {finding.recommendation && (
-        <p className="mt-4 rounded-xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-text)]">
-          <span className="font-semibold">Recommandation.</span> {finding.recommendation}
+      <div className="mt-5 border-t border-[var(--color-border)] pt-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+          Impact recherché
         </p>
-      )}
-
-      <p className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
-        {DIMENSION_LABELS[finding.dimension]}
-      </p>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{pillar.impact}</p>
+      </div>
     </div>
   );
 }
@@ -95,6 +116,7 @@ type AuditReportProps = {
 export function AuditReport({ report, lead }: AuditReportProps) {
   const viewedTracked = useRef(false);
   const bookingUrl = buildCalendlyUrl(lead);
+  const priorities = report.topLeaks.slice(0, 3);
 
   useEffect(() => {
     if (viewedTracked.current) return;
@@ -117,11 +139,13 @@ export function AuditReport({ report, lead }: AuditReportProps) {
         <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-accent)]">
           <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
         </span>
-        <h2 className="font-display mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Votre diagnostic
-        </h2>
-        <p className="mt-4 text-[15px] leading-relaxed text-[var(--color-muted)]">
-          Nous avons analysé votre présence digitale et votre parcours commercial.
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
+          Bilan GC
+        </p>
+        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Votre diagnostic</h2>
+        <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)]">
+          Nous suivons le parcours recherche → découverte → compréhension → confiance → action pour repérer
+          les opportunités qui peuvent avoir une utilité commerciale.
         </p>
       </div>
 
@@ -132,31 +156,7 @@ export function AuditReport({ report, lead }: AuditReportProps) {
         <span className="rounded-full border border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-muted)]">
           {report.header.secteur}
         </span>
-        {report.header.objectif && (
-          <span className="rounded-full border border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-muted)]">
-            {report.header.objectif}
-          </span>
-        )}
       </div>
-
-      {report.topLeaks.length > 0 && (
-        <div className="mt-8 rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] p-5 sm:p-6">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-accent)]">
-              Synthèse prioritaire
-            </p>
-            <span className="rounded-full border border-[var(--color-accent)]/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
-              {report.topLeaks.length} priorité{report.topLeaks.length > 1 ? "s" : ""}
-            </span>
-          </div>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Le point à traiter en premier est celui-ci :
-          </p>
-          <p className="mt-2 font-display text-lg font-semibold tracking-tight text-[var(--color-text)]">
-            {report.topLeaks[0].title}
-          </p>
-        </div>
-      )}
 
       {report.degraded && report.degradedReason && (
         <div className="mt-8 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-5 py-4">
@@ -166,100 +166,99 @@ export function AuditReport({ report, lead }: AuditReportProps) {
         </div>
       )}
 
-      {report.topLeaks.length > 0 && (
+      <div className="mt-10 grid gap-3 sm:grid-cols-3">
+        {PILLARS.map((pillar) => {
+          const state = pillarState(report, pillar.id);
+          return (
+            <div key={pillar.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">{pillar.label}</p>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{pillar.question}</p>
+              <p className={`mt-4 text-xs font-semibold ${state.tone}`}>{state.label}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {priorities.length > 0 && (
         <div className="mt-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-            {report.topLeaks.length > 1 ? "Les principales fuites" : "La principale fuite identifiée"}
+            Les opportunités prioritaires
           </p>
-          <div className="mt-5 flex flex-col gap-4">
-            {report.topLeaks.map((finding, index) => (
-              <FindingCard key={finding.id} finding={finding} rank={index + 1} />
+          <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+            Voici où nous voyons le plus de potentiel.
+          </h3>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+            Nous vous montrons volontairement les points à travailler et leur impact. Le plan précis, l’ordre
+            d’exécution et les choix à faire se construisent pendant le bilan stratégique.
+          </p>
+          <div className="mt-6 flex flex-col gap-4">
+            {priorities.map((finding, index) => (
+              <OpportunityCard key={finding.id} finding={finding} rank={index + 1} />
             ))}
           </div>
         </div>
       )}
 
       {report.worksWell.length > 0 && (
-        <div className="mt-12">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-text)]">
-            Ce qui fonctionne
+        <div className="mt-10 rounded-2xl border border-[var(--color-border)] p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text)]">
+            Une base à conserver
           </p>
-          <ul className="mt-5 flex flex-col gap-3">
-            {report.worksWell.map((finding) => (
-              <li
-                key={finding.id}
-                className="flex items-start gap-3 rounded-xl border border-[var(--color-border)] px-5 py-4"
-              >
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--color-accent)] text-[10px] text-[var(--color-accent)]">
-                  ✓
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-[var(--color-text)]">{finding.title}</p>
-                  <p className="mt-1 text-sm text-[var(--color-muted)]">{finding.statement}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <p className="mt-3 text-sm font-medium text-[var(--color-text)]">{report.worksWell[0].title}</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+            Le but n’est pas de tout refaire : on conserve ce qui fonctionne et on corrige d’abord ce qui bloque le plus.
+          </p>
         </div>
       )}
 
-      {report.actionPlan.length > 0 && (
-        <div className="mt-12">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-text)]">
-            Ce que nous changerions
+      <div className="mt-12 overflow-hidden rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)]">
+        <div className="p-6 sm:p-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
+            Exemple d’impact
           </p>
-          <ol className="mt-5 flex flex-col gap-4">
-            {report.actionPlan.map((step) => (
-              <li key={step.order} className="flex gap-4">
-                <span className="font-display shrink-0 text-lg font-semibold text-[var(--color-accent)]">
-                  {String(step.order).padStart(2, "0")}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-[var(--color-text)]">{step.title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">{step.recommendation}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      <p className="mt-10 text-xs leading-relaxed text-[var(--color-muted)]">{report.sectorNote}</p>
-
-      <div className="mt-12 rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] p-6 sm:p-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-          Votre priorité maintenant
-        </p>
-        <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-          Transformer ce diagnostic en plan d&apos;action concret.
-        </h3>
-        <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-          L&apos;audit montre où se trouvent les principaux points de friction. L&apos;étape suivante consiste à
-          choisir les corrections à traiter en premier, selon votre objectif, puis à définir comment les mettre
-          en place sans refaire inutilement ce qui fonctionne déjà.
-        </p>
-        {report.topLeaks.length > 0 && (
-          <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-              À traiter en premier
-            </p>
-            <p className="mt-2 text-sm font-medium text-[var(--color-text)]">{report.topLeaks[0].title}</p>
+          <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+            Moins de choix. Plus de clarté. Une action évidente.
+          </h3>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-[var(--color-muted)]">Avant</p>
+              <p className="mt-1 text-sm font-medium">3 boutons concurrents</p>
+            </div>
+            <div>
+              <p className="text-xs text-[var(--color-muted)]">Correction</p>
+              <p className="mt-1 text-sm font-medium">1 action principale</p>
+            </div>
+            <div>
+              <p className="text-xs text-[var(--color-muted)]">Impact recherché</p>
+              <p className="mt-1 text-sm font-medium">Une décision plus simple pour le visiteur</p>
+            </div>
           </div>
-        )}
+          <p className="mt-5 text-xs leading-relaxed text-[var(--color-muted)]">
+            Exemple illustratif : ce n’est pas une promesse chiffrée ni un résultat client annoncé.
+          </p>
+        </div>
       </div>
 
       <div id="prochaine-etape" className="mt-8 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 text-center sm:p-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-          Prochaine étape
+          Votre bilan stratégique
         </p>
-        <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-          Échangeons sur les priorités de votre entreprise.
+        <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+          On transforme ces constats en plan d’action priorisé.
         </h3>
-        <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
-          Nous avons déjà votre audit. Vous n&apos;aurez pas à tout réexpliquer : nous partons de ce diagnostic
-          pour voir ce qui mérite réellement d&apos;être corrigé et si GC peut vous accompagner.
+        <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
+          Pendant 30 minutes, nous reprenons votre analyse, choisissons les 3 actions à traiter en premier et
+          définissons les prochaines étapes adaptées à votre entreprise.
         </p>
-        <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+        <div className="mx-auto mt-6 max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-left">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Vous repartez avec</p>
+          <ul className="mt-3 space-y-2 text-sm text-[var(--color-text)]">
+            <li>✓ vos 3 priorités expliquées</li>
+            <li>✓ l’ordre dans lequel les traiter</li>
+            <li>✓ un plan d’action concret pour la suite</li>
+          </ul>
+        </div>
+        <div className="mt-7">
           <Button
             href={bookingUrl}
             target="_blank"
@@ -267,20 +266,17 @@ export function AuditReport({ report, lead }: AuditReportProps) {
             variant="primary"
             trackEvent="booking_started"
             trackPayload={{ location: "audit_report", source: "capable_audit" }}
-            onClick={() =>
-              track("audit_cta_clicked", { location: "audit_report", intent: "book_strategy_call" })
-            }
+            onClick={() => track("audit_cta_clicked", { location: "audit_report", intent: "book_strategy_call" })}
           >
-            Choisir mon créneau →
-          </Button>
-          <Button href="/#systemes" variant="secondary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report", intent: "learn_more" }}>
-            Voir la méthode GC
+            Réserver mon bilan de 30 min →
           </Button>
         </div>
         <p className="mt-4 text-xs text-[var(--color-muted)]">
-          Sans engagement · Diagnostic déjà préparé · Vous choisissez directement votre créneau
+          30 minutes · Analyse · Plan d’action priorisé
         </p>
       </div>
+
+      <p className="mt-8 text-center text-xs leading-relaxed text-[var(--color-muted)]">{report.sectorNote}</p>
     </motion.div>
   );
 }

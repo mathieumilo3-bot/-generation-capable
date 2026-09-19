@@ -135,8 +135,8 @@ test.describe("audit report", () => {
       page.getByRole("heading", { name: "La page n'est pas configurée pour un affichage mobile correct" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Écart important entre la confiance exigée" })).toBeVisible();
-    await expect(page.getByText("Ce qui fonctionne", { exact: true })).toBeVisible();
-    await expect(page.getByText("Ce que nous changerions", { exact: true })).toBeVisible();
+    await expect(page.getByText("Une base à conserver", { exact: true })).toBeVisible();
+    await expect(page.getByText("Les opportunités prioritaires", { exact: true })).toBeVisible();
   });
 
   test("labels each finding's reliability rather than presenting it as flat fact", async ({ page }) => {
@@ -180,10 +180,10 @@ test.describe("audit report", () => {
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
     await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
 
-    await expect(page.getByText("Synthèse prioritaire")).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Transformer ce diagnostic en plan d'action concret/ })).toBeVisible();
+    await expect(page.getByText("Bilan GC")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /On transforme ces constats en plan d’action priorisé/ })).toBeVisible();
 
-    const booking = page.getByRole("link", { name: /Choisir mon créneau/ });
+    const booking = page.getByRole("link", { name: /Réserver mon bilan de 30 min/ });
     const href = await booking.getAttribute("href");
     expect(href).toContain("calendly.com/ledorvenenzo50/consultation-strategique-acquisition-developpement");
     expect(href).toContain("name=Marie+Dupont");
@@ -195,8 +195,7 @@ test.describe("audit report", () => {
     const fired = await page.evaluate(() => (window.dataLayer ?? []).map((e) => e.event));
     expect(fired).toContain("booking_started");
     expect(fired).toContain("audit_cta_clicked");
-
-    await expect(page.getByRole("link", { name: /Voir la méthode GC/ })).toHaveAttribute("href", "/#systemes");
+    await expect(page.getByRole("link", { name: /Voir la méthode GC/ })).toHaveCount(0);
   });
 
   test("tracks the full analysis lifecycle in the dataLayer", async ({ page }) => {
@@ -221,6 +220,13 @@ test.describe("audit report", () => {
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
     await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+
+    // The new report intentionally puts the GC summary before the detailed
+    // opportunities. Scroll a real finding into view before asserting the
+    // IntersectionObserver-driven event.
+    await page
+      .getByRole("heading", { name: "La page n'est pas configurée pour un affichage mobile correct" })
+      .scrollIntoViewIfNeeded();
 
     await expect
       .poll(() => page.evaluate(() => (window.dataLayer ?? []).map((e) => e.event)))
