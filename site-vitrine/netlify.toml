@@ -1,12 +1,6 @@
-# Configuration propre à ce sous-dossier : le netlify.toml de la racine
-# concerne l'ancien produit (fonctions, redirections, programme ambassadeurs)
-# et ne doit pas s'appliquer ici. Le projet Netlify de ce site doit avoir
-# « site-vitrine » comme répertoire de base.
+# TEMPORARY diagnostic config for PR #26 only — never merge.
+# It proves which directory/config the generation-capable-vitrine Netlify
+# project actually uses before restoring the real Next.js build.
 [build]
-  command = "npm run build"
-  publish = ".next"
-
-
-# Next.js est détecté automatiquement par Netlify ; pas de plugin explicite à installer.
-# Les en-têtes de sécurité sont définis dans next.config.ts pour rester
-# identiques en local, en preview et en production.
+  command = """node -e "const fs=require('fs'); const d={cwd:process.cwd(),node:process.version,hasPackageJson:fs.existsSync('package.json'),hasNextConfig:fs.existsSync('next.config.ts'),files:fs.readdirSync('.').slice(0,80)}; fs.writeFileSync('deploy-diagnostic.json',JSON.stringify(d)); fs.writeFileSync('index.html','<!doctype html><title>GC vitrine diagnostic</title><pre>'+JSON.stringify(d,null,2).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>');" """
+  publish = "."
