@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseHtmlSignals, resolveTargetUrl, resolvesToBlockedIp } from "./probe";
+import { parseHtmlSignals, resolveSafeRedirect, resolveTargetUrl, resolvesToBlockedIp } from "./probe";
 
 describe("resolveTargetUrl", () => {
   it("accepts a full https URL as-is", () => {
@@ -91,6 +91,32 @@ describe("resolvesToBlockedIp", () => {
     // resolves to loopback — the real point of this test is that the
     // function runs end-to-end without throwing.
     expect(typeof result).toBe("boolean");
+  });
+});
+
+describe("resolveSafeRedirect", () => {
+  it("allows a relative redirect that remains on a public host", async () => {
+    const publicLookup = async () => [{ address: "198.51.100.10" }];
+    const result = await resolveSafeRedirect("/accueil", new URL("https://example.com"), publicLookup);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.url.toString()).toBe("https://example.com/accueil");
+  });
+
+  it("blocks a redirect to cloud metadata or a private DNS target", async () => {
+    const privateLookup = async () => [{ address: "10.0.0.8" }];
+    const literal = await resolveSafeRedirect(
+      "http://169.254.169.254/latest/meta-data",
+      new URL("https://example.com"),
+      privateLookup
+    );
+    expect(literal).toEqual({ ok: false, reason: "blocked_target" });
+
+    const rebound = await resolveSafeRedirect(
+      "https://redirect.example/path",
+      new URL("https://example.com"),
+      privateLookup
+    );
+    expect(rebound).toEqual({ ok: false, reason: "blocked_target" });
   });
 });
 
