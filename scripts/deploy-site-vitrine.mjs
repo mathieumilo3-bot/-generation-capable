@@ -192,3 +192,4 @@ console.log(JSON.stringify({
   deployId: deployData?.deploy_id ?? null,
   buildId: deployData?.id ?? null
 }));
+// Retry trigger after scoped deployment proxy configuration.
