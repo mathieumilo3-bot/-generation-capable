@@ -59,7 +59,7 @@ async function sendEmails(
   // Best effort: the business has been notified, so a failed courtesy copy to
   // the visitor must not turn their successful submission into an error.
   try {
-    const confirmation = buildConfirmationEmail(submission);
+    const confirmation = buildConfirmationEmail(submission, reportSummary);
     const copy = await withTimeout(
       resend.emails.send({
         from: fromEmail,
