@@ -6,8 +6,7 @@
   command = "npm run build"
   publish = ".next"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
 
+# Next.js est détecté automatiquement par Netlify ; pas de plugin explicite à installer.
 # Les en-têtes de sécurité sont définis dans next.config.ts pour rester
 # identiques en local, en preview et en production.
