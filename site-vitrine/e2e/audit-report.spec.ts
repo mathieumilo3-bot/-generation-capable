@@ -221,6 +221,13 @@ test.describe("audit report", () => {
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
     await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
 
+    // The new report intentionally puts the GC summary before the detailed
+    // opportunities. Scroll a real finding into view before asserting the
+    // IntersectionObserver-driven event.
+    await page
+      .getByRole("heading", { name: "La page n'est pas configurée pour un affichage mobile correct" })
+      .scrollIntoViewIfNeeded();
+
     await expect
       .poll(() => page.evaluate(() => (window.dataLayer ?? []).map((e) => e.event)))
       .toEqual(expect.arrayContaining(["audit_finding_viewed"]));
