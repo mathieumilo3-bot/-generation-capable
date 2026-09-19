@@ -17,5 +17,13 @@ jobs:
           set -e
           body="$(curl -sS --max-time 30 -w '\nHTTP_STATUS:%{http_code}\n' https://generation-capable-vitrine.netlify.app/api/audit/ai-health)"
           echo "$body"
+      - name: Check real production audit
+        run: |
+          set -e
+          response="$(curl -sS --max-time 90 -X POST \
+            -H 'Content-Type: application/json' \
+            -d '{"siteUrl":"https://association-des-artisans-du-batiment.fr/","secteur":"Artisans","objectif":"Plus de demandes"}' \
+            https://generation-capable-vitrine.netlify.app/api/audit/analyze)"
+          echo "$response" | jq '{hasReport:(.report != null), hasAi:(.report.aiSynthesis != null), model:.report.aiSynthesis.model, executiveSummary:.report.aiSynthesis.executiveSummary, companySnapshot:.report.aiSynthesis.companySnapshot, opportunityCount:(.report.aiSynthesis.opportunities | length), opportunities:[.report.aiSynthesis.opportunities[]? | {pillar,title,evidence,confidence,impact}]}'
 
 # verify after project header deploy
