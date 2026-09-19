@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { track } from "@/lib/tracking";
 import { buildCalendlyUrl } from "@/lib/booking";
-import type { Dimension, Finding, Report } from "@/lib/audit-engine/types";
+import type { AiAuditOpportunity, Dimension, Finding, Report } from "@/lib/audit-engine/types";
 
 type PillarId = "attirer" | "rassurer" | "convertir";
 
@@ -59,7 +59,7 @@ const CONFIDENCE_LABEL = {
   unknown: "À vérifier ensemble",
 } as const;
 
-function OpportunityCard({ finding, rank }: { finding: Finding; rank: number }) {
+function OpportunityCard({ finding, rank, ai }: { finding: Finding; rank: number; ai?: AiAuditOpportunity }) {
   const ref = useRef<HTMLDivElement>(null);
   const seen = useRef(false);
   const pillar = PILLARS.find((item) => item.id === pillarForFinding(finding)) ?? PILLARS[1];
@@ -95,15 +95,25 @@ function OpportunityCard({ finding, rank }: { finding: Finding; rank: number }) 
         </div>
       </div>
       <h3 className="font-display mt-4 text-xl font-semibold tracking-tight text-[var(--color-text)]">
-        {finding.title}
+        {ai?.title || finding.title}
       </h3>
-      <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">{finding.statement}</p>
+      <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
+        {ai?.diagnosis || finding.statement}
+      </p>
       <div className="mt-5 border-t border-[var(--color-border)] pt-4">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
           Impact recherché
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{pillar.impact}</p>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{ai?.impact || pillar.impact}</p>
       </div>
+      {ai?.callQuestion && (
+        <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+            À trancher pendant le bilan
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{ai.callQuestion}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -117,6 +127,8 @@ export function AuditReport({ report, lead }: AuditReportProps) {
   const viewedTracked = useRef(false);
   const bookingUrl = buildCalendlyUrl(lead);
   const priorities = report.topLeaks.slice(0, 3);
+  const synthesis = report.aiSynthesis;
+  const aiByFindingId = new Map((synthesis?.opportunities ?? []).map((item) => [item.findingId, item]));
 
   useEffect(() => {
     if (viewedTracked.current) return;
@@ -144,8 +156,8 @@ export function AuditReport({ report, lead }: AuditReportProps) {
         </p>
         <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Votre diagnostic</h2>
         <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)]">
-          Nous suivons le parcours recherche → découverte → compréhension → confiance → action pour repérer
-          les opportunités qui peuvent avoir une utilité commerciale.
+          {synthesis?.executiveSummary ||
+            "Nous suivons le parcours recherche → découverte → compréhension → confiance → action pour repérer les opportunités qui peuvent avoir une utilité commerciale."}
         </p>
       </div>
 
@@ -172,7 +184,13 @@ export function AuditReport({ report, lead }: AuditReportProps) {
           return (
             <div key={pillar.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">{pillar.label}</p>
-              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{pillar.question}</p>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+                {pillar.id === "attirer"
+                  ? synthesis?.attirer || pillar.question
+                  : pillar.id === "rassurer"
+                    ? synthesis?.rassurer || pillar.question
+                    : synthesis?.convertir || pillar.question}
+              </p>
               <p className={`mt-4 text-xs font-semibold ${state.tone}`}>{state.label}</p>
             </div>
           );
@@ -193,7 +211,12 @@ export function AuditReport({ report, lead }: AuditReportProps) {
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {priorities.map((finding, index) => (
-              <OpportunityCard key={finding.id} finding={finding} rank={index + 1} />
+              <OpportunityCard
+                key={finding.id}
+                finding={finding}
+                rank={index + 1}
+                ai={aiByFindingId.get(finding.id)}
+              />
             ))}
           </div>
         </div>
@@ -247,8 +270,8 @@ export function AuditReport({ report, lead }: AuditReportProps) {
           On transforme ces constats en plan d’action priorisé.
         </h3>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
-          Pendant 30 minutes, nous reprenons votre analyse, choisissons les 3 actions à traiter en premier et
-          définissons les prochaines étapes adaptées à votre entreprise.
+          {synthesis?.callBridge ||
+            "Pendant 30 minutes, nous reprenons votre analyse, choisissons les 3 actions à traiter en premier et définissons les prochaines étapes adaptées à votre entreprise."}
         </p>
         <div className="mx-auto mt-6 max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Vous repartez avec</p>
