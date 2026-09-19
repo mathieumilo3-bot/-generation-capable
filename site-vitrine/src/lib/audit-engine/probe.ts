@@ -3,6 +3,7 @@ import { observed, unknown, type SiteSignals, type SocialNetwork } from "./types
 
 const FETCH_TIMEOUT_MS = 5_000;
 const MAX_BODY_BYTES = 1_500_000; // 1.5 MB — a marketing homepage fits well inside this.
+const MAX_REDIRECTS = 5;
 const USER_AGENT =
   "Mozilla/5.0 (compatible; CapableAuditBot/1.0; +https://generationcapable.fr/audit)";
 
@@ -11,10 +12,8 @@ const USER_AGENT =
  * real server: no non-HTTP(S) scheme, no loopback/private/link-local
  * address, no bare IP literal pretending to be a public host name.
  *
- * This only catches the address as typed — it does not resolve DNS, so a
- * hostname that itself resolves to a private range at request time is
- * still stopped downstream by the fetch's own network failure, just later
- * and less precisely (reported as `network_error`, not `blocked_target`).
+ * This catches the address as typed. Hostnames are resolved separately before
+ * the first request and before every redirect.
  */
 function isBlockedTarget(hostname: string): boolean {
   // IPv6 literals keep their brackets in URL#hostname (e.g. "[::1]").
@@ -69,6 +68,31 @@ export async function resolvesToBlockedIp(hostname: string, lookupFn: DnsLookupF
   } catch {
     return false;
   }
+}
+
+/**
+ * Validates every redirect before following it. `fetch(..., { redirect:
+ * "follow" })` would validate only the visitor-supplied host and could then be
+ * redirected to a loopback, private-network or cloud-metadata address.
+ */
+export async function resolveSafeRedirect(
+  location: string,
+  from: URL,
+  lookupFn: DnsLookupFn = defaultDnsLookup
+): Promise<ResolvedTarget> {
+  let next: URL;
+  try {
+    next = new URL(location, from);
+  } catch {
+    return { ok: false, reason: "invalid_url" };
+  }
+
+  const resolved = resolveTargetUrl(next.toString());
+  if (!resolved.ok) return resolved;
+  if (await resolvesToBlockedIp(resolved.url.hostname, lookupFn)) {
+    return { ok: false, reason: "blocked_target" };
+  }
+  return resolved;
 }
 
 /**
@@ -256,11 +280,28 @@ export async function probeSite(rawUrl: string): Promise<SiteSignals> {
   const startedAt = Date.now();
 
   try {
-    const response = await fetch(resolved.url, {
-      signal: controller.signal,
-      redirect: "follow",
-      headers: { "User-Agent": USER_AGENT, Accept: "text/html,*/*;q=0.8" },
-    });
+    let currentUrl = resolved.url;
+    let response: Response | null = null;
+
+    for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
+      response = await fetch(currentUrl, {
+        signal: controller.signal,
+        redirect: "manual",
+        headers: { "User-Agent": USER_AGENT, Accept: "text/html,*/*;q=0.8" },
+      });
+
+      if (![301, 302, 303, 307, 308].includes(response.status)) break;
+      const location = response.headers.get("location");
+      if (!location || redirectCount === MAX_REDIRECTS) {
+        return unreachableSignals("network_error");
+      }
+
+      const next = await resolveSafeRedirect(location, currentUrl);
+      if (!next.ok) return unreachableSignals(next.reason);
+      currentUrl = next.url;
+    }
+
+    if (!response) return unreachableSignals("network_error");
     const responseTimeMs = Date.now() - startedAt;
 
     if (!response.ok) {
@@ -294,7 +335,7 @@ export async function probeSite(rawUrl: string): Promise<SiteSignals> {
       return { ...unreachableSignals("empty_body"), httpStatus: response.status, responseTimeMs };
     }
 
-    const finalUrlObj = new URL(response.url || resolved.url.toString());
+    const finalUrlObj = currentUrl;
     return {
       reachable: true,
       finalUrl: finalUrlObj.toString(),
