@@ -211,22 +211,61 @@ export function AuditReport({ report }: { report: Report }) {
 
       <p className="mt-10 text-xs leading-relaxed text-[var(--color-muted)]">{report.sectorNote}</p>
 
-      <div className="mt-10 flex flex-col items-center gap-4 border-t border-[var(--color-border)] pt-10 sm:flex-row sm:justify-center">
-        <Button href="/#systemes" variant="primary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report" }}>
-          Voir comment nous corrigeons ces points →
-        </Button>
+      <div className="mt-12 rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] p-6 sm:p-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
+          Votre priorité maintenant
+        </p>
+        <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+          Transformer ce diagnostic en plan d&apos;action concret.
+        </h3>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+          L&apos;audit montre où se trouvent les principaux points de friction. L&apos;étape suivante consiste à
+          choisir les corrections à traiter en premier, selon votre objectif, puis à définir comment les mettre
+          en place sans refaire inutilement ce qui fonctionne déjà.
+        </p>
+        {report.topLeaks.length > 0 && (
+          <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+              À traiter en premier
+            </p>
+            <p className="mt-2 text-sm font-medium text-[var(--color-text)]">{report.topLeaks[0].title}</p>
+          </div>
+        )}
+      </div>
+
+      <div id="prochaine-etape" className="mt-8 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 text-center sm:p-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
+          Prochaine étape
+        </p>
+        <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+          Échangeons sur les 3 priorités de votre entreprise.
+        </h3>
+        <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
+          Nous avons déjà votre audit. Vous n&apos;aurez pas à tout réexpliquer : nous partons de ce diagnostic
+          pour voir ce qui mérite réellement d&apos;être corrigé et si GC peut vous accompagner.
+        </p>
+        <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <Button href="/#contact" variant="primary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report", intent: "priority_review" }}>
+            Échanger sur mon diagnostic →
+          </Button>
+          <Button href="/#systemes" variant="secondary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report", intent: "learn_more" }}>
+            Voir la méthode GC
+          </Button>
+        </div>
+        <p className="mt-4 text-xs text-[var(--color-muted)]">
+          Sans engagement · Diagnostic déjà préparé · Échange centré sur vos priorités
+        </p>
+      </div>
+
+      <div className="mt-8 flex justify-center">
         <button
           type="button"
           onClick={handleShare}
           className="text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
         >
-          Copier le lien
+          Copier le lien du diagnostic
         </button>
       </div>
-
-      <p className="mt-8 text-center text-xs leading-relaxed text-[var(--color-muted)]">
-        Nous revenons vers vous par email avec le détail de ce diagnostic et les prochaines étapes.
-      </p>
     </motion.div>
   );
 }
