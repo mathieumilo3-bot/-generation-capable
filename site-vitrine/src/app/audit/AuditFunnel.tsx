@@ -8,6 +8,7 @@ import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
 import { track, type TrackingEvent } from "@/lib/tracking";
 import { AuditReport } from "@/components/audit/AuditReport";
 import { DIMENSION_LABELS, type Report } from "@/lib/audit-engine/types";
+import { buildCalendlyUrl } from "@/lib/booking";
 
 /**
  * The small, display-only digest sent to /api/audit alongside the lead —
@@ -266,7 +267,7 @@ export function AuditFunnel() {
 
   if (submitted) {
     if (finalReport) {
-      return <AuditReport report={finalReport} />;
+      return <AuditReport report={finalReport} lead={{ nom: data.nom, email: data.email }} />;
     }
 
     return (
@@ -286,11 +287,24 @@ export function AuditFunnel() {
           Nous revenons vers vous par email avec les opportunités prioritaires
           identifiées pour {data.entreprise || "votre entreprise"}.
         </p>
-        <div className="mt-10">
+        <div className="mt-10 flex flex-col items-center gap-4">
+          <Button
+            href={buildCalendlyUrl({ nom: data.nom, email: data.email })}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="primary"
+            trackEvent="booking_started"
+            trackPayload={{ location: "audit_confirmation", source: "capable_audit" }}
+          >
+            Choisir mon créneau →
+          </Button>
           <Button href="/" variant="secondary">
             Retour à l&apos;accueil
           </Button>
         </div>
+        <p className="mt-5 text-xs leading-relaxed text-[var(--color-muted)]">
+          Vous pouvez réserver dès maintenant : nous préparerons l&apos;échange à partir des informations déjà transmises.
+        </p>
       </motion.div>
     );
   }
