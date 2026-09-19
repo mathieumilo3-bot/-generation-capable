@@ -2,6 +2,7 @@ import { classifySector } from "./classify";
 import { probeSite } from "./probe";
 import { runAllAnalyzers } from "./analyzers";
 import { buildReport } from "./report";
+import { synthesizeAuditWithOpenAI } from "./ai-synthesis";
 import type { DeclaredInput, Report } from "./types";
 
 const INPUT_LIMITS = { siteUrl: 300, secteur: 120, objectif: 120 };
@@ -38,5 +39,8 @@ export async function runAudit(rawInput: DeclaredInput, options: RunAuditOptions
   ]);
 
   const findings = runAllAnalyzers(input, site, sector);
-  return buildReport(input, site, sector, findings);
+  const report = buildReport(input, site, sector, findings);
+
+  const aiSynthesis = await synthesizeAuditWithOpenAI({ input, site, sector, report });
+  return aiSynthesis ? { ...report, aiSynthesis } : report;
 }
