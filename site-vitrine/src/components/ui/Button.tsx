@@ -38,9 +38,12 @@ export function Button({
     onClick?.(e);
   };
 
-  // Native anchors handle hash navigation reliably, including cross-route
-  // links such as /#systeme. Next's router should not own these interactions.
-  if (typeof props.href === "string" && props.href.includes("#")) {
+  // Native anchors handle hash navigation and external protocols reliably.
+  // Next's router should only own internal application navigation.
+  const href = typeof props.href === "string" ? props.href : "";
+  const isNativeAnchor =
+    href.includes("#") || /^(https?:|mailto:|tel:)/i.test(href);
+  if (isNativeAnchor) {
     return (
       <a
         {...(props as AnchorHTMLAttributes<HTMLAnchorElement>)}
