@@ -32,7 +32,7 @@ function toEmailSummary(report: Report) {
  * window, the visitor sees the plain confirmation instead: never blocked on
  * the diagnostic, whatever happens to it.
  */
-const REPORT_WAIT_MS = 3_000;
+const REPORT_WAIT_MS = 8_000;
 
 type FormState = {
   siteUrl: string;

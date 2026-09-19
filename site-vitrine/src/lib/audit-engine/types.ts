@@ -117,6 +117,8 @@ export type SiteSignals = {
   guaranteeSignalPresent: Signal<boolean | null>;
   urgencySignalPresent: Signal<boolean | null>;
   legalNoticeLinkPresent: Signal<boolean | null>;
+  /** Public page text excerpt, bounded and treated as untrusted data by the AI synthesis layer. */
+  textExcerpt?: Signal<string | null>;
 };
 
 export type SocialNetwork =
@@ -135,6 +137,24 @@ export type DeclaredInput = {
 };
 
 export type EngineInput = DeclaredInput;
+
+export type AiAuditOpportunity = {
+  findingId: string;
+  title: string;
+  diagnosis: string;
+  impact: string;
+  callQuestion: string;
+};
+
+export type AiAuditSynthesis = {
+  executiveSummary: string;
+  attirer: string;
+  rassurer: string;
+  convertir: string;
+  opportunities: AiAuditOpportunity[];
+  callBridge: string;
+  model: string;
+};
 
 export type SectorId =
   | "dentiste_sante"
@@ -194,4 +214,6 @@ export type Report = {
   /** The sector profile's own stated caveat — always shown, never folded into a Finding. */
   sectorNote: string;
   engineVersion: string;
+  /** Optional OpenAI synthesis. Missing when no key is configured or the AI layer fails soft. */
+  aiSynthesis?: AiAuditSynthesis;
 };

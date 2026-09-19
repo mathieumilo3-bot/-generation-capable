@@ -159,11 +159,11 @@ test.describe("audit report", () => {
   });
 
   test("falls back to the plain confirmation when the analysis is still running after the wait window", async ({ page }) => {
-    await mockAnalyze(page, MOCK_REPORT, { delayMs: 6000 }); // longer than REPORT_WAIT_MS
+    await mockAnalyze(page, MOCK_REPORT, { delayMs: 10_000 }); // longer than REPORT_WAIT_MS
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
 
-    await expect(page.getByRole("heading", { name: "Votre analyse est en préparation." })).toBeVisible({ timeout: 6000 });
+    await expect(page.getByRole("heading", { name: "Votre analyse est en préparation." })).toBeVisible({ timeout: 10_000 });
   });
 
   test("shows a degraded notice when the site itself could not be probed", async ({ page }) => {
@@ -300,7 +300,7 @@ test.describe("audit report", () => {
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
 
     await expect(page.getByRole("heading", { name: "Votre analyse est en préparation." })).toBeVisible({
-      timeout: 6000,
+      timeout: 10_000,
     });
     expect(leadPostData).toBeTruthy();
     const payload = JSON.parse(leadPostData!);

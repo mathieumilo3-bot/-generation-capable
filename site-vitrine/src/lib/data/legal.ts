@@ -56,6 +56,12 @@ export const SUBPROCESSORS = [
     pays: "États-Unis",
     site: "https://calendly.com/legal",
   },
+  {
+    nom: "OpenAI",
+    role: "Synthèse facultative du diagnostic Capable Audit à partir de signaux publics du site, du secteur déclaré et de l'objectif. Les coordonnées du formulaire (nom, email, téléphone) ne sont pas envoyées à ce service.",
+    pays: "États-Unis",
+    site: "https://openai.com/policies/privacy-policy/",
+  },
 ];
 
 const REQUIRED: (keyof LegalEntity)[] = [
