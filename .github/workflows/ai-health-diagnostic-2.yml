@@ -17,3 +17,5 @@ jobs:
           set -e
           body="$(curl -sS --max-time 30 -w '\nHTTP_STATUS:%{http_code}\n' https://generation-capable-vitrine.netlify.app/api/audit/ai-health)"
           echo "$body"
+
+# verify after project header deploy
