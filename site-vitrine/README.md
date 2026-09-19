@@ -182,3 +182,4 @@ déploiement (Netlify, Vercel, …) avant mise en production.
 
 
 <!-- GC Revenue deployment trigger: GTM configuration -->
+<!-- Capable Audit deployment trigger: OpenAI synthesis -->
