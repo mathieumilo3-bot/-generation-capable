@@ -1,0 +1,89 @@
+"use client";
+
+import { useEffect, useSyncExternalStore } from "react";
+import Link from "next/link";
+
+const CONSENT_KEY = "gc-revenue-consent-v1";
+
+type Choice = "accepted" | "refused";
+
+function updateConsent(choice: Choice) {
+  const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag;
+  gtag?.("consent", "update", {
+    ad_storage: choice === "accepted" ? "granted" : "denied",
+    ad_user_data: choice === "accepted" ? "granted" : "denied",
+    ad_personalization: choice === "accepted" ? "granted" : "denied",
+    analytics_storage: choice === "accepted" ? "granted" : "denied",
+  });
+  window.localStorage.setItem(CONSENT_KEY, choice);
+}
+
+export function ConsentBanner() {
+  const visible = useSyncExternalStore(
+    (onStoreChange) => {
+      const open = () => onStoreChange();
+      const storage = () => onStoreChange();
+      window.addEventListener("gc:open-consent", open);
+      window.addEventListener("storage", storage);
+      return () => {
+        window.removeEventListener("gc:open-consent", open);
+        window.removeEventListener("storage", storage);
+      };
+    },
+    () => window.localStorage.getItem(CONSENT_KEY) === null,
+    () => false,
+  );
+
+  useEffect(() => {
+    const open = () => window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
+    window.addEventListener("gc:open-consent", open);
+    return () => window.removeEventListener("gc:open-consent", open);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <aside
+      role="dialog"
+      aria-label="Préférences de confidentialité"
+      className="fixed inset-x-4 bottom-4 z-[70] mx-auto max-w-3xl rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-5 shadow-2xl sm:inset-x-auto sm:right-6 sm:bottom-6 sm:left-auto"
+    >
+      <p className="font-display text-base font-semibold text-[var(--color-text)]">
+        Votre confidentialité compte.
+      </p>
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">
+        Nous utilisons des technologies de mesure d&apos;audience et, si vous
+        l&apos;acceptez, de publicité pour comprendre les performances du site.
+        Vous pouvez accepter ou refuser. Votre choix peut être modifié ultérieurement via « Gérer mes cookies » dans le pied de page.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <button
+          type="button"
+          onClick={() => {
+            updateConsent("accepted");
+            window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
+          }}
+          className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-text)] px-5 text-sm font-medium text-[var(--color-bg)] transition-colors hover:bg-[var(--color-accent)]"
+        >
+          Accepter
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            updateConsent("refused");
+            window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
+          }}
+          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border-strong)] px-5 text-sm font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-accent)]"
+        >
+          Refuser
+        </button>
+        <Link
+          href="/politique-de-confidentialite"
+          className="inline-flex min-h-11 items-center justify-center px-3 text-sm text-[var(--color-muted)] underline-offset-4 hover:text-[var(--color-text)] hover:underline"
+        >
+          En savoir plus
+        </Link>
+      </div>
+    </aside>
+  );
+}

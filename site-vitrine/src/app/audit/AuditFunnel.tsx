@@ -220,6 +220,7 @@ export function AuditFunnel() {
 
       track("audit_completed");
       track("form_completed");
+      track("generate_lead", { lead_source: "capable_audit", secteur: data.secteur, objectif: data.objectif });
       setSubmitted(true);
       setSubmitting(false);
 

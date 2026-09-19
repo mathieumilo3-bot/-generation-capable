@@ -138,11 +138,19 @@ export default function PolitiqueConfidentialitePage() {
 
           <Block title="Cookies et mesure d'audience">
             <p>
-              Le site ne dépose aucun cookie publicitaire et ne charge aucun
-              traceur tiers par défaut. Si une mesure d&apos;audience est
-              activée, elle est configurée sans cookie de suivi
-              publicitaire ; toute évolution de ce point sera reflétée sur
-              cette page avant sa mise en œuvre.
+              Le site utilise Google Tag Manager pour piloter les outils de
+              mesure et, le cas échéant, de publicité. Avant votre choix, les
+              stockages de mesure et de publicité sont refusés par défaut.
+              Un bandeau vous permet d&apos;accepter ou de refuser ces
+              technologies.
+            </p>
+            <p>
+              Si vous acceptez, les catégories de stockage liées à
+              l&apos;analyse et à la publicité peuvent être activées par les
+              balises configurées dans Google Tag Manager. Si vous refusez,
+              elles restent refusées. Votre choix est conservé localement sur
+              votre appareil afin de ne pas vous redemander votre préférence
+              à chaque visite.
             </p>
           </Block>
 

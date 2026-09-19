@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FOOTER_LINKS, LEGAL_LINKS, SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
+import { CookieSettingsButton } from "@/components/layout/CookieSettingsButton";
 
 export function Footer() {
   return (
@@ -34,6 +35,7 @@ export function Footer() {
                 {link.label}
               </Link>
             ))}
+            <CookieSettingsButton />
           </div>
         </div>
       </div>

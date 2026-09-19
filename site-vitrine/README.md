@@ -176,3 +176,6 @@ déploiement (Netlify, Vercel, …) avant mise en production.
   sous forme d'email. Si l'envoi échoue, le visiteur voit une erreur et peut
   réessayer, mais rien n'est conservé côté serveur. Brancher un CRM ou une
   table Supabase rendrait la capture durable.
+
+
+<!-- GC Revenue deployment trigger: GTM configuration -->
