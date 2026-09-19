@@ -1,6 +1,7 @@
 name: AI audit production health diagnostic 2
 # recheck after key replacement
 # third production verification
+# verification after canonical OPENAI_API_KEY and production redeploy
 
 on:
   push:
