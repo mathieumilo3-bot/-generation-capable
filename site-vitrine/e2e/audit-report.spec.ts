@@ -135,8 +135,8 @@ test.describe("audit report", () => {
       page.getByRole("heading", { name: "La page n'est pas configurée pour un affichage mobile correct" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Écart important entre la confiance exigée" })).toBeVisible();
-    await expect(page.getByText("Ce qui fonctionne")).toBeVisible();
-    await expect(page.getByText("Ce que nous changerions")).toBeVisible();
+    await expect(page.getByText("Ce qui fonctionne", { exact: true })).toBeVisible();
+    await expect(page.getByText("Ce que nous changerions", { exact: true })).toBeVisible();
   });
 
   test("labels each finding's reliability rather than presenting it as flat fact", async ({ page }) => {
