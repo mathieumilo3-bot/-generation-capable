@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { track } from "@/lib/tracking";
 import { DIMENSION_LABELS } from "@/lib/audit-engine/types";
+import { buildCalendlyUrl } from "@/lib/booking";
 import type { Confidence, Finding, Report } from "@/lib/audit-engine/types";
 
 const CONFIDENCE_LABEL: Record<Confidence, string> = {
@@ -86,8 +87,14 @@ function FindingCard({ finding, rank }: { finding: Finding; rank?: number }) {
   );
 }
 
-export function AuditReport({ report }: { report: Report }) {
+type AuditReportProps = {
+  report: Report;
+  lead?: { nom?: string; email?: string };
+};
+
+export function AuditReport({ report, lead }: AuditReportProps) {
   const viewedTracked = useRef(false);
+  const bookingUrl = buildCalendlyUrl(lead);
 
   useEffect(() => {
     if (viewedTracked.current) return;
@@ -98,17 +105,6 @@ export function AuditReport({ report }: { report: Report }) {
       leak_count: report.topLeaks.length,
     });
   }, [report.degraded, report.header.sectorProfile, report.topLeaks.length]);
-
-  async function handleShare() {
-    track("audit_report_share_clicked");
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-    } catch {
-      // Clipboard access can be denied by the browser — the click is still
-      // tracked, and there is nothing useful to show the visitor beyond
-      // that failing silently rather than throwing an unhandled error.
-    }
-  }
 
   return (
     <motion.div
@@ -142,6 +138,25 @@ export function AuditReport({ report }: { report: Report }) {
           </span>
         )}
       </div>
+
+      {report.topLeaks.length > 0 && (
+        <div className="mt-8 rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-accent)]">
+              Synthèse prioritaire
+            </p>
+            <span className="rounded-full border border-[var(--color-accent)]/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
+              {report.topLeaks.length} priorité{report.topLeaks.length > 1 ? "s" : ""}
+            </span>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+            Le point à traiter en premier est celui-ci :
+          </p>
+          <p className="mt-2 font-display text-lg font-semibold tracking-tight text-[var(--color-text)]">
+            {report.topLeaks[0].title}
+          </p>
+        </div>
+      )}
 
       {report.degraded && report.degradedReason && (
         <div className="mt-8 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-5 py-4">
@@ -211,22 +226,61 @@ export function AuditReport({ report }: { report: Report }) {
 
       <p className="mt-10 text-xs leading-relaxed text-[var(--color-muted)]">{report.sectorNote}</p>
 
-      <div className="mt-10 flex flex-col items-center gap-4 border-t border-[var(--color-border)] pt-10 sm:flex-row sm:justify-center">
-        <Button href="/#systemes" variant="primary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report" }}>
-          Voir comment nous corrigeons ces points →
-        </Button>
-        <button
-          type="button"
-          onClick={handleShare}
-          className="text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
-        >
-          Copier le lien
-        </button>
+      <div className="mt-12 rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] p-6 sm:p-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
+          Votre priorité maintenant
+        </p>
+        <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+          Transformer ce diagnostic en plan d&apos;action concret.
+        </h3>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+          L&apos;audit montre où se trouvent les principaux points de friction. L&apos;étape suivante consiste à
+          choisir les corrections à traiter en premier, selon votre objectif, puis à définir comment les mettre
+          en place sans refaire inutilement ce qui fonctionne déjà.
+        </p>
+        {report.topLeaks.length > 0 && (
+          <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
+              À traiter en premier
+            </p>
+            <p className="mt-2 text-sm font-medium text-[var(--color-text)]">{report.topLeaks[0].title}</p>
+          </div>
+        )}
       </div>
 
-      <p className="mt-8 text-center text-xs leading-relaxed text-[var(--color-muted)]">
-        Nous revenons vers vous par email avec le détail de ce diagnostic et les prochaines étapes.
-      </p>
+      <div id="prochaine-etape" className="mt-8 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 text-center sm:p-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
+          Prochaine étape
+        </p>
+        <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+          Échangeons sur les priorités de votre entreprise.
+        </h3>
+        <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
+          Nous avons déjà votre audit. Vous n&apos;aurez pas à tout réexpliquer : nous partons de ce diagnostic
+          pour voir ce qui mérite réellement d&apos;être corrigé et si GC peut vous accompagner.
+        </p>
+        <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <Button
+            href={bookingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="primary"
+            trackEvent="booking_started"
+            trackPayload={{ location: "audit_report", source: "capable_audit" }}
+            onClick={() =>
+              track("audit_cta_clicked", { location: "audit_report", intent: "book_strategy_call" })
+            }
+          >
+            Choisir mon créneau →
+          </Button>
+          <Button href="/#systemes" variant="secondary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report", intent: "learn_more" }}>
+            Voir la méthode GC
+          </Button>
+        </div>
+        <p className="mt-4 text-xs text-[var(--color-muted)]">
+          Sans engagement · Diagnostic déjà préparé · Vous choisissez directement votre créneau
+        </p>
+      </div>
     </motion.div>
   );
 }

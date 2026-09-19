@@ -135,8 +135,8 @@ test.describe("audit report", () => {
       page.getByRole("heading", { name: "La page n'est pas configurée pour un affichage mobile correct" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Écart important entre la confiance exigée" })).toBeVisible();
-    await expect(page.getByText("Ce qui fonctionne")).toBeVisible();
-    await expect(page.getByText("Ce que nous changerions")).toBeVisible();
+    await expect(page.getByText("Ce qui fonctionne", { exact: true })).toBeVisible();
+    await expect(page.getByText("Ce que nous changerions", { exact: true })).toBeVisible();
   });
 
   test("labels each finding's reliability rather than presenting it as flat fact", async ({ page }) => {
@@ -174,26 +174,29 @@ test.describe("audit report", () => {
     await expect(page.getByText("Analyse partielle.")).toBeVisible();
   });
 
-  test("the report CTA is tracked and the share button copies the link", async ({ page, context }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  test("turns the report into a prefilled Calendly booking path and tracks intent", async ({ page }) => {
     await mockAnalyze(page);
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
     await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Copier le lien" }).click();
-    const fired = await page.evaluate(() => (window.dataLayer ?? []).map((e) => e.event));
-    expect(fired).toContain("audit_report_share_clicked");
+    await expect(page.getByText("Synthèse prioritaire")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Transformer ce diagnostic en plan d'action concret/ })).toBeVisible();
 
-    // The CTA is a real cross-page link (navigates from /audit to /#systemes):
-    // asserting its own tracked click after that navigation would be
-    // checking a dataLayer the new document never inherited, so — same
-    // convention as the hero CTA test in homepage.spec.ts — this checks
-    // where it points rather than racing the navigation it causes.
-    await expect(page.getByRole("link", { name: /Voir comment nous corrigeons ces points/ })).toHaveAttribute(
-      "href",
-      "/#systemes"
-    );
+    const booking = page.getByRole("link", { name: /Choisir mon créneau/ });
+    const href = await booking.getAttribute("href");
+    expect(href).toContain("calendly.com/ledorvenenzo50/consultation-strategique-acquisition-developpement");
+    expect(href).toContain("name=Marie+Dupont");
+    expect(href).toContain("email=marie%40exemple.fr");
+    expect(href).toContain("utm_source=capable_audit");
+
+    await booking.evaluate((node) => node.addEventListener("click", (event) => event.preventDefault(), { once: true }));
+    await booking.click();
+    const fired = await page.evaluate(() => (window.dataLayer ?? []).map((e) => e.event));
+    expect(fired).toContain("booking_started");
+    expect(fired).toContain("audit_cta_clicked");
+
+    await expect(page.getByRole("link", { name: /Voir la méthode GC/ })).toHaveAttribute("href", "/#systemes");
   });
 
   test("tracks the full analysis lifecycle in the dataLayer", async ({ page }) => {
