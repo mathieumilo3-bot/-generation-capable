@@ -6,33 +6,33 @@ import { Reveal } from "@/components/ui/Reveal";
  * reconstruction, not a real client's site — labelled as such on screen.
  */
 const BEFORE = [
-  "Sept prestations listées avant le moindre bénéfice client",
-  "Coordonnées reléguées en pied de page",
-  "Trois boutons concurrents dans le premier écran",
+  "7 prestations listées avant le bénéfice client",
+  "3 boutons concurrents dans le premier écran",
+  "La preuve et le contact arrivent trop tard",
 ];
 
 const AFTER = [
-  "Une phrase qui nomme le problème du visiteur",
-  "Une seule action, visible sans défiler",
-  "La preuve du sérieux placée avant la demande de contact",
+  "1 promesse principale comprise immédiatement",
+  "1 action dominante visible sans défiler",
+  "La preuve du sérieux arrive avant la demande de contact",
 ];
 
 const CHANGES = [
   {
-    title: "Clarifier l'offre",
-    body: "Une proposition comprise en une lecture, pas après trois paragraphes.",
+    title: "7 messages → 1 promesse",
+    body: "Impact recherché : le visiteur comprend plus vite pourquoi l'offre le concerne.",
   },
   {
-    title: "Réduire les frictions",
-    body: "Chaque étape retirée du parcours est une opportunité conservée.",
+    title: "3 choix → 1 action",
+    body: "Impact recherché : diminuer l'hésitation au moment où le prospect doit avancer.",
   },
   {
-    title: "Renforcer la confiance",
-    body: "Ce qui rassure doit arriver avant ce qui engage.",
+    title: "Preuves tardives → preuves avant le CTA",
+    body: "Impact recherché : rassurer avant de demander un effort ou des coordonnées.",
   },
   {
-    title: "Construire un parcours vers l'action",
-    body: "Le visiteur sait toujours quelle est l'étape suivante.",
+    title: "Parcours diffus → prochaine étape évidente",
+    body: "Impact recherché : rendre la demande de contact plus naturelle et plus directe.",
   },
 ];
 
@@ -122,7 +122,7 @@ export function Recommendation() {
 
       <Reveal delay={0.18}>
         <h3 className="font-display mt-16 text-xl font-semibold text-[var(--color-text)]">
-          Ce que nous changerions
+          Ce que ce changement doit provoquer
         </h3>
         <ol className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">
           {CHANGES.map((change, index) => (
