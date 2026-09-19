@@ -305,4 +305,28 @@ describe("buildConfirmationEmail", () => {
     expect(html).not.toContain("<b>Marie</b>");
     expect(html).not.toContain("<img");
   });
+
+  it("uses a truthful pending message when the diagnostic digest is not ready yet", () => {
+    const email = buildConfirmationEmail(submission);
+    expect(email.subject).toBe("Votre demande d'audit a bien été reçue");
+    expect(email.text).toContain("Nous préparons votre diagnostic");
+    expect(email.text).toContain("calendly.com/ledorvenenzo50/consultation-strategique-acquisition-developpement");
+  });
+
+  it("turns a ready diagnostic into a prioritized booking email", () => {
+    const summary = {
+      degraded: false,
+      topLeaks: [
+        { title: "CTA principal trop discret", dimension: "Conversion" },
+        { title: "Preuves sociales insuffisantes", dimension: "Confiance" },
+      ],
+      otherFindingsCount: 1,
+    };
+    const email = buildConfirmationEmail(submission, summary);
+    expect(email.subject).toBe("Votre diagnostic Génération Capable est prêt");
+    expect(email.text).toContain("CTA principal trop discret");
+    expect(email.text).toContain("Preuves sociales insuffisantes");
+    expect(email.html).toContain("Choisir mon créneau");
+    expect(email.html).toContain("email=marie%40exemple.fr");
+  });
 });
