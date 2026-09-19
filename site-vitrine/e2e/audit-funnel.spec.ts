@@ -26,13 +26,20 @@ test.describe("Capable Audit funnel", () => {
         body: JSON.stringify({ status: "received", emailed: true }),
       })
     );
+    // The diagnostic engine is covered on its own in audit-report.spec and
+    // audit-analyze-api.spec. Aborted here so these funnel-behaviour tests
+    // fall back to the plain confirmation message immediately instead of
+    // waiting out the real analysis (or a real, unmocked network call).
+    await page.route("**/api/audit/analyze", (route) => route.abort());
     await page.goto("/audit");
   });
 
   test("walks through all four steps and confirms", async ({ page }) => {
     const requests: string[] = [];
     page.on("request", (req) => {
-      if (req.url().includes("/api/audit")) requests.push(req.postData() ?? "");
+      // Exact match: "/api/audit" is also a prefix of "/api/audit/analyze",
+      // whose own (aborted, per beforeEach) request must not count here.
+      if (req.url().endsWith("/api/audit")) requests.push(req.postData() ?? "");
     });
 
     await completeToStepFour(page);
@@ -64,7 +71,10 @@ test.describe("Capable Audit funnel", () => {
     // node, firing a submit with empty fields on the way to step 4.
     const requests: string[] = [];
     page.on("request", (req) => {
-      if (req.url().includes("/api/audit")) requests.push(req.url());
+      // Exact match — see the identical comment above. The step 3→4
+      // transition legitimately calls /api/audit/analyze in the background;
+      // this test is only about the lead-capture endpoint staying silent.
+      if (req.url().endsWith("/api/audit")) requests.push(req.url());
     });
 
     await completeToStepFour(page);
@@ -75,7 +85,7 @@ test.describe("Capable Audit funnel", () => {
     // Regression: a single-field form submits implicitly on Enter.
     const requests: string[] = [];
     page.on("request", (req) => {
-      if (req.url().includes("/api/audit")) requests.push(req.url());
+      if (req.url().endsWith("/api/audit")) requests.push(req.url());
     });
 
     await fillStepOne(page);
@@ -88,7 +98,10 @@ test.describe("Capable Audit funnel", () => {
   test("asks what \"Autre\" means and sends it with the answer", async ({ page }) => {
     const requests: string[] = [];
     page.on("request", (req) => {
-      if (req.url().includes("/api/audit")) requests.push(req.postData() ?? "");
+      // Exact match — the step 3→4 transition also calls
+      // /api/audit/analyze in the background with the same field names,
+      // which would otherwise land in requests[0] and mask a real bug here.
+      if (req.url().endsWith("/api/audit")) requests.push(req.postData() ?? "");
     });
 
     await fillStepOne(page);

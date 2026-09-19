@@ -6,6 +6,18 @@ import { Button } from "@/components/ui/Button";
 import { SECTORS } from "@/lib/data/sectors";
 import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
 import { track, type TrackingEvent } from "@/lib/tracking";
+import { AuditReport } from "@/components/audit/AuditReport";
+import type { Report } from "@/lib/audit-engine/types";
+
+/**
+ * How long the confirmation screen will wait, once the lead is captured, for
+ * the diagnostic engine to finish — it usually already has by then (the
+ * engine runs in the background from the moment the visitor leaves step 3,
+ * while they type their coordonnées). If it hasn't landed within this
+ * window, the visitor sees the plain confirmation instead: never blocked on
+ * the diagnostic, whatever happens to it.
+ */
+const REPORT_WAIT_MS = 3_000;
 
 type FormState = {
   siteUrl: string;
@@ -48,7 +60,9 @@ export function AuditFunnel() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<FormState>(EMPTY_STATE);
   const [submitting, setSubmitting] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [finalReport, setFinalReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
   // "Autre" on its own tells the business nothing, so it asks for a précision.
@@ -56,6 +70,8 @@ export function AuditFunnel() {
   const [objectifAutre, setObjectifAutre] = useState("");
   const started = useRef(false);
   const engaged = useRef(false);
+  const analysisStarted = useRef(false);
+  const analysisPromise = useRef<Promise<Report | null> | null>(null);
 
   useEffect(() => {
     if (!started.current) {
@@ -112,11 +128,57 @@ export function AuditFunnel() {
     return value === OTHER_OPTION ? `${OTHER_OPTION} — ${precision.trim()}` : value;
   }
 
+  /**
+   * Kicks off the real diagnostic as soon as we have everything it needs —
+   * site, secteur and objectif — rather than waiting for the coordonnées.
+   * It runs in the background while the visitor types their name and email,
+   * so by the time they submit, the analysis has usually already landed.
+   * Never awaited here: a slow or failing analysis must never hold up the
+   * wizard itself.
+   */
+  function triggerAnalysis() {
+    if (analysisStarted.current) return;
+    analysisStarted.current = true;
+    track("audit_analysis_started");
+
+    const promise = fetch("/api/audit/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        siteUrl: data.siteUrl,
+        secteur: withPrecision(data.secteur, secteurAutre),
+        objectif: withPrecision(data.objectif, objectifAutre),
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const body = (await res.json()) as { report?: Report };
+        return body.report ?? null;
+      })
+      .catch(() => null)
+      .then((report) => {
+        if (report) track("audit_analysis_completed");
+        return report;
+      });
+
+    analysisPromise.current = promise;
+  }
+
+  /** Waits briefly for the background analysis, never longer than REPORT_WAIT_MS. */
+  async function resolveReport(): Promise<Report | null> {
+    if (!analysisPromise.current) return null;
+    return Promise.race([
+      analysisPromise.current,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), REPORT_WAIT_MS)),
+    ]);
+  }
+
   function goNext() {
     if (!canAdvance()) return;
     const next = Math.min(step + 1, TOTAL_STEPS);
     setStep(next);
     track(`audit_step_${next}` as TrackingEvent);
+    if (next === 4) triggerAnalysis();
   }
 
   function goBack() {
@@ -159,6 +221,15 @@ export function AuditFunnel() {
       track("audit_completed");
       track("form_completed");
       setSubmitted(true);
+      setSubmitting(false);
+
+      // The lead is captured — everything past this point is best-effort
+      // polish on top of a submission that has already succeeded.
+      setFinalizing(true);
+      const report = await resolveReport();
+      setFinalReport(report);
+      setFinalizing(false);
+      return;
     } catch {
       setError(
         "Votre demande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez."
@@ -169,6 +240,10 @@ export function AuditFunnel() {
   }
 
   if (submitted) {
+    if (finalReport) {
+      return <AuditReport report={finalReport} />;
+    }
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -180,7 +255,7 @@ export function AuditFunnel() {
           <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
         </span>
         <h2 className="font-display mt-8 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Votre analyse est en préparation.
+          {finalizing ? "Finalisation de votre diagnostic…" : "Votre analyse est en préparation."}
         </h2>
         <p className="mt-5 text-[15px] leading-relaxed text-[var(--color-muted)]">
           Nous revenons vers vous par email avec les opportunités prioritaires

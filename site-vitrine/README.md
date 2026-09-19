@@ -40,21 +40,21 @@ Les tests tournent aussi automatiquement en CI sur chaque PR touchant
 ## Architecture
 
 - `src/app` — routes (App Router) : accueil, `/audit` (tunnel de
-  qualification), `/secteurs[/[secteur]]`, `/cas-clients[/[client]]`,
+  qualification), `/secteurs[/[secteur]]`, `/applications`,
   `/ressources[/[article]]`, pages piliers SEO (`/agence-web`,
   `/creation-site-internet`, `/acquisition`, `/seo`), pages légales,
   `sitemap.ts`, `robots.ts`, `opengraph-image.tsx`.
-- `src/components/sections` — sections de la page d'accueil (Hero, Problem,
-  System Architecture, Capable Audit, Method, Systems, Teardowns, previews).
-- `src/components/ui` — design system (Button, Badge, Card, Section, Reveal,
-  AuditScore, Metric).
-- `src/components/cards` — cartes de contenu (System, Sector, Article).
+- `src/components/sections` — sections de la page d'accueil (Hero,
+  ValueStrip, InstantCheck, Recommendation, SystemDemo, SystemArchitecture,
+  Method, Systems, Applications, Objections, FAQ, FinalCTA).
+- `src/components/audit` — `AuditReport.tsx`, l'affichage du diagnostic réel
+  produit par le moteur d'audit (voir plus bas) à l'issue du tunnel.
+- `src/components/ui` — design system (Button, Badge, Card, Section, Reveal).
 - `src/components/schema` — JSON-LD (Organization, WebSite, Service, Article,
   Breadcrumb).
-- `src/lib/data` — contenu structuré (secteurs, systèmes, articles, cas
-  clients, teardowns). `case-studies.ts` reste vide tant qu'aucun cas réel
-  n'existe — voir le commentaire dans le fichier : aucun client, résultat ou
-  témoignage n'est jamais inventé.
+- `src/lib/data` — contenu structuré (secteurs, systèmes, articles,
+  applications, identité légale). Aucun client, résultat ou témoignage n'est
+  jamais inventé — voir `legal.ts` et les composants qui le consomment.
 - `src/app/api/audit/route.ts` — endpoint de réception du formulaire d'audit.
   Valide la requête puis envoie, via Resend (`generationcapable.fr`, domaine
   déjà vérifié DKIM/SPF), un email de notification au propriétaire du
@@ -64,12 +64,60 @@ Les tests tournent aussi automatiquement en CI sur chaque PR touchant
 - `src/lib/audit-submission.ts` — validation et gabarits d'emails, isolés du
   handler pour être testables sans réseau (typage strict des champs, limites
   de longueur, échappement HTML, nettoyage du sujet, honeypot anti-bot).
-- `src/lib/rate-limit.ts` — limitation de débit par IP (5 envois / 10 min).
-  Empêche que le formulaire serve de relais pour envoyer des emails à des
-  adresses arbitraires depuis le domaine vérifié.
-- `src/lib/tracking.ts` — wrapper `dataLayer` no-op pour les événements
-  (`audit_started`, `form_started`, `audit_completed`, `cta_clicked`, …), en
-  attendant le branchement d'un outil d'analytics.
+- `src/lib/audit-engine/` — le moteur de diagnostic business (« Capable
+  Audit V1 »). Voir la section dédiée ci-dessous.
+- `src/app/api/audit/analyze/route.ts` — endpoint qui exécute ce moteur.
+  Séparé de `/api/audit` : il ne capture aucun lead et n'envoie aucun email,
+  donc une analyse lente ou en échec ne retarde ni ne casse jamais la
+  capture du lead.
+- `src/lib/rate-limit.ts` — limitation de débit par IP, un compteur distinct
+  par endpoint (`/api/audit` : 5 envois / 10 min ; `/api/audit/analyze` :
+  10 analyses / 10 min). Empêche que le formulaire serve de relais pour
+  envoyer des emails à des adresses arbitraires depuis le domaine vérifié,
+  et que l'endpoint d'analyse serve de proxy de requêtes gratuit.
+- `src/lib/tracking.ts` — wrapper `dataLayer` pour les événements
+  (`audit_started`, `form_started`, `audit_analysis_started`,
+  `audit_report_viewed`, `audit_cta_clicked`, `cta_clicked`, …). Poussé dans
+  `window.dataLayer` que Google Tag Manager soit chargé ou non — voir
+  `src/components/Analytics.tsx`.
+
+### Le moteur d'audit (`src/lib/audit-engine/`)
+
+Pipeline : collecte (déclaré + sonde du site) → classification sectorielle
+→ neuf modules d'analyse → priorisation → rapport. Chaque fichier a un rôle
+précis :
+
+- `types.ts` — le contrat central : chaque donnée porte un statut
+  `observed` / `inferred` / `unknown` (jamais un chiffre inventé pour
+  combler une inconnue) et chaque `Finding` porte son impact, la facilité
+  de correction, sa preuve et, si négatif, une recommandation.
+- `sectors.ts` — quinze profils sectoriels + `autre`, chacun avec ses
+  dimensions prioritaires, ses signaux de confiance types et ses limites
+  explicites (des heuristiques, jamais des vérités universelles).
+- `classify.ts` — fait correspondre le secteur déclaré dans le tunnel (les
+  huit boutons de `src/lib/data/sectors.ts`, une taxonomie marketing
+  distincte) à l'un de ces quinze profils.
+- `probe.ts` — récupère la page (5 s de délai maximum, 1,5 Mo max, garde
+  anti-SSRF contre les cibles privées/locales) et en extrait les signaux
+  observables par une analyse HTML légère, sans dépendance de parsing.
+  Ne mesure jamais une donnée privée (trafic, chiffre d'affaires…) ; un
+  site inaccessible dégrade le rapport plutôt que de le faire échouer.
+- `analyzers/` — neuf analyses (positionnement, psychologie, offre,
+  acquisition, parcours, conversion, confiance, preuve sociale, modèle
+  économique), chacune produisant des `Finding[]` à partir des signaux et
+  du profil sectoriel.
+- `leaks.ts` — sélectionne les 3 à 5 fuites prioritaires selon une formule
+  explicite (impact × importance dans le parcours × confiance ×
+  facilité de correction), sans jamais en inventer pour atteindre le
+  plancher.
+- `report.ts` / `engine.ts` — assemblent le rapport final et orchestrent le
+  pipeline. `runAudit()` ne lève jamais d'exception : une sonde en échec
+  dégrade le rapport, elle ne casse jamais la requête.
+
+Testé à trois niveaux : chaque module unitairement (classification,
+extraction HTML, priorisation, génération du rapport, cas sans données,
+secteur inconnu), l'API par ses contrats (`audit-analyze-api.spec.ts`), et
+le tunnel de bout en bout (`audit-report.spec.ts`).
 - `next.config.ts` — en-têtes de sécurité envoyés sur toutes les réponses
   (nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP,
   HSTS) et `no-store` / `noindex` sur `/api/*`.
