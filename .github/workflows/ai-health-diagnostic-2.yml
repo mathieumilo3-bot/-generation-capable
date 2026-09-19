@@ -27,3 +27,5 @@ jobs:
           echo "$response" | jq '{hasReport:(.report != null), hasAi:(.report.aiSynthesis != null), model:.report.aiSynthesis.model, executiveSummary:.report.aiSynthesis.executiveSummary, companySnapshot:.report.aiSynthesis.companySnapshot, opportunityCount:(.report.aiSynthesis.opportunities | length), opportunities:[.report.aiSynthesis.opportunities[]? | {pillar,title,evidence,confidence,impact}]}'
 
 # verify after project header deploy
+
+# verify after 30s AI timeout deploy
