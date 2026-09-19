@@ -1,0 +1,17 @@
+name: AI audit production health diagnostic
+
+on:
+  push:
+    branches:
+      - chore/ai-health-diagnostic
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check production AI health endpoint
+        run: |
+          set -e
+          echo "Checking Capable Audit AI health..."
+          body="$(curl -sS --max-time 30 -w '\nHTTP_STATUS:%{http_code}\n' https://generation-capable-vitrine.netlify.app/api/audit/ai-health)"
+          echo "$body"
