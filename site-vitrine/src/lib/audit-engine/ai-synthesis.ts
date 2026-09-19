@@ -271,6 +271,7 @@ export async function synthesizeAuditWithOpenAI(
   if (!apiKey) return null;
 
   const model = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
+  const projectId = process.env.OPENAI_PROJECT_ID;
   const context = buildAuditContext(input);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
@@ -283,6 +284,7 @@ export async function synthesizeAuditWithOpenAI(
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        ...(projectId ? { "OpenAI-Project": projectId } : {}),
       },
       body: JSON.stringify({
         model,

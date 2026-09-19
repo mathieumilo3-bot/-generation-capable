@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
 const MODEL = process.env.OPENAI_AUDIT_MODEL || "gpt-5.6-sol";
+const PROJECT_ID = process.env.OPENAI_PROJECT_ID;
 
 export async function GET(request: Request) {
   const ip = clientIpFrom(request);
@@ -21,6 +22,7 @@ export async function GET(request: Request) {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        ...(PROJECT_ID ? { "OpenAI-Project": PROJECT_ID } : {}),
       },
       body: JSON.stringify({
         model: MODEL,
@@ -44,6 +46,7 @@ export async function GET(request: Request) {
         ok: response.ok,
         configured: true,
         model: MODEL,
+        projectConfigured: Boolean(PROJECT_ID),
         upstreamStatus: response.status,
         upstreamError,
       },
