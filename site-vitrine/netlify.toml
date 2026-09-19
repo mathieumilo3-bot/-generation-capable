@@ -1,6 +1,10 @@
-# TEMPORARY diagnostic config for PR #26 only — never merge.
-# It proves which directory/config the generation-capable-vitrine Netlify
-# project actually uses before restoring the real Next.js build.
+# Netlify config for generation-capable-vitrine.
+# The Netlify project is currently building from the repository root, so paths
+# are explicit instead of relying on a project-side base-directory setting.
 [build]
-  command = """node -e "const fs=require('fs'); const d={cwd:process.cwd(),node:process.version,hasPackageJson:fs.existsSync('package.json'),hasNextConfig:fs.existsSync('next.config.ts'),files:fs.readdirSync('.').slice(0,80)}; fs.writeFileSync('deploy-diagnostic.json',JSON.stringify(d)); fs.writeFileSync('index.html','<!doctype html><title>GC vitrine diagnostic</title><pre>'+JSON.stringify(d,null,2).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</pre>');" """
-  publish = "."
+  command = "npm --prefix site-vitrine run build"
+  publish = "site-vitrine/.next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
