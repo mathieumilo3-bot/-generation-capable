@@ -33,12 +33,12 @@ async function collectFiles(dir, prefix = "") {
   for (const entry of entries) {
     if (skipNames.has(entry.name) || skipFiles.has(entry.name)) continue;
     const abs = path.join(dir, entry.name);
-    const rel = prefix ? \`\${prefix}/\${entry.name}\` : entry.name;
+    const rel = prefix ? prefix + "/" + entry.name : entry.name;
 
     if (entry.isDirectory()) {
       files.push(...(await collectFiles(abs, rel)));
     } else if (entry.isFile()) {
-      files.push({ name: rel.replaceAll("\\\\", "/"), data: await fs.readFile(abs) });
+      files.push({ name: rel.split(path.sep).join("/"), data: await fs.readFile(abs) });
     }
   }
   return files;
@@ -151,19 +151,19 @@ if (!files.some((file) => file.name === "netlify.toml")) {
 }
 
 const zip = buildStoredZip(files);
-const boundary = \`----NetlifyFormBoundary\${Date.now().toString(16)}\`;
+const boundary = "----NetlifyFormBoundary" + Date.now().toString(16);
 const opening = Buffer.from(
-  \`--\${boundary}\\r\\n\` +
-    'Content-Disposition: form-data; name="zip"; filename="site-vitrine.zip"\\r\\n' +
-    "Content-Type: application/zip\\r\\n\\r\\n"
+  "--" + boundary + "\r\n" +
+  "Content-Disposition: form-data; name=\"zip\"; filename=\"site-vitrine.zip\"\r\n" +
+  "Content-Type: application/zip\r\n\r\n"
 );
-const closing = Buffer.from(\`\\r\\n--\${boundary}--\\r\\n\`);
+const closing = Buffer.from("\r\n--" + boundary + "--\r\n");
 const body = Buffer.concat([opening, zip, closing]);
 
 const response = await fetch(proxyUrl, {
   method: "POST",
   headers: {
-    "Content-Type": \`multipart/form-data; boundary=\${boundary}\`,
+    "Content-Type": "multipart/form-data; boundary=" + boundary,
     "Content-Length": String(body.length),
     "User-Agent": "netlify-mcp"
   },
@@ -173,7 +173,9 @@ const response = await fetch(proxyUrl, {
 const responseText = await response.text();
 if (!response.ok) {
   throw new Error(
-    \`Target Netlify build request failed: \${response.status} \${response.statusText}: \${responseText.slice(0, 1000)}\`
+    "Target Netlify build request failed: " +
+    response.status + " " + response.statusText + ": " +
+    responseText.slice(0, 1000)
   );
 }
 
@@ -189,11 +191,6 @@ console.log(JSON.stringify({
   target: "generation-capable-vitrine",
   files: files.length,
   zipBytes: zip.length,
-  deployId: deployData?.deploy_id ?? null,
-  buildId: deployData?.id ?? null
+  deployId: deployData && deployData.deploy_id ? deployData.deploy_id : null,
+  buildId: deployData && deployData.id ? deployData.id : null
 }));
-// Retry trigger after target-scoped deployment proxy configuration.
-
-// PR26 target deployment trigger.
-
-// Target env confirmed; execute scoped production deployment.
