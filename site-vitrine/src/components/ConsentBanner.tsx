@@ -7,6 +7,33 @@ const CONSENT_KEY = "gc-revenue-consent-v1";
 
 type Choice = "accepted" | "refused";
 
+/**
+ * Whether the banner is open lives here, not solely inferred from
+ * localStorage. A version that derives visibility purely from
+ * `localStorage.getItem(key) === null` can never be reopened once a choice
+ * exists — exactly the case "Gérer mes cookies" (CookieSettingsButton) needs
+ * to work, and CNIL requires withdrawing consent to be as easy as giving it.
+ */
+let open: boolean | null = null; // null until first read — lazy so this stays SSR-safe.
+const listeners = new Set<() => void>();
+
+function getSnapshot(): boolean {
+  if (open === null) {
+    open = typeof window !== "undefined" && window.localStorage.getItem(CONSENT_KEY) === null;
+  }
+  return open;
+}
+
+function setOpen(next: boolean) {
+  open = next;
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(onStoreChange: () => void) {
+  listeners.add(onStoreChange);
+  return () => listeners.delete(onStoreChange);
+}
+
 function updateConsent(choice: Choice) {
   const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag;
   gtag?.("consent", "update", {
@@ -19,28 +46,20 @@ function updateConsent(choice: Choice) {
 }
 
 export function ConsentBanner() {
-  const visible = useSyncExternalStore(
-    (onStoreChange) => {
-      const open = () => onStoreChange();
-      const storage = () => onStoreChange();
-      window.addEventListener("gc:open-consent", open);
-      window.addEventListener("storage", storage);
-      return () => {
-        window.removeEventListener("gc:open-consent", open);
-        window.removeEventListener("storage", storage);
-      };
-    },
-    () => window.localStorage.getItem(CONSENT_KEY) === null,
-    () => false,
-  );
+  const visible = useSyncExternalStore(subscribe, getSnapshot, () => false);
 
   useEffect(() => {
-    const open = () => window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
-    window.addEventListener("gc:open-consent", open);
-    return () => window.removeEventListener("gc:open-consent", open);
+    const reopen = () => setOpen(true);
+    window.addEventListener("gc:open-consent", reopen);
+    return () => window.removeEventListener("gc:open-consent", reopen);
   }, []);
 
   if (!visible) return null;
+
+  function choose(choice: Choice) {
+    updateConsent(choice);
+    setOpen(false);
+  }
 
   return (
     <aside
@@ -59,20 +78,14 @@ export function ConsentBanner() {
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <button
           type="button"
-          onClick={() => {
-            updateConsent("accepted");
-            window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
-          }}
+          onClick={() => choose("accepted")}
           className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-text)] px-5 text-sm font-medium text-[var(--color-bg)] transition-colors hover:bg-[var(--color-accent)]"
         >
           Accepter
         </button>
         <button
           type="button"
-          onClick={() => {
-            updateConsent("refused");
-            window.dispatchEvent(new StorageEvent("storage", { key: CONSENT_KEY }));
-          }}
+          onClick={() => choose("refused")}
           className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border-strong)] px-5 text-sm font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-accent)]"
         >
           Refuser

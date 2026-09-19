@@ -7,15 +7,17 @@ export const SITE_DESCRIPTION =
 
 export const PRIMARY_CTA_LABEL = "Analyser mon entreprise";
 
+// "Méthode" was removed: the homepage no longer renders a #methode section
+// (Method.tsx is unused — the current narrative folds that explanation into
+// SystemDemo/SystemArchitecture instead), so a nav item pointing at it would
+// silently scroll to nowhere. Never relink it without a real section behind it.
 export const NAV_LINKS = [
-  { label: "Méthode", href: "/#methode" },
   { label: "Systèmes", href: "/#systemes" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Applications", href: "/applications" },
 ] as const;
 
 export const FOOTER_LINKS = [
-  { label: "Méthode", href: "/#methode" },
   { label: "Systèmes", href: "/#systemes" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Applications", href: "/applications" },

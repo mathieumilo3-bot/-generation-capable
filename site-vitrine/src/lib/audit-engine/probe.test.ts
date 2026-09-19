@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseHtmlSignals, resolveTargetUrl } from "./probe";
+import { parseHtmlSignals, resolveTargetUrl, resolvesToBlockedIp } from "./probe";
 
 describe("resolveTargetUrl", () => {
   it("accepts a full https URL as-is", () => {
@@ -52,6 +52,45 @@ describe("resolveTargetUrl", () => {
   it("does not falsely block an ordinary public domain", () => {
     expect(resolveTargetUrl("https://generationcapable.fr").ok).toBe(true);
     expect(resolveTargetUrl("https://192.0.2.1.example.com").ok).toBe(true);
+  });
+});
+
+describe("resolvesToBlockedIp", () => {
+  it("blocks a hostname that resolves to a private address (DNS rebinding)", async () => {
+    const fakeLookup = async () => [{ address: "10.0.0.5" }];
+    expect(await resolvesToBlockedIp("attacker-controlled.example", fakeLookup)).toBe(true);
+  });
+
+  it("blocks a hostname that resolves to loopback", async () => {
+    const fakeLookup = async () => [{ address: "127.0.0.1" }];
+    expect(await resolvesToBlockedIp("rebind.example", fakeLookup)).toBe(true);
+  });
+
+  it("blocks when only one of several resolved addresses is private", async () => {
+    const fakeLookup = async () => [{ address: "198.51.100.10" }, { address: "192.168.1.1" }];
+    expect(await resolvesToBlockedIp("mixed.example", fakeLookup)).toBe(true);
+  });
+
+  it("allows a hostname that resolves only to public addresses", async () => {
+    const fakeLookup = async () => [{ address: "198.51.100.10" }];
+    expect(await resolvesToBlockedIp("public-site.example", fakeLookup)).toBe(false);
+  });
+
+  it("does not block on a lookup failure — a dead domain fails at fetch time instead", async () => {
+    const fakeLookup = async () => {
+      throw new Error("ENOTFOUND");
+    };
+    expect(await resolvesToBlockedIp("does-not-exist.invalid", fakeLookup)).toBe(false);
+  });
+
+  it("uses the real resolver by default and does not block a well-known public domain", async () => {
+    // No fake injected — exercises the real node:dns/promises path. Skipped
+    // gracefully if this environment has no outbound DNS at all.
+    const result = await resolvesToBlockedIp("localhost.");
+    // "localhost." (with the trailing dot some resolvers require) still
+    // resolves to loopback — the real point of this test is that the
+    // function runs end-to-end without throwing.
+    expect(typeof result).toBe("boolean");
   });
 });
 

@@ -1,3 +1,4 @@
+import { lookup as dnsLookup } from "node:dns/promises";
 import { observed, unknown, type SiteSignals, type SocialNetwork } from "./types";
 
 const FETCH_TIMEOUT_MS = 5_000;
@@ -42,6 +43,33 @@ function isBlockedTarget(hostname: string): boolean {
 export type ResolvedTarget =
   | { ok: true; url: URL }
   | { ok: false; reason: "invalid_url" | "blocked_target" };
+
+export type DnsLookupFn = (hostname: string) => Promise<{ address: string }[]>;
+
+/** The real resolver, wrapped so tests can inject a fake one without touching the network. */
+export async function defaultDnsLookup(hostname: string): Promise<{ address: string }[]> {
+  return dnsLookup(hostname, { all: true });
+}
+
+/**
+ * Closes the gap `resolveTargetUrl` cannot: a hostname can look perfectly
+ * public (has a dot, isn't a literal private IP) and still resolve, at
+ * request time, to a loopback or private address — DNS rebinding, or simply
+ * an internal hostname on a private zone. This resolves it once, ahead of
+ * the fetch, and blocks it the same way a literal private IP would be.
+ *
+ * A lookup failure is not a block: a genuinely dead domain should fail with
+ * `network_error` from the fetch itself, not be silently reported as
+ * `blocked_target`.
+ */
+export async function resolvesToBlockedIp(hostname: string, lookupFn: DnsLookupFn = defaultDnsLookup): Promise<boolean> {
+  try {
+    const records = await lookupFn(hostname);
+    return records.some((record) => isBlockedTarget(record.address));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Turns whatever the visitor typed in "Votre site" into a fetchable URL.
@@ -215,6 +243,13 @@ function unreachableSignals(reason: SiteSignals["unreachableReason"]): SiteSigna
 export async function probeSite(rawUrl: string): Promise<SiteSignals> {
   const resolved = resolveTargetUrl(rawUrl);
   if (!resolved.ok) return unreachableSignals(resolved.reason);
+
+  // The hostname passed the literal check in resolveTargetUrl, but that only
+  // catches a private IP typed directly — a hostname resolving to one at
+  // request time (DNS rebinding, an internal zone) slips through it.
+  if (await resolvesToBlockedIp(resolved.url.hostname)) {
+    return unreachableSignals("blocked_target");
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);

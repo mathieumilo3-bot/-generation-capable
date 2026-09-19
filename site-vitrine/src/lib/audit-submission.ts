@@ -107,7 +107,55 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
   return { ok: true, value: candidate };
 }
 
-export function buildNotificationEmail(data: AuditSubmission) {
+/**
+ * A small, display-only digest of the diagnostic engine's report, sent by
+ * the funnel alongside the lead when the background analysis has already
+ * finished by the time of submission (the common case — see AuditFunnel's
+ * `lastReport` ref). Deliberately not the full `Report` type from
+ * audit-engine: this module stays independent of that engine, and the
+ * business only needs a skim-in-the-inbox digest, not the whole object.
+ */
+export type ReportEmailSummary = {
+  degraded: boolean;
+  topLeaks: { title: string; dimension: string }[];
+  otherFindingsCount: number;
+};
+
+const REPORT_SUMMARY_LIMITS = { title: 200, dimension: 60, maxLeaks: 5 };
+
+/**
+ * Defensive, permissive parsing: this is supplementary content for a human
+ * inbox, not the lead itself, so a malformed or missing summary is simply
+ * dropped (returns null) rather than failing the submission.
+ */
+export function parseReportEmailSummary(raw: unknown): ReportEmailSummary | null {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+  const source = raw as Record<string, unknown>;
+
+  if (typeof source.degraded !== "boolean") return null;
+  if (!Array.isArray(source.topLeaks)) return null;
+
+  const topLeaks: { title: string; dimension: string }[] = [];
+  for (const entry of source.topLeaks.slice(0, REPORT_SUMMARY_LIMITS.maxLeaks)) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const title = typeof (entry as Record<string, unknown>).title === "string"
+      ? ((entry as Record<string, unknown>).title as string).trim().slice(0, REPORT_SUMMARY_LIMITS.title)
+      : "";
+    const dimension = typeof (entry as Record<string, unknown>).dimension === "string"
+      ? ((entry as Record<string, unknown>).dimension as string).trim().slice(0, REPORT_SUMMARY_LIMITS.dimension)
+      : "";
+    if (title) topLeaks.push({ title, dimension });
+  }
+
+  const otherFindingsCount =
+    typeof source.otherFindingsCount === "number" && Number.isFinite(source.otherFindingsCount)
+      ? Math.max(0, Math.min(999, Math.round(source.otherFindingsCount)))
+      : 0;
+
+  return { degraded: source.degraded, topLeaks, otherFindingsCount };
+}
+
+export function buildNotificationEmail(data: AuditSubmission, reportSummary?: ReportEmailSummary | null) {
   const rows: [string, string][] = [
     ["Site", data.siteUrl],
     ["Secteur", data.secteur],
@@ -122,7 +170,45 @@ export function buildNotificationEmail(data: AuditSubmission) {
     `Nouvelle demande d'audit — ${data.entreprise || data.nom || data.email}`
   );
 
-  const text = rows.map(([label, value]) => `${label} : ${value}`).join("\n");
+  const summaryLines =
+    reportSummary && reportSummary.topLeaks.length > 0
+      ? [
+          "",
+          reportSummary.degraded
+            ? "Diagnostic Capable Audit (analyse partielle — site non joignable) :"
+            : "Diagnostic Capable Audit — principales fuites détectées :",
+          ...reportSummary.topLeaks.map((leak, i) => `${i + 1}. ${leak.title}${leak.dimension ? ` (${leak.dimension})` : ""}`),
+          reportSummary.otherFindingsCount > 0
+            ? `+ ${reportSummary.otherFindingsCount} autre(s) observation(s) non retenue(s) dans le résumé.`
+            : "",
+        ].filter(Boolean)
+      : [];
+
+  const text = [...rows.map(([label, value]) => `${label} : ${value}`), ...summaryLines].join("\n");
+
+  const summaryHtml =
+    reportSummary && reportSummary.topLeaks.length > 0
+      ? `<div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #ddd;">
+    <p style="margin: 0 0 8px; font-weight: 600;">${
+      reportSummary.degraded
+        ? "Diagnostic Capable Audit (analyse partielle — site non joignable)"
+        : "Diagnostic Capable Audit — principales fuites détectées"
+    }</p>
+    <ol style="margin: 0; padding-left: 20px;">
+      ${reportSummary.topLeaks
+        .map(
+          (leak) =>
+            `<li>${escapeHtml(leak.title)}${leak.dimension ? ` <span style="color:#666;">(${escapeHtml(leak.dimension)})</span>` : ""}</li>`
+        )
+        .join("")}
+    </ol>
+    ${
+      reportSummary.otherFindingsCount > 0
+        ? `<p style="margin: 8px 0 0; color: #666; font-size: 13px;">+ ${reportSummary.otherFindingsCount} autre(s) observation(s) non retenue(s) dans le résumé.</p>`
+        : ""
+    }
+  </div>`
+      : "";
 
   const html = `<div style="font-family: sans-serif; color: #111;">
   <h2 style="margin-bottom: 16px;">Nouvelle demande Capable Audit</h2>
@@ -134,6 +220,7 @@ export function buildNotificationEmail(data: AuditSubmission) {
       )
       .join("")}
   </table>
+  ${summaryHtml}
 </div>`;
 
   return { subject, text, html };

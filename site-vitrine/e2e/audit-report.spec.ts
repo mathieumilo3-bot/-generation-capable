@@ -232,4 +232,54 @@ test.describe("audit report", () => {
     expect(bodyText).not.toMatch(/taux de conversion de \d/i);
     expect(bodyText).not.toMatch(/chiffre d'affaires/i);
   });
+
+  test("attaches a report digest to the lead submission once the analysis has landed", async ({ page }) => {
+    let leadPostData: string | null = null;
+    await page.route("**/api/audit", (route) => {
+      leadPostData = route.request().postData();
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "received", emailed: true }) });
+    });
+    await mockAnalyze(page);
+    await completeFunnel(page);
+
+    // Give the background analysis (mocked, instant) time to resolve into
+    // lastReport before the visitor submits — the same real-world sequence
+    // the funnel relies on (analysis starts at step 3→4, well before submit).
+    await page.waitForTimeout(300);
+    await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
+    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+
+    expect(leadPostData).toBeTruthy();
+    const payload = JSON.parse(leadPostData!);
+    expect(payload.reportSummary).toBeTruthy();
+    expect(payload.reportSummary.degraded).toBe(false);
+    expect(payload.reportSummary.topLeaks).toHaveLength(3);
+    expect(payload.reportSummary.topLeaks[0]).toMatchObject({
+      title: "La page n'est pas configurée pour un affichage mobile correct",
+      dimension: "Conversion",
+    });
+    // No PII leaks into the summary sent for the digest — only titles/dimensions.
+    expect(JSON.stringify(payload.reportSummary)).not.toMatch(/marie@exemple\.fr/);
+  });
+
+  test("submits the lead normally, without a reportSummary, when the analysis has not resolved yet", async ({ page }) => {
+    let leadPostData: string | null = null;
+    await page.route("**/api/audit", (route) => {
+      leadPostData = route.request().postData();
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "received", emailed: true }) });
+    });
+    // Analysis never resolves within the test — the lead must still go through.
+    await page.route("**/api/audit/analyze", () => {
+      /* left hanging on purpose */
+    });
+    await completeFunnel(page);
+    await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
+
+    await expect(page.getByRole("heading", { name: "Votre analyse est en préparation." })).toBeVisible({
+      timeout: 6000,
+    });
+    expect(leadPostData).toBeTruthy();
+    const payload = JSON.parse(leadPostData!);
+    expect(payload.reportSummary).toBeUndefined();
+  });
 });

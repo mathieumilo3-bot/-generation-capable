@@ -237,3 +237,57 @@ test.describe("responsive", () => {
     });
   }
 });
+
+test.describe("consent banner", () => {
+  test("shows on first visit and offers accept/refuse", async ({ page }) => {
+    await page.goto("/");
+    const banner = page.getByRole("dialog", { name: "Préférences de confidentialité" });
+    await expect(banner).toBeVisible();
+    await expect(banner.getByRole("button", { name: "Accepter" })).toBeVisible();
+    await expect(banner.getByRole("button", { name: "Refuser" })).toBeVisible();
+  });
+
+  test("a choice dismisses the banner and persists across a reload", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Accepter" }).click();
+    await expect(page.getByRole("dialog", { name: "Préférences de confidentialité" })).toBeHidden();
+
+    await page.reload();
+    await expect(page.getByRole("dialog", { name: "Préférences de confidentialité" })).toBeHidden();
+    expect(await page.evaluate(() => localStorage.getItem("gc-revenue-consent-v1"))).toBe("accepted");
+  });
+
+  test("refusing is recorded distinctly from accepting", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Refuser" }).click();
+    expect(await page.evaluate(() => localStorage.getItem("gc-revenue-consent-v1"))).toBe("refused");
+  });
+
+  test("\"Gérer mes cookies\" in the footer reopens the banner after a choice was already made", async ({ page }) => {
+    // Regression: the banner used to derive its visibility solely from
+    // "no stored choice yet", which meant it could never be reopened once a
+    // choice existed — CNIL requires withdrawing consent to be as easy as
+    // giving it, and this control is exactly that path.
+    await page.goto("/");
+    await page.getByRole("button", { name: "Accepter" }).click();
+    await expect(page.getByRole("dialog", { name: "Préférences de confidentialité" })).toBeHidden();
+
+    await page.getByRole("button", { name: "Gérer mes cookies" }).scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: "Gérer mes cookies" }).click();
+    await expect(page.getByRole("dialog", { name: "Préférences de confidentialité" })).toBeVisible();
+
+    // And the reopened banner's own choice still works, changing the stored value.
+    await page.getByRole("dialog", { name: "Préférences de confidentialité" }).getByRole("button", { name: "Refuser" }).click();
+    await expect(page.getByRole("dialog", { name: "Préférences de confidentialité" })).toBeHidden();
+    expect(await page.evaluate(() => localStorage.getItem("gc-revenue-consent-v1"))).toBe("refused");
+  });
+
+  test("does not block interaction with the rest of the page", async ({ page }) => {
+    await page.goto("/");
+    // The primary CTA sits away from the banner's corner position — confirms
+    // the dialog doesn't cover the page with an interaction-blocking overlay.
+    await expect(
+      page.getByRole("link", { name: /Recevoir mon diagnostic|Analyser mon entreprise/ }).filter({ visible: true }).first()
+    ).toBeVisible();
+  });
+});

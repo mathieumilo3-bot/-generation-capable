@@ -4,11 +4,17 @@ import {
   buildConfirmationEmail,
   buildNotificationEmail,
   parseAuditSubmission,
+  parseReportEmailSummary,
   type AuditSubmission,
+  type ReportEmailSummary,
 } from "@/lib/audit-submission";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
-/** Reject oversized bodies before parsing them. A real submission is < 1 KB. */
+/**
+ * Reject oversized bodies before parsing them. A real submission is < 1 KB;
+ * the optional diagnostic digest (see `reportSummary` below) adds at most a
+ * couple more, so this stays generous rather than exact.
+ */
 const MAX_BODY_BYTES = 8 * 1024;
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -25,10 +31,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
-async function sendEmails(submission: AuditSubmission, apiKey: string, notifyEmail: string) {
+async function sendEmails(
+  submission: AuditSubmission,
+  apiKey: string,
+  notifyEmail: string,
+  reportSummary: ReportEmailSummary | null
+) {
   const resend = new Resend(apiKey);
   const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
-  const notification = buildNotificationEmail(submission);
+  const notification = buildNotificationEmail(submission, reportSummary);
 
   const sent = await withTimeout(
     resend.emails.send({
@@ -104,6 +115,11 @@ export async function POST(request: Request) {
   }
 
   const submission = parsed.value;
+  // Best-effort and purely cosmetic for the inbox: absent or malformed, the
+  // lead is captured exactly the same either way.
+  const reportSummary = parseReportEmailSummary(
+    (payload as Record<string, unknown>).reportSummary
+  );
   const apiKey = process.env.RESEND_API_KEY;
   const notifyEmail = process.env.AUDIT_NOTIFY_EMAIL;
 
@@ -120,7 +136,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await sendEmails(submission, apiKey, notifyEmail);
+    await sendEmails(submission, apiKey, notifyEmail, reportSummary);
   } catch (error) {
     console.error("[audit] notification email failed:", error);
     return NextResponse.json({ error: "email_failed" }, { status: 502 });

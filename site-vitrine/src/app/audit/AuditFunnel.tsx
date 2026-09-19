@@ -7,7 +7,21 @@ import { SECTORS } from "@/lib/data/sectors";
 import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
 import { track, type TrackingEvent } from "@/lib/tracking";
 import { AuditReport } from "@/components/audit/AuditReport";
-import type { Report } from "@/lib/audit-engine/types";
+import { DIMENSION_LABELS, type Report } from "@/lib/audit-engine/types";
+
+/**
+ * The small, display-only digest sent to /api/audit alongside the lead —
+ * see `ReportEmailSummary` in audit-submission.ts, which this must match.
+ * Titles and French dimension labels only: the business gets a skim-in-the-
+ * inbox summary, not the whole Report object.
+ */
+function toEmailSummary(report: Report) {
+  return {
+    degraded: report.degraded,
+    topLeaks: report.topLeaks.map((f) => ({ title: f.title, dimension: DIMENSION_LABELS[f.dimension] })),
+    otherFindingsCount: report.otherFindings.length,
+  };
+}
 
 /**
  * How long the confirmation screen will wait, once the lead is captured, for
@@ -72,6 +86,10 @@ export function AuditFunnel() {
   const engaged = useRef(false);
   const analysisStarted = useRef(false);
   const analysisPromise = useRef<Promise<Report | null> | null>(null);
+  // Set synchronously the moment the background analysis resolves — read at
+  // submit time without awaiting anything, so attaching it to the lead email
+  // can never delay or risk that submission.
+  const lastReport = useRef<Report | null>(null);
 
   useEffect(() => {
     if (!started.current) {
@@ -157,7 +175,10 @@ export function AuditFunnel() {
       })
       .catch(() => null)
       .then((report) => {
-        if (report) track("audit_analysis_completed");
+        if (report) {
+          track("audit_analysis_completed");
+          lastReport.current = report;
+        }
         return report;
       });
 
@@ -209,6 +230,9 @@ export function AuditFunnel() {
           ...data,
           secteur: withPrecision(data.secteur, secteurAutre),
           objectif: withPrecision(data.objectif, objectifAutre),
+          // Only attached when the background analysis already resolved —
+          // never awaited, so a slow diagnostic can never delay this submit.
+          ...(lastReport.current ? { reportSummary: toEmailSummary(lastReport.current) } : {}),
           [HONEYPOT_FIELD]: honeypot,
         }),
       });

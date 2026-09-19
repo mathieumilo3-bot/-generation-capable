@@ -5,6 +5,7 @@ import {
   FIELD_LIMITS,
   HONEYPOT_FIELD,
   parseAuditSubmission,
+  parseReportEmailSummary,
 } from "./audit-submission";
 
 function validPayload(overrides: Record<string, unknown> = {}) {
@@ -159,6 +160,120 @@ describe("buildNotificationEmail", () => {
   it("shows a dash for empty optional fields", () => {
     const { text } = buildNotificationEmail({ ...submission, telephone: "" });
     expect(text).toContain("Téléphone : —");
+  });
+});
+
+describe("parseReportEmailSummary", () => {
+  it("parses a well-formed summary", () => {
+    const summary = parseReportEmailSummary({
+      degraded: false,
+      topLeaks: [{ title: "Pas de HTTPS", dimension: "Confiance" }],
+      otherFindingsCount: 3,
+    });
+    expect(summary).toEqual({
+      degraded: false,
+      topLeaks: [{ title: "Pas de HTTPS", dimension: "Confiance" }],
+      otherFindingsCount: 3,
+    });
+  });
+
+  it("returns null for a missing or malformed payload rather than throwing", () => {
+    expect(parseReportEmailSummary(undefined)).toBeNull();
+    expect(parseReportEmailSummary(null)).toBeNull();
+    expect(parseReportEmailSummary("not an object")).toBeNull();
+    expect(parseReportEmailSummary([])).toBeNull();
+    expect(parseReportEmailSummary({})).toBeNull();
+    expect(parseReportEmailSummary({ degraded: "yes", topLeaks: [] })).toBeNull();
+    expect(parseReportEmailSummary({ degraded: true, topLeaks: "not an array" })).toBeNull();
+  });
+
+  it("caps leaks at 5 and drops entries with no title", () => {
+    const summary = parseReportEmailSummary({
+      degraded: false,
+      topLeaks: Array.from({ length: 10 }, (_, i) => ({ title: `Fuite ${i}`, dimension: "Conversion" })),
+      otherFindingsCount: 0,
+    });
+    expect(summary?.topLeaks).toHaveLength(5);
+
+    const withEmptyTitle = parseReportEmailSummary({
+      degraded: false,
+      topLeaks: [{ title: "", dimension: "Confiance" }, { title: "Vraie fuite", dimension: "Offre" }],
+      otherFindingsCount: 0,
+    });
+    expect(withEmptyTitle?.topLeaks).toEqual([{ title: "Vraie fuite", dimension: "Offre" }]);
+  });
+
+  it("truncates an oversized title rather than rejecting the whole summary", () => {
+    const summary = parseReportEmailSummary({
+      degraded: false,
+      topLeaks: [{ title: "x".repeat(5000), dimension: "Conversion" }],
+      otherFindingsCount: 0,
+    });
+    expect(summary?.topLeaks[0].title.length).toBeLessThanOrEqual(200);
+  });
+
+  it("clamps otherFindingsCount to a sane non-negative range", () => {
+    expect(parseReportEmailSummary({ degraded: false, topLeaks: [], otherFindingsCount: -5 })?.otherFindingsCount).toBe(0);
+    expect(parseReportEmailSummary({ degraded: false, topLeaks: [], otherFindingsCount: 99999 })?.otherFindingsCount).toBe(999);
+    expect(parseReportEmailSummary({ degraded: false, topLeaks: [] })?.otherFindingsCount).toBe(0);
+  });
+});
+
+describe("buildNotificationEmail with a report summary", () => {
+  const submission = {
+    siteUrl: "https://exemple.fr",
+    secteur: "Restaurants",
+    objectif: "Plus de demandes",
+    nom: "Marie",
+    entreprise: "Le Bistrot",
+    email: "marie@exemple.fr",
+    telephone: "0600000000",
+  };
+
+  it("appends the leak digest to both the text and HTML bodies", () => {
+    const summary = {
+      degraded: false,
+      topLeaks: [{ title: "Pas de HTTPS", dimension: "Confiance" }],
+      otherFindingsCount: 2,
+    };
+    const { text, html } = buildNotificationEmail(submission, summary);
+    expect(text).toContain("Pas de HTTPS");
+    expect(text).toContain("Confiance");
+    expect(text).toContain("2 autre(s)");
+    expect(html).toContain("Pas de HTTPS");
+    expect(html).toContain("2 autre(s)");
+  });
+
+  it("marks a degraded report distinctly", () => {
+    const summary = { degraded: true, topLeaks: [{ title: "Site injoignable", dimension: "Positionnement" }], otherFindingsCount: 0 };
+    const { text } = buildNotificationEmail(submission, summary);
+    expect(text).toContain("analyse partielle");
+  });
+
+  it("escapes HTML in leak titles so a spoofed summary cannot inject markup", () => {
+    const summary = { degraded: false, topLeaks: [{ title: "<img src=x onerror=alert(1)>", dimension: "Conversion" }], otherFindingsCount: 0 };
+    const { html } = buildNotificationEmail(submission, summary);
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;img");
+  });
+
+  it("adds nothing to either body when no summary is given", () => {
+    const withSummary = buildNotificationEmail(submission, {
+      degraded: false,
+      topLeaks: [{ title: "Fuite", dimension: "Offre" }],
+      otherFindingsCount: 0,
+    });
+    const withoutSummary = buildNotificationEmail(submission);
+    const withNull = buildNotificationEmail(submission, null);
+    expect(withoutSummary.text).not.toContain("Diagnostic Capable Audit");
+    expect(withNull.text).not.toContain("Diagnostic Capable Audit");
+    expect(withSummary.text).toContain("Diagnostic Capable Audit");
+  });
+
+  it("adds nothing when the summary has no leaks", () => {
+    const { text, html } = buildNotificationEmail(submission, { degraded: false, topLeaks: [], otherFindingsCount: 0 });
+    expect(text).not.toContain("Diagnostic Capable Audit");
+    expect(html).not.toContain("Diagnostic Capable Audit");
   });
 });
 
