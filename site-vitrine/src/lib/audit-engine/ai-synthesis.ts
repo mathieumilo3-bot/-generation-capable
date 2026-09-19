@@ -125,28 +125,26 @@ function schemaFor(findings: Finding[]) {
     additionalProperties: false,
     required: ["executiveSummary", "attirer", "rassurer", "convertir", "opportunities", "callBridge"],
     properties: {
-      executiveSummary: { type: "string", maxLength: 500 },
-      attirer: { type: "string", maxLength: 300 },
-      rassurer: { type: "string", maxLength: 300 },
-      convertir: { type: "string", maxLength: 300 },
+      executiveSummary: { type: "string" },
+      attirer: { type: "string" },
+      rassurer: { type: "string" },
+      convertir: { type: "string" },
       opportunities: {
         type: "array",
-        minItems: 1,
-        maxItems: 3,
         items: {
           type: "object",
           additionalProperties: false,
           required: ["findingId", "title", "diagnosis", "impact", "callQuestion"],
           properties: {
             findingId: ids.length > 0 ? { type: "string", enum: ids } : { type: "string" },
-            title: { type: "string", maxLength: 160 },
-            diagnosis: { type: "string", maxLength: 500 },
-            impact: { type: "string", maxLength: 300 },
-            callQuestion: { type: "string", maxLength: 300 },
+            title: { type: "string" },
+            diagnosis: { type: "string" },
+            impact: { type: "string" },
+            callQuestion: { type: "string" },
           },
         },
       },
-      callBridge: { type: "string", maxLength: 400 },
+      callBridge: { type: "string" },
     },
   };
 }
