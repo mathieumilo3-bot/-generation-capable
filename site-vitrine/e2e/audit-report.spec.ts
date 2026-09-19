@@ -103,6 +103,13 @@ test.describe("audit report", () => {
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "received", emailed: true }) })
     );
     await page.goto("/audit");
+
+    // A first-time visitor legitimately sees the privacy dialog. Resolve it
+    // through the real UI before exercising the funnel so the suite mirrors
+    // an actual visitor choice instead of attempting to click through an
+    // interactive consent surface.
+    await page.getByRole("button", { name: "Refuser", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Préférences de confidentialité" })).toHaveCount(0);
   });
 
   test("shows the real diagnostic instead of the generic confirmation once analysis succeeds", async ({ page }) => {
