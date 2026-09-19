@@ -113,6 +113,7 @@ précis :
 - `report.ts` / `engine.ts` — assemblent le rapport final et orchestrent le
   pipeline. `runAudit()` ne lève jamais d'exception : une sonde en échec
   dégrade le rapport, elle ne casse jamais la requête.
+- `ai-synthesis.ts` — couche d'intelligence facultative via l'API OpenAI Responses. Elle ne remplace jamais les faits du moteur : elle reformule et priorise uniquement les signaux observés/déduits déjà produits, sous schéma JSON strict. Toute erreur, absence de clé ou réponse invalide retombe silencieusement sur le rapport déterministe.
 
 Testé à trois niveaux : chaque module unitairement (classification,
 extraction HTML, priorisation, génération du rapport, cas sans données,
@@ -131,6 +132,8 @@ Copier `.env.example` en `.env.local` et renseigner :
 - `AUDIT_NOTIFY_EMAIL` — adresse qui reçoit chaque nouvelle demande d'audit.
 - `RESEND_FROM_EMAIL` — optionnel, expéditeur par défaut
   `Génération Capable <audit@generationcapable.fr>`.
+- `OPENAI_API_KEY` — optionnel mais recommandé pour le diagnostic enrichi : active la synthèse OpenAI du rapport à partir des signaux publics collectés par le moteur déterministe. Les coordonnées du formulaire ne sont pas transmises à OpenAI. Sans cette clé, le moteur déterministe continue de fonctionner normalement.
+- `OPENAI_AUDIT_MODEL` — optionnel, modèle utilisé pour la synthèse. Par défaut : `gpt-5.6-sol`.
 - `NEXT_PUBLIC_GTM_ID` — optionnel, conteneur Google Tag Manager
   (`GTM-XXXXXXX`). Laissée vide, aucune balise tierce n'est chargée (vérifié
   par un test E2E). Renseignée, GA4, les conversions Google Ads et le pixel
