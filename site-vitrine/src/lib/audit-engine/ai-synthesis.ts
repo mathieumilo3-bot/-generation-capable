@@ -206,7 +206,7 @@ export async function synthesizeAuditWithOpenAI(
   input: SynthesisInput,
   options: { fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
 ): Promise<AiAuditSynthesis | null> {
-  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
+  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
   if (!apiKey || input.report.topLeaks.length === 0) return null;
 
   const model = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
