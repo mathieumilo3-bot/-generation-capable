@@ -245,7 +245,7 @@ export function AuditReport({ report }: { report: Report }) {
           pour voir ce qui mérite réellement d&apos;être corrigé et si GC peut vous accompagner.
         </p>
         <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Button href="/#contact" variant="primary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report", intent: "priority_review" }}>
+          <Button href="mailto:contact@generationcapable.fr?subject=Mon%20diagnostic%20GC%20%E2%80%94%20je%20veux%20%C3%A9changer" variant="primary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report", intent: "priority_review" }}>
             Échanger sur mon diagnostic →
           </Button>
           <Button href="/#systemes" variant="secondary" trackEvent="audit_cta_clicked" trackPayload={{ location: "audit_report", intent: "learn_more" }}>
