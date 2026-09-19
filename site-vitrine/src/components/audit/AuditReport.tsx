@@ -53,6 +53,12 @@ function pillarState(report: Report, pillarId: PillarId) {
   return { label: "À approfondir", tone: "text-[var(--color-muted)]" };
 }
 
+const CONFIDENCE_LABEL = {
+  observed: "Observé sur votre site",
+  inferred: "Déduit",
+  unknown: "À vérifier ensemble",
+} as const;
+
 function OpportunityCard({ finding, rank }: { finding: Finding; rank: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const seen = useRef(false);
@@ -79,9 +85,14 @@ function OpportunityCard({ finding, rank }: { finding: Finding; rank: number }) 
     <div ref={ref} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 sm:p-7">
       <div className="flex items-center justify-between gap-4">
         <span className="font-display text-sm text-[var(--color-accent)]">{String(rank).padStart(2, "0")}</span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-          {pillar.label.replace(/^\d+ — /, "")}
-        </span>
+        <div className="text-right">
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+            {pillar.label.replace(/^\d+ — /, "")}
+          </span>
+          <span className="mt-1 block text-[10px] text-[var(--color-muted)]">
+            {CONFIDENCE_LABEL[finding.confidence]}
+          </span>
+        </div>
       </div>
       <h3 className="font-display mt-4 text-xl font-semibold tracking-tight text-[var(--color-text)]">
         {finding.title}
