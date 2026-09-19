@@ -1,9 +1,9 @@
 /**
  * The single place to fill in the legal identity of the company.
  *
- * Values below are limited to information already established for the
- * business. Contact email remains intentionally empty until a public
- * contact address is explicitly chosen.
+ * Every value below was explicitly provided by the site's owner, never
+ * invented — including the contact email, chosen and confirmed for public
+ * display on /mentions-legales and /politique-de-confidentialite.
  */
 export type LegalEntity = {
   denomination: string;
@@ -27,7 +27,7 @@ export const LEGAL_ENTITY: LegalEntity = {
   rcs: "",
   tvaIntracommunautaire: "",
   directeurPublication: "Enzo Le Dorven",
-  email: "",
+  email: "ledorvenenzo50@gmail.com",
   telephone: "",
 };
 

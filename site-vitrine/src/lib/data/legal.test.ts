@@ -21,19 +21,20 @@ const FILLED: LegalEntity = {
 };
 
 describe("legal entity", () => {
-  it("ships the verified identity details and keeps only unknown fields empty", () => {
-    expect(isLegalEntityComplete(LEGAL_ENTITY)).toBe(false);
+  it("ships the verified identity details, including the confirmed public contact email", () => {
+    expect(isLegalEntityComplete(LEGAL_ENTITY)).toBe(true);
     expect(legalRows(LEGAL_ENTITY).map((row) => row.label)).toEqual([
       "Dénomination sociale",
       "Forme juridique",
       "Siège social",
       "SIREN / SIRET",
       "Directeur de la publication",
+      "Email",
     ]);
   });
 
-  it("names exactly what is still missing", () => {
-    expect(missingLegalFields(LEGAL_ENTITY)).toEqual(["email"]);
+  it("has nothing left missing", () => {
+    expect(missingLegalFields(LEGAL_ENTITY)).toEqual([]);
   });
 
   it("is complete once the mandatory fields are filled", () => {
