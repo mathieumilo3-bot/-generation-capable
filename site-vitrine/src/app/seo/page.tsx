@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { PillarPage } from "@/components/sections/PillarPage";
 
 export const metadata: Metadata = {
-  title: "Référencement SEO : être visible sur Google",
+  title: "Agence SEO pour PME : référencement et visibilité Google",
   description:
-    "Référencement SEO pour améliorer votre visibilité Google : architecture technique, pages de services, maillage interne, contenu et SEO local.",
+    "Agence SEO pour PME : audit, architecture technique, contenus, maillage interne, SEO local et suivi des positions pour gagner en visibilité Google.",
   alternates: { canonical: "/seo" },
 };
 
@@ -12,7 +12,7 @@ export default function SeoPage() {
   return (
     <PillarPage
       eyebrow="Référencement naturel"
-      title="Référencement SEO : gagnez en visibilité sur les recherches qui comptent."
+      title="Agence SEO pour PME : gagnez en visibilité sur les recherches qui comptent."
       intro="Un bon référencement ne se limite pas à des mots-clés. Il repose sur une architecture technique propre, un maillage interne cohérent et un contenu qui répond réellement aux questions des clients."
       path="/seo"
       ctaContext="pillar_seo"
