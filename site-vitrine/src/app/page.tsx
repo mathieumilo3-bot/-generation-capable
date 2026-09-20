@@ -12,9 +12,9 @@ import { ServiceJsonLd } from "@/components/schema/JsonLd";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Agence web : création de site, SEO & acquisition",
+  title: "Agence web & marketing digital : site, SEO, Ads, acquisition",
   description:
-    "GC accompagne artisans, TPE et PME sur la création de site internet, le SEO, la visibilité Google, l’acquisition et la conversion pour générer des demandes qualifiées.",
+    "GC accompagne artisans, TPE et PME sur la création de site, le marketing digital, le SEO, Google Ads, Meta Ads, l'acquisition et la conversion pour générer des demandes qualifiées.",
   alternates: { canonical: "/" },
 };
 
