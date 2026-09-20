@@ -39,6 +39,15 @@ const PILLARS: {
   },
 ];
 
+function sourceLabel(title: string, url: string) {
+  if (title && title !== url) return title;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return title || url;
+  }
+}
+
 function pillarForFinding(finding: Finding): PillarId {
   return PILLARS.find((pillar) => pillar.dimensions.includes(finding.dimension))?.id ?? "rassurer";
 }
@@ -242,7 +251,7 @@ export function AuditReport({ report, lead }: AuditReportProps) {
                     rel="noopener noreferrer"
                     className="text-xs text-[var(--color-text)] underline decoration-[var(--color-border-strong)] underline-offset-4"
                   >
-                    {source.title}
+                    {sourceLabel(source.title, source.url)}
                   </a>
                 ))}
               </div>
