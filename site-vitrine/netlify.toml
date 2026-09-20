@@ -1,4 +1,13 @@
-# TEMPORARY diagnostic configuration — will be reverted before merge.
+# Configuration propre à ce sous-dossier : le netlify.toml de la racine
+# concerne l'ancien produit (fonctions, redirections, programme ambassadeurs)
+# et ne doit pas s'appliquer ici. Le projet Netlify de ce site doit avoir
+# « site-vitrine » comme répertoire de base.
 [build]
-  command = "mkdir -p public && (npm run build > public/build-debug.txt 2>&1 || true) && printf '<!doctype html><meta charset=utf-8><title>GC build diagnostic</title><a href=/build-debug.txt>build log</a>' > public/index.html"
-  publish = "public"
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Les en-têtes de sécurité sont définis dans next.config.ts pour rester
+# identiques en local, en preview et en production.
