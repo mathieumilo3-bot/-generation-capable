@@ -1,9 +1,9 @@
-export const SITE_NAME = "Génération Capable";
+export const SITE_NAME = "GC";
 export const SITE_URL = "https://generationcapable.fr";
 export const SITE_TAGLINE = "Digital Revenue Systems";
 
 export const SITE_DESCRIPTION =
-  "Génération Capable conçoit les systèmes digitaux qui transforment la visibilité, le trafic et l'attention d'une entreprise en opportunités commerciales.";
+  "GC conçoit les systèmes digitaux qui transforment la visibilité, le trafic et l'attention d'une entreprise en opportunités commerciales.";
 
 export const PRIMARY_CTA_LABEL = "Analyser mon entreprise";
 
