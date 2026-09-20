@@ -39,6 +39,12 @@ const RELATED_ARTICLES: Record<string, string[]> = {
   "generation-de-leads": ["generer-demandes-devis-en-ligne", "cout-par-lead-qualifie"],
   "referencement-artisan": ["seo-local-artisan", "site-internet-artisan-guide"],
   "creation-site-artisan": ["site-internet-artisan-guide", "prix-creation-site-internet"],
+  "marketing-digital-btp": ["marketing-digital-btp-guide", "seo-local-artisan"],
+  "creation-site-dentiste": ["site-internet-dentiste-seo-local", "comment-etre-visible-sur-google"],
+  "marketing-digital-dentiste": ["site-internet-dentiste-seo-local", "optimiser-google-business-profile"],
+  "marketing-entreprise-nettoyage": ["marketing-entreprise-nettoyage-guide", "generer-demandes-devis-en-ligne"],
+  "marketing-evenementiel-digital": ["marketing-evenementiel-digital-guide", "strategie-reseaux-sociaux-entreprise"],
+  "marketing-digital-restaurant": ["marketing-digital-restaurant-guide", "optimiser-google-business-profile"],
 };
 
 export function generateStaticParams() {
