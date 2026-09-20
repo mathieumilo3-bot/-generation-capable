@@ -660,7 +660,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
       },
     ],
     related: ["generation-de-leads", "audit-site-internet", "refonte-site-internet"],
-  },,
+  },
   {
     slug: "agence-marketing-digital",
     title: "Agence marketing digital : acquisition, SEO, Ads et conversion",
