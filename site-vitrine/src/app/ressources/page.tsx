@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { ArticleCard } from "@/components/cards/ArticleCard";
-import { BreadcrumbJsonLd } from "@/components/schema/JsonLd";
+import { BreadcrumbJsonLd, ItemListJsonLd } from "@/components/schema/JsonLd";
 import { SITE_URL } from "@/lib/constants";
 import { ARTICLES } from "@/lib/data/articles";
 
@@ -49,6 +49,13 @@ const TOPIC_HUBS = [
 export default function RessourcesPage() {
   return (
     <Section className="py-24 sm:py-32">
+      <ItemListJsonLd
+        name="Guides GC Agence"
+        items={ARTICLES.map((article) => ({
+          name: article.title,
+          url: `${SITE_URL}/ressources/${article.slug}`,
+        }))}
+      />
       <BreadcrumbJsonLd
         items={[
           { name: "Accueil", url: SITE_URL },
