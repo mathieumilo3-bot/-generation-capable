@@ -16,10 +16,20 @@ export function OrganizationJsonLd() {
         "@context": "https://schema.org",
         "@type": "Organization",
         name: SITE_NAME,
-        alternateName: "GC Agence",
+        alternateName: ["GC", "Agence GC"],
         url: SITE_URL,
         description: SITE_DESCRIPTION,
         logo: `${SITE_URL}/icon-512.png`,
+        areaServed: "FR",
+        knowsAbout: [
+          "Création de site internet",
+          "Référencement naturel SEO",
+          "Référencement local",
+          "Marketing digital",
+          "Génération de leads",
+          "Google Ads",
+          "Acquisition B2B",
+        ],
       }}
     />
   );
