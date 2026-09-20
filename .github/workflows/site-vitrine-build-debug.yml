@@ -1,0 +1,74 @@
+name: Site vitrine — build diagnostics
+
+on:
+  pull_request:
+    paths:
+      - "site-vitrine/**"
+      - ".github/workflows/site-vitrine-build-debug.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+defaults:
+  run:
+    working-directory: site-vitrine
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site-vitrine/package-lock.json
+      - name: Install
+        id: install
+        shell: bash
+        run: |
+          set +e
+          npm ci > /tmp/install.log 2>&1
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Build
+        id: build
+        if: steps.install.outputs.code == '0'
+        shell: bash
+        run: |
+          set +e
+          npm run build > /tmp/build.log 2>&1
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          tail -n 160 /tmp/build.log > /tmp/build-tail.log
+          exit 0
+      - name: Publish diagnostic
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const install = '${{ steps.install.outputs.code }}';
+            const build = '${{ steps.build.outputs.code }}';
+            let tail = '';
+            try { tail = fs.readFileSync('/tmp/build-tail.log', 'utf8'); } catch {}
+            if (!tail) {
+              try { tail = fs.readFileSync('/tmp/install.log', 'utf8').slice(-12000); } catch {}
+            }
+            const body = [
+              '## Site vitrine build diagnostic',
+              '',
+              'install=' + (install || 'n/a') + ' build=' + (build || 'n/a'),
+              '',
+              '~~~text',
+              tail.slice(-12000),
+              '~~~'
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
