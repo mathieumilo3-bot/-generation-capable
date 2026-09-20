@@ -127,6 +127,34 @@ const RELATED_LINKS: Record<string, { href: string; label: string }[]> = {
   ],
 };
 
+const RELATED_GUIDES: Record<string, string[]> = {
+  "prix-creation-site-internet": ["site-internet-artisan-guide", "refonte-site-seo-erreurs"],
+  "comment-etre-visible-sur-google": ["prix-referencement-seo", "seo-local-artisan", "optimiser-google-business-profile"],
+  "seo-local-artisan": ["comment-etre-visible-sur-google", "optimiser-google-business-profile", "site-internet-artisan-guide"],
+  "optimiser-google-business-profile": ["seo-local-artisan", "comment-etre-visible-sur-google"],
+  "prix-referencement-seo": ["comment-etre-visible-sur-google", "seo-ou-google-ads", "refonte-site-seo-erreurs"],
+  "site-internet-artisan-guide": ["prix-creation-site-internet", "seo-local-artisan", "marketing-digital-artisan-guide"],
+  "generer-demandes-devis-en-ligne": ["cout-par-lead-qualifie", "google-ads-pme-guide", "marketing-digital-artisan-guide"],
+  "refonte-site-seo-erreurs": ["prix-creation-site-internet", "comment-etre-visible-sur-google"],
+  "plan-marketing-digital-pme": ["budget-marketing-digital-pme", "seo-ou-google-ads", "webmarketing-pme-plan"],
+  "budget-marketing-digital-pme": ["plan-marketing-digital-pme", "google-ads-pme-guide", "growth-marketing-pme"],
+  "seo-ou-google-ads": ["google-ads-pme-guide", "prix-referencement-seo", "comment-etre-visible-sur-google"],
+  "google-ads-pme-guide": ["seo-ou-google-ads", "generer-demandes-devis-en-ligne", "budget-marketing-digital-pme"],
+  "strategie-reseaux-sociaux-entreprise": ["plan-marketing-digital-pme", "webmarketing-pme-plan", "growth-marketing-pme"],
+  "marketing-digital-artisan-guide": ["seo-local-artisan", "site-internet-artisan-guide", "generer-demandes-devis-en-ligne"],
+  "generation-leads-b2b-guide": ["cout-par-lead-qualifie", "inbound-ou-outbound-b2b", "audit-acquisition-digitale"],
+  "cout-par-lead-qualifie": ["generation-leads-b2b-guide", "audit-acquisition-digitale", "growth-marketing-pme"],
+  "inbound-ou-outbound-b2b": ["generation-leads-b2b-guide", "cout-par-lead-qualifie"],
+  "webmarketing-pme-plan": ["plan-marketing-digital-pme", "budget-marketing-digital-pme", "growth-marketing-pme"],
+  "growth-marketing-pme": ["audit-acquisition-digitale", "webmarketing-pme-plan", "budget-marketing-digital-pme"],
+  "audit-acquisition-digitale": ["generation-leads-b2b-guide", "growth-marketing-pme", "plan-marketing-digital-pme"],
+  "marketing-digital-btp-guide": ["seo-local-artisan", "generer-demandes-devis-en-ligne", "google-ads-pme-guide"],
+  "site-internet-dentiste-seo-local": ["optimiser-google-business-profile", "comment-etre-visible-sur-google", "prix-creation-site-internet"],
+  "marketing-entreprise-nettoyage-guide": ["generer-demandes-devis-en-ligne", "google-ads-pme-guide", "seo-local-artisan"],
+  "marketing-evenementiel-digital-guide": ["strategie-reseaux-sociaux-entreprise", "plan-marketing-digital-pme", "generer-demandes-devis-en-ligne"],
+  "marketing-digital-restaurant-guide": ["optimiser-google-business-profile", "strategie-reseaux-sociaux-entreprise", "seo-local-artisan"],
+};
+
 export function generateStaticParams() {
   return ARTICLES.map((article) => ({ article: article.slug }));
 }
@@ -151,6 +179,9 @@ export default async function ArticlePage({ params }: Props) {
     { href: "/solutions", label: "Voir toutes les solutions" },
     { href: "/audit", label: "Analyser mon entreprise" },
   ];
+  const relatedGuides = (RELATED_GUIDES[article.slug] ?? [])
+    .map((relatedSlug) => getArticleBySlug(relatedSlug))
+    .filter(Boolean);
 
   return (
     <Section className="py-24 sm:py-32">
@@ -196,6 +227,32 @@ export default async function ArticlePage({ params }: Props) {
             ))}
           </div>
         </div>
+
+        {relatedGuides.length > 0 && (
+          <section className="mt-10 border-t border-[var(--color-border)] pt-10">
+            <h2 className="font-display text-xl font-semibold text-[var(--color-text)]">
+              Guides complémentaires
+            </h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {relatedGuides.map((guide) =>
+                guide ? (
+                  <Link
+                    key={guide.slug}
+                    href={`/ressources/${guide.slug}`}
+                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-colors hover:border-[var(--color-muted)]"
+                  >
+                    <p className="font-display text-base font-semibold text-[var(--color-text)]">
+                      {guide.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+                      {guide.excerpt}
+                    </p>
+                  </Link>
+                ) : null
+              )}
+            </div>
+          </section>
+        )}
 
         <div className="mt-10 border-t border-[var(--color-border)] pt-10">
           <Button

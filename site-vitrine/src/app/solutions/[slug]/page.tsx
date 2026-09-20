@@ -18,6 +18,16 @@ import { getArticleBySlug } from "@/lib/data/articles";
 type Props = { params: Promise<{ slug: string }> };
 
 const RELATED_ARTICLES: Record<string, string[]> = {
+  "audit-site-internet": ["refonte-site-seo-erreurs", "prix-creation-site-internet"],
+  "audit-seo": ["comment-etre-visible-sur-google", "prix-referencement-seo", "refonte-site-seo-erreurs"],
+  "referencement-local": ["seo-local-artisan", "optimiser-google-business-profile", "comment-etre-visible-sur-google"],
+  "google-business-profile": ["optimiser-google-business-profile", "seo-local-artisan"],
+  "visibilite-google": ["comment-etre-visible-sur-google", "prix-referencement-seo", "seo-local-artisan"],
+  "landing-page": ["generer-demandes-devis-en-ligne", "google-ads-pme-guide"],
+  "tunnel-de-vente": ["generer-demandes-devis-en-ligne", "cout-par-lead-qualifie"],
+  "refonte-site-internet": ["refonte-site-seo-erreurs", "prix-creation-site-internet"],
+  "site-internet-pme": ["prix-creation-site-internet", "plan-marketing-digital-pme"],
+
   "agence-marketing-digital": ["plan-marketing-digital-pme", "budget-marketing-digital-pme"],
   "strategie-marketing-digital": ["plan-marketing-digital-pme", "webmarketing-pme-plan"],
   "marketing-digital-pme": ["budget-marketing-digital-pme", "plan-marketing-digital-pme"],
