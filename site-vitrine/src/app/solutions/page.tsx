@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Section, Eyebrow } from "@/components/ui/Section";
-import { BreadcrumbJsonLd } from "@/components/schema/JsonLd";
+import { BreadcrumbJsonLd, ItemListJsonLd } from "@/components/schema/JsonLd";
 import { SITE_URL } from "@/lib/constants";
 import { SEO_LANDINGS } from "@/lib/data/seo-landings";
 
@@ -101,6 +101,13 @@ export default function SolutionsPage() {
 
   return (
     <Section className="py-24 sm:py-32">
+      <ItemListJsonLd
+        name="Solutions GC Agence"
+        items={SEO_LANDINGS.map((page) => ({
+          name: page.title,
+          url: `${SITE_URL}/solutions/${page.slug}`,
+        }))}
+      />
       <BreadcrumbJsonLd
         items={[
           { name: "Accueil", url: SITE_URL },

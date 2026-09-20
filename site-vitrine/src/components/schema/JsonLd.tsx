@@ -155,3 +155,28 @@ export function FAQJsonLd({
     />
   );
 }
+
+
+export function ItemListJsonLd({
+  name,
+  items,
+}: {
+  name: string;
+  items: { name: string; url: string }[];
+}) {
+  return (
+    <Script
+      data={{
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name,
+        itemListElement: items.map((item, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: item.name,
+          url: item.url,
+        })),
+      }}
+    />
+  );
+}

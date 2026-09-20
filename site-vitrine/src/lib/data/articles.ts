@@ -463,6 +463,102 @@ export const ARTICLES: Article[] = [
       "Le référencement local peut également couvrir des recherches de spécialité ou de quartier lorsque le restaurant répond réellement à ces intentions. Les pages doivent rester utiles et spécifiques.",
       "Enfin, les clics vers la réservation, appels, itinéraires et actions sur la fiche Google permettent d'observer quelles sources contribuent le plus à la fréquentation.",
     ],
+  },
+  {
+    slug: "prix-site-internet-artisan",
+    title: "Prix d’un site internet pour artisan : budget, options et pièges à éviter",
+    excerpt:
+      "Comprendre ce qui fait varier le prix d’un site artisan : nombre de pages, SEO local, photos, formulaire de devis, maintenance et accompagnement.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-21",
+    content: [
+      "Le prix d’un site internet pour artisan dépend surtout du niveau de travail nécessaire pour transformer le site en outil commercial. Un site de quelques pages sans stratégie locale ne demande pas le même effort qu’un ensemble de pages métiers, de zones servies, de preuves et de formulaires de devis.",
+      "Le premier poste est la structure : accueil, prestations, réalisations, à propos, contact et éventuellement pages dédiées aux services les plus recherchés. Plus les prestations sont différentes, plus il est utile d’éviter une seule page générique.",
+      "Le deuxième poste est le référencement local. Titres, contenus, maillage, Google Business Profile et cohérence entre services et zones influencent la capacité du site à être trouvé. Ce travail est distinct du simple design.",
+      "Le troisième poste est la conversion : formulaire, demande de devis, appels à l’action, preuves et suivi. Un site moins cher qui ne génère aucune demande peut coûter davantage qu’un projet mieux cadré.",
+      "Avant de comparer des devis, vérifiez donc ce qui est réellement inclus : stratégie, rédaction, SEO, suivi, propriété du site, hébergement, maintenance et possibilité de modifier les contenus.",
+      "Le bon budget est celui qui correspond au niveau d’acquisition recherché. Pour un artisan, le site doit idéalement devenir un point d’entrée vers des demandes locales qualifiées, pas seulement une carte de visite.",
+    ],
+  },
+  {
+    slug: "tarif-agence-seo-pme",
+    title: "Tarif d’une agence SEO pour PME : ce que vous payez réellement",
+    excerpt:
+      "Audit, technique, contenus, maillage, reporting et autorité : comprendre la structure d’un budget SEO pour PME.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-21",
+    content: [
+      "Le tarif d’une agence SEO pour PME varie selon la concurrence, l’état du site et le nombre de sujets à travailler. Un site techniquement sain avec quelques pages prioritaires ne demande pas le même effort qu’un site ancien à restructurer.",
+      "Un accompagnement SEO sérieux couvre plusieurs couches : diagnostic technique, intentions de recherche, pages commerciales, contenus de soutien, maillage interne et suivi dans Search Console.",
+      "La rédaction seule ne suffit pas. Si les pages sont mal indexées, trop proches les unes des autres ou mal reliées, ajouter du contenu peut simplement augmenter la confusion.",
+      "Le reporting doit montrer des indicateurs utiles : impressions, clics, requêtes, positions, pages qui progressent et conversions. Le nombre de mots publiés n’est pas un indicateur de rentabilité.",
+      "Pour comparer des offres, demandez quelles pages seront prioritaires, comment les requêtes seront choisies et comment les conversions seront reliées au trafic organique.",
+      "Le bon budget SEO dépend donc du nombre de leviers à corriger et de la valeur commerciale des requêtes visées, pas d’un forfait universel.",
+    ],
+  },
+  {
+    slug: "agence-web-ou-freelance",
+    title: "Agence web ou freelance : que choisir pour créer un site qui génère des prospects ?",
+    excerpt:
+      "Comparer agence web et freelance selon stratégie, production, SEO, conversion, disponibilité et budget.",
+    readingTime: "8 min",
+    publishedAt: "2026-09-21",
+    content: [
+      "Agence web et freelance peuvent tous les deux produire un bon site. La différence se joue surtout sur le périmètre du projet, le nombre de compétences nécessaires et le niveau de pilotage attendu.",
+      "Un freelance peut être très pertinent pour un besoin précis : design, développement, rédaction ou SEO. Une agence devient intéressante lorsqu’il faut coordonner plusieurs leviers autour d’un objectif commercial commun.",
+      "Pour un site destiné à générer des prospects, il faut souvent relier architecture, message, SEO, formulaires, tracking et acquisition. Le risque apparaît lorsque chaque brique est traitée séparément sans responsable de l’ensemble.",
+      "Le budget n’est donc pas le seul critère. Vérifiez qui définit les priorités, qui mesure les résultats, qui intervient après le lancement et qui possède réellement les accès et les contenus.",
+      "Une bonne décision part du besoin : simple présence en ligne, refonte, référencement, génération de leads ou système d’acquisition complet.",
+      "Dans tous les cas, demandez une méthode, des livrables précis et un parcours de conversion mesurable plutôt qu’un simple nombre de pages.",
+    ],
+  },
+  {
+    slug: "budget-google-ads-pme",
+    title: "Budget Google Ads pour PME : combien investir pour obtenir des demandes ?",
+    excerpt:
+      "Comment dimensionner un budget Google Ads selon coût par clic, taux de conversion, valeur d’un lead et volume de recherche.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-21",
+    content: [
+      "Un budget Google Ads pour PME ne devrait pas être choisi au hasard. Il doit être relié au coût moyen des clics, au taux de conversion de la page et à la valeur commerciale d’une demande.",
+      "Commencez par estimer combien de clics il faut pour obtenir un volume de données exploitable. Un budget trop faible peut empêcher de distinguer une mauvaise campagne d’un simple manque de volume.",
+      "La qualité de la landing page influence directement le budget nécessaire. Si la page ne reprend pas la recherche, manque de preuve ou possède un formulaire trop complexe, davantage de dépenses ne corrigeront pas le problème.",
+      "Il faut aussi séparer les requêtes de forte intention des termes plus larges. Les recherches proches d’un devis ou d’un service précis peuvent coûter plus cher mais produire des leads de meilleure qualité.",
+      "Le pilotage doit suivre le coût par lead, mais aussi la qualité de ces leads et leur transformation commerciale. Un lead moins cher n’est pas forcément plus rentable.",
+      "Le bon budget est donc celui qui permet de tester proprement les requêtes prioritaires puis de réallouer les dépenses vers les groupes qui produisent de vraies opportunités.",
+    ],
+  },
+  {
+    slug: "seo-local-ou-google-ads",
+    title: "SEO local ou Google Ads : que choisir pour obtenir des clients près de chez vous ?",
+    excerpt:
+      "Comparer référencement local et Google Ads selon vitesse, coût, intention, Google Maps, concurrence et génération de devis.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-21",
+    content: [
+      "SEO local et Google Ads visent souvent les mêmes prospects : des personnes qui cherchent un service dans une zone donnée. La différence principale est la vitesse et la façon dont la visibilité est obtenue.",
+      "Google Ads peut apporter des clics rapidement sur des recherches précises, mais la visibilité s’arrête lorsque le budget s’arrête. Le SEO local construit progressivement la présence du site et de la fiche Google.",
+      "Pour une activité locale, la fiche Google Business Profile, les pages de services, les avis et la cohérence des informations sont des bases importantes. Les Ads peuvent ensuite accélérer la captation de demandes sur les services les plus rentables.",
+      "Les deux leviers peuvent fonctionner ensemble : les campagnes révèlent les requêtes qui produisent des leads, et ces requêtes peuvent ensuite devenir des priorités SEO.",
+      "Le choix dépend donc de l’urgence, du budget et de la concurrence. Une entreprise qui a besoin de demandes immédiates peut utiliser les Ads tout en construisant le référencement local sur plusieurs mois.",
+      "L’objectif final reste le même : apparaître sur les recherches où un prospect est réellement en train de choisir un prestataire.",
+    ],
+  },
+  {
+    slug: "refonte-site-sans-perdre-seo",
+    title: "Refonte de site sans perdre son SEO : checklist avant mise en ligne",
+    excerpt:
+      "URL, redirections, contenus, canonicals, sitemap, Search Console et tests : les points à sécuriser avant une refonte.",
+    readingTime: "10 min",
+    publishedAt: "2026-09-21",
+    content: [
+      "Une refonte peut améliorer fortement un site tout en faisant perdre du trafic si les URL, contenus ou signaux SEO sont modifiés sans contrôle. Le risque principal vient souvent de suppressions ou redirections mal préparées.",
+      "Avant la mise en ligne, listez les URL existantes qui reçoivent des impressions, des clics ou des liens. Elles doivent être conservées lorsque c’est possible ou redirigées vers la page la plus proche.",
+      "Les titres, H1, contenus et liens internes des pages importantes ne doivent pas être supprimés uniquement pour simplifier le design. Une refonte visuelle ne doit pas effacer les sujets qui permettent à Google de comprendre la page.",
+      "Les canonicals, robots, sitemap et balises d’indexation doivent être contrôlés sur la nouvelle version. Une seule erreur globale peut rendre invisibles des dizaines de pages.",
+      "Après lancement, vérifiez Search Console, les erreurs 404, l’indexation et les principales requêtes. Les premières semaines servent à détecter rapidement une baisse anormale.",
+      "Une bonne refonte SEO est donc une migration contrôlée : on améliore l’expérience et la conversion sans casser l’historique utile du site.",
+    ],
   }
 ];
 
