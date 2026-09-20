@@ -8,7 +8,7 @@ import { APPLICATIONS } from "@/lib/data/applications";
 export const metadata: Metadata = {
   title: "Applications",
   description:
-    "Quatre configurations du système Génération Capable selon votre activité : local, service, expert, growth. Des cas d'usage, pas des références clients.",
+    "Quatre configurations du système GC selon votre activité : local, service, expert, growth. Des cas d'usage, pas des références clients.",
   alternates: { canonical: "/applications" },
 };
 

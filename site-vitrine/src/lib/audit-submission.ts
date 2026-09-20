@@ -219,7 +219,7 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
   </div>`
       : "";
 
-  const replyHref = `mailto:${encodeURIComponent(data.email)}?subject=${encodeURIComponent("Votre diagnostic Génération Capable")}`;
+  const replyHref = `mailto:${encodeURIComponent(data.email)}?subject=${encodeURIComponent("Votre diagnostic GC")}`;
   const phoneHref = data.telephone ? `tel:${data.telephone.replace(/[^+\d]/g, "")}` : "";
 
   const html = `<div style="font-family: sans-serif; color: #111;">
@@ -275,7 +275,7 @@ ${nextStepText}
 
 Choisir mon créneau : ${bookingUrl}
 
-Génération Capable`;
+GC`;
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;line-height:1.6;max-width:620px;margin:auto;">
 <p>${escapeHtml(greeting)}</p>
@@ -287,12 +287,12 @@ ${prioritiesHtml}
 <p>${escapeHtml(nextStepText)}</p>
 <p style="margin:26px 0;"><a href="${escapeHtml(bookingUrl)}" style="background:#111;color:#fff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;">Choisir mon créneau</a></p>
 <p style="color:#666;font-size:13px;">Sans engagement · Votre contexte est déjà transmis · L'échange part de votre audit</p>
-<p>Génération Capable</p>
+<p>GC</p>
 </div>`;
 
   return {
     subject: diagnosticReady
-      ? "Votre diagnostic Génération Capable est prêt"
+      ? "Votre diagnostic GC est prêt"
       : "Votre demande d'audit a bien été reçue",
     text,
     html,

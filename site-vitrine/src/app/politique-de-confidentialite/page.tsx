@@ -5,7 +5,7 @@ import { LEGAL_ENTITY, SUBPROCESSORS } from "@/lib/data/legal";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
-  description: "Politique de confidentialité et traitement des données de Génération Capable.",
+  description: "Politique de confidentialité et traitement des données de GC.",
   robots: { index: false, follow: true },
   alternates: { canonical: "/politique-de-confidentialite" },
 };

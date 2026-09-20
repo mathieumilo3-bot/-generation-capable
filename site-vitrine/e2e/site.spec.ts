@@ -111,7 +111,7 @@ test.describe("SEO endpoints", () => {
     expect(icon.headers()["content-type"]).toContain("image/png");
 
     const manifest = await (await request.get("/manifest.webmanifest")).json();
-    expect(manifest.name).toContain("Génération Capable");
+    expect(manifest.name).toContain("GC");
     expect(manifest.theme_color).toBe("#050505");
   });
 });

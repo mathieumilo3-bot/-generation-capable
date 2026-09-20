@@ -1,6 +1,6 @@
-# Génération Capable — site vitrine
+# GC — site vitrine
 
-Site de marque "Digital Revenue Systems" pour Génération Capable — un projet
+Site de marque "Digital Revenue Systems" pour GC — un projet
 Next.js autonome, indépendant du produit existant à la racine du dépôt
 (app d'abonnement/coaching, ambassadeurs, CRM, compliance : voir `../`).
 Ce dossier ne modifie rien du produit existant ; il peut être déployé sur son
@@ -131,7 +131,7 @@ Copier `.env.example` en `.env.local` et renseigner :
   `generationcapable.fr` (créée pour ce formulaire).
 - `AUDIT_NOTIFY_EMAIL` — adresse qui reçoit chaque nouvelle demande d'audit.
 - `RESEND_FROM_EMAIL` — optionnel, expéditeur par défaut
-  `Génération Capable <audit@generationcapable.fr>`.
+  `GC <audit@generationcapable.fr>`.
 - `OPENAI_API_KEY` — optionnel mais recommandé pour le diagnostic enrichi : active la synthèse OpenAI du rapport à partir des signaux publics collectés par le moteur déterministe. Les coordonnées du formulaire ne sont pas transmises à OpenAI. Sans cette clé, le moteur déterministe continue de fonctionner normalement.
 - `OPENAI_AUDIT_MODEL` — optionnel, modèle utilisé pour la synthèse. Par défaut : `gpt-5.6-sol`.
 - `NEXT_PUBLIC_GTM_ID` — optionnel, conteneur Google Tag Manager

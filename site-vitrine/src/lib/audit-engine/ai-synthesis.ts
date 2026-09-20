@@ -84,7 +84,7 @@ function buildAuditContext({ input, site, sector, report }: SynthesisInput) {
 }
 
 function buildPrompt(context: ReturnType<typeof buildAuditContext>) {
-  return `Tu réalises un mini-audit commercial personnalisé pour Génération Capable.
+  return `Tu réalises un mini-audit commercial personnalisé pour GC.
 
 Tu dois raisonner comme un consultant qui vient réellement d'ouvrir le site du prospect. Le rendu doit être très court, très concret et immédiatement compréhensible par un dirigeant. Il doit montrer ce qui freine la découverte, la confiance ou la prise de contact, sans donner gratuitement tout le plan d'implémentation.
 

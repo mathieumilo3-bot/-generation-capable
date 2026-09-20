@@ -5,7 +5,7 @@ import { HOST, isLegalEntityComplete, legalRows } from "@/lib/data/legal";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
-  description: "Informations légales relatives à Génération Capable.",
+  description: "Informations légales relatives à GC.",
   robots: { index: false, follow: true },
   alternates: { canonical: "/mentions-legales" },
 };
