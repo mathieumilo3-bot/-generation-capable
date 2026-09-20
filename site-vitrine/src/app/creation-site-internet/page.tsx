@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { PillarPage } from "@/components/sections/PillarPage";
 
 export const metadata: Metadata = {
-  title: "Création de site internet",
+  title: "Création de site internet professionnel pour entreprise",
   description:
-    "Un site premium pensé comme un système : architecture, expérience et parcours orientés vers la prise de contact, pas seulement l'apparence.",
+    "Création de site internet professionnel pour artisans, TPE et PME : design, performance, SEO, pages de services et parcours orienté devis ou rendez-vous.",
   alternates: { canonical: "/creation-site-internet" },
 };
 
@@ -12,7 +12,7 @@ export default function CreationSiteInternetPage() {
   return (
     <PillarPage
       eyebrow="System 01"
-      title="Création de site internet"
+      title="Création de site internet professionnel qui transforme les visites en demandes."
       intro="Un site n'est pas une brochure. C'est l'actif digital qui porte votre crédibilité et déclenche la première action du visiteur."
       path="/creation-site-internet"
       ctaContext="pillar_creation_site"
