@@ -29,6 +29,18 @@ export default function SeoPage() {
           heading: "Un contenu qui répond à de vraies questions",
           body: "Chaque article ou page sectorielle part d'un problème réel plutôt que d'un mot-clé isolé.",
         },
+        {
+          heading: "Des pages commerciales reliées aux intentions d'achat",
+          body: "Les requêtes d'audit, de prix, de comparaison, de prestation et de secteur ne doivent pas toutes aboutir sur la même page. Nous organisons les contenus pour que chaque intention importante dispose d'une destination claire et reliée au reste du site.",
+        },
+        {
+          heading: "SEO local pour les entreprises qui travaillent par zone",
+          body: "Lorsque la demande dépend d'une zone géographique, le site, les pages de services et Google Business Profile doivent envoyer des signaux cohérents. Les zones doivent correspondre à l'activité réellement servie, sans multiplication de pages artificielles.",
+        },
+        {
+          heading: "Pilotage par Search Console et conversions",
+          body: "Le suivi porte sur les impressions, clics, requêtes, positions et pages qui progressent, puis sur les formulaires et rendez-vous générés. L'objectif est de renforcer ce qui attire des prospects qualifiés, pas seulement de faire monter un nombre de mots-clés.",
+        },
       ]}
     />
   );
