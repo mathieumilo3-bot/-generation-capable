@@ -11,7 +11,7 @@ type Props = { params: Promise<{ secteur: string }> };
 
 const SECTOR_SOLUTIONS: Record<string, { href: string; label: string }[]> = {
   restaurants: [
-    { href: "/solutions/marketing-local", label: "Marketing local" },
+    { href: "/solutions/marketing-digital-restaurant", label: "Marketing digital restaurant" },
     { href: "/solutions/google-business-profile", label: "Google Business Profile" },
     { href: "/solutions/strategie-reseaux-sociaux", label: "Stratégie réseaux sociaux" },
   ],
@@ -32,7 +32,7 @@ const SECTOR_SOLUTIONS: Record<string, { href: string; label: string }[]> = {
   ],
   artisans: [
     { href: "/solutions/creation-site-artisan", label: "Création de site artisan" },
-    { href: "/solutions/referencement-artisan", label: "Référencement artisan" },
+    { href: "/solutions/marketing-digital-btp", label: "Marketing digital BTP" },
     { href: "/solutions/marketing-digital-artisan", label: "Marketing digital artisan" },
   ],
   services: [
