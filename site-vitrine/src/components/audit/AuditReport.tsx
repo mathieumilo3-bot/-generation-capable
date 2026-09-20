@@ -18,24 +18,24 @@ const PILLARS: {
 }[] = [
   {
     id: "attirer",
-    label: "01 — Attirer",
-    question: "Être trouvé par des prospects qui ne connaissent pas encore l’entreprise.",
+    label: "01 — Être trouvé",
+    question: "Quand un prospect cherche votre métier, votre service ou votre zone, est-ce qu’il peut vous découvrir ?",
     dimensions: ["acquisition", "positioning"],
-    impact: "Créer davantage d’occasions d’être découvert au bon moment.",
+    impact: "Être visible au moment précis où un prospect cherche votre service.",
   },
   {
     id: "rassurer",
-    label: "02 — Rassurer",
-    question: "Faire comprendre l’offre rapidement et donner les preuves nécessaires pour avancer.",
+    label: "02 — Convaincre",
+    question: "Une fois arrivé, comprend-il immédiatement ce que vous faites et pourquoi il peut vous faire confiance ?",
     dimensions: ["positioning", "psychology", "offer", "trust", "social_proof", "price_value"],
-    impact: "Réduire l’hésitation et rendre la décision plus simple.",
+    impact: "Réduire le doute avant la prise de contact.",
   },
   {
     id: "convertir",
-    label: "03 — Convertir",
-    question: "Rendre la prochaine action évidente : contacter, demander un devis ou réserver.",
+    label: "03 — Faire agir",
+    question: "Le visiteur sait-il immédiatement quoi faire ensuite : appeler, demander un devis ou réserver ?",
     dimensions: ["funnel", "conversion", "retention", "business_model"],
-    impact: "Transformer plus facilement l’intérêt en demande concrète.",
+    impact: "Transformer l’intérêt en demande concrète sans friction inutile.",
   },
 ];
 
@@ -107,7 +107,7 @@ function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: numbe
       {ai?.evidence?.length ? (
         <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-            Ce qui nous fait dire ça
+            Preuves concrètes
           </p>
           <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[var(--color-text)]">
             {ai.evidence.map((item, index) => <li key={index}>• {item}</li>)}
@@ -116,18 +116,10 @@ function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: numbe
       ) : null}
       <div className="mt-5 border-t border-[var(--color-border)] pt-4">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-          Impact recherché
+          Pourquoi ça compte
         </p>
         <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{ai?.impact || pillar.impact}</p>
       </div>
-      {ai?.callQuestion && (
-        <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-            À trancher pendant le bilan
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{ai.callQuestion}</p>
-        </div>
-      )}
     </div>
   );
 }
@@ -166,16 +158,16 @@ export function AuditReport({ report, lead }: AuditReportProps) {
           <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
         </span>
         <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-          Bilan GC
+          Audit GC
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Votre diagnostic</h2>
+        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ce qui bloque aujourd’hui</h2>
         <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)]">
           {synthesis?.executiveSummary ||
             "Nous suivons le parcours recherche → découverte → compréhension → confiance → action pour repérer les opportunités qui peuvent avoir une utilité commerciale."}
         </p>
         {synthesis?.companySnapshot && (
           <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">Ce que nous comprenons de votre activité</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">Activité détectée</p>
             <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">{synthesis.companySnapshot}</p>
           </div>
         )}
@@ -223,16 +215,55 @@ export function AuditReport({ report, lead }: AuditReportProps) {
         })}
       </div>
 
+      {synthesis?.webQueries?.length ? (
+        <div className="mt-6 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+            Visibilité web · recherches testées
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">
+            Nous avons testé des recherches proches de celles qu’un prospect pourrait faire sans connaître votre nom.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {synthesis.webQueries.map((query) => (
+              <span key={query} className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-muted)]">
+                {query}
+              </span>
+            ))}
+          </div>
+          {synthesis.webSources?.length ? (
+            <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Sources consultées</p>
+              <div className="mt-2 flex flex-col gap-1.5">
+                {synthesis.webSources.slice(0, 4).map((source) => (
+                  <a
+                    key={source.url}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[var(--color-text)] underline decoration-[var(--color-border-strong)] underline-offset-4"
+                  >
+                    {source.title}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <p className="mt-4 text-[11px] leading-relaxed text-[var(--color-muted)]">
+            Ce signal vérifie la découvrabilité sur le web. Il ne prétend pas mesurer une position Google Maps exacte ni un classement personnalisé.
+          </p>
+        </div>
+      ) : null}
+
       {(aiOpportunities.length > 0 || priorities.length > 0) && (
         <div className="mt-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-            Les opportunités prioritaires
+            3 constats concrets
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-            Voici ce que nous travaillerions en premier.
+            Voilà ce qui mérite votre attention en premier.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            On vous montre le problème et l’impact recherché. Le plan précis et l’ordre d’exécution se construisent pendant le bilan stratégique.
+            Chaque point ci-dessous part d’un élément réellement observé. On vous montre le constat et pourquoi il compte. Le plan de correction précis se construit pendant l’appel.
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {aiOpportunities.length > 0
@@ -246,37 +277,23 @@ export function AuditReport({ report, lead }: AuditReportProps) {
         </div>
       )}
 
-      {(synthesis?.worksWell || report.worksWell.length > 0) && (
-        <div className="mt-10 rounded-2xl border border-[var(--color-border)] p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text)]">
-            Une base à conserver
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">
-            {synthesis?.worksWell || report.worksWell[0]?.title}
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
-            Le but n’est pas de tout refaire : on garde ce qui aide déjà le parcours et on concentre l’effort sur les frictions prioritaires.
-          </p>
-        </div>
-      )}
-
       <div id="prochaine-etape" className="mt-8 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 text-center sm:p-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-          Votre bilan stratégique
+          Prochaine étape
         </p>
         <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-          On transforme ces constats en plan d’action priorisé.
+          On vous montre quoi corriger en premier.
         </h3>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
           {synthesis?.callBridge ||
-            "Pendant 30 minutes, nous reprenons votre analyse, choisissons les 3 actions à traiter en premier et définissons les prochaines étapes adaptées à votre entreprise."}
+            "Pendant 30 minutes, nous reprenons ces constats, choisissons les 3 corrections prioritaires et définissons l’ordre exact dans lequel les mettre en place."}
         </p>
         <div className="mx-auto mt-6 max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Vous repartez avec</p>
           <ul className="mt-3 space-y-2 text-sm text-[var(--color-text)]">
-            <li>✓ vos 3 priorités expliquées</li>
-            <li>✓ l’ordre dans lequel les traiter</li>
-            <li>✓ un plan d’action concret pour la suite</li>
+            <li>✓ les 3 corrections prioritaires</li>
+            <li>✓ l’ordre exact dans lequel les traiter</li>
+            <li>✓ les prochaines actions adaptées à votre activité</li>
           </ul>
         </div>
         <div className="mt-7">
