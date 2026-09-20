@@ -134,6 +134,7 @@ Copier `.env.example` en `.env.local` et renseigner :
   `GC <audit@generationcapable.fr>`.
 - `OPENAI_API_KEY` — optionnel mais recommandé pour le diagnostic enrichi : active la synthèse OpenAI du rapport à partir des signaux publics collectés par le moteur déterministe. Les coordonnées du formulaire ne sont pas transmises à OpenAI. Sans cette clé, le moteur déterministe continue de fonctionner normalement.
 - `OPENAI_AUDIT_MODEL` — optionnel, modèle utilisé pour la synthèse. Par défaut : `gpt-5.6-sol`.
+- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` — optionnel, jeton de validation Google Search Console. Renseigner uniquement la valeur du jeton ; Next.js génère la balise meta de vérification.
 - `NEXT_PUBLIC_GTM_ID` — optionnel, conteneur Google Tag Manager
   (`GTM-XXXXXXX`). Laissée vide, aucune balise tierce n'est chargée (vérifié
   par un test E2E). Renseignée, GA4, les conversions Google Ads et le pixel
