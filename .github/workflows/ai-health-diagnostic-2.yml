@@ -33,3 +33,5 @@ jobs:
 # verify after outer timeout deploy
 
 # verify local-search report v3
+
+# final verification after citation cleanup
