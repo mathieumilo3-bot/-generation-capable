@@ -30,6 +30,7 @@ export const FOOTER_LINKS = [
   { label: "Solutions", href: "/solutions" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Ressources", href: "/ressources" },
+  { label: "À propos", href: "/a-propos" },
   { label: "Audit", href: "/audit" },
 ] as const;
 
