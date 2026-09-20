@@ -30,7 +30,7 @@ export function Hero() {
 
       <Section className="relative pt-20 pb-16 sm:pt-28 sm:pb-20">
         <motion.div style={{ y: contentY }} className="flex flex-col items-start">
-          <Badge>Génération Capable · Systèmes de revenus digitaux</Badge>
+          <Badge>GC · Systèmes de revenus digitaux</Badge>
 
           <h1 className="font-display text-balance mt-7 max-w-5xl text-[2.7rem] font-semibold leading-[1.02] tracking-tight text-[var(--color-text)] sm:text-6xl lg:text-[4.7rem]">
             Votre visibilité attire des gens.
