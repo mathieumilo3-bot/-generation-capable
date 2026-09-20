@@ -28,7 +28,7 @@ test.describe("homepage", () => {
     );
     const expected = [
       "Votre visibilité attire des gens.",
-      "Votre proposition est",
+      "La différence se voit",
       "Voyez où votre entreprise",
       "Voici ce que votre prospect",
       "Nous ne construisons pas",
@@ -39,6 +39,18 @@ test.describe("homepage", () => {
     const positions = expected.map((needle) => order.findIndex((h) => h?.includes(needle)));
     expect(positions, `outline was: ${order.join(" | ")}`).not.toContain(-1);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+
+  test("offers an accessible before and after comparison", async ({ page }) => {
+    await page.goto("/");
+    const comparison = page.getByRole("slider", {
+      name: "Comparer la version avant et la version après",
+    });
+    await expect(comparison).toBeVisible();
+    await expect(comparison).toHaveValue("50");
+    await comparison.fill("72");
+    await expect(comparison).toHaveValue("72");
+    await expect(page.getByText("1 promesse", { exact: true }).last()).toBeVisible();
   });
 });
 
