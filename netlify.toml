@@ -81,6 +81,21 @@
   to = "/404-empty"
   status = 404
 
+# Le domaine principal ouvre désormais la vitrine commerciale GC.
+# force = true est indispensable : sans lui, le fichier index.html réel de
+# l'ancien écosystème reste prioritaire chez Netlify.
+[[redirects]]
+  from = "/"
+  to = "https://generation-capable-vitrine.netlify.app/"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/index.html"
+  to = "https://generation-capable-vitrine.netlify.app/"
+  status = 302
+  force = true
+
 [[redirects]]
   from = "/vsl"
   to = "/vsl.html"
