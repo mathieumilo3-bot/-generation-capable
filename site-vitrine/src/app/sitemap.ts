@@ -33,6 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const solutionRoutes: MetadataRoute.Sitemap = SEO_LANDINGS.map((page) => ({
     url: `${SITE_URL}/solutions/${page.slug}`,
+    lastModified: "2026-09-20",
     changeFrequency: "monthly",
     priority: 0.8,
   }));
