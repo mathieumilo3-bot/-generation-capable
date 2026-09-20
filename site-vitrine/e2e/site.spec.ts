@@ -88,16 +88,16 @@ test.describe("SEO endpoints", () => {
     const response = await request.get("/sitemap.xml");
     expect(response.status()).toBe(200);
     const body = await response.text();
-    expect(body).toContain("https://generationcapable.fr");
+    expect(body).toContain("https://gc-agence.com");
     expect(body).toContain("/secteurs/restaurants");
-    expect(body).not.toContain("www.generationcapable.fr");
+    expect(body).not.toContain("www.gc-agence.com");
   });
 
   test("robots allows crawling and points at the sitemap", async ({ request }) => {
     const body = await (await request.get("/robots.txt")).text();
     expect(body).toContain("Allow: /");
     expect(body).toContain("Disallow: /api/");
-    expect(body).toContain("Sitemap: https://generationcapable.fr/sitemap.xml");
+    expect(body).toContain("Sitemap: https://gc-agence.com/sitemap.xml");
   });
 
   test("legal pages stay out of the index", async ({ page }) => {
