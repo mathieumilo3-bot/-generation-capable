@@ -12,6 +12,12 @@ const PUBLIC_ROUTES = [
   "/agence-web",
   "/acquisition",
   "/seo",
+  "/solutions",
+  "/solutions/audit-site-internet",
+  "/solutions/referencement-local",
+  "/solutions/creation-site-artisan",
+  "/ressources/prix-creation-site-internet",
+  "/ressources/comment-etre-visible-sur-google",
 ];
 
 test.describe("pages", () => {
@@ -27,7 +33,7 @@ test.describe("pages", () => {
       await expect(page).toHaveTitle(/.+/);
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
         "href",
-        /^https:\/\/generationcapable\.fr/
+        /^https:\/\/gc-agence\.com/
       );
       expect(errors).toEqual([]);
     });
@@ -54,6 +60,7 @@ test.describe("pages", () => {
   test("unknown sector and article slugs 404", async ({ page }) => {
     expect((await page.goto("/secteurs/inconnu"))?.status()).toBe(404);
     expect((await page.goto("/ressources/inconnu"))?.status()).toBe(404);
+    expect((await page.goto("/solutions/inconnu"))?.status()).toBe(404);
   });
 });
 
@@ -90,6 +97,8 @@ test.describe("SEO endpoints", () => {
     const body = await response.text();
     expect(body).toContain("https://gc-agence.com");
     expect(body).toContain("/secteurs/restaurants");
+    expect(body).toContain("/solutions/audit-site-internet");
+    expect(body).toContain("/ressources/prix-creation-site-internet");
     expect(body).not.toContain("www.gc-agence.com");
   });
 
