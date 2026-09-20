@@ -98,3 +98,36 @@ webmarketing · e-marketing · marketing numérique · communication digitale ·
 
 ## Principe d'intégration marketing
 Les requêtes ci-dessus sont regroupées par intention. Elles ne doivent pas devenir une succession de pages clonées. Une URL forte couvre les variantes proches grâce à son titre, ses sous-thèmes, ses FAQ, ses liens internes et son contenu. Les nouvelles pages sont créées seulement lorsqu'une intention mérite une réponse réellement différente.
+
+
+# Extension B2B, growth et webmarketing
+
+## 29. Génération de leads B2B → /solutions/generation-leads-b2b
+génération de leads B2B · agence génération leads B2B · lead generation B2B · générer leads B2B · leads qualifiés B2B · acquisition leads B2B · génération prospects B2B · trouver prospects B2B · trouver clients B2B · agence lead generation · lead gen France · génération rendez-vous B2B · prise de rendez-vous B2B · pipeline commercial B2B · leads commerciaux B2B · prospects qualifiés B2B · acquisition prospects professionnels · demande de devis B2B · génération opportunités commerciales · système génération leads B2B
+
+## 30. Agence acquisition B2B → /solutions/agence-acquisition-b2b
+agence acquisition B2B · acquisition B2B · stratégie acquisition B2B · agence acquisition digitale B2B · agence performance B2B · acquisition clients B2B · acquisition commerciale B2B · acquisition digitale entreprise · stratégie génération leads B2B · agence growth B2B · acquisition PME B2B · acquisition SaaS B2B · campagne acquisition B2B · SEO B2B · Google Ads B2B · marketing acquisition B2B · canal acquisition B2B · acquisition multicanale B2B · stratégie pipeline B2B · acquisition prospects B2B
+
+## 31. Marketing B2B → /solutions/marketing-b2b
+marketing B2B · agence marketing B2B · stratégie marketing B2B · marketing digital B2B · agence digitale B2B · marketing PME B2B · marketing entreprise B2B · stratégie digitale B2B · contenu B2B · content marketing B2B · SEO B2B · publicité B2B · génération demande B2B · demand generation B2B · inbound B2B · stratégie LinkedIn B2B · acquisition marketing B2B · marketing commercial B2B · marketing services B2B · plan marketing B2B
+
+## 32. Growth marketing → /solutions/growth-marketing
+growth marketing · agence growth marketing · consultant growth marketing · stratégie growth marketing · growth acquisition · agence growth acquisition · growth PME · growth marketing PME · growth entreprise · optimisation acquisition · expérimentation marketing · conversion growth · growth leads · growth B2B · growth marketing France · stratégie croissance digitale · growth hacking entreprise · agence growth France · acquisition growth · growth funnel
+
+## 33. Webmarketing → /solutions/webmarketing
+webmarketing · agence webmarketing · consultant webmarketing · stratégie webmarketing · plan webmarketing · web marketing entreprise · webmarketing PME · webmarketing TPE · webmarketing artisan · agence web marketing · conseil webmarketing · acquisition webmarketing · référencement webmarketing · publicité webmarketing · stratégie internet entreprise · marketing web PME · plan marketing web · visibilité web entreprise · développement commercial web · générer clients web
+
+## 34. Communication digitale → /solutions/communication-digitale
+communication digitale · agence communication digitale · stratégie communication digitale · consultant communication digitale · communication digitale entreprise · communication digitale PME · agence communication numérique · stratégie de communication en ligne · plan communication digitale · communication web entreprise · communication réseaux sociaux · communication digitale artisan · communication digitale TPE · visibilité digitale entreprise · développer communication digitale · accompagnement communication digitale · communication digitale B2B · agence communication web · stratégie visibilité digitale · présence digitale entreprise
+
+## 35. Inbound marketing → /solutions/inbound-marketing
+inbound marketing · agence inbound marketing · stratégie inbound marketing · inbound marketing B2B · inbound marketing PME · génération leads inbound · acquisition inbound · SEO inbound marketing · content inbound · inbound lead generation · stratégie contenu inbound · tunnel inbound · inbound marketing France · marketing entrant · attirer prospects naturellement · inbound commercial · nurturing B2B · contenu génération leads · stratégie guides SEO · inbound vs outbound
+
+## 36. Consultant marketing digital → /solutions/consultant-marketing-digital
+consultant marketing digital · consultant digital · consultant stratégie digitale · conseil marketing digital · consultant acquisition · consultant webmarketing · expert marketing digital · accompagnement marketing digital · consultant marketing digital PME · consultant marketing digital TPE · consultant acquisition digitale · consultant SEO Ads · consultant growth · conseil acquisition digitale · audit consultant marketing · expert stratégie digitale · consultant performance digitale · consultant marketing B2B · consultant digital France · prestataire stratégie marketing
+
+## 37. Recherches B2B décision / comparaison → /ressources/*
+comment générer des leads B2B · comment trouver des clients B2B · comment trouver des prospects B2B · inbound ou outbound B2B · SEO B2B ou prospection · Google Ads B2B · combien coûte un lead B2B · coût par lead B2B · coût lead qualifié · CPL B2B · coût acquisition B2B · comment calculer coût par lead · comment qualifier un lead B2B · comment améliorer qualité leads · comment construire pipeline B2B · quels canaux acquisition B2B · comment faire du demand generation · stratégie acquisition SaaS · stratégie marketing B2B PME · agence ou consultant marketing digital
+
+## 38. Recherches growth / optimisation → /ressources/*
+comment faire du growth marketing · growth marketing PME · tests acquisition · optimiser acquisition digitale · améliorer taux conversion lead · identifier goulot acquisition · audit acquisition digitale · audit funnel acquisition · optimiser landing page B2B · améliorer formulaire lead · augmenter leads qualifiés · réduire coût par lead · améliorer coût acquisition · tester proposition valeur · optimiser parcours prospect · optimiser génération leads · mesurer pipeline marketing · mesurer acquisition B2B · suivre leads marketing · améliorer conversion marketing
