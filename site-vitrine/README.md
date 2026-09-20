@@ -184,3 +184,9 @@ déploiement (Netlify, Vercel, …) avant mise en production.
 
 <!-- GC Revenue deployment trigger: GTM configuration -->
 <!-- Capable Audit deployment trigger: OpenAI synthesis -->
+
+
+## Pilotage SEO
+
+La carte des intentions est documentée dans `SEO-KEYWORD-MAP.md`.
+La boucle de progression Search Console, le maillage et les règles anti-cannibalisation sont documentés dans `SEO-OPERATING-PLAN.md`.
