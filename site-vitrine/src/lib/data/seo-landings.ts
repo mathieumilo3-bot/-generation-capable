@@ -1210,6 +1210,406 @@ export const SEO_LANDINGS: SeoLanding[] = [
       },
     ],
     related: ["creation-site-artisan", "referencement-artisan", "marketing-local"],
+  },
+  {
+    slug: "generation-leads-b2b",
+    title: "Génération de leads B2B : acquisition, qualification et rendez-vous",
+    metaDescription:
+      "Génération de leads B2B : SEO, Google Ads, contenus, landing pages, qualification et suivi pour créer des opportunités commerciales mesurables.",
+    eyebrow: "Lead generation B2B",
+    h1: "Génération de leads B2B : construisez un pipeline de demandes qualifiées.",
+    intro:
+      "La génération de leads B2B ne consiste pas à accumuler des contacts. Elle doit attirer les bons comptes, capter un signal d'intérêt, qualifier la demande et transmettre au commercial un contexte exploitable.",
+    blocks: [
+      {
+        heading: "Cibler les bonnes intentions",
+        body:
+          "Les recherches de services, comparaisons, problèmes métiers et solutions peuvent révéler une intention forte. SEO, Google Ads et contenu doivent donc être structurés autour des sujets qui rapprochent réellement le prospect d'une décision.",
+      },
+      {
+        heading: "Créer des pages qui qualifient",
+        body:
+          "Une page B2B efficace précise le problème, la cible, la valeur de l'offre, la méthode et la prochaine étape. Le formulaire peut ensuite recueillir seulement les informations utiles à la qualification commerciale.",
+      },
+      {
+        heading: "Relier marketing et vente",
+        body:
+          "Une demande n'a de valeur que si elle arrive au bon moment, avec assez de contexte et une relance claire. Le système doit donc connecter les campagnes, le site, le CRM ou le suivi commercial.",
+      },
+      {
+        heading: "Mesurer la qualité, pas seulement le volume",
+        body:
+          "Le coût par lead est insuffisant si une majorité des contacts est hors cible. Le pilotage doit intégrer la qualification, les rendez-vous, les opportunités et, lorsque possible, les ventes.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Qu'est-ce qu'un lead B2B qualifié ?",
+        answer:
+          "Un contact professionnel qui correspond suffisamment à la cible et manifeste un besoin, un intérêt ou un contexte permettant une suite commerciale pertinente.",
+      },
+      {
+        question: "Quels canaux génèrent des leads B2B ?",
+        answer:
+          "SEO, Google Ads, contenu, LinkedIn, email, prospection et partenariats peuvent être combinés selon la cible et le cycle de vente.",
+      },
+      {
+        question: "Comment améliorer la qualité des leads ?",
+        answer:
+          "En affinant le ciblage, le message, la page d'arrivée, les questions de qualification et les critères transmis à l'équipe commerciale.",
+      },
+    ],
+    related: ["agence-acquisition-b2b", "marketing-b2b", "generation-de-leads"],
+  },
+  {
+    slug: "agence-acquisition-b2b",
+    title: "Agence acquisition B2B : SEO, Ads, contenu et génération de leads",
+    metaDescription:
+      "Agence d'acquisition B2B : stratégie, SEO, Google Ads, landing pages, contenu, tracking et qualification pour générer des opportunités commerciales.",
+    eyebrow: "Acquisition B2B",
+    h1: "Agence acquisition B2B : reliez chaque canal à une opportunité commerciale.",
+    intro:
+      "Une acquisition B2B performante combine souvent plusieurs leviers : recherche, publicité, contenu, conversion et suivi commercial. L'enjeu est de faire travailler ces canaux dans un même parcours plutôt que de les piloter en silos.",
+    blocks: [
+      {
+        heading: "Identifier les canaux les plus proches du revenu",
+        body:
+          "Pour certaines offres, Google capte une demande déjà active. Pour d'autres, il faut créer la demande avec du contenu, LinkedIn ou des campagnes. Le plan dépend du marché, du panier moyen et du cycle de décision.",
+      },
+      {
+        heading: "Aligner message et landing pages",
+        body:
+          "Chaque campagne ou groupe d'intentions doit conduire vers une page cohérente. Cette continuité réduit la friction et permet de mieux comprendre quelles promesses attirent les bons prospects.",
+      },
+      {
+        heading: "Installer une qualification exploitable",
+        body:
+          "Secteur, taille, besoin, délai, budget ou situation actuelle peuvent servir à orienter le lead. Le formulaire doit rester proportionné à la valeur de la demande.",
+      },
+      {
+        heading: "Piloter sur les opportunités",
+        body:
+          "Le suivi idéal rapproche source, campagne, page, lead, rendez-vous et opportunité. C'est cette continuité qui permet de savoir si une hausse du trafic produit réellement plus de business.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Quelle différence entre acquisition B2B et génération de leads B2B ?",
+        answer:
+          "L'acquisition couvre l'ensemble des canaux et du parcours qui attirent les prospects. La génération de leads se concentre davantage sur la transformation de cette audience en contacts qualifiés.",
+      },
+      {
+        question: "Quels KPI suivre en acquisition B2B ?",
+        answer:
+          "Les leads qualifiés, rendez-vous, opportunités, coût par lead qualifié et taux de conversion sont généralement plus utiles que les clics seuls.",
+      },
+      {
+        question: "Faut-il utiliser plusieurs canaux ?",
+        answer:
+          "Pas nécessairement au départ. Il est souvent préférable de maîtriser quelques leviers cohérents puis d'élargir lorsque le parcours de conversion est stable.",
+      },
+    ],
+    related: ["generation-leads-b2b", "strategie-marketing-digital", "publicite-google-ads"],
+  },
+  {
+    slug: "marketing-b2b",
+    title: "Marketing B2B : stratégie digitale, contenu, leads et conversion",
+    metaDescription:
+      "Marketing B2B : stratégie, SEO, contenu, Google Ads, LinkedIn, landing pages, génération de leads et tracking pour PME et entreprises de services.",
+    eyebrow: "Marketing B2B",
+    h1: "Marketing B2B : transformez la visibilité en conversations commerciales.",
+    intro:
+      "Le marketing B2B doit accompagner une décision souvent plus longue et plus rationnelle. Les pages, contenus et campagnes doivent aider le prospect à comprendre le problème, comparer les solutions et avancer vers un échange commercial.",
+    blocks: [
+      {
+        heading: "Couvrir les différentes étapes de décision",
+        body:
+          "Un prospect peut chercher une définition, un prix, une méthode, une comparaison ou directement un prestataire. Chaque étape mérite un contenu ou une page adaptée à son niveau d'intention.",
+      },
+      {
+        heading: "Créer de la preuve sans surpromettre",
+        body:
+          "Méthode, démonstrations, cas réels, expertise visible et explication du processus renforcent la confiance. Les preuves doivent rester vérifiables et cohérentes avec la maturité de l'entreprise.",
+      },
+      {
+        heading: "Relier contenu et acquisition",
+        body:
+          "Le contenu peut soutenir le SEO, LinkedIn, l'email et les commerciaux. Un même sujet peut devenir guide, post, séquence, FAQ et support de vente lorsqu'il répond à une objection récurrente.",
+      },
+      {
+        heading: "Mesurer l'influence jusqu'au pipeline",
+        body:
+          "Les conversions B2B ne sont pas toujours immédiates. Il faut donc suivre les étapes intermédiaires : téléchargement, formulaire, rendez-vous, opportunité et évolution du pipeline.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Qu'est-ce qui différencie le marketing B2B du B2C ?",
+        answer:
+          "Le cycle de décision est souvent plus long, implique davantage de critères et peut nécessiter plusieurs interactions avant la prise de contact ou la vente.",
+      },
+      {
+        question: "Quels contenus fonctionnent en B2B ?",
+        answer:
+          "Guides, comparatifs, études de cas réelles, démonstrations, réponses aux objections, contenus métier et pages de services détaillées.",
+      },
+      {
+        question: "LinkedIn est-il obligatoire en B2B ?",
+        answer:
+          "Non. Il peut être utile, mais Google, l'email, le SEO, les partenariats et la prospection peuvent être tout aussi importants selon la cible.",
+      },
+    ],
+    related: ["generation-leads-b2b", "content-marketing", "agence-acquisition-b2b"],
+  },
+  {
+    slug: "growth-marketing",
+    title: "Growth marketing : acquisition, activation et conversion mesurables",
+    metaDescription:
+      "Growth marketing pour PME et entreprises de services : acquisition, tests, conversion, tracking, contenu et automatisation pour accélérer la croissance.",
+    eyebrow: "Growth",
+    h1: "Growth marketing : expérimentez sur le parcours complet, pas seulement sur le trafic.",
+    intro:
+      "Le growth marketing consiste à améliorer les étapes qui relient l'acquisition au revenu : attirer, convertir, qualifier, relancer et mesurer. Les tests sont utiles lorsqu'ils répondent à une hypothèse précise et à un indicateur concret.",
+    blocks: [
+      {
+        heading: "Trouver le principal goulot d'étranglement",
+        body:
+          "Avant de tester dix canaux, il faut identifier l'étape qui limite le système : manque de trafic, mauvaise intention, page faible, formulaire abandonné ou suivi commercial incomplet.",
+      },
+      {
+        heading: "Tester des hypothèses simples",
+        body:
+          "Promesse, offre, landing page, formulaire, créatif, mot-clé ou séquence de relance peuvent être testés séparément pour comprendre ce qui améliore réellement le résultat.",
+      },
+      {
+        heading: "Construire des boucles d'apprentissage",
+        body:
+          "Chaque test doit produire une conclusion exploitable. Les résultats alimentent ensuite les contenus, campagnes et pages afin que les apprentissages ne restent pas isolés dans un seul canal.",
+      },
+      {
+        heading: "Éviter les vanity metrics",
+        body:
+          "La croissance ne se mesure pas uniquement en trafic ou en abonnés. Les leads qualifiés, rendez-vous, activation et revenu restent les signaux les plus proches du business.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Quelle différence entre growth marketing et marketing digital ?",
+        answer:
+          "Le growth marketing insiste davantage sur l'expérimentation rapide, la mesure et l'optimisation du parcours complet, alors que le marketing digital couvre l'ensemble des canaux numériques.",
+      },
+      {
+        question: "Le growth marketing convient-il aux PME ?",
+        answer:
+          "Oui si l'entreprise dispose d'un minimum de données et peut tester des changements sans multiplier inutilement les outils.",
+      },
+      {
+        question: "Quels tests lancer en premier ?",
+        answer:
+          "Ceux qui ciblent le plus gros goulot d'étranglement du parcours : message, page, formulaire, campagne ou relance.",
+      },
+    ],
+    related: ["strategie-marketing-digital", "automatisation-marketing", "generation-de-leads"],
+  },
+  {
+    slug: "webmarketing",
+    title: "Webmarketing : SEO, Ads, contenu et conversion pour générer des clients",
+    metaDescription:
+      "Webmarketing pour entreprises : site, SEO, Google Ads, réseaux sociaux, contenu, conversion et génération de leads dans une stratégie mesurable.",
+    eyebrow: "Webmarketing",
+    h1: "Webmarketing : transformez votre présence en système d'acquisition.",
+    intro:
+      "Le webmarketing regroupe les leviers qui permettent d'attirer une audience, de la convertir et de mesurer ce qui produit des opportunités. Le site reste le point central qui relie ces canaux.",
+    blocks: [
+      {
+        heading: "Structurer la présence avant d'ajouter du trafic",
+        body:
+          "Le site, les pages de services, la proposition de valeur et les conversions doivent être suffisamment clairs pour accueillir le trafic venant du SEO, des Ads et des réseaux sociaux.",
+      },
+      {
+        heading: "Choisir les canaux selon l'intention",
+        body:
+          "Google capte souvent une demande active, les réseaux sociaux créent de l'attention et le contenu accompagne la décision. Le mix dépend du comportement réel des prospects.",
+      },
+      {
+        heading: "Faire circuler la preuve",
+        body:
+          "Avis, réalisations, expertise, FAQ et démonstrations peuvent être réutilisés entre le site, les annonces et les réseaux afin de renforcer la cohérence et la confiance.",
+      },
+      {
+        heading: "Mesurer jusqu'à la conversion",
+        body:
+          "Le webmarketing devient pilotable lorsque les campagnes, les pages et les contenus sont reliés aux formulaires, appels ou rendez-vous plutôt qu'à des statistiques isolées.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Quelle différence entre webmarketing et marketing digital ?",
+        answer:
+          "Les deux termes se recouvrent largement. Webmarketing insiste souvent davantage sur les leviers liés au web : site, SEO, publicité, contenu et conversion.",
+      },
+      {
+        question: "Quels leviers webmarketing pour une petite entreprise ?",
+        answer:
+          "Site, référencement local, Google Business Profile, SEO, contenu, Google Ads et réseaux sociaux selon la cible et le budget.",
+      },
+      {
+        question: "Par quoi commencer ?",
+        answer:
+          "Par un objectif commercial clair, un parcours de conversion fonctionnel et les canaux où la demande est la plus proche de votre offre.",
+      },
+    ],
+    related: ["agence-marketing-digital", "strategie-marketing-digital", "visibilite-google"],
+  },
+  {
+    slug: "communication-digitale",
+    title: "Communication digitale : contenu, réseaux sociaux et visibilité web",
+    metaDescription:
+      "Communication digitale pour entreprise : positionnement, site, contenu, réseaux sociaux, visibilité Google et parcours vers les demandes commerciales.",
+    eyebrow: "Communication digitale",
+    h1: "Communication digitale : rendez votre message cohérent sur tous les points de contact.",
+    intro:
+      "La communication digitale ne sert pas uniquement à publier. Elle doit rendre l'offre compréhensible, renforcer la confiance et donner une suite claire aux personnes qui découvrent l'entreprise en ligne.",
+    blocks: [
+      {
+        heading: "Clarifier le message central",
+        body:
+          "Le site, les profils sociaux et les contenus doivent expliquer la même promesse avec des formulations adaptées au canal. Une communication contradictoire ou trop générale réduit la mémorisation.",
+      },
+      {
+        heading: "Organiser les contenus par rôle",
+        body:
+          "Certains contenus attirent l'attention, d'autres rassurent, démontrent l'expertise ou répondent aux objections. Cette répartition évite de publier uniquement des annonces commerciales.",
+      },
+      {
+        heading: "Relier visibilité et action",
+        body:
+          "Chaque canal doit proposer une prochaine étape adaptée : consulter une page, demander un diagnostic, réserver un rendez-vous ou déposer une demande de devis.",
+      },
+      {
+        heading: "Mesurer les signaux utiles",
+        body:
+          "Portée et engagement aident à comprendre la distribution, mais les clics, recherches de marque et conversions montrent davantage l'effet réel de la communication.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Que comprend la communication digitale ?",
+        answer:
+          "Le site, les réseaux sociaux, les contenus, l'identité de marque en ligne, les messages, les campagnes et les parcours qui relient ces canaux.",
+      },
+      {
+        question: "Communication digitale et marketing digital sont-ils identiques ?",
+        answer:
+          "Ils se recouvrent, mais la communication se concentre davantage sur le message et la perception, tandis que le marketing inclut aussi l'acquisition, la conversion et la mesure commerciale.",
+      },
+      {
+        question: "Comment mesurer une communication digitale ?",
+        answer:
+          "Avec des indicateurs de portée, engagement, clics, recherches de marque, trafic direct et conversions selon les objectifs.",
+      },
+    ],
+    related: ["strategie-reseaux-sociaux", "content-marketing", "agence-marketing-digital"],
+  },
+  {
+    slug: "inbound-marketing",
+    title: "Inbound marketing : attirer des prospects avec contenu, SEO et conversion",
+    metaDescription:
+      "Inbound marketing : SEO, contenus, guides, landing pages, formulaires, nurturing et conversion pour attirer des prospects avant le rendez-vous.",
+    eyebrow: "Inbound",
+    h1: "Inbound marketing : faites venir les prospects en répondant à leurs questions.",
+    intro:
+      "L'inbound marketing attire des prospects grâce à des contenus et pages qui répondent à leurs besoins avant même le premier échange commercial. Le système fonctionne lorsque chaque contenu conduit vers une prochaine étape utile.",
+    blocks: [
+      {
+        heading: "Couvrir les questions avant l'achat",
+        body:
+          "Prix, comparaison, méthode, erreurs, délais et choix de solution sont autant de recherches qui peuvent attirer un prospect avant qu'il ne cherche directement un prestataire.",
+      },
+      {
+        heading: "Créer des parcours de progression",
+        body:
+          "Un guide informatif peut renvoyer vers une page de service, un audit, une démonstration ou un formulaire selon le niveau d'intention. Le contenu devient ainsi une étape du parcours.",
+      },
+      {
+        heading: "Qualifier sans forcer",
+        body:
+          "Le prospect doit pouvoir avancer progressivement. Les formulaires et appels à l'action sont plus efficaces lorsqu'ils correspondent à la maturité de la personne plutôt qu'à une demande commerciale immédiate systématique.",
+      },
+      {
+        heading: "Relier contenu et pipeline",
+        body:
+          "Le suivi des pages consultées, formulaires et rendez-vous permet de comprendre quels contenus assistent réellement la génération d'opportunités.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Qu'est-ce que l'inbound marketing ?",
+        answer:
+          "Une méthode qui attire des prospects avec des contenus et expériences utiles plutôt que de dépendre uniquement de la prospection directe.",
+      },
+      {
+        question: "L'inbound marketing remplace-t-il la prospection ?",
+        answer:
+          "Non. Les deux peuvent être complémentaires, notamment en B2B où le contenu peut rassurer les prospects approchés par d'autres canaux.",
+      },
+      {
+        question: "Quels contenus utiliser ?",
+        answer:
+          "Guides, comparatifs, FAQ, études de cas réelles, pages de services et contenus répondant aux questions fréquentes des prospects.",
+      },
+    ],
+    related: ["content-marketing", "marketing-b2b", "generation-leads-b2b"],
+  },
+  {
+    slug: "consultant-marketing-digital",
+    title: "Consultant marketing digital : audit, stratégie et plan d'acquisition",
+    metaDescription:
+      "Consultant marketing digital pour TPE et PME : audit, stratégie, SEO, Ads, contenu, conversion, tracking et priorités d'acquisition.",
+    eyebrow: "Conseil digital",
+    h1: "Consultant marketing digital : transformez vos actions dispersées en plan priorisé.",
+    intro:
+      "Un accompagnement stratégique sert à comprendre ce qui doit être corrigé, créé ou arrêté avant de multiplier les dépenses. Le rôle est de relier les actions digitales à un objectif commercial et à des indicateurs suivis.",
+    blocks: [
+      {
+        heading: "Diagnostiquer avant de recommander",
+        body:
+          "Site, SEO, campagnes, contenus, réseaux sociaux et conversion sont examinés ensemble afin d'identifier le vrai goulot d'étranglement plutôt que de proposer automatiquement un canal.",
+      },
+      {
+        heading: "Définir un ordre d'exécution",
+        body:
+          "Les actions sont classées selon leur impact potentiel, leur dépendance et leur difficulté. Cela évite d'investir dans des campagnes avant d'avoir corrigé une page ou un suivi de conversion défaillant.",
+      },
+      {
+        heading: "Choisir les indicateurs utiles",
+        body:
+          "Le plan doit associer chaque levier à un signal mesurable : impressions, leads, rendez-vous, coût par demande ou opportunités selon le stade du parcours.",
+      },
+      {
+        heading: "Transmettre une méthode réutilisable",
+        body:
+          "L'objectif n'est pas de créer une dépendance à un tableau de bord complexe mais de rendre les décisions plus simples grâce à une logique de test, mesure et priorisation.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Quand faire appel à un consultant marketing digital ?",
+        answer:
+          "Lorsque plusieurs actions digitales existent mais manquent de cohérence, de mesure ou de priorités claires.",
+      },
+      {
+        question: "Consultant ou agence marketing digital ?",
+        answer:
+          "Le consultant se concentre souvent davantage sur le diagnostic et la stratégie, tandis qu'une agence peut aussi assurer une partie plus importante de l'exécution.",
+      },
+      {
+        question: "Un audit est-il nécessaire avant une stratégie ?",
+        answer:
+          "Il est fortement utile, car il permet de partir de la situation réelle plutôt que de recommandations génériques.",
+      },
+    ],
+    related: ["audit-marketing-digital", "strategie-marketing-digital", "agence-marketing-digital"],
   }
 ];
 
