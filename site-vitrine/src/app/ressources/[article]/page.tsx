@@ -44,6 +44,35 @@ const RELATED_LINKS: Record<string, { href: string; label: string }[]> = {
     { href: "/solutions/refonte-site-internet", label: "Refonte de site internet" },
     { href: "/solutions/audit-seo", label: "Audit SEO" },
   ],
+  "plan-marketing-digital-pme": [
+    { href: "/solutions/strategie-marketing-digital", label: "Stratégie marketing digital" },
+    { href: "/solutions/marketing-digital-pme", label: "Marketing digital PME" },
+    { href: "/solutions/audit-marketing-digital", label: "Audit marketing digital" },
+  ],
+  "budget-marketing-digital-pme": [
+    { href: "/solutions/marketing-digital-pme", label: "Marketing digital PME" },
+    { href: "/solutions/agence-marketing-digital", label: "Agence marketing digital" },
+  ],
+  "seo-ou-google-ads": [
+    { href: "/seo", label: "Référencement SEO" },
+    { href: "/solutions/publicite-google-ads", label: "Google Ads" },
+    { href: "/solutions/strategie-marketing-digital", label: "Stratégie marketing digital" },
+  ],
+  "google-ads-pme-guide": [
+    { href: "/solutions/publicite-google-ads", label: "Google Ads" },
+    { href: "/solutions/landing-page", label: "Landing page" },
+    { href: "/solutions/generation-de-leads", label: "Génération de leads" },
+  ],
+  "strategie-reseaux-sociaux-entreprise": [
+    { href: "/solutions/strategie-reseaux-sociaux", label: "Stratégie réseaux sociaux" },
+    { href: "/solutions/content-marketing", label: "Content marketing" },
+    { href: "/solutions/publicite-meta-ads", label: "Meta Ads" },
+  ],
+  "marketing-digital-artisan-guide": [
+    { href: "/solutions/marketing-digital-artisan", label: "Marketing digital artisan" },
+    { href: "/solutions/referencement-artisan", label: "Référencement artisan" },
+    { href: "/solutions/publicite-google-ads", label: "Google Ads" },
+  ],
 };
 
 export function generateStaticParams() {
