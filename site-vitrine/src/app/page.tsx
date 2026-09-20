@@ -7,6 +7,7 @@ import { SystemArchitecture } from "@/components/sections/SystemArchitecture";
 import { Systems } from "@/components/sections/Systems";
 import { FAQ } from "@/components/sections/FAQ";
 import { FinalCTA } from "@/components/sections/FinalCTA";
+import { SeoEntryPoints } from "@/components/sections/SeoEntryPoints";
 import { LandingView } from "@/components/sections/LandingView";
 import { ServiceJsonLd } from "@/components/schema/JsonLd";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
@@ -36,6 +37,7 @@ export default function Home() {
       <SystemDemo />
       <SystemArchitecture />
       <Systems />
+      <SeoEntryPoints />
       <FAQ />
       <FinalCTA />
     </>
