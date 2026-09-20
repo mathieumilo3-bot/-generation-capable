@@ -96,8 +96,8 @@ const CLUSTERS = [
 const bySlug = new Map(SEO_LANDINGS.map((page) => [page.slug, page]));
 
 export default function SolutionsPage() {
-  const linkedSlugs = new Set(CLUSTERS.flatMap((cluster) => cluster.slugs));
-  const uncategorized = SEO_LANDINGS.filter((page) => !linkedSlugs.has(page.slug as never));
+  const linkedSlugs = new Set<string>(CLUSTERS.flatMap((cluster) => [...cluster.slugs]));
+  const uncategorized = SEO_LANDINGS.filter((page) => !linkedSlugs.has(page.slug));
 
   return (
     <Section className="py-24 sm:py-32">
