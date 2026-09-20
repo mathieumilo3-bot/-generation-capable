@@ -131,3 +131,26 @@ comment générer des leads B2B · comment trouver des clients B2B · comment tr
 
 ## 38. Recherches growth / optimisation → /ressources/*
 comment faire du growth marketing · growth marketing PME · tests acquisition · optimiser acquisition digitale · améliorer taux conversion lead · identifier goulot acquisition · audit acquisition digitale · audit funnel acquisition · optimiser landing page B2B · améliorer formulaire lead · augmenter leads qualifiés · réduire coût par lead · améliorer coût acquisition · tester proposition valeur · optimiser parcours prospect · optimiser génération leads · mesurer pipeline marketing · mesurer acquisition B2B · suivre leads marketing · améliorer conversion marketing
+
+
+# Extension secteurs à forte valeur
+
+## 39. BTP / construction → /solutions/marketing-digital-btp
+marketing digital BTP · agence marketing BTP · marketing construction · agence marketing construction · stratégie marketing BTP · acquisition BTP · génération leads BTP · génération devis BTP · référencement BTP · SEO BTP · SEO local BTP · Google Ads BTP · publicité BTP · site internet BTP · agence web BTP · visibilité entreprise bâtiment · marketing entreprise bâtiment · acquisition entreprise bâtiment · trouver clients BTP · remplir carnet de commandes BTP
+
+## 40. Dentistes / cabinets dentaires → /solutions/creation-site-dentiste + /solutions/marketing-digital-dentiste
+création site internet dentiste · site internet dentiste · site web dentiste · agence web dentiste · création site cabinet dentaire · refonte site dentiste · SEO dentiste · référencement dentiste · SEO local dentiste · référencement cabinet dentaire · marketing digital dentiste · marketing cabinet dentaire · agence marketing dentiste · visibilité cabinet dentaire · site Doctolib dentiste · prise rendez-vous dentiste site · communication digitale dentiste · Google Business dentiste · site orthodontiste · création site centre dentaire
+
+## 41. Entreprises de nettoyage → /solutions/marketing-entreprise-nettoyage
+marketing entreprise nettoyage · marketing société nettoyage · agence marketing nettoyage · site internet entreprise nettoyage · SEO entreprise nettoyage · référencement entreprise nettoyage · Google Ads nettoyage · génération leads nettoyage · génération devis nettoyage · acquisition entreprise nettoyage · publicité entreprise nettoyage · marketing nettoyage bureaux · marketing nettoyage fin chantier · trouver clients entreprise nettoyage · trouver contrats nettoyage · visibilité entreprise nettoyage · agence web nettoyage · référencement nettoyage bureaux · stratégie digitale nettoyage · marketing nettoyage B2B
+
+## 42. Événementiel → /solutions/marketing-evenementiel-digital
+marketing événementiel digital · marketing événementiel · agence marketing événementiel · stratégie marketing événementiel · acquisition événementiel · génération leads événementiel · landing page événement · publicité événement · Meta Ads événement · Google Ads événement · réseaux sociaux événement · inscription événement en ligne · marketing salon professionnel · marketing conférence · marketing séminaire · promotion événement entreprise · campagne événementielle digitale · leads salon professionnel · suivi post événement · marketing agence événementielle
+
+## 43. Restaurants → /solutions/marketing-digital-restaurant
+marketing digital restaurant · marketing restaurant · agence marketing restaurant · agence digitale restaurant · SEO restaurant · référencement restaurant · SEO local restaurant · Google Business restaurant · Google Maps restaurant · publicité restaurant · Meta Ads restaurant · Instagram restaurant · site internet restaurant · création site restaurant · réservation directe restaurant · visibilité Google restaurant · marketing restauration · attirer clients restaurant · augmenter réservations restaurant · communication digitale restaurant
+
+## 44. Intentions métiers à surveiller dans Search Console
+création site dentiste · marketing digital BTP · agence marketing BTP · SEO local artisan · génération leads B2B · agence acquisition B2B · consultant marketing digital · webmarketing PME · agence Google Ads PME · marketing entreprise nettoyage · marketing digital restaurant · marketing événementiel digital · prix création site internet · audit marketing digital · audit SEO · référencement local · Google Business Profile · landing page conversion · tunnel de vente · coût par lead qualifié
+
+Ces familles doivent être pilotées avec les vraies impressions et positions Search Console dès que la propriété gc-agence.com est connectée. Une requête qui commence à obtenir des impressions entre les positions 8 et 40 devient prioritaire pour enrichissement, maillage et preuve.
