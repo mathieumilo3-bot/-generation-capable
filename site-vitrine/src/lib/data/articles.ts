@@ -383,6 +383,86 @@ export const ARTICLES: Article[] = [
       "Le formulaire et la prise de rendez-vous doivent être testés sur mobile, avec le minimum de friction nécessaire à la qualification. Une erreur ou un champ inutile peut faire perdre des demandes.",
       "Enfin, le tracking doit permettre de relier chaque lead à sa source et idéalement à sa qualité commerciale. Sans cette information, augmenter le budget revient à accélérer sans savoir quel canal produit réellement les meilleures opportunités.",
     ],
+  },
+  {
+    slug: "marketing-digital-btp-guide",
+    title: "Marketing digital BTP : les canaux à prioriser pour générer des devis",
+    excerpt:
+      "Site, SEO local, Google Business, Google Ads, réalisations et formulaire : un plan d'acquisition adapté aux entreprises du bâtiment.",
+    readingTime: "10 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Dans le BTP, la demande digitale se concentre souvent autour d'un métier, d'une prestation et d'une zone. Avant de lancer des campagnes, le site doit donc expliquer clairement les travaux réalisés et les secteurs réellement couverts.",
+      "Les pages de prestations sont la première brique. Elles donnent à Google un sujet précis à indexer et au prospect un endroit où comprendre le service, voir des réalisations et demander un devis.",
+      "Google Business Profile complète cette présence avec les horaires, la zone, les photos et les avis. La cohérence entre la fiche et le site facilite la compréhension locale de l'entreprise.",
+      "Google Ads peut accélérer l'acquisition sur des recherches urgentes ou fortement commerciales. Les groupes d'annonces doivent rester proches des prestations et conduire vers des pages adaptées, pas vers une page d'accueil générique.",
+      "Les réalisations sont un levier de confiance particulièrement puissant dans le bâtiment. Chaque chantier peut documenter un type de travaux, un contexte et une zone sans inventer de résultat ni de promesse.",
+      "Enfin, le suivi doit distinguer les formulaires, appels et demandes de devis par service. Le meilleur canal n'est pas forcément celui qui produit le plus de leads, mais celui qui apporte les projets les plus cohérents avec l'entreprise.",
+    ],
+  },
+  {
+    slug: "site-internet-dentiste-seo-local",
+    title: "Site internet dentiste : structure, SEO local et prise de rendez-vous",
+    excerpt:
+      "Les éléments utiles d'un site de cabinet dentaire : information patient, pages de soins, visibilité locale, mobile, rendez-vous et confidentialité.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Le site d'un cabinet dentaire doit d'abord répondre aux questions pratiques des patients : où se trouve le cabinet, qui compose l'équipe, quels soins sont présentés, comment prendre rendez-vous et comment se préparer à la visite.",
+      "Les pages de soins peuvent améliorer la compréhension du site et couvrir des recherches utiles, à condition de rester pédagogiques, exactes et conformes aux règles professionnelles applicables. Elles ne doivent pas promettre un résultat ni transformer l'information médicale en argument commercial excessif.",
+      "Le référencement local repose sur la cohérence des coordonnées, de la zone, du site et de la fiche Google. Les contenus locaux doivent apporter une vraie information plutôt que dupliquer des pages par ville.",
+      "Sur mobile, les patients doivent trouver rapidement l'adresse, le téléphone et la prise de rendez-vous. Une page lente ou un bouton caché crée une friction inutile.",
+      "Les formulaires doivent être limités aux informations nécessaires. Lorsqu'une donnée de santé pourrait être collectée, le choix des outils, de l'hébergement et du traitement doit être évalué avec attention.",
+      "Un bon site de cabinet dentaire n'est donc pas celui qui multiplie les effets visuels, mais celui qui rend l'information claire, la présence locale cohérente et le parcours vers le rendez-vous simple.",
+    ],
+  },
+  {
+    slug: "marketing-entreprise-nettoyage-guide",
+    title: "Marketing entreprise de nettoyage : comment générer des demandes de devis",
+    excerpt:
+      "SEO local, pages de services, Google Ads, preuve, zones d'intervention et formulaire : le plan marketing d'une entreprise de nettoyage.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Une entreprise de nettoyage peut vendre des prestations très différentes : bureaux, copropriétés, vitres, fin de chantier, remise en état ou entretien récurrent. Les regrouper sur une seule page limite souvent la clarté et le référencement.",
+      "Les pages de services doivent expliquer le type de besoin, le public concerné, la zone et les informations nécessaires pour établir un devis. Elles deviennent alors des portes d'entrée pour des recherches plus précises.",
+      "Le SEO local et Google Business Profile sont particulièrement utiles pour les demandes proches géographiquement. Les avis, photos, horaires et coordonnées doivent rester cohérents avec le site.",
+      "Google Ads peut capter des recherches à forte intention, notamment les prestations urgentes ou ponctuelles. Chaque campagne doit renvoyer vers la page correspondant exactement au service recherché.",
+      "En B2B, le formulaire peut qualifier la surface, la fréquence, le type de locaux et le délai. Ces données permettent de distinguer une demande exploitable d'un simple contact générique.",
+      "Le suivi doit enfin rapprocher les sources des contrats ou opportunités afin de ne pas optimiser uniquement le volume de formulaires.",
+    ],
+  },
+  {
+    slug: "marketing-evenementiel-digital-guide",
+    title: "Marketing digital événementiel : de la campagne aux inscriptions puis aux leads",
+    excerpt:
+      "Landing page, Ads, social, email, rappels et suivi post-événement : structurer un parcours événementiel mesurable.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Le marketing d'un événement doit gérer une contrainte particulière : la date est fixe. Chaque semaine perdue réduit la fenêtre disponible pour attirer, convaincre et relancer les participants.",
+      "La landing page centralise l'information essentielle : public, programme, date, lieu, bénéfice et inscription. Elle doit rester cohérente avec les annonces et contenus qui amènent le trafic.",
+      "Les canaux dépendent du public. LinkedIn peut convenir à un événement B2B, Meta à un public plus large, Google à une recherche active et l'email à une base déjà connue. Les partenaires peuvent également amplifier la distribution.",
+      "Les confirmations et rappels réduisent les absences lorsqu'ils apportent une information utile. Après l'événement, le suivi peut proposer une ressource, un rendez-vous ou un contenu lié aux sujets abordés.",
+      "Les inscriptions ne suffisent pas à mesurer la valeur. Présence réelle, rendez-vous, opportunités et ventes éventuelles permettent de mieux rapprocher l'événement d'un résultat commercial.",
+      "Une bonne stratégie transforme donc l'événement en parcours complet plutôt qu'en campagne isolée qui s'arrête le jour J.",
+    ],
+  },
+  {
+    slug: "marketing-digital-restaurant-guide",
+    title: "Marketing digital restaurant : Google, avis, réseaux sociaux et réservation",
+    excerpt:
+      "Les leviers essentiels pour un restaurant : fiche Google, SEO local, menu mobile, avis, contenus sociaux et parcours de réservation.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Pour un restaurant, le parcours digital peut être très court : une recherche locale, quelques photos, des avis, le menu puis une réservation ou un itinéraire. Chaque friction dans ce parcours peut faire basculer le choix vers une autre adresse.",
+      "Google Business Profile doit être irréprochable sur les informations de base : catégorie, horaires, adresse, téléphone, photos et lien vers le site. Les changements temporaires doivent être mis à jour rapidement.",
+      "Le site doit afficher un menu lisible sur mobile sans obliger le visiteur à télécharger un PDF difficile à manipuler. La réservation, l'itinéraire et les horaires doivent rester visibles.",
+      "Les réseaux sociaux servent à montrer les plats, l'ambiance, les nouveautés et les événements. Ils créent davantage de valeur lorsqu'ils donnent une suite claire vers le menu ou la réservation.",
+      "Le référencement local peut également couvrir des recherches de spécialité ou de quartier lorsque le restaurant répond réellement à ces intentions. Les pages doivent rester utiles et spécifiques.",
+      "Enfin, les clics vers la réservation, appels, itinéraires et actions sur la fiche Google permettent d'observer quelles sources contribuent le plus à la fréquentation.",
+    ],
   }
 ];
 
