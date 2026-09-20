@@ -29,6 +29,18 @@ export default function AgenceWebPage() {
           heading: "Orientés opportunités commerciales",
           body: "L'objectif n'est jamais l'esthétique seule : c'est la transformation de la visibilité, du trafic et de l'attention en prises de contact réelles.",
         },
+        {
+          heading: "Une architecture adaptée aux PME et artisans",
+          body: "Les prestations, secteurs, zones réellement servies, réalisations et questions fréquentes sont structurés pour que les visiteurs comme Google comprennent rapidement ce que l'entreprise propose et à qui.",
+        },
+        {
+          heading: "Création de site et SEO pensés ensemble",
+          body: "Le référencement n'est pas ajouté après la mise en ligne. Titres, pages de services, maillage, performance et données structurées sont intégrés à la conception pour éviter de reconstruire le socle quelques mois plus tard.",
+        },
+        {
+          heading: "Un parcours vers le devis ou le rendez-vous",
+          body: "Chaque source de trafic doit déboucher sur une prochaine étape claire : diagnostic, devis, formulaire ou rendez-vous. Le suivi des conversions permet ensuite d'identifier les pages et canaux qui produisent réellement des demandes.",
+        },
       ]}
     />
   );
