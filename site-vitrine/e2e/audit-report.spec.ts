@@ -125,7 +125,7 @@ test.describe("audit report", () => {
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
 
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toBeVisible();
     await expect(page.getByText("mon-restaurant.fr")).toBeVisible();
     await expect(page.getByText("Restaurant / restauration")).toBeVisible();
     // Finding titles are scoped to their <h3> — the same title also appears
@@ -143,7 +143,7 @@ test.describe("audit report", () => {
     await mockAnalyze(page);
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toBeVisible();
 
     await expect(page.getByText("Observé sur votre site").first()).toBeVisible();
     await expect(page.getByText("Déduit").first()).toBeVisible();
@@ -155,7 +155,7 @@ test.describe("audit report", () => {
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
 
     await expect(page.getByRole("heading", { name: "Votre analyse est en préparation." })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toHaveCount(0);
   });
 
   test("falls back to the plain confirmation when the analysis is still running after the wait window", async ({ page }) => {
@@ -178,10 +178,10 @@ test.describe("audit report", () => {
     await mockAnalyze(page);
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toBeVisible();
 
-    await expect(page.getByText("Bilan GC")).toBeVisible();
-    await expect(page.getByRole("heading", { name: /On transforme ces constats en plan d’action priorisé/ })).toBeVisible();
+    await expect(page.getByText("Audit GC")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /On vous montre quoi corriger en premier/ })).toBeVisible();
 
     const booking = page.getByRole("link", { name: /Réserver mon bilan de 30 min/ });
     const href = await booking.getAttribute("href");
@@ -202,7 +202,7 @@ test.describe("audit report", () => {
     await mockAnalyze(page);
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toBeVisible();
 
     await expect
       .poll(() => page.evaluate(() => (window.dataLayer ?? []).map((e) => e.event)))
@@ -219,7 +219,7 @@ test.describe("audit report", () => {
     await mockAnalyze(page);
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toBeVisible();
 
     // The new report intentionally puts the GC summary before the detailed
     // opportunities. Scroll a real finding into view before asserting the
@@ -238,7 +238,7 @@ test.describe("audit report", () => {
     await mockAnalyze(page);
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toBeVisible();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth
@@ -250,7 +250,7 @@ test.describe("audit report", () => {
     await mockAnalyze(page);
     await completeFunnel(page);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toBeVisible();
 
     const bodyText = await page.locator("body").innerText();
     expect(bodyText).not.toMatch(/taux de conversion de \d/i);
@@ -271,7 +271,7 @@ test.describe("audit report", () => {
     // the funnel relies on (analysis starts at step 3→4, well before submit).
     await page.waitForTimeout(300);
     await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-    await expect(page.getByRole("heading", { name: "Votre diagnostic" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ce qui bloque aujourd’hui" })).toBeVisible();
 
     expect(leadPostData).toBeTruthy();
     const payload = JSON.parse(leadPostData!);
