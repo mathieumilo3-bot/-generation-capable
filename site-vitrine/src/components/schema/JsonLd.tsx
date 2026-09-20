@@ -16,6 +16,7 @@ export function OrganizationJsonLd() {
         "@context": "https://schema.org",
         "@type": "Organization",
         name: SITE_NAME,
+        alternateName: "GC Agence",
         url: SITE_URL,
         description: SITE_DESCRIPTION,
         logo: `${SITE_URL}/icon-512.png`,
