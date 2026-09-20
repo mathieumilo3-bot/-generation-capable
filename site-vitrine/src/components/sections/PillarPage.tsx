@@ -1,6 +1,6 @@
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
-import { BreadcrumbJsonLd } from "@/components/schema/JsonLd";
+import { BreadcrumbJsonLd, ServiceJsonLd } from "@/components/schema/JsonLd";
 import { PRIMARY_CTA_LABEL, SITE_URL } from "@/lib/constants";
 
 export type PillarBlock = { heading: string; body: string };
@@ -27,6 +27,11 @@ export function PillarPage({
           { name: "Accueil", url: SITE_URL },
           { name: title, url: `${SITE_URL}${path}` },
         ]}
+      />
+      <ServiceJsonLd
+        name={title}
+        description={intro}
+        url={`${SITE_URL}${path}`}
       />
       <div className="mx-auto max-w-2xl">
         <Eyebrow>{eyebrow}</Eyebrow>
