@@ -144,3 +144,6 @@ Une fois la propriété connectée :
 ## 12. Règle finale
 Aucune action SEO ne doit dégrader la qualité du site pour l'utilisateur.
 Une page créée uniquement pour un mot-clé, sans information distincte, n'est pas publiée.
+
+## 13. Performance technique
+Avant d'accélérer une page qui gagne des impressions, vérifier aussi son expérience mobile : stabilité visuelle, vitesse de chargement, poids des médias et absence d'erreurs. Le SEO ne doit pas envoyer davantage de trafic vers une page lente ou difficile à utiliser.
