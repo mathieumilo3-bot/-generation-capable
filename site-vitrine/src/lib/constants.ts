@@ -16,11 +16,16 @@ export const NAV_LINKS = [
   { label: "Solutions", href: "/solutions" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Applications", href: "/applications" },
+  { label: "Ressources", href: "/ressources" },
 ] as const;
 
 export const FOOTER_LINKS = [
   { label: "Création de site", href: "/creation-site-internet" },
   { label: "Marketing digital", href: "/solutions/agence-marketing-digital" },
+  { label: "Génération de leads", href: "/solutions/generation-de-leads" },
+  { label: "Acquisition B2B", href: "/solutions/generation-leads-b2b" },
+  { label: "Google Ads", href: "/solutions/publicite-google-ads" },
+  { label: "SEO local", href: "/solutions/referencement-local" },
   { label: "SEO", href: "/seo" },
   { label: "Solutions", href: "/solutions" },
   { label: "Secteurs", href: "/secteurs" },
