@@ -15,6 +15,7 @@ export function OrganizationJsonLd() {
       data={{
         "@context": "https://schema.org",
         "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
         name: SITE_NAME,
         alternateName: ["GC", "Agence GC"],
         url: SITE_URL,
@@ -41,7 +42,9 @@ export function WebSiteJsonLd() {
       data={{
         "@context": "https://schema.org",
         "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
         name: SITE_NAME,
+        publisher: { "@id": `${SITE_URL}/#organization` },
         url: SITE_URL,
         inLanguage: "fr-FR",
       }}
@@ -66,11 +69,7 @@ export function ServiceJsonLd({
         serviceType: name,
         description,
         url,
-        provider: {
-          "@type": "Organization",
-          name: SITE_NAME,
-          url: SITE_URL,
-        },
+        provider: { "@id": `${SITE_URL}/#organization` },
         areaServed: "FR",
       }}
     />
