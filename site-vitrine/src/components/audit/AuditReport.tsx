@@ -266,7 +266,7 @@ export function AuditReport({ report, lead }: AuditReportProps) {
       {(aiOpportunities.length > 0 || priorities.length > 0) && (
         <div className="mt-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-            3 constats concrets
+            {aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length} constat{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""} concret{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""}
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
             Voilà ce qui mérite votre attention en premier.
