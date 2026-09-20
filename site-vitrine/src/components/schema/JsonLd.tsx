@@ -86,7 +86,9 @@ export function ArticleJsonLd({
         headline: title,
         description,
         url,
+        mainEntityOfPage: url,
         datePublished,
+        dateModified: datePublished,
         author: {
           "@type": "Organization",
           name: SITE_NAME,
