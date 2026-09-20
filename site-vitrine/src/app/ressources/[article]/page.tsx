@@ -125,6 +125,32 @@ const RELATED_LINKS: Record<string, { href: string; label: string }[]> = {
     { href: "/solutions/google-business-profile", label: "Google Business Profile" },
     { href: "/solutions/marketing-local", label: "Marketing local" },
   ],
+  "prix-site-internet-artisan": [
+    { href: "/solutions/creation-site-artisan", label: "Création de site pour artisan" },
+    { href: "/creation-site-internet", label: "Création de site internet" },
+  ],
+  "tarif-agence-seo-pme": [
+    { href: "/seo", label: "Référencement SEO" },
+    { href: "/solutions/audit-seo", label: "Audit SEO" },
+    { href: "/solutions/marketing-digital-pme", label: "Marketing digital PME" },
+  ],
+  "agence-web-ou-freelance": [
+    { href: "/creation-site-internet", label: "Création de site internet" },
+    { href: "/solutions/site-internet-pme", label: "Site internet PME" },
+  ],
+  "budget-google-ads-pme": [
+    { href: "/solutions/publicite-google-ads", label: "Google Ads" },
+    { href: "/solutions/landing-page", label: "Landing page" },
+  ],
+  "seo-local-ou-google-ads": [
+    { href: "/solutions/referencement-local", label: "Référencement local" },
+    { href: "/solutions/publicite-google-ads", label: "Google Ads" },
+    { href: "/solutions/google-business-profile", label: "Google Business Profile" },
+  ],
+  "refonte-site-sans-perdre-seo": [
+    { href: "/solutions/refonte-site-internet", label: "Refonte de site internet" },
+    { href: "/solutions/audit-seo", label: "Audit SEO" },
+  ],
 };
 
 const RELATED_GUIDES: Record<string, string[]> = {
@@ -153,6 +179,12 @@ const RELATED_GUIDES: Record<string, string[]> = {
   "marketing-entreprise-nettoyage-guide": ["generer-demandes-devis-en-ligne", "google-ads-pme-guide", "seo-local-artisan"],
   "marketing-evenementiel-digital-guide": ["strategie-reseaux-sociaux-entreprise", "plan-marketing-digital-pme", "generer-demandes-devis-en-ligne"],
   "marketing-digital-restaurant-guide": ["optimiser-google-business-profile", "strategie-reseaux-sociaux-entreprise", "seo-local-artisan"],
+  "prix-site-internet-artisan": ["site-internet-artisan-guide", "prix-creation-site-internet", "seo-local-artisan"],
+  "tarif-agence-seo-pme": ["prix-referencement-seo", "comment-etre-visible-sur-google", "seo-ou-google-ads"],
+  "agence-web-ou-freelance": ["prix-creation-site-internet", "refonte-site-seo-erreurs", "plan-marketing-digital-pme"],
+  "budget-google-ads-pme": ["google-ads-pme-guide", "seo-ou-google-ads", "cout-par-lead-qualifie"],
+  "seo-local-ou-google-ads": ["seo-local-artisan", "optimiser-google-business-profile", "google-ads-pme-guide"],
+  "refonte-site-sans-perdre-seo": ["refonte-site-seo-erreurs", "comment-etre-visible-sur-google", "prix-referencement-seo"],
 };
 
 export function generateStaticParams() {
