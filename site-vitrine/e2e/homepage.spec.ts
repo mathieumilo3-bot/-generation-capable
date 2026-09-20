@@ -28,7 +28,7 @@ test.describe("homepage", () => {
     );
     const expected = [
       "Votre visibilité attire des gens.",
-      "La différence se voit",
+      "Même entreprise.",
       "Voyez où votre entreprise",
       "Voici ce que votre prospect",
       "Nous ne construisons pas",
