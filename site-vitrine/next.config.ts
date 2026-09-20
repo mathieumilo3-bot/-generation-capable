@@ -34,6 +34,18 @@ const nextConfig: NextConfig = {
       // same <title>. One canonical page, the old URLs still resolve.
       { source: "/cas-clients", destination: "/applications", permanent: true },
       { source: "/cas-clients/:slug", destination: "/applications", permanent: true },
+      // Short, memorable entry points keep external links stable while each
+      // search intent has one canonical destination.
+      { source: "/marketing-digital", destination: "/solutions/agence-marketing-digital", permanent: true },
+      { source: "/google-ads", destination: "/solutions/publicite-google-ads", permanent: true },
+      { source: "/meta-ads", destination: "/solutions/publicite-meta-ads", permanent: true },
+      { source: "/seo-local", destination: "/solutions/referencement-local", permanent: true },
+      { source: "/google-business", destination: "/solutions/google-business-profile", permanent: true },
+      { source: "/generation-de-leads", destination: "/solutions/generation-de-leads", permanent: true },
+      { source: "/generation-leads-b2b", destination: "/solutions/generation-leads-b2b", permanent: true },
+      { source: "/marketing-btp", destination: "/solutions/marketing-digital-btp", permanent: true },
+      { source: "/site-dentiste", destination: "/solutions/creation-site-dentiste", permanent: true },
+      { source: "/marketing-dentiste", destination: "/solutions/marketing-digital-dentiste", permanent: true },
     ];
   },
   async headers() {
