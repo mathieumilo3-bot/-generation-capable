@@ -252,7 +252,11 @@ function extractWebMetadata(body: Record<string, unknown>) {
 const UNSUPPORTED_METRIC = /(?:\b\d+(?:[.,]\d+)?\s?%|\b\d+(?:[.,]\d+)?\s?(?:€|euros?)|\b(?:x|×)\s?\d+)/i;
 
 function cleanText(value: unknown, max: number): string {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
+  if (typeof value !== "string") return "";
+  const withoutInlineCitations = value
+    .replace(/\s*\(\[[^\]]+\]\(https?:\/\/[^)]+\)\)/gi, "")
+    .replace(/\s*\[[^\]]+\]\(https?:\/\/[^)]+\)/gi, "");
+  return withoutInlineCitations.trim().slice(0, max);
 }
 
 function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity | null {
