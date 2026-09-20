@@ -73,6 +73,58 @@ const RELATED_LINKS: Record<string, { href: string; label: string }[]> = {
     { href: "/solutions/referencement-artisan", label: "Référencement artisan" },
     { href: "/solutions/publicite-google-ads", label: "Google Ads" },
   ],
+  "generation-leads-b2b-guide": [
+    { href: "/solutions/generation-leads-b2b", label: "Génération de leads B2B" },
+    { href: "/solutions/agence-acquisition-b2b", label: "Acquisition B2B" },
+    { href: "/solutions/marketing-b2b", label: "Marketing B2B" },
+  ],
+  "cout-par-lead-qualifie": [
+    { href: "/solutions/generation-leads-b2b", label: "Génération de leads B2B" },
+    { href: "/solutions/growth-marketing", label: "Growth marketing" },
+  ],
+  "inbound-ou-outbound-b2b": [
+    { href: "/solutions/inbound-marketing", label: "Inbound marketing" },
+    { href: "/solutions/marketing-b2b", label: "Marketing B2B" },
+    { href: "/solutions/generation-leads-b2b", label: "Lead generation B2B" },
+  ],
+  "webmarketing-pme-plan": [
+    { href: "/solutions/webmarketing", label: "Webmarketing" },
+    { href: "/solutions/marketing-digital-pme", label: "Marketing digital PME" },
+  ],
+  "growth-marketing-pme": [
+    { href: "/solutions/growth-marketing", label: "Growth marketing" },
+    { href: "/solutions/audit-marketing-digital", label: "Audit marketing digital" },
+  ],
+  "audit-acquisition-digitale": [
+    { href: "/solutions/agence-acquisition-b2b", label: "Acquisition B2B" },
+    { href: "/solutions/audit-marketing-digital", label: "Audit marketing digital" },
+    { href: "/solutions/generation-de-leads", label: "Génération de leads" },
+  ],
+  "marketing-digital-btp-guide": [
+    { href: "/solutions/marketing-digital-btp", label: "Marketing digital BTP" },
+    { href: "/solutions/referencement-artisan", label: "Référencement artisan" },
+    { href: "/solutions/publicite-google-ads", label: "Google Ads" },
+  ],
+  "site-internet-dentiste-seo-local": [
+    { href: "/solutions/creation-site-dentiste", label: "Création de site dentiste" },
+    { href: "/solutions/marketing-digital-dentiste", label: "Marketing digital dentiste" },
+    { href: "/solutions/referencement-local", label: "Référencement local" },
+  ],
+  "marketing-entreprise-nettoyage-guide": [
+    { href: "/solutions/marketing-entreprise-nettoyage", label: "Marketing entreprise de nettoyage" },
+    { href: "/solutions/publicite-google-ads", label: "Google Ads" },
+    { href: "/solutions/generation-leads-b2b", label: "Leads B2B" },
+  ],
+  "marketing-evenementiel-digital-guide": [
+    { href: "/solutions/marketing-evenementiel-digital", label: "Marketing digital événementiel" },
+    { href: "/solutions/landing-page", label: "Landing page" },
+    { href: "/solutions/publicite-meta-ads", label: "Meta Ads" },
+  ],
+  "marketing-digital-restaurant-guide": [
+    { href: "/solutions/marketing-digital-restaurant", label: "Marketing digital restaurant" },
+    { href: "/solutions/google-business-profile", label: "Google Business Profile" },
+    { href: "/solutions/marketing-local", label: "Marketing local" },
+  ],
 };
 
 export function generateStaticParams() {

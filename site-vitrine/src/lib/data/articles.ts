@@ -191,7 +191,7 @@ export const ARTICLES: Article[] = [
       "Quatrième erreur : mettre en production des balises noindex, un robots.txt de préproduction ou des canoniques vers l’ancien domaine. Ces détails techniques peuvent neutraliser une grande partie du travail de refonte.",
       "Enfin, mesurez avant et après : pages indexées, requêtes, clics, conversions et erreurs. Une migration réussie n’est pas seulement un nouveau design visible le jour du lancement ; c’est une transition contrôlée de l’ancien système vers le nouveau.",
     ],
-  },,
+  },
   {
     slug: "plan-marketing-digital-pme",
     title: "Plan marketing digital PME : dans quel ordre lancer les actions ?",
@@ -286,6 +286,182 @@ export const ARTICLES: Article[] = [
       "Google Ads peut accélérer la captation de demandes urgentes, tandis que Meta Ads et les réseaux sociaux sont utiles pour montrer le savoir-faire, créer de la preuve et toucher des prospects qui ne recherchent pas encore activement.",
       "Le formulaire ne doit pas devenir un questionnaire interminable. Type de chantier, localisation, délai et éventuellement photos permettent déjà une première qualification.",
       "La priorité finale est la mesure : savoir quel service, quelle zone et quel canal produisent les meilleures demandes permet d'investir plus intelligemment au fil des mois.",
+    ],
+  },
+  {
+    slug: "generation-leads-b2b-guide",
+    title: "Génération de leads B2B : construire un système qui produit des opportunités",
+    excerpt:
+      "Ciblage, SEO, Ads, landing pages, qualification, CRM et rendez-vous : les briques d'un système de génération de leads B2B.",
+    readingTime: "10 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "La génération de leads B2B commence par une définition précise de la cible. Un volume élevé de formulaires n'a que peu de valeur si les entreprises, fonctions ou besoins ne correspondent pas à ce que l'équipe commerciale peut réellement traiter.",
+      "Les canaux d'acquisition jouent des rôles différents. Google capte une demande existante, le contenu et le SEO construisent une présence durable, LinkedIn et la prospection peuvent créer des conversations avec des comptes ciblés, et la publicité accélère les tests.",
+      "La landing page doit prolonger l'intention du canal. Elle explique le problème, la cible, la proposition de valeur, la méthode et la prochaine étape sans obliger le prospect à parcourir tout le site pour comprendre l'offre.",
+      "La qualification doit rester proportionnée. Quelques questions sur la situation, le besoin, le délai ou la taille de l'entreprise peuvent donner au commercial assez de contexte sans transformer le formulaire en obstacle.",
+      "Le suivi est la dernière brique essentielle. La source du lead, la page d'entrée, le rendez-vous et l'issue commerciale doivent pouvoir être rapprochés afin de distinguer les canaux qui produisent des opportunités des canaux qui produisent seulement des contacts.",
+      "Un système B2B devient meilleur avec le temps lorsque les retours commerciaux reviennent vers le marketing : les requêtes, messages et profils qui convertissent servent ensuite à améliorer les campagnes, les contenus et les pages.",
+    ],
+  },
+  {
+    slug: "cout-par-lead-qualifie",
+    title: "Coût par lead qualifié : comment le calculer et l'utiliser correctement",
+    excerpt:
+      "Comprendre le coût par lead, le coût par lead qualifié et le coût par opportunité pour piloter une acquisition sans se tromper de métrique.",
+    readingTime: "8 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Le coût par lead se calcule simplement en divisant les dépenses d'acquisition par le nombre de leads générés. Cette métrique devient toutefois trompeuse lorsque tous les contacts n'ont pas la même qualité.",
+      "Le coût par lead qualifié ajoute un filtre : seuls les contacts qui correspondent à des critères définis sont comptés. Ces critères peuvent concerner le besoin, la zone, le budget, la taille de l'entreprise ou toute autre condition réellement utile à la vente.",
+      "Dans certains modèles, le coût par opportunité est encore plus pertinent. Il rapproche les dépenses des prospects qui ont réellement avancé dans le pipeline après qualification et échange commercial.",
+      "Une campagne avec un coût par lead faible peut être moins rentable qu'une campagne plus chère si les contacts sont hors cible. Le bon indicateur dépend donc du niveau auquel l'entreprise peut suivre les données.",
+      "Pour améliorer le coût par lead qualifié, il faut agir sur plusieurs étapes : ciblage, mots-clés, message, page d'arrivée, formulaire et suivi commercial. Optimiser uniquement l'annonce ne suffit pas toujours.",
+      "L'objectif final n'est pas de minimiser le coût à tout prix, mais de trouver une acquisition où le coût d'une opportunité reste cohérent avec la marge et la valeur client.",
+    ],
+  },
+  {
+    slug: "inbound-ou-outbound-b2b",
+    title: "Inbound ou outbound B2B : quelle stratégie choisir pour générer des leads ?",
+    excerpt:
+      "SEO, contenu, Google Ads, LinkedIn, email et prospection : comparer inbound et outbound selon urgence, marché et cycle de vente.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "L'inbound attire des prospects grâce au SEO, au contenu, aux guides et aux pages qui répondent à une recherche ou une question. L'outbound part dans l'autre sens : l'entreprise identifie une cible et initie directement la conversation.",
+      "L'inbound est particulièrement intéressant lorsqu'un volume suffisant de prospects recherche déjà le problème ou la solution. Il demande du temps pour construire une bibliothèque de pages et gagner de la visibilité organique.",
+      "L'outbound permet de contacter rapidement des comptes précis, même lorsqu'ils ne recherchent pas activement. Sa réussite dépend fortement de la qualité du ciblage, du message et du contexte utilisé pour l'approche.",
+      "Les deux stratégies ne s'opposent pas nécessairement. Un prospect approché par email ou LinkedIn peut consulter le site, lire un guide ou vérifier la crédibilité de l'entreprise avant de répondre.",
+      "Google Ads se situe dans une logique différente mais complémentaire : il permet de payer pour capter une intention existante sans attendre la montée progressive du SEO.",
+      "La bonne combinaison dépend de l'urgence commerciale, du panier moyen, de la taille du marché et de la capacité de l'équipe à traiter les leads ou les réponses obtenues.",
+    ],
+  },
+  {
+    slug: "webmarketing-pme-plan",
+    title: "Webmarketing PME : le plan simple pour relier site, SEO, Ads et contenu",
+    excerpt:
+      "Une architecture webmarketing pour PME : site, référencement, publicité, réseaux sociaux, conversion et suivi des leads.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Le webmarketing d'une PME fonctionne mieux lorsqu'il est organisé autour d'un point central : une offre claire et un site capable de transformer l'attention en demande.",
+      "Le SEO et le référencement local construisent les portes d'entrée organiques. Ils répondent aux recherches de services, de problèmes, de prix et de localisation qui apparaissent avant la prise de contact.",
+      "La publicité permet d'accélérer la captation de demande ou de tester une nouvelle proposition. Google Ads touche une intention déjà exprimée, tandis que Meta Ads peut créer de l'intérêt grâce au ciblage et aux créatifs.",
+      "Les réseaux sociaux et le contenu renforcent la confiance, montrent l'expertise et répondent aux objections. Ils deviennent plus utiles lorsqu'ils redirigent vers une page ou une prochaine étape mesurable.",
+      "Le suivi relie enfin le système. Sans savoir d'où viennent les formulaires, appels ou rendez-vous, l'entreprise risque de répartir son budget selon des impressions plutôt que selon la performance réelle.",
+      "Le plan le plus simple consiste donc à sécuriser le parcours, capter la demande la plus chaude, mesurer, puis élargir progressivement les canaux à partir des données obtenues.",
+    ],
+  },
+  {
+    slug: "growth-marketing-pme",
+    title: "Growth marketing PME : quels tests lancer avant de multiplier les canaux",
+    excerpt:
+      "Identifier le goulot d'étranglement, tester le message, les pages, les formulaires et les campagnes avant d'accélérer les dépenses.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Le growth marketing n'oblige pas une PME à utiliser une pile d'outils complexe. Il commence par une question simple : quelle étape du parcours limite actuellement la croissance ?",
+      "Si le site reçoit peu de visiteurs qualifiés, le problème se situe dans l'acquisition. Si les visiteurs arrivent mais ne contactent pas l'entreprise, le message, la preuve ou la conversion sont probablement plus urgents.",
+      "Chaque test doit avoir une hypothèse. Modifier une landing page peut tester une promesse, réduire un formulaire peut tester la friction, et lancer une campagne sur un groupe de mots-clés peut tester l'existence d'une demande.",
+      "Les tests doivent être assez isolés pour produire un apprentissage. Changer simultanément l'offre, la page, le ciblage et le formulaire rend le résultat difficile à interpréter.",
+      "Les meilleures conclusions sont réutilisées ailleurs : une accroche qui fonctionne en Ads peut inspirer le H1 d'une page, une objection fréquente peut devenir un contenu SEO, et un formulaire mieux qualifié peut améliorer le travail commercial.",
+      "Le growth devient utile lorsque cette boucle d'apprentissage est continue et reliée aux leads, rendez-vous ou ventes plutôt qu'à des métriques uniquement visibles dans les plateformes marketing.",
+    ],
+  },
+  {
+    slug: "audit-acquisition-digitale",
+    title: "Audit acquisition digitale : 10 points à vérifier avant d'augmenter le budget",
+    excerpt:
+      "Trafic, intentions, landing pages, formulaires, tracking, qualification et suivi : les contrôles essentiels avant d'accélérer l'acquisition.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Augmenter un budget d'acquisition n'améliore pas automatiquement les résultats. Si le parcours comporte une fuite, davantage de trafic peut simplement augmenter le coût de cette fuite.",
+      "Le premier contrôle concerne l'intention : les mots-clés, audiences ou contenus attirent-ils réellement les personnes que l'entreprise veut convertir ? Un trafic mal ciblé ne sera pas corrigé par une meilleure landing page.",
+      "Le deuxième point est la continuité du message. La promesse affichée dans une annonce ou un résultat de recherche doit être retrouvée immédiatement sur la page d'arrivée.",
+      "Le troisième point concerne la confiance : preuves, réalisations, méthode, avis vérifiables ou explication du processus doivent réduire les incertitudes avant le formulaire.",
+      "Le formulaire et la prise de rendez-vous doivent être testés sur mobile, avec le minimum de friction nécessaire à la qualification. Une erreur ou un champ inutile peut faire perdre des demandes.",
+      "Enfin, le tracking doit permettre de relier chaque lead à sa source et idéalement à sa qualité commerciale. Sans cette information, augmenter le budget revient à accélérer sans savoir quel canal produit réellement les meilleures opportunités.",
+    ],
+  },
+  {
+    slug: "marketing-digital-btp-guide",
+    title: "Marketing digital BTP : les canaux à prioriser pour générer des devis",
+    excerpt:
+      "Site, SEO local, Google Business, Google Ads, réalisations et formulaire : un plan d'acquisition adapté aux entreprises du bâtiment.",
+    readingTime: "10 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Dans le BTP, la demande digitale se concentre souvent autour d'un métier, d'une prestation et d'une zone. Avant de lancer des campagnes, le site doit donc expliquer clairement les travaux réalisés et les secteurs réellement couverts.",
+      "Les pages de prestations sont la première brique. Elles donnent à Google un sujet précis à indexer et au prospect un endroit où comprendre le service, voir des réalisations et demander un devis.",
+      "Google Business Profile complète cette présence avec les horaires, la zone, les photos et les avis. La cohérence entre la fiche et le site facilite la compréhension locale de l'entreprise.",
+      "Google Ads peut accélérer l'acquisition sur des recherches urgentes ou fortement commerciales. Les groupes d'annonces doivent rester proches des prestations et conduire vers des pages adaptées, pas vers une page d'accueil générique.",
+      "Les réalisations sont un levier de confiance particulièrement puissant dans le bâtiment. Chaque chantier peut documenter un type de travaux, un contexte et une zone sans inventer de résultat ni de promesse.",
+      "Enfin, le suivi doit distinguer les formulaires, appels et demandes de devis par service. Le meilleur canal n'est pas forcément celui qui produit le plus de leads, mais celui qui apporte les projets les plus cohérents avec l'entreprise.",
+    ],
+  },
+  {
+    slug: "site-internet-dentiste-seo-local",
+    title: "Site internet dentiste : structure, SEO local et prise de rendez-vous",
+    excerpt:
+      "Les éléments utiles d'un site de cabinet dentaire : information patient, pages de soins, visibilité locale, mobile, rendez-vous et confidentialité.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Le site d'un cabinet dentaire doit d'abord répondre aux questions pratiques des patients : où se trouve le cabinet, qui compose l'équipe, quels soins sont présentés, comment prendre rendez-vous et comment se préparer à la visite.",
+      "Les pages de soins peuvent améliorer la compréhension du site et couvrir des recherches utiles, à condition de rester pédagogiques, exactes et conformes aux règles professionnelles applicables. Elles ne doivent pas promettre un résultat ni transformer l'information médicale en argument commercial excessif.",
+      "Le référencement local repose sur la cohérence des coordonnées, de la zone, du site et de la fiche Google. Les contenus locaux doivent apporter une vraie information plutôt que dupliquer des pages par ville.",
+      "Sur mobile, les patients doivent trouver rapidement l'adresse, le téléphone et la prise de rendez-vous. Une page lente ou un bouton caché crée une friction inutile.",
+      "Les formulaires doivent être limités aux informations nécessaires. Lorsqu'une donnée de santé pourrait être collectée, le choix des outils, de l'hébergement et du traitement doit être évalué avec attention.",
+      "Un bon site de cabinet dentaire n'est donc pas celui qui multiplie les effets visuels, mais celui qui rend l'information claire, la présence locale cohérente et le parcours vers le rendez-vous simple.",
+    ],
+  },
+  {
+    slug: "marketing-entreprise-nettoyage-guide",
+    title: "Marketing entreprise de nettoyage : comment générer des demandes de devis",
+    excerpt:
+      "SEO local, pages de services, Google Ads, preuve, zones d'intervention et formulaire : le plan marketing d'une entreprise de nettoyage.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Une entreprise de nettoyage peut vendre des prestations très différentes : bureaux, copropriétés, vitres, fin de chantier, remise en état ou entretien récurrent. Les regrouper sur une seule page limite souvent la clarté et le référencement.",
+      "Les pages de services doivent expliquer le type de besoin, le public concerné, la zone et les informations nécessaires pour établir un devis. Elles deviennent alors des portes d'entrée pour des recherches plus précises.",
+      "Le SEO local et Google Business Profile sont particulièrement utiles pour les demandes proches géographiquement. Les avis, photos, horaires et coordonnées doivent rester cohérents avec le site.",
+      "Google Ads peut capter des recherches à forte intention, notamment les prestations urgentes ou ponctuelles. Chaque campagne doit renvoyer vers la page correspondant exactement au service recherché.",
+      "En B2B, le formulaire peut qualifier la surface, la fréquence, le type de locaux et le délai. Ces données permettent de distinguer une demande exploitable d'un simple contact générique.",
+      "Le suivi doit enfin rapprocher les sources des contrats ou opportunités afin de ne pas optimiser uniquement le volume de formulaires.",
+    ],
+  },
+  {
+    slug: "marketing-evenementiel-digital-guide",
+    title: "Marketing digital événementiel : de la campagne aux inscriptions puis aux leads",
+    excerpt:
+      "Landing page, Ads, social, email, rappels et suivi post-événement : structurer un parcours événementiel mesurable.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Le marketing d'un événement doit gérer une contrainte particulière : la date est fixe. Chaque semaine perdue réduit la fenêtre disponible pour attirer, convaincre et relancer les participants.",
+      "La landing page centralise l'information essentielle : public, programme, date, lieu, bénéfice et inscription. Elle doit rester cohérente avec les annonces et contenus qui amènent le trafic.",
+      "Les canaux dépendent du public. LinkedIn peut convenir à un événement B2B, Meta à un public plus large, Google à une recherche active et l'email à une base déjà connue. Les partenaires peuvent également amplifier la distribution.",
+      "Les confirmations et rappels réduisent les absences lorsqu'ils apportent une information utile. Après l'événement, le suivi peut proposer une ressource, un rendez-vous ou un contenu lié aux sujets abordés.",
+      "Les inscriptions ne suffisent pas à mesurer la valeur. Présence réelle, rendez-vous, opportunités et ventes éventuelles permettent de mieux rapprocher l'événement d'un résultat commercial.",
+      "Une bonne stratégie transforme donc l'événement en parcours complet plutôt qu'en campagne isolée qui s'arrête le jour J.",
+    ],
+  },
+  {
+    slug: "marketing-digital-restaurant-guide",
+    title: "Marketing digital restaurant : Google, avis, réseaux sociaux et réservation",
+    excerpt:
+      "Les leviers essentiels pour un restaurant : fiche Google, SEO local, menu mobile, avis, contenus sociaux et parcours de réservation.",
+    readingTime: "9 min",
+    publishedAt: "2026-09-20",
+    content: [
+      "Pour un restaurant, le parcours digital peut être très court : une recherche locale, quelques photos, des avis, le menu puis une réservation ou un itinéraire. Chaque friction dans ce parcours peut faire basculer le choix vers une autre adresse.",
+      "Google Business Profile doit être irréprochable sur les informations de base : catégorie, horaires, adresse, téléphone, photos et lien vers le site. Les changements temporaires doivent être mis à jour rapidement.",
+      "Le site doit afficher un menu lisible sur mobile sans obliger le visiteur à télécharger un PDF difficile à manipuler. La réservation, l'itinéraire et les horaires doivent rester visibles.",
+      "Les réseaux sociaux servent à montrer les plats, l'ambiance, les nouveautés et les événements. Ils créent davantage de valeur lorsqu'ils donnent une suite claire vers le menu ou la réservation.",
+      "Le référencement local peut également couvrir des recherches de spécialité ou de quartier lorsque le restaurant répond réellement à ces intentions. Les pages doivent rester utiles et spécifiques.",
+      "Enfin, les clics vers la réservation, appels, itinéraires et actions sur la fiche Google permettent d'observer quelles sources contribuent le plus à la fréquentation.",
     ],
   }
 ];

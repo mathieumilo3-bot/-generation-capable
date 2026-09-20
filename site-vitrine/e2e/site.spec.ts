@@ -27,6 +27,21 @@ const PUBLIC_ROUTES = [
   "/solutions/marketing-digital-artisan",
   "/ressources/plan-marketing-digital-pme",
   "/ressources/seo-ou-google-ads",
+  "/solutions/generation-leads-b2b",
+  "/solutions/agence-acquisition-b2b",
+  "/solutions/marketing-b2b",
+  "/solutions/growth-marketing",
+  "/solutions/webmarketing",
+  "/solutions/communication-digitale",
+  "/solutions/inbound-marketing",
+  "/solutions/consultant-marketing-digital",
+  "/solutions/marketing-digital-btp",
+  "/solutions/creation-site-dentiste",
+  "/solutions/marketing-entreprise-nettoyage",
+  "/solutions/marketing-evenementiel-digital",
+  "/solutions/marketing-digital-restaurant",
+  "/ressources/generation-leads-b2b-guide",
+  "/ressources/audit-acquisition-digitale",
 ];
 
 test.describe("pages", () => {
@@ -56,6 +71,15 @@ test.describe("pages", () => {
     await expect(
       page.getByRole("link", { name: /Analyser mon entreprise/ }).filter({ visible: true }).first()
     ).toBeVisible();
+  });
+
+  test("short SEO aliases redirect to one canonical destination", async ({ page }) => {
+    await page.goto("/marketing-digital");
+    await expect(page).toHaveURL(/\/solutions\/agence-marketing-digital$/);
+    await page.goto("/generation-leads-b2b");
+    await expect(page).toHaveURL(/\/solutions\/generation-leads-b2b$/);
+    await page.goto("/site-dentiste");
+    await expect(page).toHaveURL(/\/solutions\/creation-site-dentiste$/);
   });
 
   test("the former /cas-clients URL now leads to /applications", async ({ page }) => {
@@ -108,6 +132,9 @@ test.describe("SEO endpoints", () => {
     expect(body).toContain("/secteurs/restaurants");
     expect(body).toContain("/solutions/audit-site-internet");
     expect(body).toContain("/solutions/agence-marketing-digital");
+    expect(body).toContain("/solutions/generation-leads-b2b");
+    expect(body).toContain("/solutions/marketing-digital-btp");
+    expect(body).toContain("/solutions/creation-site-dentiste");
     expect(body).toContain("/ressources/prix-creation-site-internet");
     expect(body).toContain("/ressources/plan-marketing-digital-pme");
     expect(body).not.toContain("www.gc-agence.com");
