@@ -18,6 +18,15 @@ const PUBLIC_ROUTES = [
   "/solutions/creation-site-artisan",
   "/ressources/prix-creation-site-internet",
   "/ressources/comment-etre-visible-sur-google",
+  "/solutions/agence-marketing-digital",
+  "/solutions/marketing-digital-pme",
+  "/solutions/audit-marketing-digital",
+  "/solutions/publicite-google-ads",
+  "/solutions/publicite-meta-ads",
+  "/solutions/strategie-reseaux-sociaux",
+  "/solutions/marketing-digital-artisan",
+  "/ressources/plan-marketing-digital-pme",
+  "/ressources/seo-ou-google-ads",
 ];
 
 test.describe("pages", () => {
@@ -98,7 +107,9 @@ test.describe("SEO endpoints", () => {
     expect(body).toContain("https://gc-agence.com");
     expect(body).toContain("/secteurs/restaurants");
     expect(body).toContain("/solutions/audit-site-internet");
+    expect(body).toContain("/solutions/agence-marketing-digital");
     expect(body).toContain("/ressources/prix-creation-site-internet");
+    expect(body).toContain("/ressources/plan-marketing-digital-pme");
     expect(body).not.toContain("www.gc-agence.com");
   });
 

@@ -20,6 +20,7 @@ export const NAV_LINKS = [
 
 export const FOOTER_LINKS = [
   { label: "Création de site", href: "/creation-site-internet" },
+  { label: "Marketing digital", href: "/solutions/agence-marketing-digital" },
   { label: "SEO", href: "/seo" },
   { label: "Solutions", href: "/solutions" },
   { label: "Secteurs", href: "/secteurs" },
