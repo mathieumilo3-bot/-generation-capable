@@ -763,11 +763,11 @@ export const SEO_LANDINGS: SeoLanding[] = [
   },
   {
     slug: "marketing-digital-pme",
-    title: "Marketing digital pour PME : visibilité, acquisition et leads",
+    title: "Agence marketing digital pour PME : visibilité, acquisition et leads",
     metaDescription:
       "Marketing digital pour PME : stratégie, site, SEO, Google Ads, Meta Ads, contenu, réseaux sociaux et conversion pour générer des opportunités mesurables.",
     eyebrow: "PME",
-    h1: "Marketing digital pour PME : concentrez l'effort sur ce qui génère des opportunités.",
+    h1: "Agence marketing digital pour PME : concentrez l'effort sur ce qui génère des opportunités.",
     intro:
       "Une PME n'a pas besoin d'être présente partout. Elle a besoin d'un système digital où le site, Google, les campagnes et le contenu servent une même promesse et une même prochaine étape.",
     blocks: [
@@ -913,11 +913,11 @@ export const SEO_LANDINGS: SeoLanding[] = [
   },
   {
     slug: "publicite-google-ads",
-    title: "Google Ads : campagnes d'acquisition orientées leads",
+    title: "Agence Google Ads pour PME : campagnes orientées leads",
     metaDescription:
       "Google Ads pour générer des leads : structure de campagne, mots-clés, landing pages, tracking des conversions et optimisation des demandes qualifiées.",
     eyebrow: "SEA",
-    h1: "Google Ads : captez une demande déjà active et mesurez chaque opportunité.",
+    h1: "Agence Google Ads pour PME : captez une demande déjà active et mesurez chaque opportunité.",
     intro:
       "Google Ads peut accélérer l'acquisition lorsque des prospects recherchent déjà votre service. La rentabilité dépend toutefois autant des mots-clés et des annonces que de la page d'arrivée, du formulaire et du suivi des conversions.",
     blocks: [
