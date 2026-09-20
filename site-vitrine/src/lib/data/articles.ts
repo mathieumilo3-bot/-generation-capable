@@ -191,7 +191,7 @@ export const ARTICLES: Article[] = [
       "Quatrième erreur : mettre en production des balises noindex, un robots.txt de préproduction ou des canoniques vers l’ancien domaine. Ces détails techniques peuvent neutraliser une grande partie du travail de refonte.",
       "Enfin, mesurez avant et après : pages indexées, requêtes, clics, conversions et erreurs. Une migration réussie n’est pas seulement un nouveau design visible le jour du lancement ; c’est une transition contrôlée de l’ancien système vers le nouveau.",
     ],
-  },,
+  },
   {
     slug: "plan-marketing-digital-pme",
     title: "Plan marketing digital PME : dans quel ordre lancer les actions ?",
