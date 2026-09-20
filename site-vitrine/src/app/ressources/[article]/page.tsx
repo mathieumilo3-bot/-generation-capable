@@ -239,9 +239,27 @@ export default async function ArticlePage({ params }: Props) {
 
         <div className="mt-10 flex flex-col gap-6">
           {article.content.map((paragraph, index) => (
-            <p key={index} className="text-[16px] leading-relaxed text-[var(--color-muted)]">
-              {paragraph}
-            </p>
+            <div key={index}>
+              <p className="text-[16px] leading-relaxed text-[var(--color-muted)]">
+                {paragraph}
+              </p>
+              {index === 2 && (
+                <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                  <p className="font-display text-base font-semibold text-[var(--color-text)]">
+                    Vous voulez savoir où votre site perd des opportunités ?
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+                    Lancez le diagnostic GC Agence : visibilité, conversion, acquisition et priorités d&apos;action.
+                  </p>
+                  <Link
+                    href="/audit"
+                    className="mt-4 inline-flex text-sm font-semibold text-[var(--color-text)] underline decoration-[var(--color-accent)] underline-offset-4"
+                  >
+                    Analyser mon entreprise →
+                  </Link>
+                </div>
+              )}
+            </div>
           ))}
         </div>
 
