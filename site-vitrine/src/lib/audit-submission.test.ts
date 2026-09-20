@@ -323,7 +323,7 @@ describe("buildConfirmationEmail", () => {
       otherFindingsCount: 1,
     };
     const email = buildConfirmationEmail(submission, summary);
-    expect(email.subject).toBe("Votre diagnostic Génération Capable est prêt");
+    expect(email.subject).toBe("Votre diagnostic GC est prêt");
     expect(email.text).toContain("CTA principal trop discret");
     expect(email.text).toContain("Preuves sociales insuffisantes");
     expect(email.html).toContain("Choisir mon créneau");
