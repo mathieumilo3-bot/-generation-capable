@@ -2,3 +2,5 @@
 [build]
   command = "mkdir -p public && (npm run build > public/build-debug.txt 2>&1 || true) && printf '<!doctype html><meta charset=utf-8><title>GC build diagnostic</title><a href=/build-debug.txt>build log</a>' > public/index.html"
   publish = "public"
+
+# trigger preview after PR creation
