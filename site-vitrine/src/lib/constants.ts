@@ -1,6 +1,6 @@
-export const SITE_NAME = "GC";
+export const SITE_NAME = "GC Agence";
 export const SITE_URL = "https://gc-agence.com";
-export const SITE_TAGLINE = "Digital Revenue Systems";
+export const SITE_TAGLINE = "Agence web, SEO & acquisition";
 
 export const SITE_DESCRIPTION =
   "GC conçoit les systèmes digitaux qui transforment la visibilité, le trafic et l'attention d'une entreprise en opportunités commerciales.";
