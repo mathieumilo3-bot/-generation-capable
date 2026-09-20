@@ -14,3 +14,5 @@ Principaux domaines d'intervention :
 - acquisition B2B
 
 Ressources et solutions : https://gc-agence.com/solutions
+
+Search Console verification is configured through the production hosting environment.
