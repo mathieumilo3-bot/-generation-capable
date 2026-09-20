@@ -20,7 +20,7 @@ const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const SEND_TIMEOUT_MS = 10_000;
 
-const DEFAULT_FROM = "Génération Capable <audit@generationcapable.fr>";
+const DEFAULT_FROM = "GC <audit@generationcapable.fr>";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
