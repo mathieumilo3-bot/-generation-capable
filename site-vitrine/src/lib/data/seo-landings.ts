@@ -1610,6 +1610,306 @@ export const SEO_LANDINGS: SeoLanding[] = [
       },
     ],
     related: ["audit-marketing-digital", "strategie-marketing-digital", "agence-marketing-digital"],
+  },
+  {
+    slug: "marketing-digital-btp",
+    title: "Marketing digital BTP : visibilité Google et demandes de devis",
+    metaDescription:
+      "Marketing digital pour entreprises du BTP : site, SEO local, Google Business, Google Ads, contenus et parcours de devis pour générer des demandes qualifiées.",
+    eyebrow: "BTP & construction",
+    h1: "Marketing digital BTP : gagnez en visibilité et facilitez les demandes de devis.",
+    intro:
+      "Dans le bâtiment, les prospects recherchent souvent une prestation précise, des réalisations et une entreprise capable d'intervenir dans leur zone. Le marketing digital doit donc relier visibilité locale, preuve métier et demande de devis.",
+    blocks: [
+      {
+        heading: "Couvrir les prestations qui déclenchent des recherches",
+        body:
+          "Rénovation, couverture, isolation, maçonnerie, menuiserie ou autres prestations doivent être expliquées séparément lorsqu'elles correspondent à des intentions différentes. Cela donne au site plusieurs portes d'entrée pertinentes.",
+      },
+      {
+        heading: "Montrer les réalisations et le contexte",
+        body:
+          "Des chantiers réels, leur type, leur zone et leur objectif créent une preuve plus forte qu'une promesse générique. Ils peuvent aussi soutenir les pages de services grâce au maillage interne.",
+      },
+      {
+        heading: "Relier SEO local, fiche Google et Ads",
+        body:
+          "Le référencement naturel construit la visibilité dans le temps, la fiche Google renforce la présence locale et Google Ads peut accélérer la captation de demandes sur des recherches à forte intention.",
+      },
+      {
+        heading: "Qualifier le devis dès le formulaire",
+        body:
+          "Type de chantier, localisation, délai, surface ou photos éventuelles donnent assez de contexte pour prioriser les demandes sans imposer un formulaire trop long.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Quels leviers marketing sont utiles pour une entreprise du BTP ?",
+        answer:
+          "Site de prestations, SEO local, Google Business Profile, réalisations, Google Ads et contenus selon la zone et les types de chantiers recherchés.",
+      },
+      {
+        question: "Faut-il créer une page par prestation ?",
+        answer:
+          "Oui lorsque les prestations correspondent à des recherches et besoins réellement distincts. Chaque page doit toutefois apporter un contenu utile et spécifique.",
+      },
+      {
+        question: "Comment mesurer l'acquisition BTP ?",
+        answer:
+          "En suivant les appels, formulaires, demandes de devis et la qualité des projets par source et par prestation.",
+      },
+    ],
+    related: ["marketing-digital-artisan", "referencement-artisan", "publicite-google-ads"],
+  },
+  {
+    slug: "creation-site-dentiste",
+    title: "Création de site internet pour dentiste et cabinet dentaire",
+    metaDescription:
+      "Création de site internet pour dentiste : information claire, prise de rendez-vous, SEO local, performance mobile et respect des règles professionnelles applicables.",
+    eyebrow: "Cabinets dentaires",
+    h1: "Création de site internet pour dentiste : informer, rassurer et faciliter le rendez-vous.",
+    intro:
+      "Le site d'un cabinet dentaire doit d'abord informer clairement sur le cabinet, les soins proposés, l'accès et les modalités de rendez-vous. La visibilité locale et l'expérience mobile peuvent être travaillées dans le respect des règles professionnelles applicables.",
+    blocks: [
+      {
+        heading: "Une information lisible pour les patients",
+        body:
+          "Les pages doivent expliquer les soins, l'équipe, les horaires, l'accès et les modalités de rendez-vous avec un langage compréhensible, sans promesse trompeuse ni mise en scène commerciale excessive.",
+      },
+      {
+        heading: "SEO local et pages de soins",
+        body:
+          "Une architecture propre aide Google à comprendre le cabinet, sa zone et ses principales activités. Les pages sont créées pour informer sur des sujets réellement recherchés, pas pour multiplier artificiellement les villes.",
+      },
+      {
+        heading: "Un parcours mobile simple",
+        body:
+          "Adresse, téléphone et lien vers la prise de rendez-vous doivent être faciles à trouver depuis un smartphone. La vitesse et la lisibilité sont particulièrement importantes lorsque la visite vient d'une recherche locale.",
+      },
+      {
+        heading: "Conformité et données",
+        body:
+          "Les contenus, formulaires et outils intégrés doivent être choisis en tenant compte des obligations professionnelles et de confidentialité applicables au cabinet, notamment lorsqu'une donnée de santé pourrait être concernée.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Un dentiste a-t-il intérêt à avoir son propre site avec Doctolib ?",
+        answer:
+          "Le site peut compléter la plateforme de rendez-vous en présentant le cabinet, les soins, l'accès, l'équipe et des informations utiles aux patients.",
+      },
+      {
+        question: "Peut-on faire du SEO local pour un cabinet dentaire ?",
+        answer:
+          "Oui, en travaillant une information utile, la cohérence locale et les pages du cabinet dans le respect des règles professionnelles applicables.",
+      },
+      {
+        question: "Que doit contenir un site de cabinet dentaire ?",
+        answer:
+          "Au minimum les informations du cabinet, l'équipe, les soins présentés de façon informative, l'accès, les horaires, les contacts et la prise de rendez-vous.",
+      },
+    ],
+    related: ["referencement-local", "google-business-profile", "audit-site-internet"],
+  },
+  {
+    slug: "marketing-digital-dentiste",
+    title: "Marketing digital dentiste : visibilité locale et information patient",
+    metaDescription:
+      "Marketing digital pour cabinet dentaire : site, SEO local, Google Business, contenu informatif et prise de rendez-vous dans le respect des règles professionnelles.",
+    eyebrow: "Dentaire",
+    h1: "Marketing digital dentiste : développez la visibilité du cabinet sans sacrifier la conformité.",
+    intro:
+      "La stratégie digitale d'un cabinet dentaire doit privilégier une information fiable, une visibilité locale cohérente et un parcours simple vers le rendez-vous, tout en respectant les obligations déontologiques et réglementaires applicables.",
+    blocks: [
+      {
+        heading: "Prioriser la présence locale",
+        body:
+          "Le site, la fiche Google et les informations de contact doivent être cohérents. Une présence locale claire aide les patients à identifier le cabinet, ses horaires et ses modalités d'accès.",
+      },
+      {
+        heading: "Créer des contenus informatifs",
+        body:
+          "Les pages de soins et FAQ peuvent répondre aux questions fréquentes avec un ton pédagogique. Elles doivent informer sans garantie de résultat ni affirmation excessive.",
+      },
+      {
+        heading: "Faciliter la prise de rendez-vous",
+        body:
+          "Le parcours peut intégrer une plateforme de rendez-vous ou un contact simple, avec une attention particulière à la confidentialité et aux données collectées.",
+      },
+      {
+        heading: "Mesurer sans sur-collecter",
+        body:
+          "Il est possible de suivre les visites et clics vers la prise de rendez-vous tout en limitant la collecte de données au nécessaire et en configurant les outils de mesure de manière adaptée.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Le marketing digital est-il possible pour un dentiste ?",
+        answer:
+          "Oui, mais la communication du cabinet doit respecter les règles professionnelles applicables. La stratégie peut se concentrer sur l'information, la visibilité locale et l'accès au rendez-vous.",
+      },
+      {
+        question: "Quels canaux privilégier ?",
+        answer:
+          "Le site, le SEO local et Google Business Profile sont souvent des fondations utiles. D'autres canaux doivent être évalués selon les règles applicables et le besoin du cabinet.",
+      },
+      {
+        question: "Peut-on mesurer les rendez-vous ?",
+        answer:
+          "On peut mesurer certains clics ou parcours vers un outil de rendez-vous, en restant attentif aux obligations de confidentialité et aux données sensibles.",
+      },
+    ],
+    related: ["creation-site-dentiste", "referencement-local", "audit-marketing-digital"],
+  },
+  {
+    slug: "marketing-entreprise-nettoyage",
+    title: "Marketing pour entreprise de nettoyage : SEO local et demandes de devis",
+    metaDescription:
+      "Marketing digital pour entreprise de nettoyage : site, SEO local, Google Ads, pages de services, secteurs d'intervention et demandes de devis.",
+    eyebrow: "Nettoyage",
+    h1: "Marketing entreprise de nettoyage : soyez visible sur chaque service rentable.",
+    intro:
+      "Une entreprise de nettoyage peut servir des besoins très différents : bureaux, copropriétés, fin de chantier, vitres ou interventions ponctuelles. Le marketing doit distinguer ces intentions et guider chaque prospect vers un devis adapté.",
+    blocks: [
+      {
+        heading: "Séparer les services importants",
+        body:
+          "Une page par grande prestation aide le prospect à comprendre l'offre et donne à Google des contenus plus précis pour les recherches de nettoyage professionnel.",
+      },
+      {
+        heading: "Travailler les zones réellement servies",
+        body:
+          "Le SEO local et Google Business Profile peuvent renforcer la visibilité dans les zones d'intervention, sans créer des dizaines de pages identiques pour des communes non spécifiques.",
+      },
+      {
+        heading: "Capter les recherches urgentes avec Google Ads",
+        body:
+          "Certaines demandes comme une remise en état ou un nettoyage après travaux peuvent être très intentionnistes. Des campagnes ciblées peuvent compléter le SEO lorsqu'elles renvoient vers une page adaptée.",
+      },
+      {
+        heading: "Qualifier le devis B2B ou local",
+        body:
+          "Type de local, surface, fréquence, zone et délai sont des informations simples qui permettent de mieux préparer la réponse commerciale.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Comment trouver des clients pour une entreprise de nettoyage ?",
+        answer:
+          "SEO local, Google Business Profile, pages de services, Google Ads et prospection B2B peuvent être combinés selon la cible.",
+      },
+      {
+        question: "Faut-il une page par service de nettoyage ?",
+        answer:
+          "Oui lorsque les besoins et recherches sont distincts, par exemple nettoyage de bureaux, fin de chantier ou vitres.",
+      },
+      {
+        question: "Comment qualifier une demande de devis ?",
+        answer:
+          "En demandant le type de prestation, la surface, la fréquence, la localisation et le délai lorsque ces informations sont utiles.",
+      },
+    ],
+    related: ["marketing-local", "publicite-google-ads", "generation-leads-b2b"],
+  },
+  {
+    slug: "marketing-evenementiel-digital",
+    title: "Marketing digital événementiel : visibilité, inscriptions et leads",
+    metaDescription:
+      "Marketing digital événementiel : landing pages, SEO, Ads, réseaux sociaux, inscriptions, contenu et suivi pour événements et agences événementielles.",
+    eyebrow: "Événementiel",
+    h1: "Marketing digital événementiel : transformez l'attention avant, pendant et après l'événement.",
+    intro:
+      "Un événement a une fenêtre d'attention limitée. La stratégie digitale doit relier campagne, page d'inscription, contenus, rappels et suivi post-événement pour prolonger l'impact commercial.",
+    blocks: [
+      {
+        heading: "Créer une page d'événement claire",
+        body:
+          "Programme, cible, date, lieu, bénéfice et inscription doivent être compris rapidement. Une landing page dédiée permet aussi de mieux mesurer les sources d'inscription.",
+      },
+      {
+        heading: "Amplifier avec Ads et réseaux sociaux",
+        body:
+          "Google Ads, Meta Ads, LinkedIn ou contenus organiques peuvent être utilisés selon le public et le format de l'événement. Le message doit rester cohérent entre la campagne et la page.",
+      },
+      {
+        heading: "Automatiser les rappels utiles",
+        body:
+          "Confirmation, informations pratiques et rappels avant l'événement réduisent les abandons. Après l'événement, une relance peut proposer une ressource ou une suite adaptée.",
+      },
+      {
+        heading: "Mesurer au-delà des inscriptions",
+        body:
+          "Les inscriptions, présences, prises de rendez-vous et opportunités post-événement permettent de mieux évaluer l'impact qu'un simple volume de vues.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Quels canaux pour promouvoir un événement ?",
+        answer:
+          "Le choix dépend du public : Google, Meta, LinkedIn, email, partenaires, SEO et contenus peuvent être combinés.",
+      },
+      {
+        question: "Faut-il une landing page dédiée ?",
+        answer:
+          "Elle est souvent utile pour centraliser l'information, l'inscription et le suivi des conversions.",
+      },
+      {
+        question: "Comment mesurer le ROI d'un événement ?",
+        answer:
+          "En rapprochant les coûts des inscriptions, présences, rendez-vous, opportunités et ventes attribuables à l'événement.",
+      },
+    ],
+    related: ["landing-page", "publicite-meta-ads", "automatisation-marketing"],
+  },
+  {
+    slug: "marketing-digital-restaurant",
+    title: "Marketing digital restaurant : SEO local, Google et réservations",
+    metaDescription:
+      "Marketing digital pour restaurant : Google Business, SEO local, site, réseaux sociaux, Meta Ads et parcours de réservation directe.",
+    eyebrow: "Restaurants",
+    h1: "Marketing digital restaurant : transformez les recherches locales en réservations.",
+    intro:
+      "Pour un restaurant, une grande partie de la décision se joue entre Google, Maps, avis, photos, réseaux sociaux et facilité de réservation. Le système digital doit rendre ces points de contact cohérents et rapides.",
+    blocks: [
+      {
+        heading: "Optimiser la présence Google locale",
+        body:
+          "Catégorie, horaires, menu, photos, avis et site doivent être à jour. La fiche Google est souvent la première interaction avant une réservation ou un itinéraire.",
+      },
+      {
+        heading: "Faire du site un point de conversion",
+        body:
+          "Menu lisible sur mobile, localisation, horaires et réservation directe doivent être accessibles immédiatement. Le site peut aussi capter les recherches de spécialité ou de quartier lorsqu'elles sont pertinentes.",
+      },
+      {
+        heading: "Utiliser les réseaux sociaux pour créer l'envie",
+        body:
+          "Photos, vidéos courtes, plats, coulisses et événements peuvent attirer l'attention locale. Le contenu doit ensuite renvoyer vers une réservation ou une information utile.",
+      },
+      {
+        heading: "Mesurer réservations et actions locales",
+        body:
+          "Clics vers la réservation, appels, itinéraires et visites du menu permettent de comprendre quels canaux contribuent le plus à la fréquentation.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Quel marketing digital pour un restaurant ?",
+        answer:
+          "Google Business Profile, SEO local, site mobile, avis, réseaux sociaux et éventuellement Meta Ads ou Google Ads selon la zone et le positionnement.",
+      },
+      {
+        question: "Un restaurant a-t-il besoin d'un site avec Google Maps ?",
+        answer:
+          "Le site complète la fiche Google en présentant le menu, l'univers, les événements et une réservation directe sous le contrôle du restaurant.",
+      },
+      {
+        question: "Quels contenus publier ?",
+        answer:
+          "Plats, nouveautés, équipe, ambiance, événements et informations utiles, avec une prochaine étape claire vers la réservation ou la visite.",
+      },
+    ],
+    related: ["marketing-local", "google-business-profile", "strategie-reseaux-sociaux"],
   }
 ];
 
