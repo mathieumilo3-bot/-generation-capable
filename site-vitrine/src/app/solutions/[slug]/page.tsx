@@ -129,6 +129,24 @@ export default async function SeoLandingPage({ params }: Props) {
           ))}
         </div>
 
+        <div className="mt-14 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+          <p className="font-display text-lg font-semibold text-[var(--color-text)]">
+            Vous voulez savoir si ce levier est prioritaire pour votre entreprise ?
+          </p>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">
+            Le diagnostic analyse votre situation avant de recommander les pages, canaux et corrections à traiter en premier.
+          </p>
+          <Button
+            href="/audit"
+            variant="secondary"
+            trackEvent="cta_clicked"
+            trackPayload={{ location: `seo_landing_mid_${page.slug}` }}
+            className="mt-5"
+          >
+            Analyser mon entreprise →
+          </Button>
+        </div>
+
         <section className="mt-16 border-t border-[var(--color-border)] pt-12">
           <h2 className="font-display text-2xl font-semibold text-[var(--color-text)]">
             Questions fréquentes
