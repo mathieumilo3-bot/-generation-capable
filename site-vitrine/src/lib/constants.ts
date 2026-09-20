@@ -1,5 +1,5 @@
 export const SITE_NAME = "GC";
-export const SITE_URL = "https://generationcapable.fr";
+export const SITE_URL = "https://gc-agence.com";
 export const SITE_TAGLINE = "Digital Revenue Systems";
 
 export const SITE_DESCRIPTION =
