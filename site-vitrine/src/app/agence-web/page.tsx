@@ -4,7 +4,7 @@ import { PillarPage } from "@/components/sections/PillarPage";
 export const metadata: Metadata = {
   title: "Agence web — sans le devenir",
   description:
-    "Génération Capable n'est pas une agence web de plus. Nous concevons des systèmes digitaux orientés résultats, pas des sites vitrines isolés.",
+    "GC n'est pas une agence web de plus. Nous concevons des systèmes digitaux orientés résultats, pas des sites vitrines isolés.",
   alternates: { canonical: "/agence-web" },
 };
 
