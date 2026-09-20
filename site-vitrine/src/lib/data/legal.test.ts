@@ -8,7 +8,7 @@ import {
 } from "./legal";
 
 const FILLED: LegalEntity = {
-  denomination: "Génération Capable SAS",
+  denomination: "GC SAS",
   formeJuridique: "SAS",
   capital: "1 000 €",
   siege: "1 rue de l'Exemple, 75000 Paris",
