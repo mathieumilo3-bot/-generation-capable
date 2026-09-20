@@ -5,7 +5,7 @@ const FETCH_TIMEOUT_MS = 5_000;
 const MAX_BODY_BYTES = 1_500_000; // 1.5 MB — a marketing homepage fits well inside this.
 const MAX_REDIRECTS = 5;
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; CapableAuditBot/1.0; +https://generationcapable.fr/audit)";
+  "Mozilla/5.0 (compatible; CapableAuditBot/1.0; +https://gc-agence.com/audit)";
 
 /**
  * Blocks the probe from being turned into an SSRF pivot once this runs on a

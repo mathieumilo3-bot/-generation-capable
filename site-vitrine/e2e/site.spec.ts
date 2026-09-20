@@ -12,6 +12,12 @@ const PUBLIC_ROUTES = [
   "/agence-web",
   "/acquisition",
   "/seo",
+  "/solutions",
+  "/solutions/audit-site-internet",
+  "/solutions/referencement-local",
+  "/solutions/creation-site-artisan",
+  "/ressources/prix-creation-site-internet",
+  "/ressources/comment-etre-visible-sur-google",
 ];
 
 test.describe("pages", () => {
@@ -27,7 +33,7 @@ test.describe("pages", () => {
       await expect(page).toHaveTitle(/.+/);
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
         "href",
-        /^https:\/\/generationcapable\.fr/
+        /^https:\/\/gc-agence\.com/
       );
       expect(errors).toEqual([]);
     });
@@ -54,6 +60,7 @@ test.describe("pages", () => {
   test("unknown sector and article slugs 404", async ({ page }) => {
     expect((await page.goto("/secteurs/inconnu"))?.status()).toBe(404);
     expect((await page.goto("/ressources/inconnu"))?.status()).toBe(404);
+    expect((await page.goto("/solutions/inconnu"))?.status()).toBe(404);
   });
 });
 
@@ -88,16 +95,18 @@ test.describe("SEO endpoints", () => {
     const response = await request.get("/sitemap.xml");
     expect(response.status()).toBe(200);
     const body = await response.text();
-    expect(body).toContain("https://generationcapable.fr");
+    expect(body).toContain("https://gc-agence.com");
     expect(body).toContain("/secteurs/restaurants");
-    expect(body).not.toContain("www.generationcapable.fr");
+    expect(body).toContain("/solutions/audit-site-internet");
+    expect(body).toContain("/ressources/prix-creation-site-internet");
+    expect(body).not.toContain("www.gc-agence.com");
   });
 
   test("robots allows crawling and points at the sitemap", async ({ request }) => {
     const body = await (await request.get("/robots.txt")).text();
     expect(body).toContain("Allow: /");
     expect(body).toContain("Disallow: /api/");
-    expect(body).toContain("Sitemap: https://generationcapable.fr/sitemap.xml");
+    expect(body).toContain("Sitemap: https://gc-agence.com/sitemap.xml");
   });
 
   test("legal pages stay out of the index", async ({ page }) => {

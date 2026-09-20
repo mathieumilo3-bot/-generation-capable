@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/constants";
 import { SECTORS } from "@/lib/data/sectors";
 import { ARTICLES } from "@/lib/data/articles";
+import { SEO_LANDINGS } from "@/lib/data/seo-landings";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -10,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/secteurs`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/applications`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/ressources`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${SITE_URL}/solutions`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE_URL}/creation-site-internet`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/agence-web`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/acquisition`, changeFrequency: "monthly", priority: 0.6 },
@@ -29,6 +31,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.5,
   }));
 
+  const solutionRoutes: MetadataRoute.Sitemap = SEO_LANDINGS.map((page) => ({
+    url: `${SITE_URL}/solutions/${page.slug}`,
+    changeFrequency: "monthly",
+    priority: 0.8,
+  }));
 
-  return [...staticRoutes, ...sectorRoutes, ...articleRoutes];
+  return [...staticRoutes, ...solutionRoutes, ...sectorRoutes, ...articleRoutes];
 }
