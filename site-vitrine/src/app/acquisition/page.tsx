@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { PillarPage } from "@/components/sections/PillarPage";
 
 export const metadata: Metadata = {
-  title: "Acquisition digitale",
+  title: "Acquisition digitale : générer des leads qualifiés",
   description:
-    "SEO, contenu, réseaux sociaux : faire venir la bonne attention, au bon moment de la décision, plutôt que du trafic générique.",
+    "Acquisition digitale pour générer des leads qualifiés : SEO, contenu, réseaux sociaux, pages de conversion, qualification et suivi des demandes.",
   alternates: { canonical: "/acquisition" },
 };
 
@@ -12,7 +12,7 @@ export default function AcquisitionPage() {
   return (
     <PillarPage
       eyebrow="System 02"
-      title="Acquisition"
+      title="Acquisition digitale : attirer et convertir des prospects qualifiés."
       intro="La visibilité ne vaut que si elle amène les bonnes personnes. L'acquisition n'est pas une question de volume, mais de pertinence."
       path="/acquisition"
       ctaContext="pillar_acquisition"
