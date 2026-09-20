@@ -12,7 +12,7 @@ import { ServiceJsonLd } from "@/components/schema/JsonLd";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Génération Capable — Systèmes digitaux qui génèrent des opportunités",
+  title: "GC — Systèmes digitaux qui génèrent des opportunités",
   description:
     "Nous transformons votre visibilité, votre site et votre parcours commercial en un système qui génère davantage de demandes qualifiées.",
   alternates: { canonical: "/" },
