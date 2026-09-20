@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
@@ -7,6 +8,43 @@ import { PRIMARY_CTA_LABEL, SITE_URL } from "@/lib/constants";
 import { ARTICLES, getArticleBySlug } from "@/lib/data/articles";
 
 type Props = { params: Promise<{ article: string }> };
+
+const RELATED_LINKS: Record<string, { href: string; label: string }[]> = {
+  "prix-creation-site-internet": [
+    { href: "/creation-site-internet", label: "Création de site internet" },
+    { href: "/solutions/refonte-site-internet", label: "Refonte de site internet" },
+  ],
+  "comment-etre-visible-sur-google": [
+    { href: "/seo", label: "Référencement SEO" },
+    { href: "/solutions/visibilite-google", label: "Visibilité Google" },
+    { href: "/solutions/audit-seo", label: "Audit SEO" },
+  ],
+  "seo-local-artisan": [
+    { href: "/solutions/referencement-artisan", label: "Référencement artisan" },
+    { href: "/solutions/referencement-local", label: "Référencement local" },
+  ],
+  "optimiser-google-business-profile": [
+    { href: "/solutions/google-business-profile", label: "Optimisation Google Business Profile" },
+    { href: "/solutions/referencement-local", label: "SEO local" },
+  ],
+  "prix-referencement-seo": [
+    { href: "/seo", label: "Référencement SEO" },
+    { href: "/solutions/audit-seo", label: "Audit SEO" },
+  ],
+  "site-internet-artisan-guide": [
+    { href: "/solutions/creation-site-artisan", label: "Création de site pour artisan" },
+    { href: "/solutions/referencement-artisan", label: "Référencement artisan" },
+  ],
+  "generer-demandes-devis-en-ligne": [
+    { href: "/solutions/generation-de-leads", label: "Génération de leads" },
+    { href: "/solutions/landing-page", label: "Landing page" },
+    { href: "/solutions/acquisition-artisan", label: "Acquisition artisan" },
+  ],
+  "refonte-site-seo-erreurs": [
+    { href: "/solutions/refonte-site-internet", label: "Refonte de site internet" },
+    { href: "/solutions/audit-seo", label: "Audit SEO" },
+  ],
+};
 
 export function generateStaticParams() {
   return ARTICLES.map((article) => ({ article: article.slug }));
@@ -28,6 +66,10 @@ export default async function ArticlePage({ params }: Props) {
   const { article: slug } = await params;
   const article = getArticleBySlug(slug);
   if (!article) notFound();
+  const relatedLinks = RELATED_LINKS[article.slug] ?? [
+    { href: "/solutions", label: "Voir toutes les solutions" },
+    { href: "/audit", label: "Analyser mon entreprise" },
+  ];
 
   return (
     <Section className="py-24 sm:py-32">
@@ -60,6 +102,21 @@ export default async function ArticlePage({ params }: Props) {
         </div>
 
         <div className="mt-14 border-t border-[var(--color-border)] pt-10">
+          <h2 className="font-display text-xl font-semibold text-[var(--color-text)]">À explorer ensuite</h2>
+          <div className="mt-5 flex flex-wrap gap-3">
+            {relatedLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text)] transition-colors hover:border-[var(--color-muted)]"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-10 border-t border-[var(--color-border)] pt-10">
           <Button
             href="/audit"
             variant="primary"
