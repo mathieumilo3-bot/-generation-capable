@@ -151,6 +151,11 @@ export type AiAuditOpportunity = {
   callQuestion: string;
 };
 
+export type AiAuditWebSource = {
+  title: string;
+  url: string;
+};
+
 export type AiAuditSynthesis = {
   executiveSummary: string;
   companySnapshot: string;
@@ -161,6 +166,10 @@ export type AiAuditSynthesis = {
   worksWell: string;
   callBridge: string;
   model: string;
+  /** Search queries actually issued by the hosted web-search tool, when used. */
+  webQueries?: string[];
+  /** Sources actually returned by the hosted web-search tool, when used. */
+  webSources?: AiAuditWebSource[];
 };
 
 export type SectorId =
