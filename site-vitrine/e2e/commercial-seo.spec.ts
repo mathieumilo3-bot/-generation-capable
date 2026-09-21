@@ -56,7 +56,9 @@ test.describe("commercial SEO landing pages", () => {
 
   test("Google Search Console verification remains present", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator('meta[name="google-site-verification"]')).toHaveAttribute(
+    await expect(
+      page.locator('meta[name="google-site-verification"]').first()
+    ).toHaveAttribute(
       "content",
       "kmVznlRy43naB6-mRbECpbiug4IUY521LzKGd2Mnb_g"
     );
