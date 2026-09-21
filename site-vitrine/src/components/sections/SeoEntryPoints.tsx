@@ -54,8 +54,8 @@ export function SeoEntryPoints() {
           Trouvez directement la solution qui correspond à votre recherche.
         </h2>
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--color-muted)]">
-          Les pages les plus importantes sont reliées depuis l&apos;accueil pour raccourcir le parcours,
-          renforcer leur contexte et éviter qu&apos;elles restent enfouies dans l&apos;architecture.
+          Créer un site, être trouvé sur Google ou recevoir davantage de demandes :
+          partez de votre priorité pour découvrir les actions adaptées à votre entreprise.
         </p>
       </Reveal>
 

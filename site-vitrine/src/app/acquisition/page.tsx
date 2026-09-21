@@ -16,6 +16,12 @@ export default function AcquisitionPage() {
       intro="La visibilité ne vaut que si elle amène les bonnes personnes. L'acquisition n'est pas une question de volume, mais de pertinence."
       path="/acquisition"
       ctaContext="pillar_acquisition"
+      relatedLinks={[
+        { href: "/solutions/generation-de-leads", label: "Générer des demandes", description: "Aligner les pages, les formulaires et la qualification des prospects." },
+        { href: "/solutions/generation-leads-b2b", label: "Acquisition B2B", description: "Préparer un parcours adapté aux décisions d'achat en entreprise." },
+        { href: "/solutions/publicite-google-ads", label: "Google Ads", description: "Évaluer la publicité sur les recherches qui concernent vos offres." },
+        { href: "/ressources/cout-par-lead-qualifie", label: "Mesurer le coût d'un lead", description: "Distinguer les contacts reçus des opportunités réellement qualifiées." },
+      ]}
       blocks={[
         {
           heading: "SEO et contenu",
