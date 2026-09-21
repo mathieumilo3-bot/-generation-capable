@@ -8,6 +8,11 @@ export type AuditSubmission = {
   entreprise: string;
   email: string;
   telephone: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
 };
 
 export type ParseResult =
@@ -27,6 +32,11 @@ export const FIELD_LIMITS: Record<keyof AuditSubmission, number> = {
   entreprise: 160,
   email: 254,
   telephone: 40,
+  utmSource: 120,
+  utmMedium: 120,
+  utmCampaign: 120,
+  utmContent: 120,
+  utmTerm: 120,
 };
 
 /** Name of the hidden field real visitors never fill — bots usually do. */
@@ -89,15 +99,20 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
     entreprise: readString(source, "entreprise"),
     email: readString(source, "email").toLowerCase(),
     telephone: readString(source, "telephone"),
+    utmSource: readString(source, "utmSource"),
+    utmMedium: readString(source, "utmMedium"),
+    utmCampaign: readString(source, "utmCampaign"),
+    utmContent: readString(source, "utmContent"),
+    utmTerm: readString(source, "utmTerm"),
   };
 
   for (const [field, limit] of Object.entries(FIELD_LIMITS)) {
-    if (candidate[field as keyof AuditSubmission].length > limit) {
+    if ((candidate[field as keyof AuditSubmission] ?? "").length > limit) {
       return { ok: false, error: "field_too_long", field };
     }
   }
 
-  const missing = REQUIRED_FIELDS.filter((field) => candidate[field].length === 0);
+  const missing = REQUIRED_FIELDS.filter((field) => (candidate[field] ?? "").length === 0);
   if (missing.length > 0) {
     return { ok: false, error: "missing_fields", missing };
   }
@@ -166,6 +181,8 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
     ["Entreprise", data.entreprise || "—"],
     ["Email", data.email],
     ["Téléphone", data.telephone || "—"],
+    ["Source", data.utmSource || "Direct / non attribué"],
+    ["Campagne", data.utmCampaign || "—"],
   ];
 
   const subject = sanitizeHeaderValue(
@@ -247,7 +264,16 @@ export function buildConfirmationEmail(data: AuditSubmission, reportSummary?: Re
   const greeting = data.nom ? `Bonjour ${data.nom},` : "Bonjour,";
   const priorities = reportSummary?.topLeaks.slice(0, 3) ?? [];
   const diagnosticReady = priorities.length > 0;
-  const bookingUrl = buildCalendlyUrl({ nom: data.nom, email: data.email });
+  const bookingUrl = buildCalendlyUrl(
+    { nom: data.nom, email: data.email },
+    {
+      source: data.utmSource,
+      medium: data.utmMedium,
+      campaign: data.utmCampaign,
+      content: data.utmContent,
+      term: data.utmTerm,
+    }
+  );
 
   const prioritiesText = diagnosticReady
     ? `\n\nVos priorités détectées :\n${priorities.map((item, i) => `${i + 1}. ${item.title}`).join("\n")}`

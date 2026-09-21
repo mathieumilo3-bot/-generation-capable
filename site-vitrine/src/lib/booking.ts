@@ -6,14 +6,32 @@ export type BookingLead = {
   email?: string;
 };
 
-export function buildCalendlyUrl(lead: BookingLead = {}): string {
+export type BookingAttribution = {
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  content?: string;
+  term?: string;
+};
+
+export function buildCalendlyUrl(
+  lead: BookingLead = {},
+  attribution: BookingAttribution = {}
+): string {
   const url = new URL(CALENDLY_URL);
   if (lead.nom?.trim()) url.searchParams.set("name", lead.nom.trim());
   if (lead.email?.trim()) url.searchParams.set("email", lead.email.trim().toLowerCase());
 
-  url.searchParams.set("utm_source", "capable_audit");
-  url.searchParams.set("utm_medium", "website");
-  url.searchParams.set("utm_campaign", "audit_conversion");
+  url.searchParams.set("utm_source", attribution.source?.trim() || "capable_audit");
+  url.searchParams.set("utm_medium", attribution.medium?.trim() || "website");
+  url.searchParams.set("utm_campaign", attribution.campaign?.trim() || "audit_conversion");
+
+  if (attribution.content?.trim()) {
+    url.searchParams.set("utm_content", attribution.content.trim());
+  }
+  if (attribution.term?.trim()) {
+    url.searchParams.set("utm_term", attribution.term.trim());
+  }
 
   return url.toString();
 }

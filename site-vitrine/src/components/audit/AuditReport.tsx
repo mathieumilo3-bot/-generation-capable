@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { track } from "@/lib/tracking";
-import { buildCalendlyUrl } from "@/lib/booking";
+import { buildCalendlyUrl, type BookingAttribution } from "@/lib/booking";
 import type { AiAuditOpportunity, Dimension, Finding, Report } from "@/lib/audit-engine/types";
 
 type PillarId = "attirer" | "rassurer" | "convertir";
@@ -136,11 +136,12 @@ function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: numbe
 type AuditReportProps = {
   report: Report;
   lead?: { nom?: string; email?: string };
+  attribution?: BookingAttribution;
 };
 
-export function AuditReport({ report, lead }: AuditReportProps) {
+export function AuditReport({ report, lead, attribution }: AuditReportProps) {
   const viewedTracked = useRef(false);
-  const bookingUrl = buildCalendlyUrl(lead);
+  const bookingUrl = buildCalendlyUrl(lead, attribution);
   const priorities = report.topLeaks.slice(0, 3);
   const synthesis = report.aiSynthesis;
   const aiOpportunities = synthesis?.opportunities ?? [];
