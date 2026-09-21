@@ -107,7 +107,7 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
   };
 
   for (const [field, limit] of Object.entries(FIELD_LIMITS)) {
-    if (candidate[field as keyof AuditSubmission].length > limit) {
+    if ((candidate[field as keyof AuditSubmission] ?? "").length > limit) {
       return { ok: false, error: "field_too_long", field };
     }
   }
