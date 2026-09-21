@@ -3,8 +3,16 @@ import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { BreadcrumbJsonLd, ServiceJsonLd } from "@/components/schema/JsonLd";
 import { PRIMARY_CTA_LABEL, SITE_URL } from "@/lib/constants";
+import { CALENDLY_URL } from "@/lib/booking";
 
 export type PillarBlock = { heading: string; body: string };
+
+type CommercialSection = {
+  heading: string;
+  intro: string;
+  points: { heading: string; body: string }[];
+  proofNote?: string;
+};
 
 export function PillarPage({
   eyebrow,
@@ -14,6 +22,7 @@ export function PillarPage({
   path,
   ctaContext,
   relatedLinks = [],
+  commercialSection,
 }: {
   eyebrow: string;
   title: string;
@@ -22,7 +31,12 @@ export function PillarPage({
   path: string;
   ctaContext: string;
   relatedLinks?: { href: string; label: string; description: string }[];
+  commercialSection?: CommercialSection;
 }) {
+  const bookingUrl = `${CALENDLY_URL}?utm_source=gc_agence&utm_medium=website&utm_campaign=seo_commercial&utm_content=${encodeURIComponent(
+    ctaContext
+  )}`;
+
   return (
     <Section className="py-24 sm:py-32">
       <BreadcrumbJsonLd
@@ -58,6 +72,60 @@ export function PillarPage({
           ))}
         </div>
 
+        {commercialSection && (
+          <section className="mt-14 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:p-8">
+            <h2 className="font-display text-2xl font-semibold text-[var(--color-text)]">
+              {commercialSection.heading}
+            </h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
+              {commercialSection.intro}
+            </p>
+
+            <div className="mt-7 grid gap-4 sm:grid-cols-2">
+              {commercialSection.points.map((point) => (
+                <div
+                  key={point.heading}
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5"
+                >
+                  <h3 className="font-display text-base font-semibold text-[var(--color-text)]">
+                    {point.heading}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+                    {point.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {commercialSection.proofNote && (
+              <p className="mt-6 text-sm leading-relaxed text-[var(--color-muted)]">
+                {commercialSection.proofNote}
+              </p>
+            )}
+
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Button
+                href="/audit"
+                variant="primary"
+                trackEvent="cta_clicked"
+                trackPayload={{ location: `${ctaContext}_commercial_audit` }}
+              >
+                {PRIMARY_CTA_LABEL} →
+              </Button>
+              <Button
+                href={bookingUrl}
+                variant="secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+                trackEvent="cta_clicked"
+                trackPayload={{ location: `${ctaContext}_commercial_booking` }}
+              >
+                Réserver un échange de 30 min →
+              </Button>
+            </div>
+          </section>
+        )}
+
         {relatedLinks.length > 0 && (
           <section className="mt-14 border-t border-[var(--color-border)] pt-10">
             <h2 className="font-display text-xl font-semibold text-[var(--color-text)]">
@@ -75,14 +143,31 @@ export function PillarPage({
         )}
 
         <div className="mt-14 border-t border-[var(--color-border)] pt-10">
-          <Button
-            href="/audit"
-            variant="primary"
-            trackEvent="cta_clicked"
-            trackPayload={{ location: ctaContext }}
-          >
-            {PRIMARY_CTA_LABEL} →
-          </Button>
+          <p className="mb-5 max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">
+            Commencez par le diagnostic si vous voulez identifier les priorités avant de parler budget. Si votre besoin est déjà défini, vous pouvez réserver directement un échange.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              href="/audit"
+              variant="primary"
+              trackEvent="cta_clicked"
+              trackPayload={{ location: ctaContext }}
+            >
+              {PRIMARY_CTA_LABEL} →
+            </Button>
+            {commercialSection && (
+              <Button
+                href={bookingUrl}
+                variant="secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+                trackEvent="cta_clicked"
+                trackPayload={{ location: `${ctaContext}_booking` }}
+              >
+                Réserver 30 min →
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </Section>
