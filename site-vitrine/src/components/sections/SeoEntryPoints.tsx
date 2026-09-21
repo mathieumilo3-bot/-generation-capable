@@ -24,6 +24,16 @@ const ENTRY_POINTS = [
     description: "Google Maps, recherches locales et zones réellement servies.",
   },
   {
+    href: "/solutions/audit-seo",
+    title: "Audit SEO",
+    description: "Prioriser les corrections techniques, contenus et pages à potentiel.",
+  },
+  {
+    href: "/solutions/google-business-profile",
+    title: "Google Business Profile",
+    description: "Transformer la visibilité locale en appels, devis et rendez-vous.",
+  },
+  {
     href: "/solutions/generation-de-leads",
     title: "Générer des leads",
     description: "Pages, formulaires et parcours orientés demandes qualifiées.",
