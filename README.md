@@ -18,3 +18,5 @@ Ressources et solutions : https://gc-agence.com/solutions
 Search Console verification is configured through the production hosting environment.
 
 <!-- Search Console verification hardening deploy: 2026-09-21 -->
+
+<!-- Netlify redeploy trigger: 2026-09-21 -->
