@@ -55,11 +55,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  // Search Console URL-prefix verification is injected at build time from Netlify and deployed with production.
-  // Verification token refreshed for Search Console.
-  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
-    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
-    : undefined,
+  // Keep Search Console ownership stable even if hosting environment variables are unavailable.
+  verification: {
+    google: "kmVznlRy43naB6-mRbECpbiug4IUY521LzKGd2Mnb_g",
+  },
 };
 
 export const viewport: Viewport = {
@@ -74,6 +73,10 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       className={`${interTight.variable} ${manrope.variable} h-full antialiased`}
     >
       <head>
+        <meta
+          name="google-site-verification"
+          content="kmVznlRy43naB6-mRbECpbiug4IUY521LzKGd2Mnb_g"
+        />
         <Analytics />
       </head>
       <body className="min-h-full flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
