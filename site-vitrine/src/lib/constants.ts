@@ -12,10 +12,10 @@ export const PRIMARY_CTA_LABEL = "Analyser mon entreprise";
 // SystemDemo/SystemArchitecture instead), so a nav item pointing at it would
 // silently scroll to nowhere. Never relink it without a real section behind it.
 export const NAV_LINKS = [
-  { label: "Systèmes", href: "/#systemes" },
+  { label: "Création de site", href: "/creation-site-internet" },
+  { label: "SEO", href: "/seo" },
+  { label: "Référencement local", href: "/solutions/referencement-local" },
   { label: "Solutions", href: "/solutions" },
-  { label: "Secteurs", href: "/secteurs" },
-  { label: "Applications", href: "/applications" },
   { label: "Ressources", href: "/ressources" },
 ] as const;
 
