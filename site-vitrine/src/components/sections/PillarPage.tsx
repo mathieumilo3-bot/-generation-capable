@@ -144,7 +144,9 @@ export function PillarPage({
 
         <div className="mt-14 border-t border-[var(--color-border)] pt-10">
           <p className="mb-5 max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">
-            Commencez par le diagnostic si vous voulez identifier les priorités avant de parler budget. Si votre besoin est déjà défini, vous pouvez réserver directement un échange.
+            {commercialSection
+              ? "Commencez par le diagnostic si vous voulez identifier les priorités avant de parler budget. Si votre besoin est déjà défini, vous pouvez réserver directement un échange."
+              : "Commencez par le diagnostic pour identifier les priorités avant de parler budget et éviter de lancer des actions inutiles."}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
