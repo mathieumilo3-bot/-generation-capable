@@ -52,7 +52,24 @@ export default function AboutPage() {
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">SIREN</p>
           <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{LEGAL_ENTITY.siren}</p>
-          <p className="mt-1 text-sm text-[var(--color-muted)]">Identité légale vérifiable</p>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+            <a
+              href="https://www.pappers.fr/entreprise/le-dorven-enzo-981319957"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4"
+            >
+              Vérifier sur Pappers
+            </a>
+            <a
+              href="https://www.societe.com/societe/monsieur-enzo-le-dorven-981319957.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4"
+            >
+              Société.com
+            </a>
+          </div>
         </div>
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">Siège</p>
