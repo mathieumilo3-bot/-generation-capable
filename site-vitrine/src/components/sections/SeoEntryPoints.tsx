@@ -5,13 +5,13 @@ import { Reveal } from "@/components/ui/Reveal";
 const ENTRY_POINTS = [
   {
     href: "/creation-site-internet",
-    title: "Créer un site internet",
-    description: "Site professionnel, architecture de services et conversion.",
+    title: "Création de site internet pour PME et artisans",
+    description: "Site professionnel, architecture de services, preuves et conversion.",
   },
   {
     href: "/seo",
-    title: "Être visible sur Google",
-    description: "SEO, contenus, structure et progression organique.",
+    title: "SEO pour PME",
+    description: "Référencement naturel, pages commerciales, contenus et progression organique.",
   },
   {
     href: "/solutions/agence-marketing-digital",
@@ -20,13 +20,13 @@ const ENTRY_POINTS = [
   },
   {
     href: "/solutions/referencement-local",
-    title: "Référencement local",
-    description: "Google Maps, recherches locales et zones réellement servies.",
+    title: "Référencement local pour entreprise",
+    description: "Recherches locales, services, zones réellement servies et présence Google.",
   },
   {
-    href: "/solutions/audit-seo",
-    title: "Audit SEO",
-    description: "Prioriser les corrections techniques, contenus et pages à potentiel.",
+    href: "/audit",
+    title: "Audit SEO gratuit",
+    description: "Diagnostic humain, freins prioritaires et plan d'action sans engagement.",
   },
   {
     href: "/solutions/google-business-profile",
