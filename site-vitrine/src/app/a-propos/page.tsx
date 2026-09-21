@@ -101,12 +101,20 @@ export default function AboutPage() {
           les leviers par besoin et par secteur, sans créer de résultats clients ou d&apos;implantations
           locales qui ne seraient pas réels.
         </p>
-        <Link
-          href="/audit"
-          className="mt-7 inline-flex rounded-full bg-[var(--color-text)] px-6 py-3 text-sm font-semibold text-[var(--color-bg)]"
-        >
-          Analyser mon entreprise →
-        </Link>
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Link
+            href="/audit"
+            className="inline-flex rounded-full bg-[var(--color-text)] px-6 py-3 text-sm font-semibold text-[var(--color-bg)]"
+          >
+            Analyser mon entreprise →
+          </Link>
+          <Link
+            href="/realisations/gc-agence"
+            className="inline-flex rounded-full border border-[var(--color-border)] px-6 py-3 text-sm font-semibold"
+          >
+            Voir notre étude de cas →
+          </Link>
+        </div>
       </section>
     </Section>
   );
