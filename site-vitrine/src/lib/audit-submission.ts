@@ -112,7 +112,7 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
     }
   }
 
-  const missing = REQUIRED_FIELDS.filter((field) => candidate[field].length === 0);
+  const missing = REQUIRED_FIELDS.filter((field) => (candidate[field] ?? "").length === 0);
   if (missing.length > 0) {
     return { ok: false, error: "missing_fields", missing };
   }
