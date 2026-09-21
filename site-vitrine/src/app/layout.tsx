@@ -56,6 +56,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   // Search Console URL-prefix verification is injected at build time from Netlify and deployed with production.
+  // Verification token refreshed for Search Console.
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
