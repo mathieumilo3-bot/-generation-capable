@@ -40,4 +40,16 @@ export function track(event: TrackingEvent, payload: EventPayload = {}): void {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event, ...payload, timestamp: Date.now() });
+
+  if (
+    event === "generate_lead" &&
+    window.localStorage.getItem("gc-revenue-consent-v1") === "accepted"
+  ) {
+    const snaptr = (window as Window & { snaptr?: (...args: unknown[]) => void }).snaptr;
+    snaptr?.("track", "SIGN_UP", {
+      sign_up_method: "website",
+      lead_source: payload.lead_source,
+      lead_campaign: payload.lead_campaign,
+    });
+  }
 }
