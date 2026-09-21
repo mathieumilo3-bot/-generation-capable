@@ -9,6 +9,7 @@ import {
   ServiceJsonLd,
 } from "@/components/schema/JsonLd";
 import { PRIMARY_CTA_LABEL, SITE_URL } from "@/lib/constants";
+import { CALENDLY_URL } from "@/lib/booking";
 import {
   getSeoLandingBySlug,
   SEO_LANDINGS,
@@ -16,6 +17,72 @@ import {
 import { getArticleBySlug } from "@/lib/data/articles";
 
 type Props = { params: Promise<{ slug: string }> };
+
+type CommercialEnhancement = {
+  title: string;
+  metaDescription: string;
+  h1: string;
+  intro: string;
+  extraBlocks: { heading: string; body: string }[];
+  proofNote: string;
+};
+
+const COMMERCIAL_ENHANCEMENTS: Record<string, CommercialEnhancement> = {
+  "referencement-local": {
+    title: "Agence SEO local : référencement local pour entreprises | GC Agence",
+    metaDescription:
+      "Agence SEO local pour artisans, TPE et entreprises de services : pages de prestations, Google Business Profile, preuves locales et parcours vers le devis.",
+    h1: "Agence SEO local : être trouvé par les clients qui cherchent votre service dans votre zone.",
+    intro:
+      "Le référencement local doit capter une intention commerciale réelle : un service, un besoin et une zone que votre entreprise sert vraiment. Nous relions pages de prestations, Google Business Profile, preuves locales et parcours de contact pour transformer cette visibilité en demandes.",
+    extraBlocks: [
+      {
+        heading: "Couvrir les recherches locales qui peuvent déclencher un devis",
+        body:
+          "Les priorités viennent des services réellement vendus : métier + zone, prestation + ville, demande de devis, urgence ou besoin précis. Nous évitons de viser des communes sans contenu spécifique ni réalité commerciale.",
+      },
+      {
+        heading: "Renforcer les preuves locales avant d'ajouter des pages",
+        body:
+          "Photos réelles, réalisations situées, avis vérifiables, certifications, coordonnées et zones d'intervention cohérentes renforcent la confiance. Quand une preuve n'existe pas, elle n'est pas inventée pour remplir une page.",
+      },
+      {
+        heading: "Faire du clic local une demande exploitable",
+        body:
+          "La page doit permettre d'appeler, demander un devis ou réserver un échange rapidement sur mobile. Le formulaire demande uniquement les informations qui changent réellement la suite commerciale.",
+      },
+    ],
+    proofNote:
+      "GC n'utilise pas de faux avis, de fausses implantations ni de résultats de classement inventés. Une amélioration publiée est distinguée d'une progression réellement observée dans les données.",
+  },
+  "marketing-digital-btp": {
+    title: "Agence marketing digital BTP : SEO, site & demandes de devis | GC Agence",
+    metaDescription:
+      "Agence marketing digital BTP : site, SEO local, Google Business, Google Ads et parcours de devis pour artisans et entreprises du bâtiment.",
+    h1: "Agence marketing digital BTP : transformer les recherches locales en demandes de devis.",
+    intro:
+      "Dans le bâtiment, un prospect compare une prestation, une zone, des réalisations et la capacité de l'entreprise à prendre en charge son chantier. Le dispositif digital doit rendre ces éléments visibles puis conduire vers une demande de devis qualifiée.",
+    extraBlocks: [
+      {
+        heading: "Prioriser les recherches BTP proches d'un projet",
+        body:
+          "Nous travaillons d'abord les intentions liées aux prestations rentables : rénovation, couverture, isolation, maçonnerie, menuiserie ou autre service réellement proposé, puis les zones d'intervention réellement couvertes.",
+      },
+      {
+        heading: "Montrer des preuves chantier vérifiables",
+        body:
+          "Photos avant/après, type de chantier, zone, certifications, garanties et réalisations réelles rassurent mieux qu'un discours générique. Aucun chantier, avis ou résultat n'est créé artificiellement pour la page.",
+      },
+      {
+        heading: "Qualifier le devis sans bloquer le prospect",
+        body:
+          "Type de travaux, localisation, délai, surface ou photos éventuelles peuvent préparer le rendez-vous. Le formulaire reste court et l'accès au rendez-vous reste visible pour les projets déjà mûrs.",
+      },
+    ],
+    proofNote:
+      "Le SEO, Google Business Profile et les campagnes peuvent améliorer la visibilité, mais aucune position ni volume de devis n'est garanti. Les gains sont présentés seulement lorsqu'ils sont mesurés.",
+  },
+};
 
 const RELATED_ARTICLES: Record<string, string[]> = {
   "audit-site-internet": ["refonte-site-seo-erreurs", "prix-creation-site-internet"],
@@ -57,6 +124,12 @@ const RELATED_ARTICLES: Record<string, string[]> = {
   "marketing-digital-restaurant": ["marketing-digital-restaurant-guide", "optimiser-google-business-profile"],
 };
 
+function bookingUrlFor(slug: string) {
+  return `${CALENDLY_URL}?utm_source=gc_agence&utm_medium=website&utm_campaign=seo_commercial&utm_content=${encodeURIComponent(
+    slug
+  )}`;
+}
+
 export function generateStaticParams() {
   return SEO_LANDINGS.map((page) => ({ slug: page.slug }));
 }
@@ -66,13 +139,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const page = getSeoLandingBySlug(slug);
   if (!page) return {};
 
+  const enhancement = COMMERCIAL_ENHANCEMENTS[page.slug];
+  const title = enhancement?.title ?? page.title;
+  const description = enhancement?.metaDescription ?? page.metaDescription;
+
   return {
-    title: page.title,
-    description: page.metaDescription,
+    title,
+    description,
     alternates: { canonical: `/solutions/${page.slug}` },
     openGraph: {
-      title: page.title,
-      description: page.metaDescription,
+      title,
+      description,
       url: `${SITE_URL}/solutions/${page.slug}`,
       type: "website",
     },
@@ -84,6 +161,11 @@ export default async function SeoLandingPage({ params }: Props) {
   const page = getSeoLandingBySlug(slug);
   if (!page) notFound();
 
+  const enhancement = COMMERCIAL_ENHANCEMENTS[page.slug];
+  const pageH1 = enhancement?.h1 ?? page.h1;
+  const pageIntro = enhancement?.intro ?? page.intro;
+  const pageDescription = enhancement?.metaDescription ?? page.metaDescription;
+  const blocks = [...page.blocks, ...(enhancement?.extraBlocks ?? [])];
   const related = page.related
     .map((relatedSlug) => getSeoLandingBySlug(relatedSlug))
     .filter(Boolean);
@@ -97,12 +179,12 @@ export default async function SeoLandingPage({ params }: Props) {
         items={[
           { name: "Accueil", url: SITE_URL },
           { name: "Solutions", url: `${SITE_URL}/solutions` },
-          { name: page.h1, url: `${SITE_URL}/solutions/${page.slug}` },
+          { name: pageH1, url: `${SITE_URL}/solutions/${page.slug}` },
         ]}
       />
       <ServiceJsonLd
-        name={page.h1}
-        description={page.metaDescription}
+        name={pageH1}
+        description={pageDescription}
         url={`${SITE_URL}/solutions/${page.slug}`}
       />
       <FAQJsonLd items={page.faqs} />
@@ -110,14 +192,14 @@ export default async function SeoLandingPage({ params }: Props) {
       <div className="mx-auto max-w-3xl">
         <Eyebrow>{page.eyebrow}</Eyebrow>
         <h1 className="font-display text-balance mt-4 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-          {page.h1}
+          {pageH1}
         </h1>
         <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-[var(--color-muted)]">
-          {page.intro}
+          {pageIntro}
         </p>
 
         <div className="mt-14 flex flex-col gap-10">
-          {page.blocks.map((block) => (
+          {blocks.map((block) => (
             <section key={block.heading}>
               <h2 className="font-display text-2xl font-semibold text-[var(--color-text)]">
                 {block.heading}
@@ -128,6 +210,37 @@ export default async function SeoLandingPage({ params }: Props) {
             </section>
           ))}
         </div>
+
+        {enhancement && (
+          <section className="mt-14 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:p-8">
+            <h2 className="font-display text-2xl font-semibold text-[var(--color-text)]">
+              Une méthode vérifiable avant de parler de résultats
+            </h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
+              {enhancement.proofNote}
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Button
+                href="/audit"
+                variant="primary"
+                trackEvent="cta_clicked"
+                trackPayload={{ location: `seo_landing_proof_${page.slug}` }}
+              >
+                Recevoir mon diagnostic →
+              </Button>
+              <Button
+                href={bookingUrlFor(page.slug)}
+                variant="secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+                trackEvent="cta_clicked"
+                trackPayload={{ location: `seo_landing_booking_${page.slug}` }}
+              >
+                Réserver un échange de 30 min →
+              </Button>
+            </div>
+          </section>
+        )}
 
         <div className="mt-14 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
           <p className="font-display text-lg font-semibold text-[var(--color-text)]">
@@ -216,14 +329,28 @@ export default async function SeoLandingPage({ params }: Props) {
           <p className="mb-5 max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">
             Vous voulez savoir quelles corrections et quelles pages ont le plus de potentiel pour votre entreprise ? Lancez le diagnostic et partez de votre situation réelle.
           </p>
-          <Button
-            href="/audit"
-            variant="primary"
-            trackEvent="cta_clicked"
-            trackPayload={{ location: `seo_landing_${page.slug}` }}
-          >
-            {PRIMARY_CTA_LABEL} →
-          </Button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              href="/audit"
+              variant="primary"
+              trackEvent="cta_clicked"
+              trackPayload={{ location: `seo_landing_${page.slug}` }}
+            >
+              {PRIMARY_CTA_LABEL} →
+            </Button>
+            {enhancement && (
+              <Button
+                href={bookingUrlFor(page.slug)}
+                variant="secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+                trackEvent="cta_clicked"
+                trackPayload={{ location: `seo_landing_bottom_booking_${page.slug}` }}
+              >
+                Réserver 30 min →
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </Section>
