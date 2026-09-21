@@ -3,9 +3,9 @@ import { Section, Eyebrow } from "@/components/ui/Section";
 import { AuditFunnel } from "./AuditFunnel";
 
 export const metadata: Metadata = {
-  title: "Analyser mon entreprise — Capable Audit",
+  title: "Audit site internet gratuit : SEO, visibilité & conversion",
   description:
-    "Obtenez un diagnostic initial de votre présence digitale : visibilité, crédibilité, conversion et parcours client. Sans engagement.",
+    "Audit gratuit de votre site et de votre présence digitale : SEO, visibilité Google, crédibilité, conversion et parcours client. Diagnostic initial sans engagement.",
   alternates: { canonical: "/audit" },
 };
 
@@ -16,17 +16,18 @@ export default function AuditPage() {
     <Section className="py-16 sm:py-24 lg:py-28">
       <div className="grid gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-start lg:gap-20">
         <div className="lg:sticky lg:top-28">
-          <Eyebrow>Capable Audit</Eyebrow>
+          <Eyebrow>Audit gratuit · Sans engagement</Eyebrow>
           <h1 className="font-display text-balance mt-5 text-4xl font-semibold leading-[1.04] tracking-tight sm:text-5xl lg:text-6xl">
-            Regardons ce que
+            Audit gratuit de votre site :
             <br />
-            votre présence
+            SEO, visibilité
             <br />
-            <span className="gold-text">produit vraiment.</span>
+            <span className="gold-text">et conversion.</span>
           </h1>
           <p className="mt-7 max-w-md text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-base">
-            Un diagnostic initial de votre présence digitale pour identifier
-            les points de friction et les opportunités les plus évidentes.
+            Nous regardons votre site, votre visibilité Google, la crédibilité de votre présence
+            et le parcours qui transforme une visite en demande afin d&apos;identifier les priorités
+            les plus évidentes.
           </p>
 
           <div className="mt-10 grid grid-cols-2 gap-2 sm:max-w-sm">
@@ -44,7 +45,7 @@ export default function AuditPage() {
           </div>
 
           <p className="mt-7 text-xs text-[var(--color-muted)]">
-            4 étapes · Sans engagement · Réponse personnalisée
+            Gratuit · 4 axes · Sans engagement · Réponse personnalisée
           </p>
         </div>
 
