@@ -153,6 +153,104 @@ const RELATED_LINKS: Record<string, { href: string; label: string }[]> = {
   ],
 };
 
+const PRIORITY_COMMERCIAL_LINKS: Record<string, { href: string; label: string; description: string }> = {
+  "pourquoi-un-beau-site-ne-suffit-plus": {
+    href: "/creation-site-internet",
+    label: "Création de site internet pour PME et artisans",
+    description: "Voir comment structurer un site autour des prestations, des preuves et des demandes.",
+  },
+  "site-vitrine-ou-systeme-acquisition": {
+    href: "/creation-site-internet",
+    label: "Créer un site pensé pour générer des demandes",
+    description: "Passer d'une simple vitrine à un parcours commercial mesurable.",
+  },
+  "prix-creation-site-internet": {
+    href: "/creation-site-internet",
+    label: "Création de site internet",
+    description: "Comparer le périmètre utile avant de demander un devis.",
+  },
+  "site-internet-artisan-guide": {
+    href: "/creation-site-internet",
+    label: "Création de site internet pour artisans",
+    description: "Structurer les pages, les preuves et la demande de devis.",
+  },
+  "agence-web-ou-freelance": {
+    href: "/creation-site-internet",
+    label: "Projet de création de site internet",
+    description: "Voir les éléments à cadrer avant de choisir un prestataire.",
+  },
+  "refonte-site-seo-erreurs": {
+    href: "/seo",
+    label: "SEO pour PME",
+    description: "Renforcer les pages existantes sans perdre les signaux déjà acquis.",
+  },
+  "refonte-site-sans-perdre-seo": {
+    href: "/seo",
+    label: "Référencement SEO",
+    description: "Relier la refonte aux pages et recherches qui génèrent de la visibilité.",
+  },
+  "comment-etre-visible-sur-google": {
+    href: "/seo",
+    label: "Agence SEO pour PME",
+    description: "Voir la méthode appliquée aux recherches commerciales et aux pages qui comptent.",
+  },
+  "prix-referencement-seo": {
+    href: "/seo",
+    label: "Accompagnement SEO",
+    description: "Comprendre les priorités avant de répartir un budget SEO.",
+  },
+  "seo-ou-google-ads": {
+    href: "/seo",
+    label: "Référencement naturel",
+    description: "Construire une visibilité organique sur les recherches à forte intention.",
+  },
+  "tarif-agence-seo-pme": {
+    href: "/seo",
+    label: "SEO pour PME",
+    description: "Voir ce qu'une stratégie SEO orientée prospects doit réellement travailler.",
+  },
+  "seo-local-artisan": {
+    href: "/solutions/referencement-local",
+    label: "Référencement local",
+    description: "Relier prestations, zone réelle, Google Business Profile et demande de devis.",
+  },
+  "optimiser-google-business-profile": {
+    href: "/solutions/referencement-local",
+    label: "SEO local pour entreprise",
+    description: "Faire travailler la fiche Google et les pages du site ensemble.",
+  },
+  "marketing-digital-artisan-guide": {
+    href: "/solutions/referencement-local",
+    label: "Référencement local pour artisans",
+    description: "Capter les recherches liées au métier, aux prestations et à la zone d'intervention.",
+  },
+  "site-internet-dentiste-seo-local": {
+    href: "/solutions/referencement-local",
+    label: "Référencement local",
+    description: "Structurer la présence locale autour de pages et informations cohérentes.",
+  },
+  "marketing-entreprise-nettoyage-guide": {
+    href: "/solutions/referencement-local",
+    label: "Référencement local",
+    description: "Travailler les services et zones réellement couverts pour capter les recherches utiles.",
+  },
+  "marketing-digital-restaurant-guide": {
+    href: "/solutions/referencement-local",
+    label: "Visibilité locale sur Google",
+    description: "Relier la fiche Google, le site et les recherches locales.",
+  },
+  "seo-local-ou-google-ads": {
+    href: "/solutions/referencement-local",
+    label: "Référencement local",
+    description: "Construire le socle organique avant de comparer avec l'acquisition payante.",
+  },
+  "marketing-digital-btp-guide": {
+    href: "/solutions/marketing-digital-btp",
+    label: "Marketing digital BTP",
+    description: "Relier visibilité locale, prestations, réalisations et demandes de devis.",
+  },
+};
+
 const RELATED_GUIDES: Record<string, string[]> = {
   "prix-creation-site-internet": ["site-internet-artisan-guide", "refonte-site-seo-erreurs"],
   "comment-etre-visible-sur-google": ["prix-referencement-seo", "seo-local-artisan", "optimiser-google-business-profile"],
@@ -214,6 +312,7 @@ export default async function ArticlePage({ params }: Props) {
   const relatedGuides = (RELATED_GUIDES[article.slug] ?? [])
     .map((relatedSlug) => getArticleBySlug(relatedSlug))
     .filter(Boolean);
+  const priorityCommercialLink = PRIORITY_COMMERCIAL_LINKS[article.slug];
 
   return (
     <Section className="py-24 sm:py-32">
@@ -243,6 +342,22 @@ export default async function ArticlePage({ params }: Props) {
               <p className="text-[16px] leading-relaxed text-[var(--color-muted)]">
                 {paragraph}
               </p>
+              {index === 1 && priorityCommercialLink && (
+                <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                    À approfondir
+                  </p>
+                  <Link
+                    href={priorityCommercialLink.href}
+                    className="font-display mt-2 block text-base font-semibold text-[var(--color-text)] underline decoration-[var(--color-accent)] underline-offset-4"
+                  >
+                    {priorityCommercialLink.label} →
+                  </Link>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+                    {priorityCommercialLink.description}
+                  </p>
+                </div>
+              )}
               {index === 2 && (
                 <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
                   <p className="font-display text-base font-semibold text-[var(--color-text)]">
