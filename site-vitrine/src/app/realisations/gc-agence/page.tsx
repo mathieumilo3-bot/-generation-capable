@@ -44,8 +44,7 @@ export default function CaseStudyPage() {
       <BreadcrumbJsonLd
         items={[
           { name: "Accueil", url: SITE_URL },
-          { name: "Réalisations", url: `${SITE_URL}/realisations/gc-agence` },
-          { name: "GC Agence", url: `${SITE_URL}/realisations/gc-agence` },
+          { name: "GC Agence — étude de cas", url: `${SITE_URL}/realisations/gc-agence` },
         ]}
       />
       <div className="mx-auto max-w-3xl">
