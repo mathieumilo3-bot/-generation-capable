@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Section, Eyebrow } from "@/components/ui/Section";
+import { FAQJsonLd } from "@/components/schema/JsonLd";
 import { AuditFunnel } from "./AuditFunnel";
 
 export const metadata: Metadata = {
@@ -11,9 +12,34 @@ export const metadata: Metadata = {
 
 const AXES = ["Visibilité", "Crédibilité", "Conversion", "Parcours"];
 
+const FAQS = [
+  {
+    question: "L'audit est-il vraiment gratuit ?",
+    answer:
+      "Oui. Le diagnostic initial est gratuit et sans engagement. Il sert à identifier les principaux freins de visibilité, de crédibilité et de conversion avant de parler d'une éventuelle prestation.",
+  },
+  {
+    question: "Que contient l'audit ?",
+    answer:
+      "Nous regardons le site, la visibilité Google, la clarté de l'offre, les éléments de confiance, les appels à l'action et le parcours qui mène vers un formulaire, un devis ou un rendez-vous.",
+  },
+  {
+    question: "Quelle est la différence entre un audit SEO et un audit de site internet ?",
+    answer:
+      "Un audit SEO se concentre surtout sur la capacité du site à être compris et trouvé dans les moteurs de recherche. Un audit de site plus large ajoute la crédibilité, la conversion et le parcours commercial.",
+  },
+  {
+    question: "Faut-il déjà avoir Google Search Console pour demander l'audit ?",
+    answer:
+      "Non. Les signaux publics du site peuvent déjà être analysés. Si des données Search Console sont ensuite disponibles, elles permettent d'affiner les priorités à partir des requêtes, impressions et pages réellement observées.",
+  },
+];
+
 export default function AuditPage() {
   return (
-    <Section className="py-16 sm:py-24 lg:py-28">
+    <>
+      <FAQJsonLd items={FAQS} />
+      <Section className="py-16 sm:py-24 lg:py-28">
       <div className="grid gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-start lg:gap-20">
         <div className="lg:sticky lg:top-28">
           <Eyebrow>Audit gratuit · Sans engagement</Eyebrow>
@@ -65,6 +91,19 @@ export default function AuditPage() {
           <AuditFunnel />
         </div>
       </div>
-    </Section>
+
+      <div className="mx-auto mt-16 max-w-3xl border-t border-[var(--color-border)] pt-10 sm:mt-20">
+        <h2 className="font-display text-2xl font-semibold">Questions sur l&apos;audit gratuit</h2>
+        <div className="mt-6 space-y-6">
+          {FAQS.map((item) => (
+            <div key={item.question}>
+              <h3 className="font-display text-base font-semibold">{item.question}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{item.answer}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      </Section>
+    </>
   );
 }
