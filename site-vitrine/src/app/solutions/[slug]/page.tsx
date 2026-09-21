@@ -28,6 +28,166 @@ type CommercialEnhancement = {
 };
 
 const COMMERCIAL_ENHANCEMENTS: Record<string, CommercialEnhancement> = {
+  "audit-seo": {
+    title: "Audit SEO : diagnostic priorisé pour PME",
+    metaDescription:
+      "Audit SEO pour PME : technique, pages, requêtes, maillage et conversion. Identifiez les corrections prioritaires pour gagner en visibilité utile et en demandes.",
+    h1: "Audit SEO : savoir quoi corriger en premier pour gagner en visibilité et en demandes.",
+    intro:
+      "Un audit SEO utile doit déboucher sur des décisions. Nous relions les problèmes techniques, les pages déjà visibles, les intentions commerciales, le contenu et le parcours de conversion afin de prioriser les actions qui peuvent réellement servir l'acquisition.",
+    extraBlocks: [
+      {
+        heading: "Partir des pages et requêtes qui ont déjà un potentiel",
+        body:
+          "Avant de créer du contenu supplémentaire, nous regardons quelles pages correspondent déjà à des recherches utiles, lesquelles sont trop faibles et quelles intentions commerciales n'ont aucune destination claire. L'objectif est d'améliorer ce qui peut produire une demande, pas de poursuivre un score abstrait.",
+      },
+      {
+        heading: "Trier les problèmes par impact et par effort",
+        body:
+          "Indexation, titles, contenu, maillage, duplication, performance, données structurées ou pages manquantes n'ont pas tous la même urgence. Le plan distingue les corrections bloquantes, les gains rapides et les chantiers qui demandent davantage de contenu ou d'autorité.",
+      },
+      {
+        heading: "Transformer l'audit en feuille de route",
+        body:
+          "Chaque recommandation doit indiquer la page concernée, la raison, l'action attendue et la manière de vérifier le résultat. Le livrable sert à exécuter : corriger, publier, mesurer puis réévaluer.",
+      },
+      {
+        heading: "Relier SEO et demandes commerciales",
+        body:
+          "Les impressions et clics ne suffisent pas. Les pages prioritaires sont celles qui peuvent conduire vers un devis, un appel ou un rendez-vous qualifié. Le suivi doit ensuite rapprocher visibilité, trafic et conversions réelles.",
+      },
+    ],
+    proofNote:
+      "Aucune position n'est promise à l'issue d'un audit. Les progrès doivent être vérifiés après mise en œuvre avec les données réelles du site, notamment Search Console lorsqu'elles sont disponibles.",
+  },
+  "google-business-profile": {
+    title: "Agence Google Business Profile : visibilité locale & appels",
+    metaDescription:
+      "Optimisation Google Business Profile : catégories, services, avis, photos, pages liées et suivi pour transformer les recherches locales en appels et demandes.",
+    h1: "Google Business Profile : transformer votre présence locale en appels et demandes.",
+    intro:
+      "Une fiche Google locale performante doit être cohérente avec les services réellement vendus, le site, les zones couvertes et les preuves visibles. L'objectif n'est pas de remplir chaque champ : c'est d'aider un prospect local à vous choisir puis à agir.",
+    extraBlocks: [
+      {
+        heading: "Aligner catégories, services et pages du site",
+        body:
+          "La catégorie principale, les services et la page liée doivent décrire la même activité. Pour les prestations importantes, le site doit proposer une page claire qui détaille le besoin, les preuves et la prochaine étape.",
+      },
+      {
+        heading: "Renforcer la confiance avec des preuves réelles",
+        body:
+          "Photos de réalisations, équipe, locaux lorsqu'ils existent, avis clients vérifiables et réponses utiles réduisent l'incertitude. Nous n'ajoutons ni avis fabriqués ni adresse artificielle pour tenter d'élargir une zone.",
+      },
+      {
+        heading: "Optimiser le parcours après la fiche",
+        body:
+          "Un clic vers le site doit conduire vers une page adaptée au besoin, avec appel, devis ou rendez-vous visible sur mobile. La cohérence fiche → page → action est plus utile qu'un simple renvoi vers une page d'accueil générique.",
+      },
+      {
+        heading: "Mesurer les actions locales",
+        body:
+          "Appels, clics vers le site, itinéraires, formulaires et rendez-vous permettent de comprendre ce que la présence locale génère réellement. Ces signaux doivent guider les prochaines optimisations.",
+      },
+    ],
+    proofNote:
+      "Nous ne créons pas de faux avis, de fausses adresses ni de fausses zones d'implantation. La visibilité locale dépend aussi de la pertinence, de la distance et de la notoriété ; aucune place fixe sur Maps n'est garantie.",
+  },
+  "generation-de-leads": {
+    title: "Agence génération de leads : acquisition & rendez-vous qualifiés",
+    metaDescription:
+      "Génération de leads pour PME : ciblage, SEO, Ads, landing pages, qualification et suivi jusqu'au rendez-vous ou à la demande de devis.",
+    h1: "Agence de génération de leads : transformer l'acquisition en demandes réellement qualifiées.",
+    intro:
+      "Un lead n'a de valeur que s'il correspond à votre cible, comprend l'offre et peut avancer commercialement. Nous relions acquisition, page d'arrivée, qualification et prise de rendez-vous pour éviter d'optimiser uniquement le volume de formulaires.",
+    extraBlocks: [
+      {
+        heading: "Définir ce qu'est un lead utile avant d'acheter du trafic",
+        body:
+          "Secteur, besoin, zone, budget, délai ou taille d'entreprise peuvent changer la qualité d'une opportunité. Nous définissons les critères réellement discriminants avant de choisir les canaux et le formulaire.",
+      },
+      {
+        heading: "Faire correspondre chaque source à une page précise",
+        body:
+          "Une recherche Google, une annonce ou un contenu ne doivent pas tomber sur une page générique. La page reprend le besoin initial, répond aux objections, montre les preuves disponibles et conduit vers une action unique.",
+      },
+      {
+        heading: "Qualifier sans tuer la conversion",
+        body:
+          "Le formulaire demande seulement les informations nécessaires à la prochaine étape. Pour un prospect déjà mûr, la prise de rendez-vous reste accessible sans multiplier les écrans inutiles.",
+      },
+      {
+        heading: "Optimiser sur les opportunités, pas sur les formulaires",
+        body:
+          "Le coût par lead brut peut être trompeur. Le suivi doit distinguer demandes valides, rendez-vous tenus, opportunités commerciales et ventes afin de renforcer les sources qui produisent réellement du chiffre d'affaires.",
+      },
+    ],
+    proofNote:
+      "GC ne présente pas un volume de leads ou un coût par lead comme garanti. Les performances dépendent de l'offre, du marché, du budget, de la concurrence et du traitement commercial des demandes.",
+  },
+  "publicite-google-ads": {
+    title: "Agence Google Ads PME : campagnes orientées leads",
+    metaDescription:
+      "Agence Google Ads pour PME : mots-clés à forte intention, landing pages, exclusions, suivi des conversions et optimisation vers les demandes qualifiées.",
+    h1: "Agence Google Ads pour PME : capter les recherches prêtes à passer à l'action.",
+    intro:
+      "Google Ads peut accélérer l'acquisition quand une personne cherche déjà un service, un devis ou une solution. La rentabilité dépend cependant autant du ciblage et des exclusions que de la page d'arrivée, du suivi et de la qualité commerciale des demandes.",
+    extraBlocks: [
+      {
+        heading: "Concentrer le budget sur les intentions commerciales",
+        body:
+          "Les campagnes doivent séparer les recherches proches d'une décision des requêtes trop générales ou informatives. Les mots-clés négatifs et les rapports de termes de recherche servent à réduire progressivement le trafic sans valeur.",
+      },
+      {
+        heading: "Envoyer chaque recherche vers la bonne landing page",
+        body:
+          "L'annonce et la page doivent parler du même service. Le prospect doit retrouver immédiatement la promesse, les preuves disponibles, les objections principales et un formulaire ou rendez-vous adapté.",
+      },
+      {
+        heading: "Suivre les conversions qui comptent",
+        body:
+          "Formulaires, appels et rendez-vous doivent être mesurés séparément lorsque c'est possible. Le pilotage devient plus pertinent quand les retours commerciaux permettent de distinguer un simple contact d'une opportunité réelle.",
+      },
+      {
+        heading: "Décider avec un budget test explicite",
+        body:
+          "Avant d'augmenter les dépenses, il faut définir la zone, les services, le budget test, la valeur d'une opportunité et les critères d'arrêt ou d'augmentation. Une campagne ne doit pas continuer uniquement parce qu'elle génère des clics.",
+      },
+    ],
+    proofNote:
+      "Le coût par clic, le coût par lead et le volume de demandes varient selon le marché, la zone, l'offre et la concurrence. Aucun coût d'acquisition ni volume de leads n'est garanti avant d'avoir des données réelles.",
+  },
+  "generation-leads-b2b": {
+    title: "Agence génération de leads B2B : rendez-vous qualifiés",
+    metaDescription:
+      "Génération de leads B2B : ciblage ICP, SEO, Google Ads, landing pages, qualification et rendez-vous pour alimenter un pipeline commercial mesurable.",
+    h1: "Agence de génération de leads B2B : alimenter le pipeline avec des opportunités qualifiées.",
+    intro:
+      "En B2B, un formulaire ne vaut pas un projet. Le système doit viser les bons comptes, capter ou créer une intention, qualifier le besoin puis transmettre aux commerciaux un contexte exploitable pour le rendez-vous.",
+    extraBlocks: [
+      {
+        heading: "Définir l'ICP et les signaux de qualification",
+        body:
+          "Secteur, taille, fonction, zone, problème, échéance ou équipement existant peuvent permettre de distinguer un compte cible d'un contact hors sujet. Ces critères structurent les campagnes, les contenus et la qualification.",
+      },
+      {
+        heading: "Combiner acquisition et conversion",
+        body:
+          "SEO, Google Ads, contenus ou prospection peuvent nourrir le même parcours. La page d'arrivée doit être cohérente avec l'intention et proposer une prochaine étape proportionnée à la maturité du prospect.",
+      },
+      {
+        heading: "Préparer le rendez-vous commercial",
+        body:
+          "La qualification doit faire remonter les informations utiles au closer : contexte, besoin, objectif, délai et éventuelles contraintes. Le but n'est pas d'ajouter des champs, mais d'améliorer la qualité de la conversation.",
+      },
+      {
+        heading: "Mesurer jusqu'au pipeline",
+        body:
+          "Leads marketing, rendez-vous, opportunités et ventes ne sont pas interchangeables. Le suivi doit permettre de revenir jusqu'à la source et à la page qui ont généré les meilleures opportunités.",
+      },
+    ],
+    proofNote:
+      "Nous ne présentons pas de rendez-vous, de taux de conversion ou de chiffre d'affaires comme garantis. Les performances dépendent du marché, de l'offre, du ciblage, du budget et de l'exécution commerciale.",
+  },
   "referencement-local": {
     title: "Agence SEO local : référencement local pour entreprises",
     metaDescription:
