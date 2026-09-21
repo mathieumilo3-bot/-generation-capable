@@ -43,6 +43,7 @@ function updateConsent(choice: Choice) {
     analytics_storage: choice === "accepted" ? "granted" : "denied",
   });
   window.localStorage.setItem(CONSENT_KEY, choice);
+  window.dispatchEvent(new CustomEvent("gc:consent-updated", { detail: { choice } }));
 }
 
 export function ConsentBanner() {
