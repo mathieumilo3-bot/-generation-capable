@@ -25,7 +25,7 @@ test.describe("commercial SEO landing pages", () => {
       const response = await page.goto(item.route);
       expect(response?.status()).toBe(200);
 
-      await expect(page.getByRole("heading", { level: 1 })).toHaveText(item.h1);\n      await expect(page).not.toHaveTitle(/GC Agence.*GC Agence/);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(item.h1);\n      expect(await page.title()).not.toMatch(/GC Agence.*GC Agence/);
 
       const booking = page
         .getByRole("link", { name: /Réserver (un échange de )?30 min/ })
