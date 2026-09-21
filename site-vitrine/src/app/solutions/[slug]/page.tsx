@@ -29,7 +29,7 @@ type CommercialEnhancement = {
 
 const COMMERCIAL_ENHANCEMENTS: Record<string, CommercialEnhancement> = {
   "referencement-local": {
-    title: "Agence SEO local : référencement local pour entreprises | GC Agence",
+    title: "Agence SEO local : référencement local pour entreprises",
     metaDescription:
       "Agence SEO local pour artisans, TPE et entreprises de services : pages de prestations, Google Business Profile, preuves locales et parcours vers le devis.",
     h1: "Agence SEO local : être trouvé par les clients qui cherchent votre service dans votre zone.",
@@ -56,7 +56,7 @@ const COMMERCIAL_ENHANCEMENTS: Record<string, CommercialEnhancement> = {
       "GC n'utilise pas de faux avis, de fausses implantations ni de résultats de classement inventés. Une amélioration publiée est distinguée d'une progression réellement observée dans les données.",
   },
   "marketing-digital-btp": {
-    title: "Agence marketing digital BTP : SEO, site & demandes de devis | GC Agence",
+    title: "Agence marketing digital BTP : SEO, site & demandes de devis",
     metaDescription:
       "Agence marketing digital BTP : site, SEO local, Google Business, Google Ads et parcours de devis pour artisans et entreprises du bâtiment.",
     h1: "Agence marketing digital BTP : transformer les recherches locales en demandes de devis.",
