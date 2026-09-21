@@ -17,6 +17,26 @@ const COMMERCIAL_PAGES = [
     route: "/solutions/marketing-digital-btp",
     h1: /Agence marketing digital BTP/,
   },
+  {
+    route: "/solutions/audit-seo",
+    h1: /Audit SEO : savoir quoi corriger en premier/,
+  },
+  {
+    route: "/solutions/google-business-profile",
+    h1: /Google Business Profile : transformer votre présence locale/,
+  },
+  {
+    route: "/solutions/generation-de-leads",
+    h1: /Agence de génération de leads : transformer l'acquisition/,
+  },
+  {
+    route: "/solutions/publicite-google-ads",
+    h1: /Agence Google Ads pour PME/,
+  },
+  {
+    route: "/solutions/generation-leads-b2b",
+    h1: /Agence de génération de leads B2B/,
+  },
 ];
 
 test.describe("commercial SEO landing pages", () => {
@@ -43,10 +63,15 @@ test.describe("commercial SEO landing pages", () => {
     });
   }
 
-  test("the two targeted vertical landings state the no-fake-proof rule", async ({ page }) => {
+  test("targeted commercial landings state the verification-before-results rule", async ({ page }) => {
     for (const route of [
       "/solutions/referencement-local",
       "/solutions/marketing-digital-btp",
+      "/solutions/audit-seo",
+      "/solutions/google-business-profile",
+      "/solutions/generation-de-leads",
+      "/solutions/publicite-google-ads",
+      "/solutions/generation-leads-b2b",
     ]) {
       await page.goto(route);
       await expect(
