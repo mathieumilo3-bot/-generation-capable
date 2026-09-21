@@ -55,6 +55,10 @@ export default function AuditPage() {
             et le parcours qui transforme une visite en demande afin d&apos;identifier les priorités
             les plus évidentes.
           </p>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-[var(--color-muted)]">
+            Ce diagnostic n&apos;est pas un simple score automatique : il sert à remettre les problèmes
+            dans le contexte de votre activité, de vos offres et de la prochaine action attendue du prospect.
+          </p>
 
           <div className="mt-10 grid grid-cols-2 gap-2 sm:max-w-sm">
             {AXES.map((axis, index) => (
@@ -89,6 +93,38 @@ export default function AuditPage() {
             </span>
           </div>
           <AuditFunnel />
+        </div>
+      </div>
+
+      <div className="mx-auto mt-16 max-w-3xl sm:mt-20">
+        <h2 className="font-display text-2xl font-semibold">Ce que vous recevez</h2>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {[
+            {
+              title: "Freins prioritaires",
+              body: "Les points qui bloquent le plus la visibilité, la confiance ou la conversion sont isolés avant les détails secondaires.",
+            },
+            {
+              title: "Plan d’action",
+              body: "Les recommandations sont classées pour distinguer ce qui peut être corrigé rapidement de ce qui demande un travail plus long.",
+            },
+            {
+              title: "Lecture commerciale",
+              body: "Nous regardons aussi si le visiteur comprend l’offre, trouve les preuves utiles et sait clairement quoi faire ensuite.",
+            },
+            {
+              title: "Prochaine étape claire",
+              body: "L’audit doit vous permettre de savoir quoi corriger en premier, que vous exécutiez ensuite le plan seul ou avec un prestataire.",
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+            >
+              <h3 className="font-display text-base font-semibold">{item.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{item.body}</p>
+            </div>
+          ))}
         </div>
       </div>
 
