@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PillarPage } from "@/components/sections/PillarPage";
 
 export const metadata: Metadata = {
-  title: "Agence SEO PME : référencement orienté prospects | GC Agence",
+  title: "Agence SEO PME : référencement orienté prospects",
   description:
     "Agence SEO pour PME : audit, pages commerciales, contenu, maillage interne et SEO local pour attirer des recherches utiles et transformer les clics en demandes.",
   alternates: { canonical: "/seo" },
