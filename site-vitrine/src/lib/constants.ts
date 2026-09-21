@@ -31,6 +31,7 @@ export const FOOTER_LINKS = [
   { label: "Secteurs", href: "/secteurs" },
   { label: "Ressources", href: "/ressources" },
   { label: "À propos", href: "/a-propos" },
+  { label: "Étude de cas GC", href: "/realisations/gc-agence" },
   { label: "Audit", href: "/audit" },
 ] as const;
 
