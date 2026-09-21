@@ -11,11 +11,17 @@ export const metadata: Metadata = {
 export default function CreationSiteInternetPage() {
   return (
     <PillarPage
-      eyebrow="System 01"
+      eyebrow="Création de site internet"
       title="Création de site internet professionnel qui transforme les visites en demandes."
       intro="Un site n'est pas une brochure. C'est l'actif digital qui porte votre crédibilité et déclenche la première action du visiteur."
       path="/creation-site-internet"
       ctaContext="pillar_creation_site"
+      relatedLinks={[
+        { href: "/solutions/creation-site-artisan", label: "Site pour artisan", description: "Prestations, réalisations et demandes de devis adaptées à votre métier." },
+        { href: "/solutions/site-internet-pme", label: "Site pour PME", description: "Organiser plusieurs offres et orienter chaque visiteur vers le bon contact." },
+        { href: "/ressources/prix-creation-site-internet", label: "Comprendre un devis de site", description: "Les postes à comparer et les coûts récurrents à clarifier." },
+        { href: "/ressources/refonte-site-sans-perdre-seo", label: "Préparer une refonte", description: "Préserver les pages et les liens qui apportent déjà du trafic." },
+      ]}
       blocks={[
         {
           heading: "Une architecture pensée pour convertir",
@@ -28,6 +34,22 @@ export default function CreationSiteInternetPage() {
         {
           heading: "Connecté au reste du système",
           body: "Le site n'existe pas seul : il s'articule avec l'acquisition en amont et la conversion en aval, dans une même mécanique.",
+        },
+        {
+          heading: "Quelles pages prévoir pour votre entreprise ?",
+          body: "Commencez par une page d'accueil claire, une page par prestation réellement distincte, une présentation de l'entreprise et un moyen de contact. Ajoutez vos réalisations lorsque vous disposez de photos et d'informations publiables. Pour un artisan, précisez les interventions et la zone réellement couverte ; pour une PME, expliquez à quels clients chaque offre s'adresse.",
+        },
+        {
+          heading: "Ce qu'il faut définir avant le devis",
+          body: "Le budget dépend du nombre de pages, de la rédaction, des contenus disponibles et des fonctions à connecter. Précisez qui fournit les textes et les photos, qui possède le domaine, comment vous pourrez modifier le site et quels frais d'hébergement ou de maintenance restent à prévoir. Une réservation, un paiement ou un espace client doit être chiffré explicitement.",
+        },
+        {
+          heading: "Les vérifications avant la mise en ligne",
+          body: "Le contrôle porte sur l'affichage mobile, les formulaires et leur réception, les liens, le HTTPS, les titres, les URL canoniques et le sitemap. Lors d'une refonte, les anciennes adresses utiles sont associées à leur nouvelle destination. Le suivi distingue ensuite les visites des demandes réellement reçues, avec les consentements nécessaires.",
+        },
+        {
+          heading: "Votre site existe déjà ?",
+          body: "Un diagnostic permet de décider entre améliorer quelques pages et reconstruire le site. Si vos visiteurs trouvent déjà vos prestations mais abandonnent le formulaire, la priorité peut être le parcours de contact. Si vos services restent introuvables ou difficiles à comprendre, la structure et les contenus sont à revoir avant d'augmenter le trafic.",
         },
       ]}
     />

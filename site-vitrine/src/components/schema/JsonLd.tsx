@@ -20,7 +20,7 @@ export function OrganizationJsonLd() {
         alternateName: ["GC", "Agence GC"],
         url: SITE_URL,
         description: SITE_DESCRIPTION,
-        logo: `${SITE_URL}/icon-512.png`,
+        logo: `${SITE_URL}/apple-icon`,
         areaServed: "FR",
         knowsAbout: [
           "Création de site internet",

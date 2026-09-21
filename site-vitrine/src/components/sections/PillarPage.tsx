@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { BreadcrumbJsonLd, ServiceJsonLd } from "@/components/schema/JsonLd";
@@ -12,6 +13,7 @@ export function PillarPage({
   blocks,
   path,
   ctaContext,
+  relatedLinks = [],
 }: {
   eyebrow: string;
   title: string;
@@ -19,6 +21,7 @@ export function PillarPage({
   blocks: PillarBlock[];
   path: string;
   ctaContext: string;
+  relatedLinks?: { href: string; label: string; description: string }[];
 }) {
   return (
     <Section className="py-24 sm:py-32">
@@ -54,6 +57,22 @@ export function PillarPage({
             </div>
           ))}
         </div>
+
+        {relatedLinks.length > 0 && (
+          <section className="mt-14 border-t border-[var(--color-border)] pt-10">
+            <h2 className="font-display text-xl font-semibold text-[var(--color-text)]">
+              Préparer votre projet
+            </h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {relatedLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-colors hover:border-[var(--color-muted)]">
+                  <h3 className="font-display text-base font-semibold">{link.label}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{link.description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mt-14 border-t border-[var(--color-border)] pt-10">
           <Button

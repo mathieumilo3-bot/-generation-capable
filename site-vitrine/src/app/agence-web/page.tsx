@@ -13,9 +13,15 @@ export default function AgenceWebPage() {
     <PillarPage
       eyebrow="Positionnement"
       title="Agence web pour PME et artisans : site, SEO, acquisition et conversion."
-      intro="La plupart des agences web livrent un site et s'arrêtent là. Nous construisons le système qui l'entoure — acquisition, conversion, qualification — parce qu'un site seul ne suffit plus à générer des opportunités."
+      intro="GC Agence accompagne les PME et artisans dans la création de leur site et du parcours qui transforme une visite en demande : visibilité, présentation des prestations, contact et suivi commercial. Le diagnostic sert à choisir les priorités adaptées à votre situation."
       path="/agence-web"
       ctaContext="pillar_agence_web"
+      relatedLinks={[
+        { href: "/creation-site-internet", label: "Créer votre site", description: "Définir les pages, les fonctions et les vérifications avant livraison." },
+        { href: "/seo", label: "Développer votre visibilité", description: "Travailler les recherches liées aux prestations que vous vendez." },
+        { href: "/solutions/marketing-digital-pme", label: "Marketing pour PME", description: "Choisir les canaux en fonction de vos clients et de vos moyens." },
+        { href: "/ressources/agence-web-ou-freelance", label: "Choisir votre prestataire", description: "Comparer le périmètre, les responsabilités et le suivi proposé." },
+      ]}
       blocks={[
         {
           heading: "Une méthode, pas un catalogue",
