@@ -472,41 +472,71 @@ export const SEO_LANDINGS: SeoLanding[] = [
       "Un artisan n'a pas besoin d'un site compliqué. Il a besoin d'être trouvé sur ses prestations et sa zone, de montrer des réalisations réelles et de permettre au prospect de demander un devis sans friction.",
     blocks: [
       {
+        heading: "Les pages indispensables d'un site d'artisan",
+        body:
+          "Accueil, prestations prioritaires, réalisations, zone d'intervention, informations sur l'entreprise et demande de devis forment le socle. Une page distincte est utile lorsqu'une prestation correspond à une recherche et à un besoin réellement différents.",
+      },
+      {
         heading: "Une page par prestation importante",
         body:
-          "Plomberie, couverture, peinture, menuiserie, rénovation ou autre métier : les services principaux doivent être expliqués séparément lorsque les clients les recherchent séparément. Cela crée des portes d'entrée Google plus précises.",
+          "Plomberie, couverture, peinture, menuiserie, rénovation ou autre métier : les services principaux doivent être expliqués séparément lorsque les clients les recherchent séparément. Le contenu doit préciser le besoin traité, le déroulement, les éléments de confiance et la prochaine étape.",
       },
       {
-        heading: "Des réalisations qui rassurent",
+        heading: "Des réalisations qui rassurent avant l'appel",
         body:
-          "Photos de chantiers, type de travaux, zone et contexte apportent une preuve beaucoup plus forte qu'une phrase générique. Elles peuvent aussi soutenir le maillage vers les pages de services concernées.",
+          "Photos de chantiers, type de travaux, contexte et zone réellement servie apportent une preuve beaucoup plus forte qu'une promesse générique. Une réalisation utile explique ce qui a été fait et renvoie vers la prestation concernée.",
       },
       {
-        heading: "SEO local et Google Business",
+        heading: "SEO local sans pages de villes artificielles",
         body:
-          "Le site doit préciser les zones réellement servies et rester cohérent avec la fiche Google. Le but est de capter les recherches de type métier + zone sans créer des pages artificielles pour des villes où l'entreprise n'intervient pas.",
+          "Le site doit préciser les zones réellement servies et rester cohérent avec les informations publiques de l'entreprise. L'objectif est de capter les recherches métier + zone avec des pages utiles, pas de dupliquer le même texte pour des dizaines de communes.",
       },
       {
-        heading: "Un devis facile à demander",
+        heading: "Un devis facile à demander sur mobile",
         body:
-          "Sur mobile, le prospect doit pouvoir appeler ou envoyer une demande rapidement. Un formulaire guidé peut demander le type de chantier, la zone, le délai et quelques informations utiles sans devenir interminable.",
+          "Le prospect doit pouvoir comprendre l'offre puis agir en quelques secondes. Un formulaire guidé peut demander la nature du chantier, la localisation, le délai et quelques informations utiles, sans imposer un questionnaire interminable.",
+      },
+      {
+        heading: "Prix, délai, propriété : les questions à clarifier avant de signer",
+        body:
+          "Un devis sérieux doit permettre de comprendre ce qui est inclus dans la création, ce qui reste récurrent après la mise en ligne, le délai prévu, les accès remis, l'hébergement, le nom de domaine, la maintenance éventuelle et les conditions d'évolution du site.",
+      },
+      {
+        heading: "Un site doit pouvoir être mesuré après la mise en ligne",
+        body:
+          "Le lancement n'est pas la fin du projet. Les formulaires, appels ou rendez-vous doivent pouvoir être distingués du simple trafic afin d'identifier les pages qui génèrent réellement des demandes et celles qui doivent être retravaillées.",
       },
     ],
     faqs: [
       {
         question: "Quel site internet pour un artisan ?",
         answer:
-          "Un site rapide, mobile, avec des pages de prestations, des réalisations, des informations locales et un parcours de devis simple.",
+          "Un site rapide et mobile, avec des pages de prestations, des réalisations, une zone d'intervention réelle, des informations de confiance et un parcours de devis simple.",
+      },
+      {
+        question: "Combien de pages faut-il pour un site d'artisan ?",
+        answer:
+          "Il n'existe pas de nombre universel. Le bon nombre dépend surtout des prestations réellement recherchées, des preuves disponibles et des zones servies. Une page doit avoir une utilité propre plutôt que seulement augmenter le volume du site.",
       },
       {
         question: "Un artisan a-t-il besoin de SEO ?",
         answer:
-          "Oui si une part importante des nouveaux clients recherche le métier ou la prestation sur Google avant de choisir un professionnel.",
+          "Oui si une part importante des nouveaux clients recherche le métier ou la prestation sur Google avant de choisir un professionnel. Les pages de prestations, les réalisations et la cohérence locale deviennent alors prioritaires.",
       },
       {
         question: "Le site doit-il afficher les prix ?",
         answer:
-          "Pas obligatoirement. Lorsque les chantiers varient beaucoup, expliquer les facteurs de prix et proposer un devis peut être plus pertinent.",
+          "Pas obligatoirement. Lorsque les chantiers varient beaucoup, expliquer les facteurs qui font évoluer le prix et rendre la demande de devis simple peut être plus utile qu'un tarif unique.",
+      },
+      {
+        question: "Que faut-il vérifier dans un devis de création de site ?",
+        answer:
+          "Le périmètre des pages, les contenus, les intégrations, le délai, l'hébergement, le nom de domaine, les accès remis, la maintenance éventuelle et les coûts récurrents doivent être compréhensibles avant le démarrage.",
+      },
+      {
+        question: "Qui doit posséder le nom de domaine et les accès ?",
+        answer:
+          "Le devis doit indiquer clairement au nom de qui le domaine est enregistré, quels accès sont remis au client et ce qui se passe si la collaboration s'arrête. Ce point mérite d'être vérifié avant de signer.",
       },
     ],
     related: ["referencement-artisan", "acquisition-artisan", "referencement-local"],
@@ -1622,24 +1652,39 @@ export const SEO_LANDINGS: SeoLanding[] = [
       "Dans le bâtiment, les prospects recherchent souvent une prestation précise, des réalisations et une entreprise capable d'intervenir dans leur zone. Le marketing digital doit donc relier visibilité locale, preuve métier et demande de devis.",
     blocks: [
       {
-        heading: "Couvrir les prestations qui déclenchent des recherches",
+        heading: "Couvrir les prestations qui déclenchent réellement des recherches",
         body:
-          "Rénovation, couverture, isolation, maçonnerie, menuiserie ou autres prestations doivent être expliquées séparément lorsqu'elles correspondent à des intentions différentes. Cela donne au site plusieurs portes d'entrée pertinentes.",
+          "Rénovation, couverture, isolation, maçonnerie, menuiserie ou autres prestations doivent être expliquées séparément lorsqu'elles correspondent à des intentions différentes. Chaque page doit parler du besoin, du type de chantier, des preuves disponibles et de la manière de demander un devis.",
       },
       {
-        heading: "Montrer les réalisations et le contexte",
+        heading: "Montrer les réalisations comme une preuve métier",
         body:
-          "Des chantiers réels, leur type, leur zone et leur objectif créent une preuve plus forte qu'une promesse générique. Ils peuvent aussi soutenir les pages de services grâce au maillage interne.",
+          "Des chantiers réels, leur type, leur contexte, leur zone et les travaux réalisés créent une preuve plus forte qu'une promesse générique. Les réalisations peuvent ensuite renvoyer vers les prestations concernées et aider le prospect à se projeter.",
       },
       {
-        heading: "Relier SEO local, fiche Google et Ads",
+        heading: "Construire une visibilité locale cohérente",
         body:
-          "Le référencement naturel construit la visibilité dans le temps, la fiche Google renforce la présence locale et Google Ads peut accélérer la captation de demandes sur des recherches à forte intention.",
+          "Les pages du site, les informations publiques de l'entreprise et les zones réellement servies doivent raconter la même chose. Le but n'est pas de fabriquer des dizaines de pages de villes, mais de rendre les prestations et le périmètre d'intervention compréhensibles.",
+      },
+      {
+        heading: "Relier SEO, campagnes et pages de conversion",
+        body:
+          "Le référencement naturel construit la visibilité dans le temps. Google Ads peut accélérer la captation de demandes sur certaines prestations, mais chaque clic doit arriver sur une page adaptée au chantier recherché et à la zone réellement couverte.",
       },
       {
         heading: "Qualifier le devis dès le formulaire",
         body:
-          "Type de chantier, localisation, délai, surface ou photos éventuelles donnent assez de contexte pour prioriser les demandes sans imposer un formulaire trop long.",
+          "Type de chantier, localisation, délai, surface, budget indicatif ou photos éventuelles peuvent fournir assez de contexte pour trier les demandes sans imposer un formulaire interminable. La qualification doit aider l'équipe commerciale, pas décourager le prospect.",
+      },
+      {
+        heading: "Mesurer les demandes par prestation, pas seulement le trafic",
+        body:
+          "Une entreprise du BTP doit pouvoir distinguer les demandes reçues pour la couverture, la rénovation ou l'isolation, et savoir quelle source les a générées. Cela permet de concentrer le budget et le contenu sur les chantiers réellement recherchés.",
+      },
+      {
+        heading: "Ce qui différencie une présence BTP crédible",
+        body:
+          "Des réalisations identifiables, des assurances et certifications réellement détenues, une zone claire, des coordonnées cohérentes et un parcours de devis simple rassurent davantage qu'une page remplie de promesses marketing.",
       },
     ],
     faqs: [

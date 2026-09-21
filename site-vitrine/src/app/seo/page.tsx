@@ -53,6 +53,18 @@ export default function SeoPage() {
           heading: "Quand une page mérite d'être créée",
           body: "Une nouvelle page est justifiée lorsqu'une intention importante n'a pas de destination claire : un service distinct, un secteur, un audit, une comparaison ou une question d'achat. Elle doit apporter une réponse spécifique et être reliée au reste du site.",
         },
+        {
+          heading: "Ce qui doit être livré au début d'un accompagnement SEO",
+          body: "Une PME doit pouvoir identifier les pages prioritaires, les recherches visées, les corrections techniques importantes, les contenus à améliorer et les indicateurs suivis. Le plan doit distinguer ce qui peut être corrigé immédiatement de ce qui demande plusieurs semaines de contenu ou d'autorité externe.",
+        },
+        {
+          heading: "Le SEO ne s'arrête pas aux positions",
+          body: "Une hausse de position n'a de valeur que si la page attire le bon prospect et l'amène vers une action utile. Nous suivons donc la visibilité avec les formulaires, les rendez-vous et les demandes commerciales lorsque ces données sont disponibles.",
+        },
+        {
+          heading: "Autorité externe : le levier souvent oublié",
+          body: "Une page techniquement propre peut rester derrière des concurrents plus anciens et plus cités. Les mentions d'entreprise, profils professionnels sérieux, références publiques, partenariats et liens éditoriaux pertinents complètent le travail on-site sans recourir à des réseaux de liens artificiels.",
+        },
       ]}
       commercialSection={{
         heading: "Ce que nous regardons avant de proposer un plan SEO",
@@ -73,6 +85,14 @@ export default function SeoPage() {
           {
             heading: "Mesure commerciale",
             body: "Le suivi ne s'arrête pas aux positions : nous cherchons à relier les recherches aux formulaires, rendez-vous et opportunités.",
+          },
+          {
+            heading: "Plan priorisé",
+            body: "Chaque action doit avoir une raison : corriger une page qui reçoit déjà des impressions, renforcer une intention commerciale, lever un frein technique ou obtenir un signal d'autorité pertinent.",
+          },
+          {
+            heading: "Transparence",
+            body: "Les livrables, pages modifiées et indicateurs suivis doivent être visibles. Une promesse de première place sans données ni contexte n'est pas utilisée comme argument.",
           },
         ],
         proofNote: "Les positions peuvent évoluer après publication et dépendent notamment de la concurrence, de l'autorité du domaine et des signaux externes. Une amélioration publiée n'est donc jamais présentée comme un gain de classement tant qu'il n'est pas réellement observé.",
