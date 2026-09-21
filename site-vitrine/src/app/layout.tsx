@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/schema/JsonLd";
 import { Analytics, AnalyticsNoScript } from "@/components/Analytics";
 import { ConsentBanner } from "@/components/ConsentBanner";
+import { SnapPixel } from "@/components/SnapPixel";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/constants";
 
 /**
@@ -81,6 +82,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       </head>
       <body className="min-h-full flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
         <AnalyticsNoScript />
+        <SnapPixel />
         <MotionConfig reducedMotion="user">
           <OrganizationJsonLd />
           <WebSiteJsonLd />
