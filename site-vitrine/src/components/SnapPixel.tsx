@@ -6,13 +6,14 @@ import { usePathname } from "next/navigation";
 const SNAP_PIXEL_ID = process.env.NEXT_PUBLIC_SNAP_PIXEL_ID;
 const CONSENT_KEY = "gc-revenue-consent-v1";
 
+type SnapTracker = ((...args: unknown[]) => void) & {
+  queue: unknown[][];
+  handleRequest?: (...args: unknown[]) => void;
+};
+
 declare global {
   interface Window {
-    snaptr?: {
-      (...args: unknown[]): void;
-      queue?: unknown[];
-      handleRequest?: (...args: unknown[]) => void;
-    };
+    snaptr?: SnapTracker;
   }
 }
 
@@ -24,14 +25,13 @@ function ensureSnapPixel() {
   if (!SNAP_PIXEL_ID || !hasAdvertisingConsent()) return false;
 
   if (!window.snaptr) {
-    const snaptr = function (...args: unknown[]) {
-      const tracker = window.snaptr;
-      if (tracker?.handleRequest) {
-        tracker.handleRequest(...args);
+    const snaptr = ((...args: unknown[]) => {
+      if (snaptr.handleRequest) {
+        snaptr.handleRequest(...args);
         return;
       }
-      tracker?.queue?.push(args);
-    };
+      snaptr.queue.push(args);
+    }) as SnapTracker;
 
     snaptr.queue = [];
     window.snaptr = snaptr;
@@ -42,7 +42,7 @@ function ensureSnapPixel() {
     script.dataset.gcSnapPixel = "true";
     document.head.appendChild(script);
 
-    window.snaptr("init", SNAP_PIXEL_ID);
+    snaptr("init", SNAP_PIXEL_ID);
   }
 
   return true;
