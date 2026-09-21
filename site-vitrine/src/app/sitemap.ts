@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/audit`, lastModified: "2026-09-22", changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/a-propos`, lastModified: "2026-09-22", changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/realisations/gc-agence`, lastModified: "2026-09-22", changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/secteurs`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/applications`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/ressources`, changeFrequency: "weekly", priority: 0.7 },
