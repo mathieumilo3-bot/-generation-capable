@@ -1,4 +1,5 @@
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/constants";
+import { LEGAL_ENTITY } from "@/lib/data/legal";
 
 function Script({ data }: { data: Record<string, unknown> }) {
   return (
@@ -17,10 +18,24 @@ export function OrganizationJsonLd() {
         "@type": "Organization",
         "@id": `${SITE_URL}/#organization`,
         name: SITE_NAME,
+        legalName: LEGAL_ENTITY.denomination,
         alternateName: ["GC", "Agence GC"],
         url: SITE_URL,
         description: SITE_DESCRIPTION,
         logo: `${SITE_URL}/apple-icon`,
+        email: LEGAL_ENTITY.email,
+        identifier: {
+          "@type": "PropertyValue",
+          propertyID: "SIREN",
+          value: LEGAL_ENTITY.siren,
+        },
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "2 rue Anita Conti",
+          postalCode: "56300",
+          addressLocality: "Pontivy",
+          addressCountry: "FR",
+        },
         areaServed: "FR",
         knowsAbout: [
           "Création de site internet",

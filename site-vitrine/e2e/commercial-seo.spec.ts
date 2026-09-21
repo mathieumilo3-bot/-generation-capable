@@ -80,6 +80,62 @@ test.describe("commercial SEO landing pages", () => {
     }
   });
 
+  test("sitewide navigation pushes the priority commercial pages", async ({ page }) => {
+    await page.goto("/");
+
+    const nav = page.getByRole("navigation", { name: "Navigation principale" }).first();
+    await expect(nav.getByRole("link", { name: "Création de site" })).toHaveAttribute(
+      "href",
+      "/creation-site-internet"
+    );
+    await expect(nav.getByRole("link", { name: "SEO", exact: true })).toHaveAttribute(
+      "href",
+      "/seo"
+    );
+    await expect(nav.getByRole("link", { name: "Référencement local" })).toHaveAttribute(
+      "href",
+      "/solutions/referencement-local"
+    );
+  });
+
+  test("existing guides pass contextual relevance into priority commercial pages", async ({ page }) => {
+    const checks = [
+      {
+        route: "/ressources/comment-etre-visible-sur-google",
+        label: "Agence SEO pour PME",
+        href: "/seo",
+      },
+      {
+        route: "/ressources/site-internet-artisan-guide",
+        label: "Création de site internet pour artisans",
+        href: "/creation-site-internet",
+      },
+      {
+        route: "/ressources/seo-local-artisan",
+        label: "Référencement local",
+        href: "/solutions/referencement-local",
+      },
+      {
+        route: "/ressources/marketing-digital-btp-guide",
+        label: "Marketing digital BTP",
+        href: "/solutions/marketing-digital-btp",
+      },
+    ];
+
+    for (const item of checks) {
+      await page.goto(item.route);
+      const link = page.getByRole("link", { name: new RegExp(item.label) }).first();
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAttribute("href", item.href);
+    }
+  });
+
+  test("verified business identity is exposed on the about page", async ({ page }) => {
+    await page.goto("/a-propos");
+    await expect(page.getByText("981 319 957", { exact: true })).toBeVisible();
+    await expect(page.getByText("Pontivy, Morbihan", { exact: true })).toBeVisible();
+  });
+
   test("Google Search Console verification remains present", async ({ page }) => {
     await page.goto("/");
     await expect(
