@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PillarPage } from "@/components/sections/PillarPage";
 
 export const metadata: Metadata = {
-  title: "Création de site internet pour PME & artisans | GC Agence",
+  title: "Création de site internet pour PME & artisans",
   description:
     "Création de site internet pour artisans, TPE et PME : pages de services, SEO, preuves réelles et parcours orienté demandes de devis ou rendez-vous.",
   alternates: { canonical: "/creation-site-internet" },
