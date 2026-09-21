@@ -4,6 +4,14 @@ GC Agence conçoit des systèmes digitaux orientés visibilité, acquisition et 
 
 Site officiel : https://gc-agence.com
 
+Pages prioritaires :
+- SEO pour PME : https://gc-agence.com/seo
+- Création de site internet : https://gc-agence.com/creation-site-internet
+- Référencement local : https://gc-agence.com/solutions/referencement-local
+- Marketing digital BTP : https://gc-agence.com/solutions/marketing-digital-btp
+- Audit gratuit : https://gc-agence.com/audit
+- Étude de cas publique : https://gc-agence.com/realisations/gc-agence
+
 Principaux domaines d'intervention :
 - création de site internet
 - référencement naturel SEO
