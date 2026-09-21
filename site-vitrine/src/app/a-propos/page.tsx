@@ -42,6 +42,11 @@ export default function AboutPage() {
         entreprise à un parcours capable de produire des demandes qualifiées et de les convertir
         en opportunités commerciales.
       </p>
+      <p className="mt-4 max-w-3xl text-sm leading-relaxed text-[var(--color-muted)]">
+        GC Agence est le nom utilisé publiquement par l&apos;entreprise individuelle
+        LE DORVEN ENZO, dirigée par Enzo Le Dorven et immatriculée sous le SIREN 981 319 957.
+        Le site officiel de l&apos;activité est gc-agence.com.
+      </p>
 
       <section className="mt-10 grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
