@@ -75,11 +75,12 @@ export default function PolitiqueConfidentialitePage() {
 
           <Block title="Finalité et base légale">
             <p>
-              Ces données servent exclusivement à préparer le diagnostic que
-              vous demandez et à vous recontacter à ce sujet. La base légale
-              est l&apos;exécution de mesures précontractuelles prises à votre
-              demande (article 6.1.b du RGPD). Elles ne sont ni vendues, ni
-              louées, ni transmises à des fins publicitaires.
+              Les données saisies dans le formulaire servent à préparer le
+              diagnostic que vous demandez et à vous recontacter à ce sujet.
+              La base légale est l&apos;exécution de mesures précontractuelles
+              prises à votre demande (article 6.1.b du RGPD). Les coordonnées
+              saisies dans le formulaire ne sont ni vendues ni transmises aux
+              plateformes publicitaires par le formulaire.
             </p>
           </Block>
 
@@ -138,19 +139,24 @@ export default function PolitiqueConfidentialitePage() {
 
           <Block title="Cookies et mesure d'audience">
             <p>
-              Le site utilise Google Tag Manager pour piloter les outils de
-              mesure et, le cas échéant, de publicité. Avant votre choix, les
-              stockages de mesure et de publicité sont refusés par défaut.
-              Un bandeau vous permet d&apos;accepter ou de refuser ces
-              technologies.
+              Le site peut utiliser des outils de mesure et de publicité,
+              notamment Google Tag Manager et le Snap Pixel lorsqu&apos;ils
+              sont configurés. Avant votre choix, aucun Snap Pixel n&apos;est
+              chargé et les stockages de mesure et de publicité sont refusés
+              par défaut. Un bandeau vous permet d&apos;accepter ou de refuser
+              ces technologies.
             </p>
             <p>
-              Si vous acceptez, les catégories de stockage liées à
-              l&apos;analyse et à la publicité peuvent être activées par les
-              balises configurées dans Google Tag Manager. Si vous refusez,
-              elles restent refusées. Votre choix est conservé localement sur
-              votre appareil afin de ne pas vous redemander votre préférence
-              à chaque visite.
+              Si vous acceptez, les outils configurés peuvent mesurer des
+              événements de navigation et de conversion, par exemple une vue
+              de page ou l&apos;envoi réussi d&apos;une demande. Le Snap Pixel
+              peut alors transmettre à Snap des informations techniques liées
+              au navigateur et à la visite afin de mesurer et optimiser les
+              campagnes. GC ne lui transmet pas ici le nom, l&apos;email ou le
+              téléphone saisis dans le formulaire. Si vous refusez, le Snap
+              Pixel n&apos;est pas chargé. Votre choix est conservé localement
+              sur votre appareil afin de ne pas vous redemander votre
+              préférence à chaque visite.
             </p>
           </Block>
 
