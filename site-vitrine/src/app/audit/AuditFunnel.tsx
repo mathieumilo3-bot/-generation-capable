@@ -8,7 +8,7 @@ import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
 import { track, type TrackingEvent } from "@/lib/tracking";
 import { AuditReport } from "@/components/audit/AuditReport";
 import { DIMENSION_LABELS, type Report } from "@/lib/audit-engine/types";
-import { buildCalendlyUrl } from "@/lib/booking";
+import { buildCalendlyUrl, type BookingAttribution } from "@/lib/booking";
 
 /**
  * The small, display-only digest sent to /api/audit alongside the lead —
@@ -80,6 +80,7 @@ export function AuditFunnel() {
   const [finalReport, setFinalReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
+  const [attribution, setAttribution] = useState<BookingAttribution>({});
   // "Autre" on its own tells the business nothing, so it asks for a précision.
   const [secteurAutre, setSecteurAutre] = useState("");
   const [objectifAutre, setObjectifAutre] = useState("");
@@ -103,9 +104,17 @@ export function AuditFunnel() {
     // typed there, so the visitor never types it twice. Read from the URL
     // directly rather than useSearchParams, which would opt this page out of
     // static rendering.
+    const params = new URLSearchParams(window.location.search);
     const fromHomepage =
-      new URLSearchParams(window.location.search).get("site")?.trim().slice(0, FIELD_LIMITS.siteUrl) ??
-      "";
+      params.get("site")?.trim().slice(0, FIELD_LIMITS.siteUrl) ?? "";
+
+    setAttribution({
+      source: params.get("utm_source")?.trim().slice(0, 120) || undefined,
+      medium: params.get("utm_medium")?.trim().slice(0, 120) || undefined,
+      campaign: params.get("utm_campaign")?.trim().slice(0, 120) || undefined,
+      content: params.get("utm_content")?.trim().slice(0, 120) || undefined,
+      term: params.get("utm_term")?.trim().slice(0, 120) || undefined,
+    });
 
     // The first field is autofocused, so someone can start typing before
     // React hydrates. A controlled input would throw those keystrokes away
@@ -234,6 +243,11 @@ export function AuditFunnel() {
           // Only attached when the background analysis already resolved —
           // never awaited, so a slow diagnostic can never delay this submit.
           ...(lastReport.current ? { reportSummary: toEmailSummary(lastReport.current) } : {}),
+          utmSource: attribution.source,
+          utmMedium: attribution.medium,
+          utmCampaign: attribution.campaign,
+          utmContent: attribution.content,
+          utmTerm: attribution.term,
           [HONEYPOT_FIELD]: honeypot,
         }),
       });
@@ -245,7 +259,13 @@ export function AuditFunnel() {
 
       track("audit_completed");
       track("form_completed");
-      track("generate_lead", { lead_source: "capable_audit", secteur: data.secteur, objectif: data.objectif });
+      track("generate_lead", {
+        lead_source: attribution.source || "capable_audit",
+        lead_medium: attribution.medium || "website",
+        lead_campaign: attribution.campaign || "audit_conversion",
+        secteur: data.secteur,
+        objectif: data.objectif,
+      });
       setSubmitted(true);
       setSubmitting(false);
 
@@ -267,7 +287,13 @@ export function AuditFunnel() {
 
   if (submitted) {
     if (finalReport) {
-      return <AuditReport report={finalReport} lead={{ nom: data.nom, email: data.email }} />;
+      return (
+        <AuditReport
+          report={finalReport}
+          lead={{ nom: data.nom, email: data.email }}
+          attribution={attribution}
+        />
+      );
     }
 
     return (
@@ -289,7 +315,7 @@ export function AuditFunnel() {
         </p>
         <div className="mt-10 flex flex-col items-center gap-4">
           <Button
-            href={buildCalendlyUrl({ nom: data.nom, email: data.email })}
+            href={buildCalendlyUrl({ nom: data.nom, email: data.email }, attribution)}
             target="_blank"
             rel="noopener noreferrer"
             variant="primary"
