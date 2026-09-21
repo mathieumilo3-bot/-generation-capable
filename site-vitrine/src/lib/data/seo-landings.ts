@@ -1652,24 +1652,39 @@ export const SEO_LANDINGS: SeoLanding[] = [
       "Dans le bâtiment, les prospects recherchent souvent une prestation précise, des réalisations et une entreprise capable d'intervenir dans leur zone. Le marketing digital doit donc relier visibilité locale, preuve métier et demande de devis.",
     blocks: [
       {
-        heading: "Couvrir les prestations qui déclenchent des recherches",
+        heading: "Couvrir les prestations qui déclenchent réellement des recherches",
         body:
-          "Rénovation, couverture, isolation, maçonnerie, menuiserie ou autres prestations doivent être expliquées séparément lorsqu'elles correspondent à des intentions différentes. Cela donne au site plusieurs portes d'entrée pertinentes.",
+          "Rénovation, couverture, isolation, maçonnerie, menuiserie ou autres prestations doivent être expliquées séparément lorsqu'elles correspondent à des intentions différentes. Chaque page doit parler du besoin, du type de chantier, des preuves disponibles et de la manière de demander un devis.",
       },
       {
-        heading: "Montrer les réalisations et le contexte",
+        heading: "Montrer les réalisations comme une preuve métier",
         body:
-          "Des chantiers réels, leur type, leur zone et leur objectif créent une preuve plus forte qu'une promesse générique. Ils peuvent aussi soutenir les pages de services grâce au maillage interne.",
+          "Des chantiers réels, leur type, leur contexte, leur zone et les travaux réalisés créent une preuve plus forte qu'une promesse générique. Les réalisations peuvent ensuite renvoyer vers les prestations concernées et aider le prospect à se projeter.",
       },
       {
-        heading: "Relier SEO local, fiche Google et Ads",
+        heading: "Construire une visibilité locale cohérente",
         body:
-          "Le référencement naturel construit la visibilité dans le temps, la fiche Google renforce la présence locale et Google Ads peut accélérer la captation de demandes sur des recherches à forte intention.",
+          "Les pages du site, les informations publiques de l'entreprise et les zones réellement servies doivent raconter la même chose. Le but n'est pas de fabriquer des dizaines de pages de villes, mais de rendre les prestations et le périmètre d'intervention compréhensibles.",
+      },
+      {
+        heading: "Relier SEO, campagnes et pages de conversion",
+        body:
+          "Le référencement naturel construit la visibilité dans le temps. Google Ads peut accélérer la captation de demandes sur certaines prestations, mais chaque clic doit arriver sur une page adaptée au chantier recherché et à la zone réellement couverte.",
       },
       {
         heading: "Qualifier le devis dès le formulaire",
         body:
-          "Type de chantier, localisation, délai, surface ou photos éventuelles donnent assez de contexte pour prioriser les demandes sans imposer un formulaire trop long.",
+          "Type de chantier, localisation, délai, surface, budget indicatif ou photos éventuelles peuvent fournir assez de contexte pour trier les demandes sans imposer un formulaire interminable. La qualification doit aider l'équipe commerciale, pas décourager le prospect.",
+      },
+      {
+        heading: "Mesurer les demandes par prestation, pas seulement le trafic",
+        body:
+          "Une entreprise du BTP doit pouvoir distinguer les demandes reçues pour la couverture, la rénovation ou l'isolation, et savoir quelle source les a générées. Cela permet de concentrer le budget et le contenu sur les chantiers réellement recherchés.",
+      },
+      {
+        heading: "Ce qui différencie une présence BTP crédible",
+        body:
+          "Des réalisations identifiables, des assurances et certifications réellement détenues, une zone claire, des coordonnées cohérentes et un parcours de devis simple rassurent davantage qu'une page remplie de promesses marketing.",
       },
     ],
     faqs: [
