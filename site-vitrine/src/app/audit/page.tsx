@@ -1,32 +1,59 @@
 import type { Metadata } from "next";
 import { Section, Eyebrow } from "@/components/ui/Section";
+import { FAQJsonLd } from "@/components/schema/JsonLd";
 import { AuditFunnel } from "./AuditFunnel";
 
 export const metadata: Metadata = {
-  title: "Analyser mon entreprise — Capable Audit",
+  title: "Audit site internet gratuit : SEO, visibilité & conversion",
   description:
-    "Obtenez un diagnostic initial de votre présence digitale : visibilité, crédibilité, conversion et parcours client. Sans engagement.",
+    "Audit gratuit de votre site et de votre présence digitale : SEO, visibilité Google, crédibilité, conversion et parcours client. Diagnostic initial sans engagement.",
   alternates: { canonical: "/audit" },
 };
 
 const AXES = ["Visibilité", "Crédibilité", "Conversion", "Parcours"];
 
+const FAQS = [
+  {
+    question: "L'audit est-il vraiment gratuit ?",
+    answer:
+      "Oui. Le diagnostic initial est gratuit et sans engagement. Il sert à identifier les principaux freins de visibilité, de crédibilité et de conversion avant de parler d'une éventuelle prestation.",
+  },
+  {
+    question: "Que contient l'audit ?",
+    answer:
+      "Nous regardons le site, la visibilité Google, la clarté de l'offre, les éléments de confiance, les appels à l'action et le parcours qui mène vers un formulaire, un devis ou un rendez-vous.",
+  },
+  {
+    question: "Quelle est la différence entre un audit SEO et un audit de site internet ?",
+    answer:
+      "Un audit SEO se concentre surtout sur la capacité du site à être compris et trouvé dans les moteurs de recherche. Un audit de site plus large ajoute la crédibilité, la conversion et le parcours commercial.",
+  },
+  {
+    question: "Faut-il déjà avoir Google Search Console pour demander l'audit ?",
+    answer:
+      "Non. Les signaux publics du site peuvent déjà être analysés. Si des données Search Console sont ensuite disponibles, elles permettent d'affiner les priorités à partir des requêtes, impressions et pages réellement observées.",
+  },
+];
+
 export default function AuditPage() {
   return (
-    <Section className="py-16 sm:py-24 lg:py-28">
+    <>
+      <FAQJsonLd items={FAQS} />
+      <Section className="py-16 sm:py-24 lg:py-28">
       <div className="grid gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-start lg:gap-20">
         <div className="lg:sticky lg:top-28">
-          <Eyebrow>Capable Audit</Eyebrow>
+          <Eyebrow>Audit gratuit · Sans engagement</Eyebrow>
           <h1 className="font-display text-balance mt-5 text-4xl font-semibold leading-[1.04] tracking-tight sm:text-5xl lg:text-6xl">
-            Regardons ce que
+            Audit gratuit de votre site :
             <br />
-            votre présence
+            SEO, visibilité
             <br />
-            <span className="gold-text">produit vraiment.</span>
+            <span className="gold-text">et conversion.</span>
           </h1>
           <p className="mt-7 max-w-md text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-base">
-            Un diagnostic initial de votre présence digitale pour identifier
-            les points de friction et les opportunités les plus évidentes.
+            Nous regardons votre site, votre visibilité Google, la crédibilité de votre présence
+            et le parcours qui transforme une visite en demande afin d&apos;identifier les priorités
+            les plus évidentes.
           </p>
 
           <div className="mt-10 grid grid-cols-2 gap-2 sm:max-w-sm">
@@ -44,7 +71,7 @@ export default function AuditPage() {
           </div>
 
           <p className="mt-7 text-xs text-[var(--color-muted)]">
-            4 étapes · Sans engagement · Réponse personnalisée
+            Gratuit · 4 axes · Sans engagement · Réponse personnalisée
           </p>
         </div>
 
@@ -64,6 +91,19 @@ export default function AuditPage() {
           <AuditFunnel />
         </div>
       </div>
-    </Section>
+
+      <div className="mx-auto mt-16 max-w-3xl border-t border-[var(--color-border)] pt-10 sm:mt-20">
+        <h2 className="font-display text-2xl font-semibold">Questions sur l&apos;audit gratuit</h2>
+        <div className="mt-6 space-y-6">
+          {FAQS.map((item) => (
+            <div key={item.question}>
+              <h3 className="font-display text-base font-semibold">{item.question}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{item.answer}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      </Section>
+    </>
   );
 }
