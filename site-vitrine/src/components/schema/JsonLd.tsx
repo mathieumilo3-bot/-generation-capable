@@ -21,6 +21,10 @@ export function OrganizationJsonLd() {
         legalName: LEGAL_ENTITY.denomination,
         alternateName: ["GC", "Agence GC"],
         url: SITE_URL,
+        sameAs: [
+          "https://www.pappers.fr/entreprise/le-dorven-enzo-981319957",
+          "https://www.societe.com/societe/monsieur-enzo-le-dorven-981319957.html",
+        ],
         description: SITE_DESCRIPTION,
         logo: `${SITE_URL}/apple-icon`,
         email: LEGAL_ENTITY.email,
@@ -28,6 +32,10 @@ export function OrganizationJsonLd() {
           "@type": "PropertyValue",
           propertyID: "SIREN",
           value: LEGAL_ENTITY.siren,
+        },
+        founder: {
+          "@type": "Person",
+          name: LEGAL_ENTITY.directeurPublication,
         },
         address: {
           "@type": "PostalAddress",
