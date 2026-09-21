@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { BreadcrumbJsonLd } from "@/components/schema/JsonLd";
 import { SITE_URL } from "@/lib/constants";
+import { LEGAL_ENTITY } from "@/lib/data/legal";
 
 export const metadata: Metadata = {
   title: "À propos de GC Agence",
@@ -41,6 +42,24 @@ export default function AboutPage() {
         entreprise à un parcours capable de produire des demandes qualifiées et de les convertir
         en opportunités commerciales.
       </p>
+
+      <section className="mt-10 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">Entreprise</p>
+          <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{LEGAL_ENTITY.denomination}</p>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">{LEGAL_ENTITY.formeJuridique}</p>
+        </div>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">SIREN</p>
+          <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{LEGAL_ENTITY.siren}</p>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">Identité légale vérifiable</p>
+        </div>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">Siège</p>
+          <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">Pontivy, Morbihan</p>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">Prestations proposées en France</p>
+        </div>
+      </section>
 
       <section className="mt-14 border-t border-[var(--color-border)] pt-10">
         <h2 className="font-display text-2xl font-semibold">Domaines d&apos;intervention</h2>
