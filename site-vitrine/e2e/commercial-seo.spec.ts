@@ -130,6 +130,12 @@ test.describe("commercial SEO landing pages", () => {
     }
   });
 
+  test("verified business identity is exposed on the about page", async ({ page }) => {
+    await page.goto("/a-propos");
+    await expect(page.getByText("981 319 957", { exact: true })).toBeVisible();
+    await expect(page.getByText("Pontivy, Morbihan", { exact: true })).toBeVisible();
+  });
+
   test("Google Search Console verification remains present", async ({ page }) => {
     await page.goto("/");
     await expect(
