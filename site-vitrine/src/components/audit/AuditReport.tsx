@@ -287,16 +287,16 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
         </div>
       )}
 
-      <div id="prochaine-etape" className="mt-8 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 text-center sm:p-8">
+      <div id="prochaine-etape" className="audit-result-glow mt-8 rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-surface)] p-6 text-center sm:p-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
           Prochaine étape
         </p>
         <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-          On vous montre quoi corriger en premier.
+          Passez de l’analyse au plan d’action.
         </h3>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
           {synthesis?.callBridge ||
-            "Pendant 30 minutes, nous reprenons ces constats, choisissons les 3 corrections prioritaires et définissons l’ordre exact dans lequel les mettre en place."}
+            "Pendant 30 minutes, on part directement de votre diagnostic, on choisit les 3 priorités et on construit l’ordre d’action adapté à votre activité."}
         </p>
         <div className="mx-auto mt-6 max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Vous repartez avec</p>
@@ -312,15 +312,16 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
             target="_blank"
             rel="noopener noreferrer"
             variant="primary"
+            className="audit-primary-cta min-h-14 px-8 text-base"
             trackEvent="booking_started"
             trackPayload={{ location: "audit_report", source: "capable_audit" }}
             onClick={() => track("audit_cta_clicked", { location: "audit_report", intent: "book_strategy_call" })}
           >
-            Réserver mon bilan de 30 min →
+            Construire mon plan avec GC →
           </Button>
         </div>
         <p className="mt-4 text-xs text-[var(--color-muted)]">
-          30 minutes · Analyse · Plan d’action priorisé
+          30 min · On part de votre audit · Sans repartir de zéro
         </p>
       </div>
 
