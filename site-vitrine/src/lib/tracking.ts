@@ -60,6 +60,16 @@ export function trackGoogleAdsLeadConversion(userData?: {
     // Keep going: a blocked sessionStorage must not block measurement.
   }
 
+  if (
+    typeof window.gtag === "function" &&
+    userData?.adUserDataConsent === "GRANTED"
+  ) {
+    window.gtag("set", "user_data", {
+      email: userData.email?.trim().toLowerCase(),
+      phone_number: userData.telephone?.trim(),
+    });
+  }
+
   if (typeof window.gtag === "function") {
     window.gtag("event", "conversion", {
       send_to: GOOGLE_ADS_LEAD_DESTINATION,
