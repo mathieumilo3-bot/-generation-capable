@@ -16,6 +16,7 @@ export type AuditSubmission = {
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
+  adUserDataConsent?: string;
 };
 
 export type ParseResult =
@@ -43,6 +44,7 @@ export const FIELD_LIMITS: Record<keyof AuditSubmission, number> = {
   gclid: 220,
   gbraid: 220,
   wbraid: 220,
+  adUserDataConsent: 16,
 };
 
 /** Name of the hidden field real visitors never fill — bots usually do. */
@@ -113,6 +115,7 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
     gclid: readString(source, "gclid"),
     gbraid: readString(source, "gbraid"),
     wbraid: readString(source, "wbraid"),
+    adUserDataConsent: readString(source, "adUserDataConsent"),
   };
 
   for (const [field, limit] of Object.entries(FIELD_LIMITS)) {
