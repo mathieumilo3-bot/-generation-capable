@@ -15,7 +15,7 @@ const VARIANTS: Record<string, HeroVariant> = {
     title: "Attirez plus de clients locaux",
     accent: "avec Google et votre site.",
     body:
-      "Entrez votre site. En quelques secondes, on vous montre un premier point concret qui peut freiner vos demandes, puis vos 3 priorités pour être plus visible, plus crédible et plus contacté.",
+      "Entrez votre site. On vous montre ce qui peut freiner vos demandes, puis vos 3 priorités pour gagner en visibilité et en contacts.",
   },
   chantiers: {
     badge: "Pour artisans & entreprises du bâtiment",
@@ -58,27 +58,25 @@ export function AuditHero() {
 
   return (
     <div className="mx-auto max-w-4xl text-center">
-      <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)] sm:text-xs">
+      <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-[var(--color-accent)]/25 bg-[rgba(255,255,255,0.025)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)] sm:text-xs">
         <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)] shadow-[0_0_14px_var(--color-accent)]" />
         {variant.badge}
       </div>
 
-      <h1 className="font-display mx-auto mt-5 max-w-4xl text-balance text-[2.65rem] font-semibold leading-[0.95] tracking-[-0.055em] sm:text-6xl lg:text-[4.7rem]">
+      <h1 className="font-display mx-auto mt-4 max-w-4xl text-balance text-[2.5rem] font-semibold leading-[0.98] tracking-[-0.05em] sm:mt-5 sm:text-6xl lg:text-[4.7rem]">
         {variant.title}
         <br />
         <span className="gold-text">{variant.accent}</span>
       </h1>
 
-      <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-lg">
+      <p className="mx-auto mt-4 max-w-xl text-[14px] leading-[1.65] text-[var(--color-muted)] sm:mt-5 sm:max-w-2xl sm:text-[17px]">
         {variant.body}
       </p>
 
-      <div className="mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-medium text-[var(--color-muted)]">
+      <div className="mx-auto mt-4 flex max-w-xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-medium text-[var(--color-muted)] sm:mt-5">
         <span>✓ 1er résultat sans email</span>
-        <span className="text-[var(--color-border-strong)]">•</span>
+        <span className="hidden text-[var(--color-border-strong)] sm:inline">•</span>
         <span>✓ 3 priorités personnalisées</span>
-        <span className="text-[var(--color-border-strong)]">•</span>
-        <span>✓ Gratuit</span>
       </div>
     </div>
   );
