@@ -101,7 +101,7 @@ export function BeforeAfterShowcase() {
           </div>
         </div>
 
-        <div className="relative h-[430px] overflow-hidden bg-[#f5f2ec] sm:h-[480px] lg:h-[520px]">
+        <div className="relative h-[680px] overflow-hidden bg-[#f5f2ec] sm:h-[720px] lg:h-[760px]">
           <AnimatePresence initial={false} mode="wait">
             <motion.div
               key={active.src}
@@ -114,10 +114,8 @@ export function BeforeAfterShowcase() {
               <iframe
                 src={active.src}
                 title={`Kerné Couverture — version ${active.label}`}
-                className="pointer-events-none h-full w-full select-none border-0"
+                className="h-full w-full border-0"
                 loading={version === "apres" ? "eager" : "lazy"}
-                tabIndex={-1}
-                aria-hidden="true"
               />
             </motion.div>
           </AnimatePresence>
