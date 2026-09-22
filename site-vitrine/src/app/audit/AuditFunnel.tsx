@@ -433,7 +433,7 @@ export function AuditFunnel() {
             {previewStatus === "loading" ? (
               <div className="py-3">
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-xl font-semibold">On analyse ce qui peut vous faire perdre des clients.</p>
+                  <p className="font-display text-xl font-semibold">On cherche où votre site peut vous apporter plus de clients.</p>
                   <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
                 </div>
                 <p className="mt-2 text-sm text-[var(--color-muted)]">
@@ -458,7 +458,7 @@ export function AuditFunnel() {
             ) : previewStatus === "ready" ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                  Ce qui peut vous faire perdre des demandes
+                  Votre première opportunité de gagner plus de demandes
                 </p>
 
                 {previewFinding ? (
@@ -499,7 +499,7 @@ export function AuditFunnel() {
                   <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
                     <h2 className="font-display text-xl font-semibold">Votre base a été analysée.</h2>
                     <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
-                      On a besoin de deux réponses rapides pour prioriser les leviers les plus utiles à votre activité.
+                      Deux réponses rapides suffisent pour identifier les leviers les plus utiles à votre activité.
                     </p>
                   </div>
                 )}
@@ -649,8 +649,8 @@ export function AuditFunnel() {
             </div>
 
             <div className="mt-5 grid gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-sm">
-              <span>01 · Ce qui vous freine</span>
-              <span>02 · Ce qu’il faut corriger en premier</span>
+              <span>01 · Votre meilleure opportunité</span>
+              <span>02 · Le levier à activer en premier</span>
               <span>03 · Vos prochaines actions</span>
             </div>
 

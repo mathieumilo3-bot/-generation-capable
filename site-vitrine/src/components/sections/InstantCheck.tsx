@@ -31,9 +31,9 @@ export function InstantCheck() {
             Audit artisan
           </p>
           <h2 className="font-display text-balance mt-4 text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
-            Voyez ce qui peut vous faire perdre
+            Découvrez où gagner
             <br />
-            <span className="text-[var(--color-muted)]">des demandes de devis.</span>
+            <span className="text-[var(--color-muted)]">plus de demandes de devis.</span>
           </h2>
           <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-base">
             Donnez-nous votre site. On regarde ce qu&apos;un prospect voit avant de vous appeler :
@@ -79,7 +79,7 @@ export function InstantCheck() {
                 <div className="rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-5 py-4">
                   <p className="text-sm">
                     <span className="font-semibold">On regarde ce qui compte avant le devis.</span>{" "}
-                    Pas un score décoratif : les points qui peuvent réellement freiner la prise de contact.
+                    Pas un score décoratif : les leviers qui peuvent réellement augmenter la prise de contact.
                   </p>
                 </div>
 

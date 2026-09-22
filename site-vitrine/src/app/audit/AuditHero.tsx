@@ -12,31 +12,31 @@ type HeroVariant = {
 const VARIANTS: Record<string, HeroVariant> = {
   default: {
     badge: "Pour artisans du bâtiment",
-    title: "Découvrez ce qui freine",
-    accent: "vos demandes de devis.",
+    title: "Découvrez comment générer",
+    accent: "plus de demandes de devis.",
     body:
-      "Entrez votre site. En quelques secondes, on vous montre le premier point qui peut vous faire perdre des clients, puis ce qu’il faut corriger en priorité.",
+      "Entrez votre site. En quelques secondes, on vous montre votre première opportunité pour attirer plus de clients, puis les actions à prioriser.",
   },
   chantiers: {
     badge: "Pour artisans du bâtiment",
-    title: "Découvrez ce qui vous fait perdre",
-    accent: "des chantiers.",
+    title: "Découvrez comment gagner",
+    accent: "plus de chantiers.",
     body:
-      "Entrez votre site. En quelques secondes, on vous montre le premier point qui peut faire fuir un prospect, puis ce qu’il faut corriger en priorité.",
+      "Entrez votre site. En quelques secondes, on vous montre votre première opportunité pour attirer plus de prospects, puis les actions à prioriser.",
   },
   site: {
     badge: "Diagnostic site pour artisans",
-    title: "Découvrez ce qui bloque",
-    accent: "les demandes depuis votre site.",
+    title: "Découvrez comment votre site peut",
+    accent: "générer plus de demandes.",
     body:
-      "Entrez votre site. On vous montre le premier point qui peut freiner la confiance ou la prise de contact, puis quoi corriger en priorité.",
+      "Entrez votre site. On vous montre la première amélioration qui peut renforcer la confiance et faciliter la prise de contact, puis les actions à prioriser.",
   },
   seo: {
     badge: "Diagnostic visibilité locale",
-    title: "Découvrez ce qui freine",
-    accent: "votre visibilité sur Google.",
+    title: "Découvrez comment gagner",
+    accent: "en visibilité sur Google.",
     body:
-      "Entrez votre site. On vérifie vos signaux locaux et on vous montre le premier point à corriger pour être mieux trouvé et plus contacté.",
+      "Entrez votre site. On vérifie vos signaux locaux et on vous montre la première amélioration à prioriser pour être mieux trouvé et plus contacté.",
   },
 };
 

@@ -51,7 +51,7 @@ export function Hero() {
               trackEvent="hero_cta_click"
               trackPayload={{ location: "hero_primary" }}
             >
-              Voir ce qui me fait perdre des demandes →
+              Voir comment gagner plus de demandes →
             </Button>
             <Button
               href="#demonstration"

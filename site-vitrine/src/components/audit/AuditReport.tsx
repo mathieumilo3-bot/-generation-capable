@@ -28,14 +28,14 @@ const PILLARS: {
     label: "02 — Être choisi",
     question: "Une fois arrivé, comprend-il immédiatement pourquoi vous choisir plutôt qu’un autre ?",
     dimensions: ["positioning", "psychology", "offer", "trust", "social_proof", "price_value"],
-    impact: "Réduire le doute avant la prise de contact.",
+    impact: "Renforcer la confiance avant la prise de contact.",
   },
   {
     id: "convertir",
     label: "03 — Être contacté",
     question: "Le visiteur sait-il immédiatement comment vous appeler ou vous demander un devis ?",
     dimensions: ["funnel", "conversion", "retention", "business_model"],
-    impact: "Transformer l’intérêt en demande concrète sans friction inutile.",
+    impact: "Transformer l’intérêt en demande concrète avec un parcours fluide.",
   },
 ];
 
@@ -57,9 +57,9 @@ function pillarState(report: Report, pillarId: PillarId) {
   const leaks = report.topLeaks.filter((finding) => pillar.dimensions.includes(finding.dimension));
   const strengths = report.worksWell.filter((finding) => pillar.dimensions.includes(finding.dimension));
 
-  if (leaks.length > 0) return { label: "À renforcer", tone: "text-[var(--color-accent)]" };
+  if (leaks.length > 0) return { label: "Potentiel à développer", tone: "text-[var(--color-accent)]" };
   if (strengths.length > 0) return { label: "Base présente", tone: "text-[var(--color-text)]" };
-  return { label: "À approfondir", tone: "text-[var(--color-muted)]" };
+  return { label: "À explorer", tone: "text-[var(--color-muted)]" };
 }
 
 const CONFIDENCE_LABEL = {
@@ -216,8 +216,8 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
               <p className={`mt-4 text-xs font-semibold ${state.tone}`}>
                 {synthesis
                   ? aiOpportunities.some((item) => item.pillar === pillar.id)
-                    ? "À renforcer"
-                    : "Pas de friction majeure détectée"
+                    ? "Potentiel à développer"
+                    : "Base solide détectée"
                   : state.label}
               </p>
             </div>
@@ -270,10 +270,10 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
             {aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length} constat{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""} concret{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""}
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-            Commencez par ces points.
+            Commencez par ces opportunités.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Chaque priorité part d’un élément observé ou clairement identifié dans votre présence en ligne.
+            Chaque opportunité part d’un élément observé ou clairement identifié dans votre présence en ligne.
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {aiOpportunities.length > 0
@@ -286,9 +286,9 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
           </div>
 
           <div className="mt-6 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-5 text-center">
-            <p className="font-display text-lg font-semibold">Vous savez maintenant quoi traiter.</p>
+            <p className="font-display text-lg font-semibold">Vous savez maintenant où agir.</p>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--color-muted)]">
-              On peut partir directement de ces points et vous montrer l’ordre dans lequel les corriger.
+              On peut partir directement de ces points et vous montrer l’ordre dans lequel les améliorer.
             </p>
             <div className="mt-4">
               <Button
@@ -300,7 +300,7 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
                 trackEvent="booking_started"
                 trackPayload={{ location: "audit_priorities", source: "capable_audit" }}
               >
-                Réserver 30 min pour les corriger →
+                Réserver 30 min pour les améliorer →
               </Button>
             </div>
           </div>
@@ -312,7 +312,7 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
           Prochaine étape
         </p>
         <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Corrigeons ces priorités dans le bon ordre.
+          Transformons ces priorités en gains concrets.
         </h3>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
           {synthesis?.callBridge ||
@@ -321,8 +321,8 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
         <div className="mx-auto mt-6 max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Vous repartez avec</p>
           <ul className="mt-3 space-y-2 text-sm text-[var(--color-text)]">
-            <li>✓ les 3 corrections prioritaires</li>
-            <li>✓ l’ordre exact dans lequel les traiter</li>
+            <li>✓ les 3 leviers prioritaires</li>
+            <li>✓ l’ordre exact dans lequel les activer</li>
             <li>✓ les prochaines actions adaptées à votre activité</li>
           </ul>
         </div>
@@ -337,7 +337,7 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
             trackPayload={{ location: "audit_report", source: "capable_audit" }}
             onClick={() => track("audit_cta_clicked", { location: "audit_report", intent: "book_strategy_call" })}
           >
-            Réserver 30 min pour corriger mes priorités →
+            Réserver 30 min pour activer mes priorités →
           </Button>
         </div>
         <p className="mt-4 text-xs text-[var(--color-muted)]">

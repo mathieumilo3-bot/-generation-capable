@@ -99,7 +99,7 @@ export function ReviewsSection() {
                 Votre présence mérite le même niveau de clarté.
               </p>
               <p className="mt-1 text-sm text-[var(--color-muted)]">
-                On identifie les freins prioritaires avant de parler refonte, SEO ou publicité.
+                On identifie les leviers prioritaires avant de parler refonte, SEO ou publicité.
               </p>
             </div>
             <Button

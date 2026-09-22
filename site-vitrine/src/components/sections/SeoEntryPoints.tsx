@@ -25,7 +25,7 @@ const ENTRY_POINTS = [
   {
     href: "/audit",
     title: "Audit gratuit",
-    description: "Identifier les freins prioritaires avant d'investir davantage.",
+    description: "Identifier les leviers prioritaires avant d'investir davantage.",
     cta: "Lancer mon audit",
   },
 ] as const;
