@@ -24,7 +24,7 @@ export function InstantCheck() {
   }
 
   return (
-    <Section id="analyse" tone="raised" className="py-24 sm:py-32">
+    <Section id="analyse" tone="raised" className="py-16 sm:py-20">
       <div className="mx-auto max-w-5xl">
         <div className="max-w-3xl">
           <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--color-accent)]">
