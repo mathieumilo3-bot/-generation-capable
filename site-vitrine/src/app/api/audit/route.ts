@@ -54,7 +54,7 @@ async function sendEmails(
     `Lead qualifié : ${actions.qualified}`,
     `Rendez-vous pris : ${actions.booked}`,
     `Client gagné : ${actions.client}`,
-  ].join("\\n");
+  ].join("\n");
   const actionHtml = `<div style="margin-top:20px;padding-top:16px;border-top:1px solid #ddd;">
     <p style="margin:0 0 10px;font-weight:700;">Qualifier ce lead</p>
     <a href="${actions.qualified}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;margin:0 8px 8px 0;">Lead qualifié</a>
