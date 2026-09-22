@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
-import { SECTORS } from "@/lib/data/sectors";
 import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
 import { track, type TrackingEvent } from "@/lib/tracking";
 import { AuditReport } from "@/components/audit/AuditReport";
@@ -59,11 +58,23 @@ const SITE_URL_FIELD_ID = "audit-site-url";
 const OTHER_OPTION = "Autre";
 const PRECISION_MAX_LENGTH = 60;
 
+const TRADE_OPTIONS = [
+  "Couvreur / toiture",
+  "Plombier / chauffagiste",
+  "Électricien",
+  "Menuisier",
+  "Peintre / façadier",
+  "Maçon",
+  "Paysagiste",
+  "Entreprise générale BTP",
+  OTHER_OPTION,
+];
+
 const OBJECTIVES = [
-  "Plus de demandes",
-  "Plus de rendez-vous",
-  "Plus de visibilité",
-  "Meilleure image",
+  "Plus de demandes de devis",
+  "Plus de chantiers",
+  "Être mieux trouvé sur Google",
+  "Recevoir plus d'appels qualifiés",
   OTHER_OPTION,
 ];
 
@@ -481,15 +492,14 @@ export function AuditFunnel() {
                 Votre activité
               </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Choisissez le secteur qui correspond le mieux à votre
-                entreprise.
+                Quel est votre métier principal ?
               </p>
               <div
                 role="group"
                 aria-label="Secteur d'activité"
                 className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3"
               >
-                {[...SECTORS.map((s) => s.name), OTHER_OPTION].map((option) => (
+                {TRADE_OPTIONS.map((option) => (
                   <button
                     type="button"
                     key={option}
@@ -545,7 +555,7 @@ export function AuditFunnel() {
                 Votre objectif
               </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Quel est le résultat le plus important pour vous aujourd&apos;hui ?
+                Qu&apos;est-ce qui ferait le plus de différence pour votre activité aujourd&apos;hui ?
               </p>
               <div role="group" aria-label="Objectif principal" className="mt-6 flex flex-col gap-3">
                 {OBJECTIVES.map((option) => (
