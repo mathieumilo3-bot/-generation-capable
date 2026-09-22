@@ -5,7 +5,7 @@ import { PRIMARY_CTA_LABEL } from "@/lib/constants";
 
 export function FinalCTA() {
   return (
-    <Section tone="black" className="py-28 text-center sm:py-36">
+    <Section tone="black" className="py-20 text-center sm:py-24">
       <Reveal className="flex flex-col items-center">
         <h2 className="font-display text-balance max-w-3xl text-3xl font-semibold leading-[1.15] tracking-tight sm:text-5xl lg:text-6xl">
           Et si votre présence
@@ -15,7 +15,7 @@ export function FinalCTA() {
           à travailler pour vous ?
         </h2>
 
-        <div className="mt-10">
+        <div className="mt-8">
           <Button
             href="/audit"
             variant="primary"
@@ -26,7 +26,7 @@ export function FinalCTA() {
           </Button>
         </div>
 
-        <p className="mt-5 text-sm text-[var(--color-muted)]">
+        <p className="mt-4 text-sm text-[var(--color-muted)]">
           Diagnostic initial · Sans engagement
         </p>
       </Reveal>
