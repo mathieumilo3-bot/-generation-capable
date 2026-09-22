@@ -192,4 +192,5 @@ La carte des intentions est documentée dans `SEO-KEYWORD-MAP.md`.
 La boucle de progression Search Console, le maillage et les règles anti-cannibalisation sont documentés dans `SEO-OPERATING-PLAN.md`.
 
 
-<!-- GC production release trigger — premium-clients-2026-09-22 -->
+
+<!-- GC production release trigger — reviews-home-2026-09-22 -->
