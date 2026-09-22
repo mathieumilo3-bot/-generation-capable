@@ -126,8 +126,12 @@ export async function upsertLeadContact(
     gc_sector: submission.secteur,
     gc_objective: submission.objectif,
     gc_phone: submission.telephone || "",
+    gc_site_url: submission.siteUrl,
     gc_source: submission.utmSource || "",
+    gc_medium: submission.utmMedium || "",
     gc_campaign: submission.utmCampaign || "",
+    gc_content: submission.utmContent || "",
+    gc_term: submission.utmTerm || "",
     gc_consent: submission.adUserDataConsent || "UNSPECIFIED",
   };
 
