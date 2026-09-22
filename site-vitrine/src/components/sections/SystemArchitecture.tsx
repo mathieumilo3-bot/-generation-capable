@@ -5,12 +5,12 @@ import { Section, Eyebrow } from "@/components/ui/Section";
 import { Reveal } from "@/components/ui/Reveal";
 
 const CHAIN = [
-  ["01", "VISIBILITÉ"],
-  ["02", "SITE"],
-  ["03", "PARCOURS"],
-  ["04", "QUALIFICATION"],
-  ["05", "RENDEZ-VOUS"],
-  ["06", "CLIENT"],
+  ["01", "ÊTRE TROUVÉ"],
+  ["02", "RASSURER"],
+  ["03", "MONTRER LE SAVOIR-FAIRE"],
+  ["04", "DEMANDE DE DEVIS"],
+  ["05", "RAPPEL"],
+  ["06", "CHANTIER"],
 ];
 
 export function SystemArchitecture() {
@@ -19,22 +19,22 @@ export function SystemArchitecture() {
       <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-20">
         <div>
           <Reveal>
-            <Eyebrow>Le système</Eyebrow>
+            <Eyebrow>Le parcours client</Eyebrow>
             <h2 className="font-display text-balance mt-4 text-3xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
-              Nous ne construisons pas
+              Un bon site artisan
               <br />
-              seulement des sites.
+              ne doit pas juste être beau.
             </h2>
           </Reveal>
           <Reveal delay={0.1}>
             <p className="font-display mt-8 text-2xl font-medium leading-snug text-[var(--color-accent)] sm:text-3xl">
-              Nous construisons le système autour.
+              Il doit faciliter le prochain chantier.
             </p>
           </Reveal>
           <Reveal delay={0.2}>
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-[var(--color-muted)]">
-              Chaque élément est pensé pour alimenter le suivant : attirer,
-              rassurer, orienter, qualifier puis convertir.
+              Le prospect doit vous trouver, comprendre ce que vous faites, voir des preuves,
+              puis demander un devis sans friction. Le reste sert ce parcours.
             </p>
           </Reveal>
         </div>
@@ -45,11 +45,11 @@ export function SystemArchitecture() {
             <div className="relative">
               <div className="mb-7 flex items-center justify-between border-b border-[var(--color-border)] pb-5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--color-muted)]">
-                  Architecture de conversion
+                  Parcours d&apos;une demande
                 </p>
                 <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
-                  Connecté
+                  Clair
                 </span>
               </div>
 
@@ -68,27 +68,10 @@ export function SystemArchitecture() {
                       <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border-strong)] bg-[var(--color-surface)] font-display text-[10px] font-semibold text-[var(--color-accent)]">
                         {number}
                       </span>
-                      <span className="font-display text-base font-semibold tracking-tight sm:text-lg">
-                        {step}
-                      </span>
-                      {index < CHAIN.length - 1 && (
-                        <span className="ml-auto text-xs text-[var(--color-muted)] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                          →
-                        </span>
-                      )}
+                      <span className="font-display text-sm font-semibold tracking-tight sm:text-lg">{step}</span>
                     </motion.li>
                   ))}
                 </ul>
-              </div>
-
-              <div className="mt-6 grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-6">
-                {["ATTENTION", "INTENTION", "ACTION"].map((item) => (
-                  <div key={item} className="rounded-lg bg-black/20 px-3 py-3 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                      {item}
-                    </p>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
