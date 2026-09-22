@@ -81,6 +81,7 @@ export function AuditFunnel() {
   const [error, setError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
   const [attribution, setAttribution] = useState<BookingAttribution>({});
+  const [clickIds, setClickIds] = useState({ gclid: "", gbraid: "", wbraid: "" });
   // "Autre" on its own tells the business nothing, so it asks for a précision.
   const [secteurAutre, setSecteurAutre] = useState("");
   const [objectifAutre, setObjectifAutre] = useState("");
@@ -114,6 +115,12 @@ export function AuditFunnel() {
       campaign: params.get("utm_campaign")?.trim().slice(0, 120) || undefined,
       content: params.get("utm_content")?.trim().slice(0, 120) || undefined,
       term: params.get("utm_term")?.trim().slice(0, 120) || undefined,
+    });
+
+    setClickIds({
+      gclid: params.get("gclid")?.trim().slice(0, 220) || "",
+      gbraid: params.get("gbraid")?.trim().slice(0, 220) || "",
+      wbraid: params.get("wbraid")?.trim().slice(0, 220) || "",
     });
 
     // The first field is autofocused, so someone can start typing before
@@ -248,6 +255,9 @@ export function AuditFunnel() {
           utmCampaign: attribution.campaign,
           utmContent: attribution.content,
           utmTerm: attribution.term,
+          gclid: clickIds.gclid,
+          gbraid: clickIds.gbraid,
+          wbraid: clickIds.wbraid,
           [HONEYPOT_FIELD]: honeypot,
         }),
       });
@@ -275,6 +285,22 @@ export function AuditFunnel() {
       const report = await resolveReport();
       setFinalReport(report);
       setFinalizing(false);
+
+      try {
+        sessionStorage.setItem(
+          "gc_audit_result",
+          JSON.stringify({
+            report,
+            lead: { nom: data.nom, email: data.email },
+            entreprise: data.entreprise,
+            attribution,
+          })
+        );
+      } catch {
+        // A blocked sessionStorage must never affect a successfully captured lead.
+      }
+
+      window.location.assign("/audit/merci");
       return;
     } catch {
       setError(
