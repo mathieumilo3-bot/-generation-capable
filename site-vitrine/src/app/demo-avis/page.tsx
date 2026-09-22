@@ -84,6 +84,66 @@ export default function DemoReviewsPage() {
           ))}
         </div>
 
+        <div className="mt-14 border-t border-[var(--color-border)] pt-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Eyebrow>Avant / Après</Eyebrow>
+              <h2 className="font-display mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
+                Une preuve visuelle
+                <br />
+                <span className="text-[var(--color-muted)]">en quelques secondes.</span>
+              </h2>
+            </div>
+            <p className="max-w-md text-sm leading-relaxed text-[var(--color-muted)]">
+              Exemple de mise en page. Plus tard, on remplacera ces aperçus par les vraies captures de projets clients.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 lg:grid-cols-2">
+            <div className="overflow-hidden rounded-[1.4rem] border border-[var(--color-border)] bg-[var(--color-surface)]">
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Avant</p>
+                  <p className="mt-1 text-sm font-semibold">Version précédente</p>
+                </div>
+                <span className="rounded-full border border-[var(--color-border)] px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                  Démo
+                </span>
+              </div>
+              <div className="relative h-[360px] overflow-hidden bg-white">
+                <iframe
+                  src="/demos/couvreur/avant.html"
+                  title="Aperçu avant"
+                  className="pointer-events-none h-full w-full border-0"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[1.4rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] shadow-[0_20px_70px_rgba(0,0,0,0.18)]">
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">Après GC</p>
+                  <p className="mt-1 text-sm font-semibold">Nouvelle expérience</p>
+                </div>
+                <span className="rounded-full bg-[var(--color-accent)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-black">
+                  Après
+                </span>
+              </div>
+              <div className="relative h-[360px] overflow-hidden bg-white">
+                <iframe
+                  src="/demos/couvreur/apres.html"
+                  title="Aperçu après"
+                  className="pointer-events-none h-full w-full border-0"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <p className="text-sm font-semibold text-[var(--color-text)]">Prêt pour les vrais avis.</p>
