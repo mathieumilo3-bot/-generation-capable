@@ -19,10 +19,10 @@ const VARIANTS: Record<string, HeroVariant> = {
   },
   chantiers: {
     badge: "Pour artisans du bâtiment",
-    title: "Découvrez ce qui freine",
-    accent: "vos demandes de chantier.",
+    title: "Découvrez ce qui vous fait perdre",
+    accent: "des chantiers.",
     body:
-      "Entrez votre site. En quelques secondes, on vous montre le premier point qui peut vous faire perdre des prospects, puis ce qu’il faut corriger en priorité.",
+      "Entrez votre site. En quelques secondes, on vous montre le premier point qui peut faire fuir un prospect, puis ce qu’il faut corriger en priorité.",
   },
   site: {
     badge: "Diagnostic site pour artisans",
