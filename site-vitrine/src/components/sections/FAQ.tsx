@@ -10,7 +10,7 @@ const FAQS = [
 
 export function FAQ() {
   return (
-    <Section className="py-24 sm:py-32">
+    <Section className="py-16 sm:py-20">
       <Reveal>
         <Eyebrow>Questions fréquentes</Eyebrow>
         <h2 className="font-display mt-4 max-w-2xl text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">Avant de nous parler.</h2>

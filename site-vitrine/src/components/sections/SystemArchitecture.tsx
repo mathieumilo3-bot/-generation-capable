@@ -15,7 +15,7 @@ const CHAIN = [
 
 export function SystemArchitecture() {
   return (
-    <Section id="systeme" className="py-24 sm:py-32">
+    <Section id="systeme" className="py-16 sm:py-20">
       <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-20">
         <div>
           <Reveal>
