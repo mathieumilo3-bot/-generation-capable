@@ -47,24 +47,37 @@ async function sendEmails(
   const resend = new Resend(apiKey);
   const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
   const baseNotification = buildNotificationEmail(submission, reportSummary);
-  const actions = buildLeadActionLinks(submission.email, leadMeta.leadId);
-  const actionText = [
-    "",
-    "Qualifier ce lead :",
-    `Lead qualifié : ${actions.qualified}`,
-    `Rendez-vous pris : ${actions.booked}`,
-    `Client gagné : ${actions.client}`,
-  ].join("\n");
-  const actionHtml = `<div style="margin-top:20px;padding-top:16px;border-top:1px solid #ddd;">
-    <p style="margin:0 0 10px;font-weight:700;">Qualifier ce lead</p>
-    <a href="${actions.qualified}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;margin:0 8px 8px 0;">Lead qualifié</a>
-    <a href="${actions.booked}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:9px 14px;border-radius:8px;margin:0 8px 8px 0;">RDV pris</a>
-    <a href="${actions.client}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:9px 14px;border-radius:8px;">Client gagné</a>
-  </div>`;
+
+  // Lead-status actions are useful enrichment, but they must never be able to
+  // break the core notification path. A missing/invalid signing secret should
+  // degrade to a normal lead email, not turn a captured lead into a 502.
+  let actionText = "";
+  let actionHtml = "";
+  try {
+    const actions = buildLeadActionLinks(submission.email, leadMeta.leadId);
+    actionText = [
+      "",
+      "Qualifier ce lead :",
+      `Lead qualifié : ${actions.qualified}`,
+      `Rendez-vous pris : ${actions.booked}`,
+      `Client gagné : ${actions.client}`,
+    ].join("\n");
+    actionHtml = `<div style="margin-top:20px;padding-top:16px;border-top:1px solid #ddd;">
+      <p style="margin:0 0 10px;font-weight:700;">Qualifier ce lead</p>
+      <a href="${actions.qualified}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;margin:0 8px 8px 0;">Lead qualifié</a>
+      <a href="${actions.booked}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:9px 14px;border-radius:8px;margin:0 8px 8px 0;">RDV pris</a>
+      <a href="${actions.client}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:9px 14px;border-radius:8px;">Client gagné</a>
+    </div>`;
+  } catch (error) {
+    console.error("[audit] lead action links unavailable (non-blocking):", error);
+  }
+
   const notification = {
     ...baseNotification,
     text: baseNotification.text + actionText,
-    html: baseNotification.html.replace(/<\/div>$/, `${actionHtml}</div>`),
+    html: actionHtml
+      ? baseNotification.html.replace(/<\/div>$/, `${actionHtml}</div>`)
+      : baseNotification.html,
   };
 
   const sent = await withTimeout(
@@ -162,18 +175,32 @@ export async function POST(request: Request) {
   }
 
   const leadMeta = createLeadMeta();
+  let leadStored = false;
 
   try {
     await upsertLeadContact(submission, leadMeta);
+    leadStored = true;
   } catch (error) {
-    console.error("[audit] lead CRM sync failed (non-blocking):", error);
+    console.error("[audit] lead CRM sync failed:", error);
   }
 
   try {
     await sendEmails(submission, apiKey, notifyEmail, reportSummary, leadMeta);
   } catch (error) {
     console.error("[audit] notification email failed:", error);
-    return NextResponse.json({ error: "email_failed" }, { status: 502 });
+
+    // If Resend already persisted the contact, the business still owns a
+    // recoverable lead with attribution. Do not strand the visitor on an
+    // error page or suppress the ad conversion just because notification
+    // delivery had a temporary/configuration failure.
+    if (leadStored) {
+      return NextResponse.json(
+        { status: "received", accepted: true, emailed: false },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json({ error: "lead_capture_failed" }, { status: 502 });
   }
 
   return NextResponse.json({ status: "received", accepted: true, emailed: true }, { status: 200 });
