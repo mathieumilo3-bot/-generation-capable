@@ -1,19 +1,14 @@
 import Script from "next/script";
 
 /**
- * Google Tag Manager, and only when NEXT_PUBLIC_GTM_ID is set.
+ * Funnel tracking loader.
  *
- * GTM is the one hook worth hard-coding: `track()` already pushes the funnel
- * events to `window.dataLayer`, which is exactly GTM's input, so GA4, Google
- * Ads conversions and the Meta pixel can all be wired from GTM's interface
- * without another deploy.
- *
- * Consent Mode v2 is initialised denied. Until a consent banner grants it,
- * tags run cookieless — which is what /politique-de-confidentialite states.
- * Granting consent (and therefore dropping advertising cookies) requires a
- * banner and an update to that page; do not flip these defaults without both.
+ * If a GTM container is configured, GTM remains the orchestration layer.
+ * Otherwise we load the Google Ads tag directly so conversion measurement
+ * works even before a GTM container is created.
  */
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+const GOOGLE_ADS_ID = "AW-18466478982";
 
 const CONSENT_DEFAULTS = `
 window.dataLayer=window.dataLayer||[];
@@ -32,24 +27,30 @@ gtag('set','url_passthrough',true);
 `;
 
 export function Analytics() {
-  if (!GTM_ID) return null;
-
   return (
     <>
-      {/*
-        Consent Mode must be initialised before GTM evaluates any tag, which
-        `next/script` cannot guarantee from a layout — so this half stays an
-        inline, blocking script. The content is a constant, never user input.
-      */}
       <script dangerouslySetInnerHTML={{ __html: CONSENT_DEFAULTS }} />
-      <Script id="gtm" strategy="afterInteractive">
-        {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`}
-      </Script>
+
+      {GTM_ID ? (
+        <Script id="gtm" strategy="afterInteractive">
+          {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`}
+        </Script>
+      ) : (
+        <>
+          <Script
+            id="google-ads-loader"
+            src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-ads-config" strategy="afterInteractive">
+            {`gtag('js', new Date());gtag('config', '${GOOGLE_ADS_ID}');`}
+          </Script>
+        </>
+      )}
     </>
   );
 }
 
-/** The <noscript> half of the snippet, which must live at the top of <body>. */
 export function AnalyticsNoScript() {
   if (!GTM_ID) return null;
 
