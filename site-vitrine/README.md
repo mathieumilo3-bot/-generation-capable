@@ -190,3 +190,5 @@ déploiement (Netlify, Vercel, …) avant mise en production.
 
 La carte des intentions est documentée dans `SEO-KEYWORD-MAP.md`.
 La boucle de progression Search Console, le maillage et les règles anti-cannibalisation sont documentés dans `SEO-OPERATING-PLAN.md`.
+
+<!-- GC production release trigger — 2026-09-22 -->
