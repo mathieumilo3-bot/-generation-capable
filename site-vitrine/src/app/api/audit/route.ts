@@ -64,7 +64,7 @@ async function sendEmails(
   const notification = {
     ...baseNotification,
     text: baseNotification.text + actionText,
-    html: baseNotification.html.replace(/<\\/div>$/, `${actionHtml}</div>`),
+    html: baseNotification.html.replace(/<\/div>$/, `${actionHtml}</div>`),
   };
 
   const sent = await withTimeout(
