@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listLeadContacts } from "@/lib/lead-tracking";
+import { contactProperty, listLeadContacts } from "@/lib/lead-tracking";
 
 export const dynamic = "force-dynamic";
 
@@ -41,28 +41,37 @@ export async function GET(request: Request) {
   const rows: string[][] = [];
 
   for (const contact of contacts) {
-    const p = contact.properties || {};
-    if (p.gc_consent !== "GRANTED") continue;
+    const p = contact.properties;
+    if (contactProperty(p, "gc_consent") !== "GRANTED") continue;
+
+    const phoneValue = contactProperty(p, "gc_phone");
+    const gclidValue = contactProperty(p, "gc_gclid");
+    const gbraidValue = contactProperty(p, "gc_gbraid");
+    const orderIdValue = contactProperty(p, "gc_lead_id");
+    const qualifiedAt = contactProperty(p, "gc_qualified_at");
+    const clientAt = contactProperty(p, "gc_client_at");
+
+    const phone =
+      typeof phoneValue === "string" && phoneValue.startsWith("+")
+        ? phoneValue.replace(/[\s().-]/g, "")
+        : "";
 
     const common = {
       email: contact.email || "",
-      phone:
-        typeof p.gc_phone === "string" && p.gc_phone.startsWith("+")
-          ? p.gc_phone.replace(/[\s().-]/g, "")
-          : "",
-      gclid: typeof p.gc_gclid === "string" ? p.gc_gclid : "",
-      gbraid: typeof p.gc_gbraid === "string" ? p.gc_gbraid : "",
-      orderId: typeof p.gc_lead_id === "string" ? p.gc_lead_id : "",
+      phone,
+      gclid: typeof gclidValue === "string" ? gclidValue : "",
+      gbraid: typeof gbraidValue === "string" ? gbraidValue : "",
+      orderId: typeof orderIdValue === "string" ? orderIdValue : "",
     };
 
-    if (typeof p.gc_qualified_at === "string" && p.gc_qualified_at) {
+    if (typeof qualifiedAt === "string" && qualifiedAt) {
       rows.push([
         common.email,
         common.phone,
         common.gclid,
         common.gbraid,
         "GC | Qualified Lead",
-        p.gc_qualified_at,
+        qualifiedAt,
         `${common.orderId}-qualified`,
         "1",
         "EUR",
@@ -71,14 +80,14 @@ export async function GET(request: Request) {
       ]);
     }
 
-    if (typeof p.gc_client_at === "string" && p.gc_client_at) {
+    if (typeof clientAt === "string" && clientAt) {
       rows.push([
         common.email,
         common.phone,
         common.gclid,
         common.gbraid,
         "GC | Converted Lead",
-        p.gc_client_at,
+        clientAt,
         `${common.orderId}-client`,
         "1",
         "EUR",
