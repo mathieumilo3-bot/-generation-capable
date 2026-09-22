@@ -1,11 +1,11 @@
 export const SITE_NAME = "GC Agence";
 export const SITE_URL = "https://gc-agence.com";
-export const SITE_TAGLINE = "Agence web, SEO & acquisition";
+export const SITE_TAGLINE = "Acquisition digitale pour artisans & BTP";
 
 export const SITE_DESCRIPTION =
-  "GC conçoit les systèmes digitaux qui transforment la visibilité, le trafic et l'attention d'une entreprise en opportunités commerciales.";
+  "GC aide les artisans et entreprises du BTP à être trouvés, à rassurer et à transformer leur présence en demandes de devis qualifiées.";
 
-export const PRIMARY_CTA_LABEL = "Analyser mon entreprise";
+export const PRIMARY_CTA_LABEL = "Analyser mon site gratuitement";
 
 // "Méthode" was removed: the homepage no longer renders a #methode section
 // (Method.tsx is unused — the current narrative folds that explanation into
