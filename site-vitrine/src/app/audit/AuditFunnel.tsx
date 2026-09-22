@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
-import { SECTORS } from "@/lib/data/sectors";
 import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
 import { track, type TrackingEvent } from "@/lib/tracking";
 import { AuditReport } from "@/components/audit/AuditReport";
@@ -59,11 +58,23 @@ const SITE_URL_FIELD_ID = "audit-site-url";
 const OTHER_OPTION = "Autre";
 const PRECISION_MAX_LENGTH = 60;
 
+const TRADE_OPTIONS = [
+  "Couvreur / toiture",
+  "Plombier / chauffagiste",
+  "Électricien",
+  "Menuisier",
+  "Peintre / façadier",
+  "Maçon",
+  "Paysagiste",
+  "Entreprise générale BTP",
+  OTHER_OPTION,
+];
+
 const OBJECTIVES = [
-  "Plus de demandes",
-  "Plus de rendez-vous",
-  "Plus de visibilité",
-  "Meilleure image",
+  "Plus de demandes de devis",
+  "Plus de chantiers",
+  "Être mieux trouvé sur Google",
+  "Recevoir plus d'appels qualifiés",
   OTHER_OPTION,
 ];
 
@@ -362,8 +373,8 @@ export function AuditFunnel() {
           {finalizing ? "Finalisation de votre diagnostic…" : "Votre analyse est en préparation."}
         </h2>
         <p className="mt-5 text-[15px] leading-relaxed text-[var(--color-muted)]">
-          Nous revenons vers vous par email avec les opportunités prioritaires
-          identifiées pour {data.entreprise || "votre entreprise"}.
+          Nous revenons vers vous par email avec les points prioritaires
+          qui peuvent freiner les demandes de {data.entreprise || "votre entreprise"}.
         </p>
         <div className="mt-10 flex flex-col items-center gap-4">
           <Button
@@ -374,7 +385,7 @@ export function AuditFunnel() {
             trackEvent="booking_started"
             trackPayload={{ location: "audit_confirmation", source: "capable_audit" }}
           >
-            Choisir mon créneau →
+            Parler de mon acquisition →
           </Button>
           <Button href="/" variant="secondary">
             Retour à l&apos;accueil
@@ -436,11 +447,10 @@ export function AuditFunnel() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
               <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-                Votre site
+                Votre présence en ligne
               </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
-                L&apos;adresse de votre site actuel, ou de votre page
-                principale (réseaux sociaux si vous n&apos;avez pas de site).
+                Votre site, votre fiche Google ou votre page principale si vous n&apos;avez pas encore de site.
               </p>
               <label htmlFor={SITE_URL_FIELD_ID} className="sr-only">
                 Votre site
@@ -481,15 +491,14 @@ export function AuditFunnel() {
                 Votre activité
               </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Choisissez le secteur qui correspond le mieux à votre
-                entreprise.
+                Quel est votre métier principal ?
               </p>
               <div
                 role="group"
                 aria-label="Secteur d'activité"
                 className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3"
               >
-                {[...SECTORS.map((s) => s.name), OTHER_OPTION].map((option) => (
+                {TRADE_OPTIONS.map((option) => (
                   <button
                     type="button"
                     key={option}
@@ -509,7 +518,7 @@ export function AuditFunnel() {
               {data.secteur === OTHER_OPTION && (
                 <div className="mt-4">
                   <label htmlFor="audit-secteur-autre" className="sr-only">
-                    Précisez votre secteur
+                    Précisez votre métier
                   </label>
                   <input
                     id="audit-secteur-autre"
@@ -517,7 +526,7 @@ export function AuditFunnel() {
                     autoFocus
                     type="text"
                     maxLength={PRECISION_MAX_LENGTH}
-                    placeholder="Précisez votre secteur"
+                    placeholder="Ex. carreleur, serrurier, pisciniste…"
                     className={inputClass()}
                     value={secteurAutre}
                     onChange={(e) => setSecteurAutre(e.target.value)}
@@ -545,7 +554,7 @@ export function AuditFunnel() {
                 Votre objectif
               </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Quel est le résultat le plus important pour vous aujourd&apos;hui ?
+                Qu&apos;est-ce qui ferait le plus de différence pour votre activité aujourd&apos;hui ?
               </p>
               <div role="group" aria-label="Objectif principal" className="mt-6 flex flex-col gap-3">
                 {OBJECTIVES.map((option) => (
@@ -601,10 +610,10 @@ export function AuditFunnel() {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
               <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-                Vos coordonnées
+                Où vous envoyer l&apos;audit ?
               </h2>
               <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Pour vous transmettre votre audit personnellement.
+                On garde uniquement ce qu&apos;il faut pour vous répondre et vous rappeler si nécessaire.
               </p>
               <div className="mt-6 flex flex-col gap-4">
                 <label htmlFor="audit-nom" className="sr-only">
@@ -706,7 +715,7 @@ export function AuditFunnel() {
               disabled={submitting}
               className="inline-flex items-center justify-center rounded-full bg-[var(--color-text)] px-7 py-3.5 text-sm font-medium text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Envoi en cours…" : "Obtenir mon audit →"}
+              {submitting ? "Envoi en cours…" : "Recevoir mon audit gratuit →"}
             </button>
           )}
         </div>
