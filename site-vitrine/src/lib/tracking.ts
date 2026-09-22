@@ -47,7 +47,11 @@ export function track(event: TrackingEvent, payload: EventPayload = {}): void {
 
 const GOOGLE_ADS_LEAD_DESTINATION = "AW-18466478982/jQ8BCLOau4AdEIa3wOVE";
 
-export function trackGoogleAdsLeadConversion(): void {
+export function trackGoogleAdsLeadConversion(userData?: {
+  email?: string;
+  telephone?: string;
+  adUserDataConsent?: string;
+}): void {
   if (typeof window === "undefined") return;
 
   try {
