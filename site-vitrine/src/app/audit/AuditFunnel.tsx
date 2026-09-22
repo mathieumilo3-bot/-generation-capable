@@ -2,36 +2,10 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Button } from "@/components/ui/Button";
 import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
-import { track, type TrackingEvent } from "@/lib/tracking";
-import { AuditReport } from "@/components/audit/AuditReport";
-import { DIMENSION_LABELS, type Report } from "@/lib/audit-engine/types";
-import { buildCalendlyUrl, type BookingAttribution } from "@/lib/booking";
-
-/**
- * The small, display-only digest sent to /api/audit alongside the lead —
- * see `ReportEmailSummary` in audit-submission.ts, which this must match.
- * Titles and French dimension labels only: the business gets a skim-in-the-
- * inbox summary, not the whole Report object.
- */
-function toEmailSummary(report: Report) {
-  return {
-    degraded: report.degraded,
-    topLeaks: report.topLeaks.map((f) => ({ title: f.title, dimension: DIMENSION_LABELS[f.dimension] })),
-    otherFindingsCount: report.otherFindings.length,
-  };
-}
-
-/**
- * How long the confirmation screen will wait, once the lead is captured, for
- * the diagnostic engine to finish — it usually already has by then (the
- * engine runs in the background from the moment the visitor leaves step 3,
- * while they type their coordonnées). If it hasn't landed within this
- * window, the visitor sees the plain confirmation instead: never blocked on
- * the diagnostic, whatever happens to it.
- */
-const REPORT_WAIT_MS = 8_000;
+import { track } from "@/lib/tracking";
+import { DIMENSION_LABELS, type Finding, type Report } from "@/lib/audit-engine/types";
+import type { BookingAttribution } from "@/lib/booking";
 
 type FormState = {
   siteUrl: string;
@@ -43,6 +17,9 @@ type FormState = {
   telephone: string;
 };
 
+type Stage = "site" | "preview" | "trade" | "goal" | "contact" | "done";
+type PreviewStatus = "idle" | "loading" | "ready" | "failed";
+
 const EMPTY_STATE: FormState = {
   siteUrl: "",
   secteur: "",
@@ -53,11 +30,6 @@ const EMPTY_STATE: FormState = {
   telephone: "",
 };
 
-const TOTAL_STEPS = 4;
-const SITE_URL_FIELD_ID = "audit-site-url";
-const OTHER_OPTION = "Autre";
-const PRECISION_MAX_LENGTH = 60;
-
 const TRADE_OPTIONS = [
   "Couvreur / toiture",
   "Plombier / chauffagiste",
@@ -67,7 +39,7 @@ const TRADE_OPTIONS = [
   "Maçon",
   "Paysagiste",
   "Entreprise générale BTP",
-  OTHER_OPTION,
+  "Autre",
 ];
 
 const OBJECTIVES = [
@@ -75,50 +47,60 @@ const OBJECTIVES = [
   "Plus de chantiers",
   "Être mieux trouvé sur Google",
   "Recevoir plus d'appels qualifiés",
-  OTHER_OPTION,
+  "Autre",
 ];
 
+const SITE_URL_FIELD_ID = "audit-site-url";
+const REPORT_WAIT_MS = 8_000;
+
 function inputClass() {
-  return "w-full rounded-xl border border-[var(--color-border-strong)] bg-transparent px-5 py-4 text-base text-[var(--color-text)] outline-none transition-colors duration-200 placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40";
+  return "w-full rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-5 py-4 text-base text-[var(--color-text)] outline-none transition-all duration-200 placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30";
+}
+
+function toEmailSummary(report: Report) {
+  return {
+    degraded: report.degraded,
+    topLeaks: report.topLeaks.map((f) => ({
+      title: f.title,
+      dimension: DIMENSION_LABELS[f.dimension],
+    })),
+    otherFindingsCount: report.otherFindings.length,
+  };
+}
+
+function bestPreviewFinding(report: Report | null): Finding | null {
+  if (!report || report.degraded) return null;
+  return (
+    report.topLeaks.find((finding) => finding.confidence === "observed") ??
+    report.topLeaks[0] ??
+    report.worksWell.find((finding) => finding.confidence === "observed") ??
+    null
+  );
 }
 
 export function AuditFunnel() {
-  const [step, setStep] = useState(1);
+  const [stage, setStage] = useState<Stage>("site");
   const [data, setData] = useState<FormState>(EMPTY_STATE);
+  const [previewStatus, setPreviewStatus] = useState<PreviewStatus>("idle");
+  const [quickReport, setQuickReport] = useState<Report | null>(null);
+  const [refinedLoading, setRefinedLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [finalizing, setFinalizing] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [finalReport, setFinalReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
   const [attribution, setAttribution] = useState<BookingAttribution>({});
   const [clickIds, setClickIds] = useState({ gclid: "", gbraid: "", wbraid: "" });
-  // "Autre" on its own tells the business nothing, so it asks for a précision.
-  const [secteurAutre, setSecteurAutre] = useState("");
-  const [objectifAutre, setObjectifAutre] = useState("");
-  const started = useRef(false);
+  const [otherTrade, setOtherTrade] = useState("");
+  const [otherGoal, setOtherGoal] = useState("");
+
   const engaged = useRef(false);
-  const analysisStarted = useRef(false);
-  const analysisPromise = useRef<Promise<Report | null> | null>(null);
-  // Set synchronously the moment the background analysis resolves — read at
-  // submit time without awaiting anything, so attaching it to the lead email
-  // can never delay or risk that submission.
   const lastReport = useRef<Report | null>(null);
+  const refinedPromise = useRef<Promise<Report | null> | null>(null);
 
   useEffect(() => {
-    if (!started.current) {
-      started.current = true;
-      track("audit_started");
-      track("audit_step_1");
-    }
+    track("audit_started");
 
-    // Arriving from the homepage tool: ?site= carries the address already
-    // typed there, so the visitor never types it twice. Read from the URL
-    // directly rather than useSearchParams, which would opt this page out of
-    // static rendering.
     const params = new URLSearchParams(window.location.search);
-    const fromHomepage =
-      params.get("site")?.trim().slice(0, FIELD_LIMITS.siteUrl) ?? "";
+    const fromHomepage = params.get("site")?.trim().slice(0, FIELD_LIMITS.siteUrl) ?? "";
 
     setAttribution({
       source: params.get("utm_source")?.trim().slice(0, 120) || undefined,
@@ -134,66 +116,67 @@ export function AuditFunnel() {
       wbraid: params.get("wbraid")?.trim().slice(0, 220) || "",
     });
 
-    // The first field is autofocused, so someone can start typing before
-    // React hydrates. A controlled input would throw those keystrokes away
-    // on its first render, so adopt whatever the DOM already holds.
-    const input = document.getElementById(SITE_URL_FIELD_ID) as HTMLInputElement | null;
-    const prefill = input?.value || fromHomepage;
-    if (prefill) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from the DOM and the URL, neither of which React can observe during hydration
-      setData((prev) => (prev.siteUrl ? prev : { ...prev, siteUrl: prefill }));
+    if (fromHomepage) {
+      setData((prev) => ({ ...prev, siteUrl: fromHomepage }));
     }
   }, []);
 
+  function markEngaged() {
+    if (engaged.current) return;
+    engaged.current = true;
+    track("form_started");
+  }
+
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    // form_started means the visitor engaged, not that the page loaded — on a
-    // page whose only content is the form, the latter would just duplicate
-    // audit_started and tell an ad platform nothing about intent.
-    if (!engaged.current) {
-      engaged.current = true;
-      track("form_started");
-    }
+    markEngaged();
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
-  function canAdvance() {
-    if (step === 1) return data.siteUrl.trim().length > 3;
-    if (step === 2) {
-      if (data.secteur === OTHER_OPTION) return secteurAutre.trim().length > 1;
-      return data.secteur.trim().length > 0;
-    }
-    if (step === 3) {
-      if (data.objectif === OTHER_OPTION) return objectifAutre.trim().length > 1;
-      return data.objectif.trim().length > 0;
-    }
-    return true;
-  }
+  async function startQuickScan(event?: FormEvent) {
+    event?.preventDefault();
+    if (data.siteUrl.trim().length < 4 || previewStatus === "loading") return;
 
-  /** Folds the précision into the value so the email reads naturally. */
-  function withPrecision(value: string, precision: string) {
-    return value === OTHER_OPTION ? `${OTHER_OPTION} — ${precision.trim()}` : value;
-  }
-
-  /**
-   * Kicks off the real diagnostic as soon as we have everything it needs —
-   * site, secteur and objectif — rather than waiting for the coordonnées.
-   * It runs in the background while the visitor types their name and email,
-   * so by the time they submit, the analysis has usually already landed.
-   * Never awaited here: a slow or failing analysis must never hold up the
-   * wizard itself.
-   */
-  function triggerAnalysis() {
-    if (analysisStarted.current) return;
-    analysisStarted.current = true;
+    markEngaged();
+    setError(null);
+    setStage("preview");
+    setPreviewStatus("loading");
     track("audit_analysis_started");
+
+    try {
+      const res = await fetch("/api/audit/quick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteUrl: data.siteUrl.trim() }),
+      });
+
+      if (!res.ok) {
+        setPreviewStatus("failed");
+        return;
+      }
+
+      const body = (await res.json()) as { report?: Report };
+      const report = body.report ?? null;
+      setQuickReport(report);
+      if (report) {
+        lastReport.current = report;
+        track("audit_analysis_completed");
+      }
+      setPreviewStatus(report ? "ready" : "failed");
+    } catch {
+      setPreviewStatus("failed");
+    }
+  }
+
+  function startRefinedAnalysis(secteur: string, objectif: string) {
+    setRefinedLoading(true);
 
     const promise = fetch("/api/audit/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         siteUrl: data.siteUrl,
-        secteur: withPrecision(data.secteur, secteurAutre),
-        objectif: withPrecision(data.objectif, objectifAutre),
+        secteur,
+        objectif,
       }),
     })
       .then(async (res) => {
@@ -203,77 +186,91 @@ export function AuditFunnel() {
       })
       .catch(() => null)
       .then((report) => {
-        if (report) {
-          track("audit_analysis_completed");
-          lastReport.current = report;
-        }
+        if (report) lastReport.current = report;
+        setRefinedLoading(false);
         return report;
       });
 
-    analysisPromise.current = promise;
+    refinedPromise.current = promise;
   }
 
-  /** Waits briefly for the background analysis, never longer than REPORT_WAIT_MS. */
-  async function resolveReport(): Promise<Report | null> {
-    if (!analysisPromise.current) return null;
+  function chooseTrade(option: string) {
+    if (option === "Autre") {
+      update("secteur", option);
+      return;
+    }
+    update("secteur", option);
+    setStage("goal");
+    track("audit_step_3");
+  }
+
+  function confirmOtherTrade() {
+    if (otherTrade.trim().length < 2) return;
+    const value = `Autre — ${otherTrade.trim()}`;
+    update("secteur", value);
+    setStage("goal");
+    track("audit_step_3");
+  }
+
+  function chooseGoal(option: string) {
+    if (option === "Autre") {
+      update("objectif", option);
+      return;
+    }
+    update("objectif", option);
+    startRefinedAnalysis(data.secteur, option);
+    setStage("contact");
+    track("audit_step_4");
+  }
+
+  function confirmOtherGoal() {
+    if (otherGoal.trim().length < 2) return;
+    const value = `Autre — ${otherGoal.trim()}`;
+    update("objectif", value);
+    startRefinedAnalysis(data.secteur, value);
+    setStage("contact");
+    track("audit_step_4");
+  }
+
+  async function resolveBestReport(): Promise<Report | null> {
+    if (!refinedPromise.current) return lastReport.current ?? quickReport;
     return Promise.race([
-      analysisPromise.current,
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), REPORT_WAIT_MS)),
+      refinedPromise.current.then((report) => report ?? lastReport.current ?? quickReport),
+      new Promise<Report | null>((resolve) =>
+        setTimeout(() => resolve(lastReport.current ?? quickReport), REPORT_WAIT_MS)
+      ),
     ]);
   }
 
-  function goNext() {
-    if (!canAdvance()) return;
-    const next = Math.min(step + 1, TOTAL_STEPS);
-    setStep(next);
-    track(`audit_step_${next}` as TrackingEvent);
-    if (next === 4) triggerAnalysis();
+  function errorMessageFor(status: number) {
+    if (status === 429) return "Trop de demandes depuis cette connexion. Réessayez dans quelques minutes.";
+    if (status === 422 || status === 413) return "Vérifiez votre email puis réessayez.";
+    return "La demande n'a pas pu être envoyée. Réessayez dans quelques instants.";
   }
 
-  function goBack() {
-    setStep((s) => Math.max(s - 1, 1));
-  }
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (submitting || !data.email.includes("@")) return;
 
-  function errorMessageFor(status: number): string {
-    if (status === 429) {
-      return "Trop de demandes envoyées depuis cette connexion. Merci de réessayer dans quelques minutes.";
-    }
-    if (status === 422 || status === 413) {
-      return "Certaines informations semblent incorrectes. Vérifiez votre email et réessayez.";
-    }
-    return "Votre demande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez.";
-  }
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (submitting) return;
-    setError(null);
     setSubmitting(true);
+    setError(null);
 
     try {
       let adUserDataConsent = "UNSPECIFIED";
       try {
         const choice = window.localStorage.getItem("gc-revenue-consent-v1");
         adUserDataConsent =
-          choice === "accepted"
-            ? "GRANTED"
-            : choice === "refused"
-              ? "DENIED"
-              : "UNSPECIFIED";
-      } catch {
-        // Consent storage may be unavailable; keep it unspecified.
-      }
+          choice === "accepted" ? "GRANTED" : choice === "refused" ? "DENIED" : "UNSPECIFIED";
+      } catch {}
+
+      const summaryReport = lastReport.current ?? quickReport;
 
       const res = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          secteur: withPrecision(data.secteur, secteurAutre),
-          objectif: withPrecision(data.objectif, objectifAutre),
-          // Only attached when the background analysis already resolved —
-          // never awaited, so a slow diagnostic can never delay this submit.
-          ...(lastReport.current ? { reportSummary: toEmailSummary(lastReport.current) } : {}),
+          ...(summaryReport ? { reportSummary: toEmailSummary(summaryReport) } : {}),
           utmSource: attribution.source,
           utmMedium: attribution.medium,
           utmCampaign: attribution.campaign,
@@ -292,13 +289,12 @@ export function AuditFunnel() {
         return;
       }
 
-      const responseBody = await res
-        .json()
-        .catch(() => ({ accepted: true })) as { accepted?: boolean };
+      const responseBody = (await res.json().catch(() => ({ accepted: true }))) as {
+        accepted?: boolean;
+      };
 
       if (responseBody.accepted === false) {
-        setSubmitted(true);
-        setSubmitting(false);
+        setStage("done");
         return;
       }
 
@@ -311,415 +307,367 @@ export function AuditFunnel() {
         secteur: data.secteur,
         objectif: data.objectif,
       });
-      setSubmitted(true);
-      setSubmitting(false);
 
-      // The lead is captured — everything past this point is best-effort
-      // polish on top of a submission that has already succeeded.
-      setFinalizing(true);
-      const report = await resolveReport();
-      setFinalReport(report);
-      setFinalizing(false);
+      const report = await resolveBestReport();
 
       try {
         sessionStorage.setItem(
           "gc_audit_result",
           JSON.stringify({
             report,
-            lead: { nom: data.nom, email: data.email, telephone: data.telephone, adUserDataConsent },
+            lead: {
+              nom: data.nom,
+              email: data.email,
+              telephone: data.telephone,
+              adUserDataConsent,
+            },
             entreprise: data.entreprise,
             attribution,
           })
         );
         sessionStorage.removeItem("gc_google_ads_lead_sent");
         sessionStorage.setItem("gc_google_ads_conversion_pending", "1");
-      } catch {
-        // A blocked sessionStorage must never affect a successfully captured lead.
-      }
+      } catch {}
 
       window.location.assign("/audit/merci");
-      return;
     } catch {
-      setError(
-        "Votre demande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez."
-      );
+      setError("La demande n'a pas pu être envoyée. Réessayez dans quelques instants.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (submitted) {
-    if (finalReport) {
-      return (
-        <AuditReport
-          report={finalReport}
-          lead={{ nom: data.nom, email: data.email }}
-          attribution={attribution}
-        />
-      );
-    }
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto max-w-lg text-center"
-      >
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[var(--color-accent)]">
-          <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
-        </span>
-        <h2 className="font-display mt-8 text-3xl font-semibold tracking-tight sm:text-4xl">
-          {finalizing ? "Finalisation de votre diagnostic…" : "Votre analyse est en préparation."}
-        </h2>
-        <p className="mt-5 text-[15px] leading-relaxed text-[var(--color-muted)]">
-          Nous revenons vers vous par email avec les points prioritaires
-          qui peuvent freiner les demandes de {data.entreprise || "votre entreprise"}.
-        </p>
-        <div className="mt-10 flex flex-col items-center gap-4">
-          <Button
-            href={buildCalendlyUrl({ nom: data.nom, email: data.email }, attribution)}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="primary"
-            trackEvent="booking_started"
-            trackPayload={{ location: "audit_confirmation", source: "capable_audit" }}
-          >
-            Parler de mon acquisition →
-          </Button>
-          <Button href="/" variant="secondary">
-            Retour à l&apos;accueil
-          </Button>
-        </div>
-        <p className="mt-5 text-xs leading-relaxed text-[var(--color-muted)]">
-          Vous pouvez réserver dès maintenant : nous préparerons l&apos;échange à partir des informations déjà transmises.
-        </p>
-      </motion.div>
-    );
-  }
+  const previewFinding = bestPreviewFinding(quickReport);
+  const previewCount = quickReport?.topLeaks.length ?? 0;
 
   return (
     <div className="mx-auto max-w-xl">
-      <div className="mb-10">
-        <div
-          className="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-[0.2em] text-[var(--color-muted)]"
-          aria-live="polite"
-        >
-          <span>Étape {step} / {TOTAL_STEPS}</span>
-        </div>
-        <div
-          className="h-[3px] w-full overflow-hidden rounded-full bg-[var(--color-border)]"
-          role="progressbar"
-          aria-valuenow={step}
-          aria-valuemin={1}
-          aria-valuemax={TOTAL_STEPS}
-        >
-          <motion.div
-            className="h-full rounded-full bg-[var(--color-accent)]"
-            animate={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          />
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        {/* Hidden from people and assistive tech; bots fill it and get dropped. */}
-        <div aria-hidden className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden">
-          <label htmlFor={HONEYPOT_FIELD}>Ne pas remplir</label>
-          <input
-            id={HONEYPOT_FIELD}
-            name={HONEYPOT_FIELD}
-            type="text"
-            tabIndex={-1}
-            autoComplete="off"
-            value={honeypot}
-            onChange={(e) => setHoneypot(e.target.value)}
-          />
-        </div>
-
-        <AnimatePresence mode="wait">
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+      <AnimatePresence mode="wait">
+        {stage === "site" && (
+          <motion.form
+            key="site"
+            onSubmit={startQuickScan}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.35 }}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
                 Votre présence en ligne
-              </h2>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Votre site, votre fiche Google ou votre page principale si vous n&apos;avez pas encore de site.
               </p>
-              <label htmlFor={SITE_URL_FIELD_ID} className="sr-only">
-                Votre site
-              </label>
-              <input
-                id={SITE_URL_FIELD_ID}
-                name="siteUrl"
-                autoFocus
-                type="text"
-                inputMode="url"
-                maxLength={FIELD_LIMITS.siteUrl}
-                placeholder="https://votre-entreprise.fr"
-                className={`${inputClass()} mt-6`}
-                value={data.siteUrl}
-                onChange={(e) => update("siteUrl", e.target.value)}
-                onKeyDown={(e) => {
-                  // A form with a single text field submits implicitly on
-                  // Enter even with no visible submit button — intercept it
-                  // so Enter advances the wizard instead of submitting.
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    goNext();
-                  }
-                }}
-              />
-            </motion.div>
-          )}
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                Analyse gratuite
+              </span>
+            </div>
 
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            <label htmlFor={SITE_URL_FIELD_ID} className="sr-only">Votre site</label>
+            <input
+              id={SITE_URL_FIELD_ID}
+              name="siteUrl"
+              autoFocus
+              type="text"
+              inputMode="url"
+              maxLength={FIELD_LIMITS.siteUrl}
+              placeholder="votre-entreprise.fr"
+              className={inputClass()}
+              value={data.siteUrl}
+              onChange={(e) => update("siteUrl", e.target.value)}
+            />
+
+            <button
+              type="submit"
+              disabled={data.siteUrl.trim().length < 4}
+              className="mt-3 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--color-text)] px-7 text-base font-semibold text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-35"
             >
-              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-                Votre activité
-              </h2>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Quel est votre métier principal ?
-              </p>
-              <div
-                role="group"
-                aria-label="Secteur d'activité"
-                className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3"
-              >
-                {TRADE_OPTIONS.map((option) => (
-                  <button
-                    type="button"
-                    key={option}
-                    aria-pressed={data.secteur === option}
-                    onClick={() => update("secteur", option)}
-                    className={`rounded-xl border px-4 py-3 text-sm transition-colors duration-200 ${
-                      data.secteur === option
-                        ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-                        : "border-[var(--color-border-strong)] text-[var(--color-text)] hover:border-[var(--color-accent)]"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
+              Voir mes opportunités →
+            </button>
 
-              {data.secteur === OTHER_OPTION && (
-                <div className="mt-4">
-                  <label htmlFor="audit-secteur-autre" className="sr-only">
-                    Précisez votre métier
-                  </label>
-                  <input
-                    id="audit-secteur-autre"
-                    name="secteurAutre"
-                    autoFocus
-                    type="text"
-                    maxLength={PRECISION_MAX_LENGTH}
-                    placeholder="Ex. carreleur, serrurier, pisciniste…"
-                    className={inputClass()}
-                    value={secteurAutre}
-                    onChange={(e) => setSecteurAutre(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        goNext();
-                      }
-                    }}
-                  />
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-                Votre objectif
-              </h2>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Qu&apos;est-ce qui ferait le plus de différence pour votre activité aujourd&apos;hui ?
-              </p>
-              <div role="group" aria-label="Objectif principal" className="mt-6 flex flex-col gap-3">
-                {OBJECTIVES.map((option) => (
-                  <button
-                    type="button"
-                    key={option}
-                    aria-pressed={data.objectif === option}
-                    onClick={() => update("objectif", option)}
-                    className={`rounded-xl border px-5 py-4 text-left text-sm transition-colors duration-200 ${
-                      data.objectif === option
-                        ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-                        : "border-[var(--color-border-strong)] text-[var(--color-text)] hover:border-[var(--color-accent)]"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-
-              {data.objectif === OTHER_OPTION && (
-                <div className="mt-4">
-                  <label htmlFor="audit-objectif-autre" className="sr-only">
-                    Précisez votre objectif
-                  </label>
-                  <input
-                    id="audit-objectif-autre"
-                    name="objectifAutre"
-                    autoFocus
-                    type="text"
-                    maxLength={PRECISION_MAX_LENGTH}
-                    placeholder="Précisez votre objectif"
-                    className={inputClass()}
-                    value={objectifAutre}
-                    onChange={(e) => setObjectifAutre(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        goNext();
-                      }
-                    }}
-                  />
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {step === 4 && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-                Où vous envoyer l&apos;audit ?
-              </h2>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">
-                On garde uniquement ce qu&apos;il faut pour vous répondre et vous rappeler si nécessaire.
-              </p>
-              <div className="mt-6 flex flex-col gap-4">
-                <label htmlFor="audit-nom" className="sr-only">
-                  Nom complet
-                </label>
-                <input
-                  id="audit-nom"
-                  name="nom"
-                  required
-                  type="text"
-                  maxLength={FIELD_LIMITS.nom}
-                  autoComplete="name"
-                  placeholder="Nom complet"
-                  className={inputClass()}
-                  value={data.nom}
-                  onChange={(e) => update("nom", e.target.value)}
-                />
-                <label htmlFor="audit-entreprise" className="sr-only">
-                  Entreprise
-                </label>
-                <input
-                  id="audit-entreprise"
-                  name="entreprise"
-                  type="text"
-                  maxLength={FIELD_LIMITS.entreprise}
-                  autoComplete="organization"
-                  placeholder="Entreprise"
-                  className={inputClass()}
-                  value={data.entreprise}
-                  onChange={(e) => update("entreprise", e.target.value)}
-                />
-                <label htmlFor="audit-email" className="sr-only">
-                  Email
-                </label>
-                <input
-                  id="audit-email"
-                  name="email"
-                  required
-                  type="email"
-                  maxLength={FIELD_LIMITS.email}
-                  autoComplete="email"
-                  placeholder="Email"
-                  className={inputClass()}
-                  value={data.email}
-                  onChange={(e) => update("email", e.target.value)}
-                />
-                <label htmlFor="audit-telephone" className="sr-only">
-                  Téléphone
-                </label>
-                <input
-                  id="audit-telephone"
-                  name="telephone"
-                  type="tel"
-                  maxLength={FIELD_LIMITS.telephone}
-                  autoComplete="tel"
-                  placeholder="Téléphone"
-                  className={inputClass()}
-                  value={data.telephone}
-                  onChange={(e) => update("telephone", e.target.value)}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {error && (
-          <p className="mt-4 text-sm text-red-400" role="alert">
-            {error}
-          </p>
+            <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
+              Aucun email demandé pour la première lecture.
+            </p>
+          </motion.form>
         )}
 
-        <div className="mt-10 flex items-center justify-between">
-          {step > 1 ? (
-            <button
-              type="button"
-              onClick={goBack}
-              className="text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)]"
-            >
-              ← Retour
-            </button>
-          ) : (
-            <span />
-          )}
+        {stage === "preview" && (
+          <motion.div
+            key="preview"
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -18 }}
+            transition={{ duration: 0.35 }}
+          >
+            {previewStatus === "loading" ? (
+              <div className="py-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-display text-xl font-semibold">Analyse en cours…</p>
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
+                </div>
+                <p className="mt-2 text-sm text-[var(--color-muted)]">
+                  On lit ce qu’un prospect voit avant de vous contacter.
+                </p>
 
-          {step < TOTAL_STEPS ? (
+                <div className="mt-7 space-y-3">
+                  {["Visibilité locale", "Confiance & preuves", "Parcours vers le devis"].map((label, index) => (
+                    <motion.div
+                      key={label}
+                      initial={{ opacity: 0.3 }}
+                      animate={{ opacity: [0.35, 1, 0.35] }}
+                      transition={{ duration: 1.4, repeat: Infinity, delay: index * 0.25 }}
+                      className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] px-4 py-3"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
+                      <span className="text-sm">{label}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            ) : previewStatus === "ready" ? (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+                  Première lecture terminée
+                </p>
+
+                {previewFinding ? (
+                  <div className="mt-4 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-xs text-[var(--color-muted)]">
+                        {previewFinding.confidence === "observed" ? "Observé sur votre site" : "Signal détecté"}
+                      </span>
+                      {previewCount > 1 && (
+                        <span className="text-xs font-semibold text-[var(--color-accent)]">
+                          + {previewCount - 1} autre{previewCount > 2 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+                      {previewFinding.title}
+                    </h2>
+                    <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+                      {previewFinding.statement}
+                    </p>
+                    {previewFinding.evidence[0] && (
+                      <p className="mt-4 border-t border-[var(--color-border)] pt-3 text-xs leading-relaxed text-[var(--color-text)]">
+                        {previewFinding.evidence[0]}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                    <h2 className="font-display text-xl font-semibold">Votre base a été analysée.</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+                      On a besoin de deux réponses rapides pour prioriser les leviers les plus utiles à votre activité.
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStage("trade");
+                    track("audit_step_2");
+                  }}
+                  className="mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--color-text)] px-7 text-base font-semibold text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)]"
+                >
+                  Affiner mon plan →
+                </button>
+                <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
+                  2 choix rapides · aucun clavier
+                </p>
+              </div>
+            ) : (
+              <div>
+                <h2 className="font-display text-2xl font-semibold">On affine autrement.</h2>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+                  La lecture automatique n’a pas pu récupérer assez d’éléments. Deux réponses suffisent pour préparer le diagnostic.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStage("trade")}
+                  className="mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--color-text)] px-7 text-base font-semibold text-[var(--color-bg)]"
+                >
+                  Continuer →
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {stage === "trade" && (
+          <motion.div
+            key="trade"
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -18 }}
+            transition={{ duration: 0.35 }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">1 / 2</p>
+            <h2 className="font-display mt-2 text-2xl font-semibold">Quel est votre métier ?</h2>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              {TRADE_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => chooseTrade(option)}
+                  className={`rounded-xl border px-3 py-3 text-sm transition-all ${data.secteur === option ? "border-[var(--color-accent)] text-[var(--color-accent)]" : "border-[var(--color-border-strong)] hover:border-[var(--color-accent)]"}`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+
+            {data.secteur === "Autre" && (
+              <div className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  value={otherTrade}
+                  onChange={(e) => setOtherTrade(e.target.value)}
+                  placeholder="Votre métier"
+                  className={inputClass()}
+                />
+                <button type="button" onClick={confirmOtherTrade} className="rounded-xl bg-[var(--color-text)] px-4 text-sm font-semibold text-[var(--color-bg)]">
+                  OK
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {stage === "goal" && (
+          <motion.div
+            key="goal"
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -18 }}
+            transition={{ duration: 0.35 }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">2 / 2</p>
+            <h2 className="font-display mt-2 text-2xl font-semibold">Votre priorité aujourd’hui ?</h2>
+            <div className="mt-5 flex flex-col gap-2">
+              {OBJECTIVES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => chooseGoal(option)}
+                  className={`rounded-xl border px-4 py-4 text-left text-sm transition-all ${data.objectif === option ? "border-[var(--color-accent)] text-[var(--color-accent)]" : "border-[var(--color-border-strong)] hover:border-[var(--color-accent)]"}`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+
+            {data.objectif === "Autre" && (
+              <div className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  value={otherGoal}
+                  onChange={(e) => setOtherGoal(e.target.value)}
+                  placeholder="Votre objectif"
+                  className={inputClass()}
+                />
+                <button type="button" onClick={confirmOtherGoal} className="rounded-xl bg-[var(--color-text)] px-4 text-sm font-semibold text-[var(--color-bg)]">
+                  OK
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {stage === "contact" && (
+          <motion.form
+            key="contact"
+            onSubmit={handleSubmit}
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -18 }}
+            transition={{ duration: 0.35 }}
+          >
+            <div aria-hidden className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden">
+              <input
+                name={HONEYPOT_FIELD}
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+                  Votre plan
+                </p>
+                <h2 className="font-display mt-2 text-2xl font-semibold">
+                  {refinedLoading ? "On finalise vos priorités…" : "Votre plan est prêt."}
+                </h2>
+              </div>
+              <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
+            </div>
+
+            <div className="mt-5 grid gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-sm">
+              <span>01 · Ce qui vous freine</span>
+              <span>02 · Ce qu’il faut corriger en premier</span>
+              <span>03 · Vos prochaines actions</span>
+            </div>
+
+            <p className="mt-5 text-sm text-[var(--color-muted)]">
+              Où vous envoyer le diagnostic complet ?
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <input
+                required
+                type="email"
+                maxLength={FIELD_LIMITS.email}
+                autoComplete="email"
+                placeholder="Votre email"
+                className={inputClass()}
+                value={data.email}
+                onChange={(e) => update("email", e.target.value)}
+              />
+              <input
+                type="text"
+                maxLength={FIELD_LIMITS.nom}
+                autoComplete="name"
+                placeholder="Votre prénom (optionnel)"
+                className={inputClass()}
+                value={data.nom}
+                onChange={(e) => update("nom", e.target.value)}
+              />
+              <input
+                type="tel"
+                maxLength={FIELD_LIMITS.telephone}
+                autoComplete="tel"
+                placeholder="Téléphone si vous souhaitez être rappelé (optionnel)"
+                className={inputClass()}
+                value={data.telephone}
+                onChange={(e) => update("telephone", e.target.value)}
+              />
+            </div>
+
+            {error && <p className="mt-3 text-sm text-red-400" role="alert">{error}</p>}
+
             <button
-              key="continue-btn"
-              type="button"
-              onClick={goNext}
-              disabled={!canAdvance()}
-              className="inline-flex items-center justify-center rounded-full bg-[var(--color-text)] px-7 py-3.5 text-sm font-medium text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Continuer →
-            </button>
-          ) : (
-            <button
-              key="submit-btn"
               type="submit"
-              disabled={submitting}
-              className="inline-flex items-center justify-center rounded-full bg-[var(--color-text)] px-7 py-3.5 text-sm font-medium text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={submitting || !data.email.includes("@")}
+              className="mt-4 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--color-text)] px-7 text-base font-semibold text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {submitting ? "Envoi en cours…" : "Recevoir mon audit gratuit →"}
+              {submitting ? "Préparation de votre plan…" : "Afficher mon plan →"}
             </button>
-          )}
-        </div>
-      </form>
+
+            <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
+              Gratuit · Sans engagement · Pas de spam
+            </p>
+          </motion.form>
+        )}
+
+        {stage === "done" && (
+          <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
+            <h2 className="font-display text-2xl font-semibold">C’est bon.</h2>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
