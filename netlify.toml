@@ -1,19 +1,26 @@
 [build]
   functions = "netlify/functions"
+  # Ce projet Netlify sert l'écosystème historique à la racine.
+  # Les changements limités à site-vitrine/ concernent gc-agence et ne
+  # doivent plus déclencher un second déploiement production ici.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)site-vitrine/**'"
 
 # Système de notifications — fonctions programmées (Netlify Scheduled
 # Functions). Les fonctions suffixées "-background" bénéficient d'un budget
 # d'exécution de 15 minutes (au lieu de 10s) : nécessaire pour parcourir
 # l'ensemble des vendeurs/leads à chaque passage. Voir
 # docs/notifications-system.md pour le détail de chaque job.
+# Réduction volontaire de fréquence : le plan Personal Netlify partage ses
+# crédits entre tous les projets. Ces jobs restent actifs, mais ne tournent
+# plus plusieurs centaines de fois par jour.
 [functions."notify-cron-coach-background"]
-  schedule = "*/30 * * * *"
+  schedule = "0 */2 * * *"
 [functions."notify-cron-leads-background"]
-  schedule = "*/15 * * * *"
+  schedule = "15 * * * *"
 [functions."notify-cron-crm-scan-background"]
-  schedule = "*/10 * * * *"
+  schedule = "25 * * * *"
 [functions."notify-cron-healthcheck"]
-  schedule = "*/10 * * * *"
+  schedule = "45 * * * *"
 [functions."notify-cron-compliance-expiry"]
   schedule = "0 7 * * *"
 # Gains ambassadeurs : passage quotidien, idempotent côté SQL (voir la
