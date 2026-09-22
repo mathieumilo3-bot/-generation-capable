@@ -301,7 +301,7 @@ export function AuditFunnel() {
           "gc_audit_result",
           JSON.stringify({
             report,
-            lead: { nom: data.nom, email: data.email },
+            lead: { nom: data.nom, email: data.email, telephone: data.telephone, adUserDataConsent },
             entreprise: data.entreprise,
             attribution,
           })
