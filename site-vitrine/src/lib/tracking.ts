@@ -33,6 +33,7 @@ type EventPayload = Record<string, string | number | boolean | undefined>;
 declare global {
   interface Window {
     dataLayer?: Record<string, unknown>[];
+    gtag?: (...args: unknown[]) => void;
   }
 }
 
@@ -40,4 +41,35 @@ export function track(event: TrackingEvent, payload: EventPayload = {}): void {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event, ...payload, timestamp: Date.now() });
+}
+
+
+const GOOGLE_ADS_LEAD_DESTINATION = "AW-18466478982/jQ8BCLOau4AdEIa3wOVE";
+
+export function trackGoogleAdsLeadConversion(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    if (sessionStorage.getItem("gc_google_ads_lead_sent") === "1") return;
+  } catch {
+    // Keep going: a blocked sessionStorage must not block measurement.
+  }
+
+  if (typeof window.gtag === "function") {
+    window.gtag("event", "conversion", {
+      send_to: GOOGLE_ADS_LEAD_DESTINATION,
+    });
+  } else {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: "conversion",
+      send_to: GOOGLE_ADS_LEAD_DESTINATION,
+    });
+  }
+
+  try {
+    sessionStorage.setItem("gc_google_ads_lead_sent", "1");
+  } catch {
+    // Non-blocking.
+  }
 }
