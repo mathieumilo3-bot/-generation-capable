@@ -15,28 +15,28 @@ const VARIANTS: Record<string, HeroVariant> = {
     title: "Attirez plus de clients locaux",
     accent: "avec Google et votre site.",
     body:
-      "Entrez votre site. En quelques secondes, on vous montre un premier point concret qui peut freiner vos demandes, puis vos 3 priorités pour être plus visible, plus crédible et plus contacté.",
+      "Entrez votre site. On vous montre ce qui peut freiner vos demandes, puis les priorités à corriger pour gagner en visibilité et en contacts.",
   },
   chantiers: {
     badge: "Pour artisans & entreprises du bâtiment",
     title: "Obtenez plus de chantiers",
     accent: "avec Google et votre site.",
     body:
-      "Entrez votre site. On vous montre où des prospects peuvent vous échapper aujourd’hui, puis les 3 actions à traiter en priorité.",
+      "Entrez votre site. Voyez où des prospects peuvent vous échapper, puis les priorités à corriger en premier.",
   },
   site: {
     badge: "Diagnostic site artisan · Gratuit",
     title: "Faites de votre site",
     accent: "un vrai apporteur de clients.",
     body:
-      "Entrez votre site. On vous montre ce qui peut bloquer la confiance, les appels et les demandes, puis les 3 corrections prioritaires.",
+      "Entrez votre site. Voyez ce qui peut freiner la confiance, les appels et les demandes, puis quoi corriger en priorité.",
   },
   seo: {
     badge: "Diagnostic visibilité Google · Gratuit",
     title: "Faites-vous trouver",
     accent: "par plus de clients dans votre zone.",
     body:
-      "Entrez votre site. On vérifie vos signaux locaux et on vous montre les 3 priorités pour améliorer votre visibilité et vos prises de contact.",
+      "Entrez votre site. On vérifie vos signaux locaux et on vous montre les priorités pour gagner en visibilité et en prises de contact.",
   },
 };
 
@@ -58,28 +58,28 @@ export function AuditHero() {
 
   return (
     <div className="mx-auto max-w-4xl text-center">
-      <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)] sm:text-xs">
-        <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)] shadow-[0_0_14px_var(--color-accent)]" />
+      <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-[var(--color-accent)]/22 bg-white/[0.025] px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)] sm:px-4 sm:py-2 sm:text-[11px]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)] shadow-[0_0_10px_rgba(232,200,106,0.35)]" />
         {variant.badge}
       </div>
 
-      <h1 className="font-display mx-auto mt-5 max-w-4xl text-balance text-[2.65rem] font-semibold leading-[0.95] tracking-[-0.055em] sm:text-6xl lg:text-[4.7rem]">
+      <h1 className="font-display mx-auto mt-4 max-w-4xl text-balance text-[2.45rem] font-semibold leading-[0.98] tracking-[-0.05em] sm:mt-5 sm:text-6xl lg:text-[4.7rem]">
         {variant.title}
         <br />
         <span className="gold-text">{variant.accent}</span>
       </h1>
 
-      <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-lg">
+      <p className="mx-auto mt-4 max-w-[34rem] text-[14px] leading-[1.62] text-[var(--color-muted)] sm:mt-5 sm:text-[17px]">
         {variant.body}
       </p>
 
-      <div className="mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-medium text-[var(--color-muted)]">
-        <span>✓ 1er résultat sans email</span>
-        <span className="text-[var(--color-border-strong)]">•</span>
-        <span>✓ 3 priorités personnalisées</span>
-        <span className="text-[var(--color-border-strong)]">•</span>
-        <span>✓ Gratuit</span>
-      </div>
+      <p className="mx-auto mt-4 max-w-xl text-[10.5px] font-medium tracking-[0.01em] text-[var(--color-muted)] sm:mt-5 sm:text-[11px]">
+        1er résultat immédiat
+        <span className="mx-2 text-white/20">·</span>
+        Sans email
+        <span className="mx-2 text-white/20">·</span>
+        Gratuit
+      </p>
     </div>
   );
 }
