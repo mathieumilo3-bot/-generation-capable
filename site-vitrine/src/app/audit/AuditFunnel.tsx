@@ -267,6 +267,16 @@ export function AuditFunnel() {
         return;
       }
 
+      const responseBody = await res
+        .json()
+        .catch(() => ({ accepted: true })) as { accepted?: boolean };
+
+      if (responseBody.accepted === false) {
+        setSubmitted(true);
+        setSubmitting(false);
+        return;
+      }
+
       track("audit_completed");
       track("form_completed");
       track("generate_lead", {
@@ -296,6 +306,8 @@ export function AuditFunnel() {
             attribution,
           })
         );
+        sessionStorage.removeItem("gc_google_ads_lead_sent");
+        sessionStorage.setItem("gc_google_ads_conversion_pending", "1");
       } catch {
         // A blocked sessionStorage must never affect a successfully captured lead.
       }
