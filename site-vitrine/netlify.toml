@@ -5,6 +5,10 @@
 [build]
   command = "npm run build"
   publish = ".next"
+  # Monorepo : ne reconstruire GC Agence que si son propre dossier change.
+  # Compatible que Netlify exécute cette commande depuis la racine du dépôt
+  # ou depuis site-vitrine comme base directory.
+  ignore = "if [ -d site-vitrine ]; then git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- site-vitrine; else git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- .; fi"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
