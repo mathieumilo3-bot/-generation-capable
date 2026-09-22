@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hero } from "@/components/sections/Hero";
 import { InstantCheck } from "@/components/sections/InstantCheck";
 import { BeforeAfterShowcase } from "@/components/sections/BeforeAfterShowcase";
+import { ReviewsSection } from "@/components/sections/ReviewsSection";
 import { SystemArchitecture } from "@/components/sections/SystemArchitecture";
 import { Systems } from "@/components/sections/Systems";
 import { FAQ } from "@/components/sections/FAQ";
@@ -28,10 +29,9 @@ export default function Home() {
       />
       <LandingView />
 
-      {/* One commercial argument:
-          promise → tangible proof → diagnostic → mechanism → offer → objections → action. */}
       <Hero />
       <BeforeAfterShowcase />
+      <ReviewsSection />
       <InstantCheck />
       <SystemArchitecture />
       <Systems />
