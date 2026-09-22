@@ -76,17 +76,18 @@ export function AuditThankYouClient() {
           target="_blank"
           rel="noopener noreferrer"
           variant="primary"
+          className="audit-primary-cta min-h-14 px-8 text-base"
           trackEvent="booking_started"
           trackPayload={{ location: "audit_thank_you", source: "capable_audit" }}
         >
-          Réserver mon bilan de 30 min →
+          Construire mon plan avec GC →
         </Button>
         <Button href="/" variant="secondary">
           Retour à l’accueil
         </Button>
       </div>
       <p className="mt-5 text-xs text-[var(--color-muted)]">
-        Audit envoyé · Sans engagement
+        30 min · On part de votre audit · Sans engagement
       </p>
     </div>
   );
