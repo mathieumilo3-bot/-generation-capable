@@ -11,32 +11,32 @@ type HeroVariant = {
 
 const VARIANTS: Record<string, HeroVariant> = {
   default: {
-    badge: "Diagnostic offert · Artisans & BTP",
-    title: "Soyez trouvé.",
-    accent: "Soyez choisi.",
+    badge: "Pour artisans & entreprises du bâtiment",
+    title: "Attirez plus de clients locaux",
+    accent: "avec Google et votre site.",
     body:
-      "Votre présence en ligne doit faire plus que vous montrer. Elle doit donner envie de vous appeler. Entrez votre site : on vous montre gratuitement ce qui peut vous aider à gagner plus de clients et de chantiers.",
+      "Entrez votre site. En quelques secondes, on vous montre un premier point concret qui peut freiner vos demandes, puis vos 3 priorités pour être plus visible, plus crédible et plus contacté.",
   },
   chantiers: {
-    badge: "Diagnostic offert · Artisans & BTP",
-    title: "Attirez l’attention.",
-    accent: "Décrochez plus de chantiers.",
+    badge: "Pour artisans & entreprises du bâtiment",
+    title: "Obtenez plus de chantiers",
+    accent: "avec Google et votre site.",
     body:
-      "Entrez votre site. On repère ce qui peut freiner un prospect avant l’appel et on vous montre une première opportunité concrète immédiatement.",
+      "Entrez votre site. On vous montre où des prospects peuvent vous échapper aujourd’hui, puis les 3 actions à traiter en priorité.",
   },
   site: {
-    badge: "Diagnostic offert · Site artisan",
-    title: "Votre site doit vendre",
-    accent: "votre savoir-faire.",
+    badge: "Diagnostic site artisan · Gratuit",
+    title: "Faites de votre site",
+    accent: "un vrai apporteur de clients.",
     body:
-      "Pas juste l’afficher. Entrez votre site : on vous montre ce qui peut rassurer plus vite, déclencher plus d’appels et mieux convertir votre visibilité.",
+      "Entrez votre site. On vous montre ce qui peut bloquer la confiance, les appels et les demandes, puis les 3 corrections prioritaires.",
   },
   seo: {
-    badge: "Diagnostic offert · Visibilité Google",
-    title: "Soyez trouvé au bon moment.",
-    accent: "Donnez envie de vous appeler.",
+    badge: "Diagnostic visibilité Google · Gratuit",
+    title: "Faites-vous trouver",
+    accent: "par plus de clients dans votre zone.",
     body:
-      "Entrez votre site. On analyse les signaux qui peuvent vous rendre plus visible et plus convaincant auprès des clients de votre zone.",
+      "Entrez votre site. On vérifie vos signaux locaux et on vous montre les 3 priorités pour améliorer votre visibilité et vos prises de contact.",
   },
 };
 
@@ -63,7 +63,7 @@ export function AuditHero() {
         {variant.badge}
       </div>
 
-      <h1 className="font-display mx-auto mt-5 max-w-4xl text-balance text-[2.75rem] font-semibold leading-[0.94] tracking-[-0.055em] sm:text-6xl lg:text-[4.8rem]">
+      <h1 className="font-display mx-auto mt-5 max-w-4xl text-balance text-[2.65rem] font-semibold leading-[0.95] tracking-[-0.055em] sm:text-6xl lg:text-[4.7rem]">
         {variant.title}
         <br />
         <span className="gold-text">{variant.accent}</span>
@@ -74,11 +74,11 @@ export function AuditHero() {
       </p>
 
       <div className="mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-medium text-[var(--color-muted)]">
-        <span>✓ Analyse réelle</span>
+        <span>✓ 1er résultat sans email</span>
         <span className="text-[var(--color-border-strong)]">•</span>
-        <span>✓ Premier résultat sans email</span>
+        <span>✓ 3 priorités personnalisées</span>
         <span className="text-[var(--color-border-strong)]">•</span>
-        <span>✓ Sans engagement</span>
+        <span>✓ Gratuit</span>
       </div>
     </div>
   );
