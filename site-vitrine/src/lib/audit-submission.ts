@@ -13,6 +13,9 @@ export type AuditSubmission = {
   utmCampaign?: string;
   utmContent?: string;
   utmTerm?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
 };
 
 export type ParseResult =
@@ -37,6 +40,9 @@ export const FIELD_LIMITS: Record<keyof AuditSubmission, number> = {
   utmCampaign: 120,
   utmContent: 120,
   utmTerm: 120,
+  gclid: 220,
+  gbraid: 220,
+  wbraid: 220,
 };
 
 /** Name of the hidden field real visitors never fill — bots usually do. */
@@ -104,6 +110,9 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
     utmCampaign: readString(source, "utmCampaign"),
     utmContent: readString(source, "utmContent"),
     utmTerm: readString(source, "utmTerm"),
+    gclid: readString(source, "gclid"),
+    gbraid: readString(source, "gbraid"),
+    wbraid: readString(source, "wbraid"),
   };
 
   for (const [field, limit] of Object.entries(FIELD_LIMITS)) {
@@ -183,6 +192,7 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
     ["Téléphone", data.telephone || "—"],
     ["Source", data.utmSource || "Direct / non attribué"],
     ["Campagne", data.utmCampaign || "—"],
+    ["Google Click ID", data.gclid || data.gbraid || data.wbraid || "—"],
   ];
 
   const subject = sanitizeHeaderValue(
