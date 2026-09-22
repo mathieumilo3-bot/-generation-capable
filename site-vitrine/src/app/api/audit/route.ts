@@ -8,7 +8,7 @@ import {
   type AuditSubmission,
   type ReportEmailSummary,
 } from "@/lib/audit-submission";
-import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
+import { clientIpFrom, rateLimit } from "@/lib/rate-limit";\nimport { buildLeadActionLinks, createLeadMeta, upsertLeadContact, type LeadMeta } from "@/lib/lead-tracking";
 
 /**
  * Reject oversized bodies before parsing them. A real submission is < 1 KB;
@@ -39,7 +39,26 @@ async function sendEmails(
 ) {
   const resend = new Resend(apiKey);
   const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
-  const notification = buildNotificationEmail(submission, reportSummary);
+  const baseNotification = buildNotificationEmail(submission, reportSummary);
+  const actions = buildLeadActionLinks(submission.email, leadMeta.leadId);
+  const actionText = [
+    "",
+    "Qualifier ce lead :",
+    `Lead qualifié : ${actions.qualified}`,
+    `Rendez-vous pris : ${actions.booked}`,
+    `Client gagné : ${actions.client}`,
+  ].join("\\n");
+  const actionHtml = `<div style="margin-top:20px;padding-top:16px;border-top:1px solid #ddd;">
+    <p style="margin:0 0 10px;font-weight:700;">Qualifier ce lead</p>
+    <a href="${actions.qualified}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;margin:0 8px 8px 0;">Lead qualifié</a>
+    <a href="${actions.booked}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:9px 14px;border-radius:8px;margin:0 8px 8px 0;">RDV pris</a>
+    <a href="${actions.client}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:9px 14px;border-radius:8px;">Client gagné</a>
+  </div>`;
+  const notification = {
+    ...baseNotification,
+    text: baseNotification.text + actionText,
+    html: baseNotification.html.replace(/<\\/div>$/, `${actionHtml}</div>`),
+  };
 
   const sent = await withTimeout(
     resend.emails.send({
