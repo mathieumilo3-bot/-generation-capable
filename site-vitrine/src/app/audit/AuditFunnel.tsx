@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FIELD_LIMITS, HONEYPOT_FIELD } from "@/lib/audit-submission";
-import { track } from "@/lib/tracking";
+import { track, trackGoogleAdsLeadConversion } from "@/lib/tracking";
 import { DIMENSION_LABELS, type Finding, type Report } from "@/lib/audit-engine/types";
 import type { BookingAttribution } from "@/lib/booking";
 
@@ -149,6 +149,7 @@ export function AuditFunnel() {
     setError(null);
     setStage("preview");
     setPreviewStatus("loading");
+    track("audit_step_1");
     track("audit_analysis_started");
 
     try {
@@ -337,6 +338,15 @@ export function AuditFunnel() {
         sessionStorage.removeItem("gc_google_ads_lead_sent");
         sessionStorage.setItem("gc_google_ads_conversion_pending", "1");
       } catch {}
+
+      // Fire the Google Ads lead conversion immediately after the server has
+      // accepted the lead. The thank-you page keeps the existing pending-event
+      // fallback, while sessionStorage deduplication prevents a double count.
+      trackGoogleAdsLeadConversion({
+        email: data.email,
+        telephone: data.telephone,
+        adUserDataConsent,
+      });
 
       window.location.assign("/audit/merci");
     } catch {
