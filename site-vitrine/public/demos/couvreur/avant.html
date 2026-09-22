@@ -9,147 +9,207 @@
   <script>if(window.self!==window.top)document.documentElement.classList.add('is-embedded')</script>
   <style>
     *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{margin:0;background:#d6d6d6 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M0 8 8 0' stroke='%23ccc' stroke-width='.5'/%3E%3C/svg%3E");font-family:Arial,Helvetica,sans-serif;color:#333;font-size:14px;line-height:1.45}
+    html{scroll-behavior:auto}
+    body{margin:0;background:#cfcfcf url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cpath d='M0 10 10 0' stroke='%23c4c4c4' stroke-width='.7'/%3E%3C/svg%3E");font-family:Arial,Helvetica,sans-serif;color:#333;font-size:13px;line-height:1.45}
     a{color:inherit;text-decoration:none}
-    button,input,select,textarea{font:inherit}
-    .site{width:1040px;max-width:100%;margin:0 auto;background:#fff;box-shadow:0 0 16px rgba(0,0,0,.35)}
-    .topline{height:31px;padding:7px 18px;background:#efefef;border-bottom:1px solid #c9c9c9;color:#555;font-size:12px;text-align:right}
-    .masthead{height:110px;padding:18px 21px;background:linear-gradient(#fff,#ededed);display:flex;align-items:center;justify-content:space-between}
-    .logo{display:flex;align-items:center;gap:12px}
-    .logo-box{width:66px;height:66px;background:#0c4f80;border:4px double #fff;outline:1px solid #777;color:#ffd84b;font:bold 42px/58px Georgia;text-align:center}
-    .logo-name{font:bold 27px Georgia;color:#174f75;text-shadow:1px 1px #fff}
-    .logo-name small{display:block;margin-top:3px;font:11px Arial;color:#777;letter-spacing:.08em;text-transform:uppercase}
-    .phone{text-align:right;color:#555}
-    .phone b{display:block;color:#b32525;font-size:24px;text-shadow:1px 1px #fff}
-    .nav{min-height:45px;border-top:1px solid #0a3557;border-bottom:4px solid #e6bb22;background:linear-gradient(#1b6798,#0c416a);display:flex;padding-left:13px}
-    .nav a{padding:13px 18px;border-right:1px solid rgba(255,255,255,.18);border-left:1px solid rgba(0,0,0,.12);color:#fff;font-weight:bold;font-size:13px;text-shadow:1px 1px #17364b}
-    .nav a:hover,.nav a:first-child{background:#efc62d;color:#17364b;text-shadow:none}
-    .flash{padding:7px 16px;border-bottom:1px solid #c7c7c7;background:#f5f5f5;color:#a32121;font-weight:bold;font-size:12px}
-    .hero{position:relative;height:365px;overflow:hidden;border-bottom:5px solid #174f75}
-    .hero img{width:100%;height:100%;object-fit:cover;filter:saturate(.78) contrast(.92)}
-    .hero-panel{position:absolute;left:28px;top:32px;width:480px;padding:24px;background:rgba(255,255,255,.9);border:1px solid #777;box-shadow:4px 4px 0 rgba(0,0,0,.25)}
-    .hero-panel h1{margin:0 0 13px;color:#174f75;font:normal 31px/1.12 Georgia}
-    .hero-panel p{margin:0 0 17px;color:#555}
-    .old-btn{display:inline-block;margin-right:7px;padding:10px 16px;border:1px solid #936f00;border-radius:3px;background:linear-gradient(#ffe46a,#eab91c);box-shadow:inset 0 1px #fff;color:#17364b;font-weight:bold;text-shadow:1px 1px #fff;cursor:pointer}
-    .old-btn.blue{border-color:#0b3857;background:linear-gradient(#2778a9,#0d4c78);color:#fff;text-shadow:1px 1px #183548}
-    .service-strip{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #bbb;background:#eee}
-    .service{min-height:120px;padding:18px 13px;border-right:1px solid #c5c5c5;text-align:center}
-    .service:last-child{border:0}
-    .service-icon{width:44px;height:44px;margin:0 auto 8px;border-radius:50%;border:3px double #fff;outline:1px solid #888;background:#1c628e;color:#ffda3c;font:bold 22px/38px Georgia}
-    .service h2{margin:4px 0;color:#174f75;font-size:15px}
-    .service p{margin:0;color:#666;font-size:12px}
-    .content{display:grid;grid-template-columns:1fr 285px;gap:22px;padding:25px 22px 32px}
-    .main h2,.side h3{margin:0 0 13px;padding-bottom:7px;border-bottom:3px double #bdbdbd;color:#174f75;font-family:Georgia;font-weight:normal}
-    .main h2{font-size:25px}
-    .intro{font-size:15px;color:#555}
-    .jobs{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:20px}
-    .job{border:1px solid #bbb;background:linear-gradient(#fff,#eee);padding:13px}
-    .job h3{margin:0 0 7px;color:#a32020;font-size:15px}
-    .job ul{margin:0;padding-left:18px;color:#5d5d5d;font-size:12px}
-    .side-box{margin-bottom:17px;border:1px solid #a7a7a7;background:#f2f2f2;box-shadow:2px 2px 4px rgba(0,0,0,.14)}
-    .side-box h3{margin:0;padding:10px 12px;border:0;background:linear-gradient(#286f9d,#0e496f);color:#fff;font:bold 15px Arial;text-shadow:1px 1px #17384d}
-    .side-box>div{padding:13px}
-    .checklist{margin:0;padding-left:20px;font-size:12px;color:#555}
-    .news{border-bottom:1px dotted #aaa;padding:9px 0;font-size:12px}
-    .news:last-child{border:0}
-    .quote{padding:24px 22px 30px;border-top:5px solid #e3b91f;background:#e6e6e6}
-    .quote h2{margin:0 0 5px;color:#174f75;font:normal 25px Georgia}
-    .quote>p{margin:0 0 17px;color:#666}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-    .field{display:grid;gap:4px}
-    .field.full{grid-column:1/-1}
-    label{font-size:12px;font-weight:bold}
-    input,select,textarea{width:100%;padding:8px;border:1px solid #888;border-radius:0;background:#fff;box-shadow:inset 1px 1px 2px #ddd}
-    textarea{min-height:76px;resize:vertical}
-    .form-actions{margin-top:11px;text-align:right}
-    .form-status{display:none;margin-top:10px;padding:9px;border:1px solid #d3bd62;background:#fff8d7;color:#67520c;font-size:12px}
-    footer{padding:23px;background:#17445f;border-top:1px solid #072c43;color:#d5e0e6}
-    .footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:25px}
-    footer h3{margin:0 0 8px;color:#ffe05d;font-size:15px}
-    footer p,footer li{margin:3px 0;font-size:12px;color:#c3d0d8}
-    footer ul{margin:0;padding-left:17px}
-    .copy{margin-top:18px;padding-top:12px;border-top:1px solid #4c7085;color:#9fb0ba;font-size:11px;text-align:center}
-    .compare-switch{position:fixed;left:50%;bottom:18px;z-index:30;display:flex;gap:4px;padding:5px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(9,25,35,.92);box-shadow:0 14px 35px rgba(0,0,0,.28);transform:translateX(-50%)}
+    .site{width:1020px;max-width:100%;margin:0 auto;background:#fff;border-left:1px solid #999;border-right:1px solid #999;box-shadow:0 0 18px rgba(0,0,0,.4)}
+    .top{height:31px;padding:7px 15px;border-bottom:1px solid #c4c4c4;background:linear-gradient(#f8f8f8,#e4e4e4);color:#666;font-size:11px;text-align:right}
+    .top a{color:#315d7d;text-decoration:underline}
+    .head{min-height:105px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(#fff,#ededed)}
+    .brand{display:flex;align-items:center;gap:11px}
+    .crest{width:67px;height:67px;border:5px double #fff;outline:1px solid #6a6a6a;background:#1d5f8a;color:#f4d446;font:700 41px/57px Georgia;text-align:center;text-shadow:1px 1px #173d59}
+    .brandname{color:#1f587d;font:700 28px Georgia;text-shadow:1px 1px #fff}
+    .brandname span{display:block;margin-top:3px;color:#777;font:11px Arial;text-transform:uppercase;letter-spacing:.08em}
+    .contact{text-align:right;color:#666}
+    .contact strong{display:block;margin:2px 0;color:#a51d1d;font-size:24px;text-shadow:1px 1px #fff}
+    .contact em{font-style:normal;font-size:11px}
+    .nav{display:flex;min-height:46px;padding-left:8px;border-top:1px solid #0f3856;border-bottom:5px solid #dfb51b;background:linear-gradient(#236a99,#0d4168)}
+    .nav a{padding:13px 14px;border-left:1px solid rgba(0,0,0,.16);border-right:1px solid rgba(255,255,255,.15);color:#fff;font-weight:bold;text-shadow:1px 1px #1a3a4e}
+    .nav a:first-child{background:linear-gradient(#f5d454,#dbae16);color:#173b55;text-shadow:none}
+    .urgent{padding:7px 14px;border-bottom:1px solid #aaa;background:#fff9d7;color:#9d1f1f;font-weight:bold;font-size:11px}
+    .urgent b{color:#173f5b}
+    .page{padding:15px}
+    .hero-grid{display:grid;grid-template-columns:1fr 278px;gap:14px}
+    .hero{position:relative;height:315px;overflow:hidden;border:1px solid #8d8d8d;background:#ddd}
+    .hero img{width:100%;height:100%;object-fit:cover;filter:saturate(.75) contrast(.9)}
+    .hero-box{position:absolute;left:17px;bottom:18px;width:450px;max-width:82%;padding:16px 18px;border:1px solid #777;background:rgba(255,255,255,.91);box-shadow:4px 4px 0 rgba(0,0,0,.26)}
+    .hero-box h1{margin:0 0 8px;color:#1d587f;font:normal 29px/1.08 Georgia}
+    .hero-box p{margin:0 0 12px;color:#555}
+    .btn-old{display:inline-block;margin:2px 5px 0 0;padding:9px 13px;border:1px solid #8f6f0c;border-radius:2px;background:linear-gradient(#ffe573,#dfb31b);color:#17364c;font-weight:bold;text-shadow:1px 1px #fff;box-shadow:inset 0 1px #fff}
+    .btn-old.blue{border-color:#0b3854;background:linear-gradient(#2c76a2,#0f4a73);color:#fff;text-shadow:1px 1px #18394f}
+    .quote-box{border:1px solid #999;background:#efefef;box-shadow:2px 2px 4px rgba(0,0,0,.15)}
+    .quote-title{padding:10px 11px;background:linear-gradient(#2b75a1,#0d466c);color:#fff;font:bold 15px Arial;text-shadow:1px 1px #17374b}
+    .quote-body{padding:12px}
+    .quote-body p{margin:0 0 9px;color:#555;font-size:12px}
+    label{display:block;margin-top:7px;font-size:11px;font-weight:bold}
+    input,select,textarea{width:100%;margin-top:3px;padding:7px;border:1px solid #818181;border-radius:0;background:#fff;box-shadow:inset 1px 1px 2px #ddd;font:12px Arial}
+    textarea{min-height:54px;resize:vertical}
+    .submit{width:100%;margin-top:10px;padding:9px;border:1px solid #8f6f0c;background:linear-gradient(#ffe572,#dbae15);color:#17384f;font-weight:bold;cursor:pointer;text-shadow:1px 1px #fff}
+    .mini{margin-top:7px;color:#777;font-size:10px;text-align:center}
+    .service-row{display:grid;grid-template-columns:repeat(4,1fr);margin-top:14px;border:1px solid #aaa;background:linear-gradient(#fafafa,#e7e7e7)}
+    .service{min-height:105px;padding:13px 11px;border-right:1px solid #bbb;text-align:center}
+    .service:last-child{border-right:0}
+    .icon{width:38px;height:38px;margin:0 auto 6px;border-radius:50%;border:3px double #fff;outline:1px solid #888;background:#205f88;color:#f4d548;font:bold 20px/32px Georgia}
+    .service h2{margin:3px 0 5px;color:#1d587f;font-size:13px}
+    .service p{margin:0;color:#666;font-size:11px}
+    .columns{display:grid;grid-template-columns:1fr 285px;gap:18px;margin-top:17px}
+    .mainbox{border:1px solid #b2b2b2;background:#fff}
+    .section-title{margin:0;padding:9px 12px;border-bottom:1px solid #aaa;background:linear-gradient(#f7f7f7,#e7e7e7);color:#1f587d;font:normal 21px Georgia}
+    .main-inner{padding:14px}
+    .main-inner p{margin:0 0 11px}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+    .card{padding:10px;border:1px solid #b9b9b9;background:linear-gradient(#fff,#f0f0f0)}
+    .card h3{margin:0 0 6px;color:#a52020;font-size:13px}
+    .card ul{margin:0;padding-left:17px;color:#5d5d5d;font-size:11px}
+    .sidebox{margin-bottom:12px;border:1px solid #9f9f9f;background:#f2f2f2}
+    .sidebox h3{margin:0;padding:9px 10px;background:linear-gradient(#2c75a0,#0f496f);color:#fff;font-size:13px;text-shadow:1px 1px #15364a}
+    .sidebox div{padding:10px}
+    .sidebox ul{margin:0;padding-left:18px;font-size:11px}
+    .news{padding:7px 0;border-bottom:1px dotted #999;font-size:11px}
+    .news:last-child{border-bottom:0}
+    .visitor{padding:8px;border:1px inset #bbb;background:#fff;color:#555;font-size:10px;text-align:center}
+    footer{margin-top:17px;padding:20px;border-top:4px solid #ddb419;background:#174561;color:#c9d6de}
+    .footgrid{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:22px}
+    footer h4{margin:0 0 7px;color:#ffe05e;font-size:13px}
+    footer p,footer li{margin:3px 0;font-size:11px}
+    footer ul{margin:0;padding-left:16px}
+    .copy{margin-top:14px;padding-top:10px;border-top:1px solid #42677f;color:#92a7b5;text-align:center;font-size:10px}
+    .compare-switch{position:fixed;left:50%;bottom:18px;z-index:50;display:flex;gap:4px;padding:5px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(9,25,35,.92);box-shadow:0 14px 35px rgba(0,0,0,.28);transform:translateX(-50%)}
     .compare-switch a{min-width:92px;padding:10px 15px;border-radius:999px;color:#dfe7ec;font-size:12px;font-weight:bold;text-align:center}
     .compare-switch .active{background:#fff;color:#132b3e}
     .is-embedded .compare-switch{display:none}
     @media(max-width:720px){
-      body{background:#fff}.site{width:100%;box-shadow:none}.topline{height:auto;text-align:center}.masthead{height:auto;padding:13px}.logo-box{width:48px;height:48px;font-size:30px;line-height:40px}.logo-name{font-size:20px}.phone b{font-size:17px}.nav{padding:0;display:grid;grid-template-columns:repeat(3,1fr)}.nav a{padding:10px 5px;text-align:center;font-size:11px}.flash{white-space:nowrap;overflow:hidden}.hero{height:500px}.hero-panel{left:14px;right:14px;top:auto;bottom:18px;width:auto;padding:18px}.hero-panel h1{font-size:27px}.service-strip{grid-template-columns:1fr 1fr}.service{border-bottom:1px solid #c5c5c5}.content{grid-template-columns:1fr;padding:20px 14px}.jobs,.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.footer-grid{grid-template-columns:1fr}.footer-grid>div:not(:first-child){display:none}
+      body{background:#d6d6d6}
+      .site{min-width:720px;margin:0}
+      .top{font-size:10px}
+      .head{min-height:90px}
+      .brandname{font-size:24px}
+      .contact strong{font-size:20px}
+      .nav a{padding-left:10px;padding-right:10px;font-size:11px}
+      .page{padding:10px}
+      .hero-grid{grid-template-columns:1fr 245px}
+      .hero{height:292px}
+      .hero-box{width:405px}
+      .service{min-height:96px}
     }
   </style>
 </head>
 <body>
   <div class="site">
-    <div class="topline">Accueil &nbsp; | &nbsp; Plan du site &nbsp; | &nbsp; Contact &nbsp; | &nbsp; Suivez-nous</div>
-    <header class="masthead">
-      <div class="logo"><div class="logo-box">K</div><div class="logo-name">KERNÉ COUVERTURE<small>Entreprise de couverture depuis 2008</small></div></div>
-      <div class="phone">Une question ? Appelez-nous<b>02 90 00 00 00</b>Du lundi au samedi, 8h00 - 19h00</div>
+    <div class="top">
+      <a href="#">Accueil</a> &nbsp;|&nbsp; <a href="#">Plan du site</a> &nbsp;|&nbsp; <a href="#">Liens utiles</a> &nbsp;|&nbsp; <a href="#contact">Contact</a>
+    </div>
+
+    <header class="head">
+      <div class="brand">
+        <div class="crest">K</div>
+        <div class="brandname">KERNÉ COUVERTURE<span>Couverture · Zinguerie · Isolation · Dépannage</span></div>
+      </div>
+      <div class="contact">
+        Besoin d'un renseignement ?
+        <strong>02 90 00 00 00</strong>
+        <em>Du lundi au samedi · 8h00 - 19h00</em>
+      </div>
     </header>
-    <nav class="nav"><a href="#">Accueil</a><a href="#services">Nos services</a><a href="#entreprise">L'entreprise</a><a href="#">Nos réalisations</a><a href="#">Actualités</a><a href="#devis">Contact / Devis</a></nav>
-    <div class="flash">DÉPANNAGE FUITE ET URGENCE TOITURE — Intervention sur toute la Bretagne — Demandez votre devis gratuit !</div>
 
-    <section class="hero">
-      <img src="assets/couvreur-hero.webp" alt="Travaux de couverture">
-      <div class="hero-panel">
-        <h1>Vos travaux de toiture en Bretagne</h1>
-        <p>Couverture, rénovation, réparation, entretien, zinguerie, isolation, fenêtres de toit et tous travaux. Une entreprise familiale à votre service pour tous vos projets.</p>
-        <a class="old-btn" href="#devis">DEMANDEZ UN DEVIS</a>
-        <a class="old-btn blue" href="#services">NOS SERVICES</a>
+    <nav class="nav">
+      <a href="#">ACCUEIL</a>
+      <a href="#services">NOS SERVICES</a>
+      <a href="#entreprise">L'ENTREPRISE</a>
+      <a href="#">NOS RÉALISATIONS</a>
+      <a href="#">ACTUALITÉS</a>
+      <a href="#contact">DEVIS GRATUIT</a>
+    </nav>
+
+    <div class="urgent">DÉPANNAGE FUITE &amp; URGENCE TOITURE — <b>Intervention rapide en Bretagne</b> — Demandez votre devis gratuit !</div>
+
+    <div class="page">
+      <div class="hero-grid">
+        <section class="hero">
+          <img src="assets/couvreur-hero.webp" alt="Travaux de couverture">
+          <div class="hero-box">
+            <h1>Vos travaux de toiture en Bretagne</h1>
+            <p>Couverture, rénovation, réparation, zinguerie, isolation, démoussage et dépannage. Nous étudions tous vos projets et nous déplaçons gratuitement pour établir un devis.</p>
+            <a class="btn-old" href="#contact">DEMANDEZ UN DEVIS</a>
+            <a class="btn-old blue" href="#services">DÉCOUVREZ NOS SERVICES</a>
+          </div>
+        </section>
+
+        <aside class="quote-box" id="contact">
+          <div class="quote-title">DEMANDE DE DEVIS GRATUIT</div>
+          <div class="quote-body">
+            <p>Remplissez ce formulaire, nous vous recontactons dans les meilleurs délais.</p>
+            <label>Nom / Prénom *</label>
+            <input>
+            <label>Téléphone *</label>
+            <input type="tel">
+            <label>Votre besoin *</label>
+            <select><option>Choisissez...</option><option>Couverture</option><option>Réparation</option><option>Zinguerie</option><option>Isolation</option></select>
+            <label>Votre message</label>
+            <textarea></textarea>
+            <button class="submit" type="button">ENVOYER MA DEMANDE</button>
+            <div class="mini">* Champs obligatoires</div>
+          </div>
+        </aside>
       </div>
-    </section>
 
-    <section class="service-strip" id="services">
-      <div class="service"><div class="service-icon">T</div><h2>COUVERTURE</h2><p>Neuf et rénovation de toiture</p></div>
-      <div class="service"><div class="service-icon">Z</div><h2>ZINGUERIE</h2><p>Gouttières et évacuations</p></div>
-      <div class="service"><div class="service-icon">I</div><h2>ISOLATION</h2><p>Isolation des combles et toiture</p></div>
-      <div class="service"><div class="service-icon">D</div><h2>DÉPANNAGE</h2><p>Fuites et interventions rapides</p></div>
-    </section>
+      <section class="service-row" id="services">
+        <div class="service"><div class="icon">T</div><h2>COUVERTURE</h2><p>Ardoise, tuile, neuf et rénovation</p></div>
+        <div class="service"><div class="icon">Z</div><h2>ZINGUERIE</h2><p>Gouttières, évacuations et raccords</p></div>
+        <div class="service"><div class="icon">I</div><h2>ISOLATION</h2><p>Combles et isolation sous toiture</p></div>
+        <div class="service"><div class="icon">D</div><h2>DÉPANNAGE</h2><p>Fuites, infiltrations et urgences</p></div>
+      </section>
 
-    <section class="content" id="entreprise">
-      <div class="main">
-        <h2>Bienvenue sur le site de Kerné Couverture</h2>
-        <p class="intro">Kerné Couverture est une entreprise spécialisée dans tous les travaux de couverture. Nous mettons notre expérience et notre savoir-faire à votre disposition pour réaliser tous vos projets de toiture dans les meilleurs délais.</p>
-        <p>Notre équipe intervient auprès des particuliers et des professionnels. Nous étudions toutes les demandes et établissons un devis gratuit après déplacement. N'hésitez pas à parcourir les différentes rubriques de notre site pour découvrir l'ensemble de nos prestations.</p>
-        <div class="jobs">
-          <div class="job"><h3>Travaux de toiture</h3><ul><li>Ardoise et tuile</li><li>Rénovation complète</li><li>Pose de fenêtres de toit</li><li>Réparation après intempéries</li></ul></div>
-          <div class="job"><h3>Entretien et réparation</h3><ul><li>Recherche de fuite</li><li>Démoussage</li><li>Nettoyage de gouttières</li><li>Petites réparations</li></ul></div>
-          <div class="job"><h3>Zinguerie</h3><ul><li>Pose de gouttières</li><li>Raccords et évacuations</li><li>Habillage de cheminée</li><li>Étanchéité</li></ul></div>
-          <div class="job"><h3>Isolation</h3><ul><li>Combles perdus</li><li>Isolation sous toiture</li><li>Conseils personnalisés</li><li>Étude de votre projet</li></ul></div>
-        </div>
+      <div class="columns" id="entreprise">
+        <main class="mainbox">
+          <h2 class="section-title">Bienvenue sur le site de Kerné Couverture</h2>
+          <div class="main-inner">
+            <p><b>Kerné Couverture</b> est une entreprise spécialisée dans tous les travaux de couverture. Notre équipe met son expérience et son savoir-faire à votre disposition pour vos projets de toiture.</p>
+            <p>Nous intervenons auprès des particuliers et des professionnels. N'hésitez pas à consulter les différentes rubriques de notre site afin de découvrir l'ensemble de nos prestations.</p>
+            <div class="two">
+              <div class="card"><h3>TRAVAUX DE TOITURE</h3><ul><li>Ardoise et tuile</li><li>Rénovation complète</li><li>Fenêtres de toit</li><li>Réparation après intempéries</li></ul></div>
+              <div class="card"><h3>ENTRETIEN</h3><ul><li>Recherche de fuite</li><li>Démoussage</li><li>Nettoyage de gouttières</li><li>Petites réparations</li></ul></div>
+              <div class="card"><h3>ZINGUERIE</h3><ul><li>Pose de gouttières</li><li>Évacuations</li><li>Habillage cheminée</li><li>Étanchéité</li></ul></div>
+              <div class="card"><h3>ISOLATION</h3><ul><li>Combles perdus</li><li>Sous toiture</li><li>Conseils personnalisés</li><li>Étude gratuite</li></ul></div>
+            </div>
+          </div>
+        </main>
+
+        <aside>
+          <div class="sidebox">
+            <h3>POURQUOI NOUS CHOISIR ?</h3>
+            <div><ul><li>Entreprise locale</li><li>Devis gratuit</li><li>Garantie décennale</li><li>Travail soigné</li><li>Déplacement rapide</li><li>Conseils personnalisés</li></ul></div>
+          </div>
+          <div class="sidebox">
+            <h3>NOS ACTUALITÉS</h3>
+            <div>
+              <div class="news"><b>Entretien de toiture</b><br>Pourquoi faire démousser sa toiture ?</div>
+              <div class="news"><b>Conseils pratiques</b><br>Comment repérer une fuite ?</div>
+              <div class="news"><b>Rénovation</b><br>Quand faut-il refaire sa couverture ?</div>
+            </div>
+          </div>
+          <div class="sidebox">
+            <h3>ZONE D'INTERVENTION</h3>
+            <div>Bretagne et départements limitrophes.<br><br><b>Tél. 02 90 00 00 00</b></div>
+          </div>
+          <div class="visitor">Site internet mis à jour le 12/05/2016<br>Affichage conseillé : 1024 × 768</div>
+        </aside>
       </div>
-      <aside class="side">
-        <div class="side-box"><h3>Pourquoi nous choisir ?</h3><div><ul class="checklist"><li>Entreprise locale</li><li>Devis gratuit</li><li>Garantie décennale</li><li>Travail soigné</li><li>Déplacement rapide</li><li>Conseils personnalisés</li></ul></div></div>
-        <div class="side-box"><h3>Nos actualités</h3><div><div class="news"><b>Entretien de toiture</b><br>Pourquoi faire démousser sa toiture régulièrement ?</div><div class="news"><b>Conseils pratiques</b><br>Comment repérer les premiers signes d'une fuite ?</div><div class="news"><b>Rénovation</b><br>Tout savoir avant de refaire sa couverture.</div></div></div>
-        <div class="side-box"><h3>Zone d'intervention</h3><div>Bretagne et départements limitrophes.<br><br><b>Contactez-nous au<br>02 90 00 00 00</b></div></div>
-      </aside>
-    </section>
-
-    <section class="quote" id="devis">
-      <h2>Demande de devis gratuit</h2>
-      <p>Merci de remplir le formulaire ci-dessous. Tous les champs sont obligatoires.</p>
-      <form id="old-form">
-        <div class="form-grid">
-          <div class="field"><label for="name">Nom et prénom *</label><input id="name"></div>
-          <div class="field"><label for="email">Adresse e-mail *</label><input id="email" type="email"></div>
-          <div class="field"><label for="phone">Téléphone *</label><input id="phone" type="tel"></div>
-          <div class="field"><label for="city">Ville *</label><input id="city"></div>
-          <div class="field"><label for="type">Type de travaux *</label><select id="type"><option>Choisissez...</option><option>Couverture</option><option>Zinguerie</option><option>Isolation</option><option>Dépannage</option><option>Autre</option></select></div>
-          <div class="field"><label for="delay">Délai souhaité *</label><select id="delay"><option>Choisissez...</option><option>Urgent</option><option>Moins de 3 mois</option><option>Plus de 3 mois</option></select></div>
-          <div class="field full"><label for="message">Décrivez votre demande *</label><textarea id="message"></textarea></div>
-        </div>
-        <div class="form-actions"><button class="old-btn" type="submit">ENVOYER MA DEMANDE</button></div>
-        <div class="form-status" role="status">Aperçu uniquement : aucune information n'est transmise.</div>
-      </form>
-    </section>
+    </div>
 
     <footer>
-      <div class="footer-grid"><div><h3>Kerné Couverture</h3><p>Entreprise de couverture, zinguerie, isolation et entretien de toiture en Bretagne.</p></div><div><h3>Navigation</h3><ul><li>Accueil</li><li>Nos services</li><li>L'entreprise</li><li>Contact</li></ul></div><div><h3>Coordonnées</h3><p>02 90 00 00 00<br>contact@kerne-couverture.fr<br>Bretagne</p></div></div>
-      <div class="copy">© 2016 - 2026 Kerné Couverture | Mentions légales | Création du site</div>
+      <div class="footgrid">
+        <div><h4>KERNÉ COUVERTURE</h4><p>Entreprise de couverture en Bretagne.</p><p>Couverture · Zinguerie · Isolation · Dépannage</p></div>
+        <div><h4>LIENS RAPIDES</h4><ul><li>Accueil</li><li>Nos services</li><li>Nos réalisations</li><li>Contact</li></ul></div>
+        <div><h4>CONTACT</h4><p>02 90 00 00 00</p><p>contact@kerne-couverture.fr</p></div>
+      </div>
+      <div class="copy">© 2016 Kerné Couverture - Tous droits réservés | Mentions légales | Création site internet</div>
     </footer>
   </div>
 
-  <nav class="compare-switch" aria-label="Comparer les versions"><a class="active" href="avant.html">Avant</a><a href="apres.html">Après GC</a></nav>
-  <script>document.querySelector('#old-form').addEventListener('submit',event=>{event.preventDefault();document.querySelector('.form-status').style.display='block'});</script>
+  <nav class="compare-switch" aria-label="Comparer les versions">
+    <a class="active" href="avant.html" aria-current="page">Avant</a>
+    <a href="apres.html">Après GC</a>
+  </nav>
 </body>
 </html>
