@@ -426,7 +426,7 @@ export function AuditFunnel() {
             ) : previewStatus === "ready" ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                  1er point détecté sur votre site
+                  Ce qui peut vous faire perdre des demandes
                 </p>
 
                 {previewFinding ? (
@@ -480,7 +480,7 @@ export function AuditFunnel() {
                   }}
                   className="audit-primary-cta mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300"
                 >
-                  Voir mes autres priorités →
+                  {previewCount > 1 ? `Voir les ${previewCount - 1} autres points →` : "Voir mon plan complet →"}
                 </button>
                 <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
                   2 clics restants
