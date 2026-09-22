@@ -152,6 +152,16 @@ export async function upsertLeadContact(
   if (updated.error) {
     throw new Error(updated.error.message || "lead_contact_upsert_failed");
   }
+
+  if (segmentId) {
+    const added = await resend.contacts.segments.add({
+      email: submission.email,
+      segmentId,
+    });
+    if (added.error) {
+      throw new Error(added.error.message || "lead_segment_add_failed");
+    }
+  }
 }
 
 export async function markLeadStage(token: string): Promise<{
