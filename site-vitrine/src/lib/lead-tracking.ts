@@ -137,7 +137,7 @@ export async function upsertLeadContact(
     lastName,
     unsubscribed: false,
     properties,
-    ...(segmentId ? { segmentIds: [segmentId] } : {}),
+    ...(segmentId ? { segments: [{ id: segmentId }] } : {}),
   });
 
   if (!created.error) return;
@@ -170,6 +170,12 @@ export async function markLeadStage(token: string): Promise<{
         ? "gc_booked_at"
         : "gc_client_at";
 
+  const current = await resend.contacts.get({ email: payload.email });
+  if (current.error || !current.data) return { ok: false };
+
+  const currentLeadId = current.data.properties?.gc_lead_id?.value;
+  if (currentLeadId !== payload.leadId) return { ok: false };
+
   const result = await resend.contacts.update({
     email: payload.email,
     properties: {
@@ -185,20 +191,35 @@ export async function markLeadStage(token: string): Promise<{
   return { ok: true, stage: payload.stage };
 }
 
-type ContactRecord = {
-  id?: string;
-  email?: string;
-  properties?: Record<string, string | number | null>;
+type ContactPropertyValue = {
+  type: "string" | "number";
+  value: string | number;
 };
 
-export async function listLeadContacts(): Promise<ContactRecord[]> {
+export type LeadContactRecord = {
+  id?: string;
+  email?: string;
+  properties?: Record<string, ContactPropertyValue>;
+};
+
+export function contactProperty(
+  properties: LeadContactRecord["properties"],
+  key: string
+): string | number | null {
+  return properties?.[key]?.value ?? null;
+}
+
+export async function listLeadContacts(): Promise<LeadContactRecord[]> {
   const resend = new Resend(requireEnv("RESEND_API_KEY"));
-  const contacts: ContactRecord[] = [];
+  const segmentId = process.env.RESEND_GC_LEADS_SEGMENT_ID;
+  const contacts: LeadContactRecord[] = [];
+  const seenCursors = new Set<string>();
   let after: string | undefined;
 
-  for (let pageIndex = 0; pageIndex < 20; pageIndex += 1) {
+  while (true) {
     const response = await resend.contacts.list({
       limit: 100,
+      ...(segmentId ? { segmentId } : {}),
       ...(after ? { after } : {}),
     });
 
@@ -206,23 +227,23 @@ export async function listLeadContacts(): Promise<ContactRecord[]> {
       throw new Error(response.error.message || "contacts_list_failed");
     }
 
-    const page = response.data as
-      | { data?: ContactRecord[]; has_more?: boolean }
-      | null;
-
+    const page = response.data;
     const items = page?.data ?? [];
-    for (const item of items) {
-      if (!item.email) continue;
 
+    for (const item of items) {
       const detail = await resend.contacts.get({ email: item.email });
-      if (detail.error) continue;
-      const contact = detail.data as ContactRecord | null;
-      if (contact?.properties?.gc_lead_id) contacts.push(contact);
+      if (detail.error || !detail.data) continue;
+      if (contactProperty(detail.data.properties, "gc_lead_id")) {
+        contacts.push(detail.data);
+      }
     }
 
     if (!page?.has_more || items.length === 0) break;
-    after = items[items.length - 1]?.id;
-    if (!after) break;
+
+    const nextCursor = items[items.length - 1]?.id;
+    if (!nextCursor || seenCursors.has(nextCursor)) break;
+    seenCursors.add(nextCursor);
+    after = nextCursor;
   }
 
   return contacts;
