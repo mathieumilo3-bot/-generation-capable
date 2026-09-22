@@ -12,6 +12,7 @@ const MOBILE_MENU_ID = "menu-principal-mobile";
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const isAuditFlow = pathname.startsWith("/audit");
   const toggleRef = useRef<HTMLButtonElement>(null);
 
   // Escape closes the menu and hands focus back to the control that opened it.
@@ -39,6 +40,24 @@ export function Navbar() {
   function isCurrent(href: string) {
     if (href.includes("#")) return false;
     return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  if (isAuditFlow) {
+    return (
+      <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/92 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-[var(--container-max)] items-center justify-between px-6 py-4 sm:px-8 lg:px-10">
+          <Link
+            href="/"
+            className="font-display text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text)]"
+          >
+            {SITE_NAME}
+          </Link>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+            Diagnostic gratuit
+          </span>
+        </div>
+      </header>
+    );
   }
 
   return (

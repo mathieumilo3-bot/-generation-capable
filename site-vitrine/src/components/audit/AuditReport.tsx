@@ -25,15 +25,15 @@ const PILLARS: {
   },
   {
     id: "rassurer",
-    label: "02 — Convaincre",
-    question: "Une fois arrivé, comprend-il immédiatement ce que vous faites et pourquoi il peut vous faire confiance ?",
+    label: "02 — Être choisi",
+    question: "Une fois arrivé, comprend-il immédiatement pourquoi vous choisir plutôt qu’un autre ?",
     dimensions: ["positioning", "psychology", "offer", "trust", "social_proof", "price_value"],
     impact: "Réduire le doute avant la prise de contact.",
   },
   {
     id: "convertir",
-    label: "03 — Faire agir",
-    question: "Le visiteur sait-il immédiatement quoi faire ensuite : appeler, demander un devis ou réserver ?",
+    label: "03 — Être contacté",
+    question: "Le visiteur sait-il immédiatement comment vous appeler ou vous demander un devis ?",
     dimensions: ["funnel", "conversion", "retention", "business_model"],
     impact: "Transformer l’intérêt en demande concrète sans friction inutile.",
   },
@@ -168,12 +168,12 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
           <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
         </span>
         <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-          Audit GC
+          Votre diagnostic
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Ce qui bloque aujourd’hui</h2>
+        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Vos priorités pour gagner plus de clients</h2>
         <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)]">
           {synthesis?.executiveSummary ||
-            "Nous suivons le parcours recherche → découverte → compréhension → confiance → action pour repérer les opportunités qui peuvent avoir une utilité commerciale."}
+            "On a analysé votre présence comme le ferait un futur client : est-ce qu’il vous trouve, vous choisit et vous contacte facilement ?"}
         </p>
         {synthesis?.companySnapshot && (
           <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left">
@@ -270,10 +270,10 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
             {aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length} constat{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""} concret{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""}
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-            Voilà ce qui mérite votre attention en premier.
+            Commencez par ces points.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Chaque point ci-dessous part d’un élément réellement observé. On vous montre le constat et pourquoi il compte. Le plan de correction précis se construit pendant l’appel.
+            Chaque priorité part d’un élément observé ou clairement identifié dans votre présence en ligne.
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {aiOpportunities.length > 0
@@ -284,6 +284,26 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
                   <OpportunityCard key={finding.id} finding={finding} rank={index + 1} />
                 ))}
           </div>
+
+          <div className="mt-6 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-5 text-center">
+            <p className="font-display text-lg font-semibold">Vous savez maintenant quoi traiter.</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--color-muted)]">
+              On peut partir directement de ces points et vous montrer l’ordre dans lequel les corriger.
+            </p>
+            <div className="mt-4">
+              <Button
+                href={bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="primary"
+                className="audit-primary-cta min-h-14 px-7 text-base"
+                trackEvent="booking_started"
+                trackPayload={{ location: "audit_priorities", source: "capable_audit" }}
+              >
+                Réserver 30 min pour les corriger →
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -292,11 +312,11 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
           Prochaine étape
         </p>
         <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Passez de l’analyse au plan d’action.
+          Corrigeons ces priorités dans le bon ordre.
         </h3>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
           {synthesis?.callBridge ||
-            "Pendant 30 minutes, on part directement de votre diagnostic, on choisit les 3 priorités et on construit l’ordre d’action adapté à votre activité."}
+            "Pendant 30 minutes, on part directement de ce diagnostic et on transforme vos priorités en actions concrètes adaptées à votre activité."}
         </p>
         <div className="mx-auto mt-6 max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Vous repartez avec</p>
@@ -317,11 +337,11 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
             trackPayload={{ location: "audit_report", source: "capable_audit" }}
             onClick={() => track("audit_cta_clicked", { location: "audit_report", intent: "book_strategy_call" })}
           >
-            Construire mon plan avec GC →
+            Réserver 30 min pour corriger mes priorités →
           </Button>
         </div>
         <p className="mt-4 text-xs text-[var(--color-muted)]">
-          30 min · On part de votre audit · Sans repartir de zéro
+          30 min · Votre diagnostic est déjà prêt · Sans engagement
         </p>
       </div>
 

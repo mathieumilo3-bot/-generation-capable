@@ -381,11 +381,11 @@ export function AuditFunnel() {
               disabled={data.siteUrl.trim().length < 4}
               className="audit-primary-cta mt-3 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-35"
             >
-              Voir comment gagner plus de clients →
+              Analyser mon site gratuitement →
             </button>
 
             <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-              30 sec · Analyse réelle · Aucun email pour voir le premier résultat
+              Votre 1er résultat s’affiche ici · aucun email demandé
             </p>
           </motion.form>
         )}
@@ -401,11 +401,11 @@ export function AuditFunnel() {
             {previewStatus === "loading" ? (
               <div className="py-3">
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-xl font-semibold">On cherche ce qui peut vous faire gagner plus.</p>
+                  <p className="font-display text-xl font-semibold">On analyse ce qui peut vous faire perdre des clients.</p>
                   <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
                 </div>
                 <p className="mt-2 text-sm text-[var(--color-muted)]">
-                  Votre site est analysé comme le verrait un futur client : visibilité, confiance, puis envie d’appeler.
+                  On vérifie ce qu’un futur client voit avant de choisir : visibilité, confiance et facilité à vous contacter.
                 </p>
 
                 <div className="mt-7 space-y-3">
@@ -426,7 +426,7 @@ export function AuditFunnel() {
             ) : previewStatus === "ready" ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                  Opportunité détectée
+                  Ce qui peut vous faire perdre des demandes
                 </p>
 
                 {previewFinding ? (
@@ -480,10 +480,10 @@ export function AuditFunnel() {
                   }}
                   className="audit-primary-cta mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300"
                 >
-                  Débloquer mes 3 priorités →
+                  {previewCount > 1 ? `Voir les ${previewCount - 1} autres points →` : "Voir mon plan complet →"}
                 </button>
                 <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-                  Encore 2 clics · environ 15 secondes
+                  2 clics restants
                 </p>
               </div>
             ) : (
@@ -512,7 +512,7 @@ export function AuditFunnel() {
             exit={{ opacity: 0, x: -18 }}
             transition={{ duration: 0.35 }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">1 / 2</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">2 clics restants</p>
             <h2 className="font-display mt-2 text-2xl font-semibold">Quel est votre métier ?</h2>
             <div className="mt-5 grid grid-cols-2 gap-2">
               {TRADE_OPTIONS.map((option) => (
@@ -552,7 +552,7 @@ export function AuditFunnel() {
             exit={{ opacity: 0, x: -18 }}
             transition={{ duration: 0.35 }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">2 / 2</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">1 clic restant</p>
             <h2 className="font-display mt-2 text-2xl font-semibold">Votre priorité aujourd’hui ?</h2>
             <div className="mt-5 flex flex-col gap-2">
               {OBJECTIVES.map((option) => (
@@ -610,7 +610,7 @@ export function AuditFunnel() {
                   Votre plan
                 </p>
                 <h2 className="font-display mt-2 text-2xl font-semibold">
-                  {refinedLoading ? "On finalise vos priorités…" : "Votre plan est prêt."}
+                  {refinedLoading ? "On finalise vos priorités…" : "Vos 3 priorités sont prêtes."}
                 </h2>
               </div>
               <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
@@ -623,7 +623,7 @@ export function AuditFunnel() {
             </div>
 
             <p className="mt-5 text-sm text-[var(--color-muted)]">
-              Dernière étape : où vous envoyer vos 3 priorités ?
+              Dernière étape : votre email pour afficher et recevoir le plan complet.
             </p>
 
             <div className="mt-4 space-y-3">
@@ -687,11 +687,11 @@ export function AuditFunnel() {
               disabled={submitting || !data.email.includes("@")}
               className="audit-primary-cta mt-4 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {submitting ? "Préparation de votre plan…" : "Voir mes 3 priorités →"}
+              {submitting ? "Préparation de votre plan…" : "Afficher mon plan complet →"}
             </button>
 
             <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-              Pas de carte · Sans engagement · Vos données ne sont pas vendues
+              Résultat immédiat · Sans engagement · Vos données ne sont pas vendues
             </p>
           </motion.form>
         )}
