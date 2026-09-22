@@ -14,7 +14,7 @@ export const PRIMARY_CTA_LABEL = "Analyser mon site gratuitement";
 export const NAV_LINKS = [
   { label: "Création de site", href: "/creation-site-internet" },
   { label: "Solutions", href: "/solutions" },
-  { label: "Avis clients", href: "/#avis-clients" },
+  { label: "Avant / Après", href: "/#demonstration" },
   { label: "Ressources", href: "/ressources" },
 ] as const;
 
