@@ -49,6 +49,11 @@ export function ConsentBanner() {
   const visible = useSyncExternalStore(subscribe, getSnapshot, () => false);
 
   useEffect(() => {
+    const storedChoice = window.localStorage.getItem(CONSENT_KEY);
+    if (storedChoice === "accepted" || storedChoice === "refused") {
+      updateConsent(storedChoice);
+    }
+
     const reopen = () => setOpen(true);
     window.addEventListener("gc:open-consent", reopen);
     return () => window.removeEventListener("gc:open-consent", reopen);

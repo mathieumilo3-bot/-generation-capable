@@ -138,16 +138,16 @@ export default function PolitiqueConfidentialitePage() {
 
           <Block title="Cookies et mesure d'audience">
             <p>
-              Le site utilise Google Tag Manager pour piloter les outils de
-              mesure et, le cas échéant, de publicité. Avant votre choix, les
-              stockages de mesure et de publicité sont refusés par défaut.
-              Un bandeau vous permet d&apos;accepter ou de refuser ces
-              technologies.
+              Le site utilise une balise Google Ads et peut également utiliser
+              Google Tag Manager pour piloter les outils de mesure et, le cas
+              échéant, de publicité. Avant votre choix, les stockages de mesure
+              et de publicité sont refusés par défaut. Un bandeau vous permet
+              d&apos;accepter ou de refuser ces technologies.
             </p>
             <p>
               Si vous acceptez, les catégories de stockage liées à
               l&apos;analyse et à la publicité peuvent être activées par les
-              balises configurées dans Google Tag Manager. Si vous refusez,
+              balises Google configurées pour le site. Si vous refusez,
               elles restent refusées. Votre choix est conservé localement sur
               votre appareil afin de ne pas vous redemander votre préférence
               à chaque visite.
