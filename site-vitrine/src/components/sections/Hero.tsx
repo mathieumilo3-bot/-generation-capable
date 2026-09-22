@@ -30,19 +30,18 @@ export function Hero() {
 
       <Section className="relative pt-20 pb-16 sm:pt-28 sm:pb-20">
         <motion.div style={{ y: contentY }} className="flex flex-col items-start">
-          <Badge>GC Agence · Systèmes de revenus digitaux</Badge>
+          <Badge>GC Agence · Acquisition pour artisans & BTP</Badge>
 
           <h1 className="font-display text-balance mt-7 max-w-5xl text-[2.7rem] font-semibold leading-[1.02] tracking-tight text-[var(--color-text)] sm:text-6xl lg:text-[4.7rem]">
-            Votre visibilité attire des gens.
+            Votre savoir-faire mérite
             <br />
-            <span className="gold-text">Votre système doit les convertir.</span>
+            <span className="gold-text">plus de demandes de devis.</span>
           </h1>
 
           <p className="text-balance mt-7 max-w-2xl text-lg leading-relaxed text-[var(--color-muted)] sm:text-xl">
-            Nous construisons le système entre votre acquisition et votre chiffre
-            d&apos;affaires : message, site, parcours, qualification et suivi.
-            Le but n&apos;est pas d&apos;avoir un plus beau site. C&apos;est de
-            transformer davantage d&apos;attention en opportunités commerciales.
+            On construit une présence qui vous aide à être trouvé, à rassurer
+            rapidement et à transformer plus de recherches en demandes utiles.
+            Site, Google, preuves, devis et suivi : tout doit travailler ensemble.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -52,7 +51,7 @@ export function Hero() {
               trackEvent="hero_cta_click"
               trackPayload={{ location: "hero_primary" }}
             >
-              Recevoir mon diagnostic →
+              Voir ce qui me fait perdre des demandes →
             </Button>
             <Button
               href="#demonstration"
@@ -60,16 +59,16 @@ export function Hero() {
               trackEvent="cta_clicked"
               trackPayload={{ location: "hero_secondary" }}
             >
-              Voir la transformation
+              Voir un avant / après
             </Button>
           </div>
 
-          <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[var(--color-muted)]">
-            <span>Diagnostic personnalisé</span>
-            <span>·</span>
-            <span>Sans engagement</span>
-            <span>·</span>
-            <span>Pas de score automatique inventé</span>
+          <div className="mt-7 flex flex-wrap gap-x-3 gap-y-2 text-xs text-[var(--color-muted)]">
+            <span>Couvreurs</span><span>·</span>
+            <span>Plombiers</span><span>·</span>
+            <span>Électriciens</span><span>·</span>
+            <span>Menuisiers</span><span>·</span>
+            <span>Artisans locaux</span>
           </div>
         </motion.div>
       </Section>
