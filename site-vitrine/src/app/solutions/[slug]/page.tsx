@@ -358,16 +358,65 @@ export default async function SeoLandingPage({ params }: Props) {
           {pageIntro}
         </p>
 
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button
+            href="/audit"
+            variant="primary"
+            trackEvent="cta_clicked"
+            trackPayload={{ location: `seo_landing_top_${page.slug}` }}
+          >
+            Analyser mon entreprise →
+          </Button>
+          {enhancement && (
+            <Button
+              href={bookingUrlFor(page.slug)}
+              variant="secondary"
+              target="_blank"
+              rel="noopener noreferrer"
+              trackEvent="cta_clicked"
+              trackPayload={{ location: `seo_landing_top_booking_${page.slug}` }}
+            >
+              Parler de mon projet →
+            </Button>
+          )}
+        </div>
+        <p className="mt-3 text-xs text-[var(--color-muted)]">
+          Diagnostic initial · Sans engagement
+        </p>
+
         <div className="mt-14 flex flex-col gap-10">
-          {blocks.map((block) => (
-            <section key={block.heading}>
-              <h2 className="font-display text-2xl font-semibold text-[var(--color-text)]">
-                {block.heading}
-              </h2>
-              <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
-                {block.body}
-              </p>
-            </section>
+          {blocks.map((block, index) => (
+            <div key={block.heading}>
+              <section>
+                <h2 className="font-display text-2xl font-semibold text-[var(--color-text)]">
+                  {block.heading}
+                </h2>
+                <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
+                  {block.body}
+                </p>
+              </section>
+
+              {index === 1 && (
+                <div className="mt-9 flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-display text-base font-semibold text-[var(--color-text)]">
+                      Vous voulez savoir ce qui bloque chez vous ?
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
+                      On analyse votre situation avant de vous recommander quoi que ce soit.
+                    </p>
+                  </div>
+                  <Button
+                    href="/audit"
+                    variant="secondary"
+                    trackEvent="cta_clicked"
+                    trackPayload={{ location: `seo_landing_inline_${page.slug}` }}
+                  >
+                    Voir mes priorités →
+                  </Button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
 
