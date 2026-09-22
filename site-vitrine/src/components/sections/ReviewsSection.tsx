@@ -2,6 +2,8 @@ import { Section, Eyebrow } from "@/components/ui/Section";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
 
+// Production release: reviews-only
+
 const REVIEWS = [
   {
     name: "Fabien",
