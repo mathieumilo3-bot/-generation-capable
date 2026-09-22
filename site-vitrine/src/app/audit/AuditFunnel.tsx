@@ -54,7 +54,7 @@ const SITE_URL_FIELD_ID = "audit-site-url";
 const REPORT_WAIT_MS = 8_000;
 
 function inputClass() {
-  return "w-full rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-5 py-4 text-base text-[var(--color-text)] outline-none transition-all duration-200 placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/30";
+  return "audit-input w-full rounded-[1.15rem] px-5 py-[17px] text-base text-[var(--color-text)] outline-none transition-all duration-200";
 }
 
 function toEmailSummary(report: Report) {
@@ -353,12 +353,12 @@ export function AuditFunnel() {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.35 }}
           >
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
-                Votre présence en ligne
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <p className="text-[11px] font-semibold tracking-[-0.01em] text-[var(--color-text)]">
+                Analyse de votre site
               </p>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
-                Analyse gratuite
+              <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-[10px] font-medium text-[var(--color-muted)]">
+                Sans email
               </span>
             </div>
 
@@ -366,9 +366,13 @@ export function AuditFunnel() {
             <input
               id={SITE_URL_FIELD_ID}
               name="siteUrl"
-              autoFocus
               type="text"
               inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              autoComplete="url"
+              enterKeyHint="go"
               maxLength={FIELD_LIMITS.siteUrl}
               placeholder="votre-entreprise.fr"
               className={inputClass()}
@@ -379,13 +383,13 @@ export function AuditFunnel() {
             <button
               type="submit"
               disabled={data.siteUrl.trim().length < 4}
-              className="audit-primary-cta mt-3 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-35"
+              className="audit-primary-cta mt-3 inline-flex min-h-[58px] w-full items-center justify-center rounded-[1.15rem] px-6 text-[15px] font-semibold transition-all duration-300 disabled:cursor-not-allowed"
             >
-              Analyser mon site gratuitement →
+              Analyser mon site gratuitement
             </button>
 
-            <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-              Votre 1er résultat s’affiche ici · aucun email demandé
+            <p className="mt-3 text-center text-[11px] leading-relaxed text-[var(--color-muted)]">
+              Résultat immédiat · gratuit · aucun email demandé
             </p>
           </motion.form>
         )}
@@ -483,7 +487,7 @@ export function AuditFunnel() {
                   {previewCount > 1 ? `Voir les ${previewCount - 1} autres points →` : "Voir mon plan complet →"}
                 </button>
                 <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-                  2 clics restants
+                  Encore 2 réponses rapides
                 </p>
               </div>
             ) : (
@@ -512,7 +516,7 @@ export function AuditFunnel() {
             exit={{ opacity: 0, x: -18 }}
             transition={{ duration: 0.35 }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">2 clics restants</p>
+            <p className="text-[11px] font-medium text-[var(--color-muted)]">Étape 2 · encore 2 réponses</p>
             <h2 className="font-display mt-2 text-2xl font-semibold">Quel est votre métier ?</h2>
             <div className="mt-5 grid grid-cols-2 gap-2">
               {TRADE_OPTIONS.map((option) => (
@@ -520,7 +524,7 @@ export function AuditFunnel() {
                   key={option}
                   type="button"
                   onClick={() => chooseTrade(option)}
-                  className={`rounded-xl border px-3 py-3 text-sm transition-all ${data.secteur === option ? "border-[var(--color-accent)] text-[var(--color-accent)]" : "border-[var(--color-border-strong)] hover:border-[var(--color-accent)]"}`}
+                  className={`audit-choice rounded-xl px-3 py-3 text-sm transition-all ${data.secteur === option ? "audit-choice--selected" : ""}`}
                 >
                   {option}
                 </button>
@@ -552,7 +556,7 @@ export function AuditFunnel() {
             exit={{ opacity: 0, x: -18 }}
             transition={{ duration: 0.35 }}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">1 clic restant</p>
+            <p className="text-[11px] font-medium text-[var(--color-muted)]">Dernière question</p>
             <h2 className="font-display mt-2 text-2xl font-semibold">Votre priorité aujourd’hui ?</h2>
             <div className="mt-5 flex flex-col gap-2">
               {OBJECTIVES.map((option) => (
@@ -560,7 +564,7 @@ export function AuditFunnel() {
                   key={option}
                   type="button"
                   onClick={() => chooseGoal(option)}
-                  className={`rounded-xl border px-4 py-4 text-left text-sm transition-all ${data.objectif === option ? "border-[var(--color-accent)] text-[var(--color-accent)]" : "border-[var(--color-border-strong)] hover:border-[var(--color-accent)]"}`}
+                  className={`audit-choice rounded-xl px-4 py-4 text-left text-sm transition-all ${data.objectif === option ? "audit-choice--selected" : ""}`}
                 >
                   {option}
                 </button>
@@ -648,7 +652,7 @@ export function AuditFunnel() {
                 <button
                   type="button"
                   onClick={() => setShowCallbackFields(true)}
-                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-muted)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+                  className="audit-secondary w-full rounded-xl px-4 py-3 text-sm transition-all"
                 >
                   Je préfère être rappelé →
                 </button>
@@ -685,7 +689,7 @@ export function AuditFunnel() {
             <button
               type="submit"
               disabled={submitting || !data.email.includes("@")}
-              className="audit-primary-cta mt-4 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40"
+              className="audit-primary-cta mt-4 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed"
             >
               {submitting ? "Préparation de votre plan…" : "Afficher mon plan complet →"}
             </button>

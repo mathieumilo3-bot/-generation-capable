@@ -44,15 +44,15 @@ export function Navbar() {
 
   if (isAuditFlow) {
     return (
-      <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/92 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-[var(--container-max)] items-center justify-between px-6 py-4 sm:px-8 lg:px-10">
+      <header className="audit-flow-nav sticky top-0 z-50 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-[var(--container-max)] items-center justify-between px-5 py-3 sm:px-8 lg:px-10">
           <Link
             href="/"
-            className="font-display text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text)]"
+            className="font-display text-[13px] font-semibold uppercase tracking-[0.2em] text-[var(--color-text)]"
           >
             {SITE_NAME}
           </Link>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-[var(--color-muted)]">
             Diagnostic gratuit
           </span>
         </div>
