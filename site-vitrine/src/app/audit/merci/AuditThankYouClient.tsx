@@ -9,7 +9,7 @@ import type { Report } from "@/lib/audit-engine/types";
 
 type StoredAudit = {
   report: Report | null;
-  lead?: { nom?: string; email?: string };
+  lead?: { nom?: string; email?: string; telephone?: string; adUserDataConsent?: string };
   entreprise?: string;
   attribution?: BookingAttribution;
 };
@@ -24,7 +24,7 @@ export function AuditThankYouClient() {
       if (raw) setStored(JSON.parse(raw) as StoredAudit);
 
       if (sessionStorage.getItem("gc_google_ads_conversion_pending") === "1") {
-        trackGoogleAdsLeadConversion();
+        trackGoogleAdsLeadConversion(stored?.lead);
         sessionStorage.removeItem("gc_google_ads_conversion_pending");
       }
     } catch {
