@@ -60,7 +60,7 @@ export function Hero() {
               trackEvent="cta_clicked"
               trackPayload={{ location: "hero_secondary" }}
             >
-              Voir l&apos;avant / après
+              Voir la transformation
             </Button>
           </div>
 

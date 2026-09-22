@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
@@ -27,9 +28,12 @@ const TRANSFORMATIONS = [
 
 export function BeforeAfterShowcase() {
   const [version, setVersion] = useState<Version>("apres");
+  const [direction, setDirection] = useState(1);
   const active = VERSIONS[version];
 
   function selectVersion(next: Version) {
+    if (next === version) return;
+    setDirection(next === "avant" ? 1 : -1);
     setVersion(next);
     track("cta_clicked", {
       location: "before_after_switch",
@@ -41,23 +45,23 @@ export function BeforeAfterShowcase() {
     <Section id="demonstration" className="overflow-hidden py-24 sm:py-32">
       <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-end lg:gap-16">
         <Reveal>
-          <Eyebrow>Preuve concrète</Eyebrow>
+          <Eyebrow>La transformation</Eyebrow>
           <h2 className="font-display text-balance mt-4 text-4xl font-semibold leading-[1.02] tracking-tight sm:text-6xl">
-            Vous n&apos;avez pas besoin
+            Même entreprise.
             <br />
-            <span className="text-[var(--color-muted)]">de nous croire.</span>
+            <span className="text-[var(--color-muted)]">Pas la même valeur perçue.</span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.08}>
           <div className="max-w-2xl lg:ml-auto">
             <p className="text-balance text-lg leading-relaxed text-[var(--color-muted)]">
-              Même artisan. Même métier. Deux expériences totalement différentes.
-              Comparez le site qui présente avec celui qui comprend, rassure et
-              guide le prospect jusqu&apos;à la demande.
+              Commencez par le résultat. Puis regardez d&apos;où l&apos;entreprise
+              partait : même savoir-faire, mais une perception et un parcours
+              totalement différents.
             </p>
             <p className="mt-4 text-xs uppercase tracking-[0.16em] text-white/35">
-              Entreprise fictive · démonstration fonctionnelle · aucun résultat inventé
+              Entreprise fictive · projection fonctionnelle · aucun résultat inventé
             </p>
           </div>
         </Reveal>
@@ -73,7 +77,7 @@ export function BeforeAfterShowcase() {
                 <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-accent)]/60" />
               </span>
               <span className="hidden text-xs text-[var(--color-muted)] sm:inline">
-                Démonstration · Kerné Couverture
+                Projet couvreur · Transformation GC
               </span>
             </div>
 
@@ -82,7 +86,7 @@ export function BeforeAfterShowcase() {
               role="group"
               aria-label="Choisir la version du site"
             >
-              {(Object.keys(VERSIONS) as Version[]).map((key) => {
+              {(["apres", "avant"] as Version[]).map((key) => {
                 const selected = version === key;
                 return (
                   <button
@@ -99,14 +103,24 @@ export function BeforeAfterShowcase() {
             </div>
           </div>
 
-          <div className="relative h-[680px] bg-[#f5f2ec] sm:h-[720px] lg:h-[760px]">
-            <iframe
-              key={active.src}
-              src={active.src}
-              title={`Kerné Couverture — version ${active.label}`}
-              className="h-full w-full border-0"
-              loading="lazy"
-            />
+          <div className="relative h-[680px] overflow-hidden bg-[#f5f2ec] sm:h-[720px] lg:h-[760px]">
+            <AnimatePresence initial={false} mode="wait">
+              <motion.div
+                key={active.src}
+                initial={{ opacity: 0, x: direction * 90 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -90 }}
+                transition={{ duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute inset-0"
+              >
+                <iframe
+                  src={active.src}
+                  title={`Kerné Couverture — version ${active.label}`}
+                  className="h-full w-full border-0"
+                  loading="lazy"
+                />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </Reveal>
@@ -135,22 +149,8 @@ export function BeforeAfterShowcase() {
             trackEvent="cta_clicked"
             trackPayload={{ location: "before_after_primary" }}
           >
-            Je veux cette transformation →
+            Je veux la même transformation →
           </Button>
-          <a
-            href={active.src}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() =>
-              track("cta_clicked", {
-                location: "before_after_fullscreen",
-                version,
-              })
-            }
-            className="inline-flex items-center justify-center rounded-full border border-[var(--color-border-strong)] px-7 py-3.5 text-sm font-medium text-[var(--color-text)] transition-all duration-300 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-          >
-            Ouvrir la démo en plein écran ↗
-          </a>
         </div>
       </Reveal>
     </Section>
