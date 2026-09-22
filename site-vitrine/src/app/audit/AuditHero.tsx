@@ -14,39 +14,39 @@ type HeroVariant = {
 
 const VARIANTS: Record<string, HeroVariant> = {
   default: {
-    badge: "Pour artisans & entreprises du bâtiment",
-    title: "Plus de demandes de devis.",
-    accent: "À partir de ce que vous avez déjà.",
+    badge: "Diagnostic offert · Artisans & BTP",
+    title: "Gagnez en visibilité.",
+    accent: "Transformez-la en demandes de devis.",
     body:
-      "On regarde ce qui vous fait perdre des clients sur Google, votre site et votre parcours de devis, puis on vous montre quoi corriger en priorité.",
-    cta: "Voir ce qui me fait perdre des devis →",
+      "On analyse où vous perdez des clients — Google, votre site, vos preuves et votre parcours — puis on vous donne les 3 actions prioritaires à mettre en place.",
+    cta: "Recevoir mon diagnostic personnalisé →",
     key: "default",
   },
   chantiers: {
-    badge: "Pour artisans & entreprises du bâtiment",
-    title: "Plus de chantiers.",
-    accent: "Sans repartir de zéro.",
+    badge: "Diagnostic offert · Artisans & BTP",
+    title: "Gagnez en visibilité.",
+    accent: "Transformez-la en chantiers.",
     body:
-      "On regarde ce qui freine vos demandes aujourd’hui : visibilité Google, confiance, preuves et parcours de devis.",
-    cta: "Voir ce qui bloque mes demandes →",
+      "On identifie ce qui freine vos demandes aujourd’hui et les 3 actions à prioriser pour attirer plus de prospects réellement intéressés.",
+    cta: "Voir mes 3 priorités →",
     key: "chantiers",
   },
   site: {
-    badge: "Pour artisans & entreprises du bâtiment",
-    title: "Plus de devis avec votre site.",
-    accent: "Sans tout refaire pour rien.",
+    badge: "Diagnostic offert · Site artisan",
+    title: "Votre site est visible.",
+    accent: "Faites-le convertir.",
     body:
-      "On identifie ce qui bloque la confiance et la prise de contact, puis on vous donne les priorités à corriger.",
-    cta: "Analyser mon site gratuitement →",
+      "On analyse ce qui bloque la confiance et la prise de contact, puis on vous donne les 3 corrections à faire en priorité.",
+    cta: "Recevoir mon diagnostic site →",
     key: "site",
   },
   seo: {
-    badge: "Pour artisans & entreprises du bâtiment",
-    title: "Plus de demandes depuis Google.",
-    accent: "Sans vous perdre dans le SEO.",
+    badge: "Diagnostic offert · Visibilité Google",
+    title: "Soyez plus visible sur Google.",
+    accent: "Transformez cette visibilité en devis.",
     body:
-      "On regarde vos métiers, vos zones et vos pages pour voir ce qui vous empêche d’être trouvé au bon moment.",
-    cta: "Vérifier ma visibilité Google →",
+      "On analyse vos métiers, vos zones et vos pages pour identifier les 3 priorités qui peuvent générer plus de demandes locales.",
+    cta: "Recevoir mon diagnostic Google →",
     key: "seo",
   },
 };
@@ -62,18 +62,18 @@ function variantFromContent(content: string | null): HeroVariant {
 const LEVERS = [
   {
     number: "01",
-    title: "Être trouvé",
-    body: "Quand un client cherche votre métier dans votre zone.",
+    title: "Visibilité locale",
+    body: "Être trouvé au bon moment, dans la bonne zone.",
   },
   {
     number: "02",
-    title: "Donner confiance",
-    body: "Réalisations, avis, garanties, photos, clarté.",
+    title: "Confiance",
+    body: "Donner envie d’appeler avant même le premier échange.",
   },
   {
     number: "03",
-    title: "Obtenir la demande",
-    body: "Passer de « je regarde » à « je demande un devis ».",
+    title: "Conversion",
+    body: "Transformer une visite en vraie demande de devis.",
   },
 ] as const;
 
@@ -118,8 +118,8 @@ export function AuditHero() {
 
       <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)] px-5 py-4">
         <p className="text-sm leading-relaxed">
-          <span className="font-semibold">Vous repartez avec les 3 priorités à corriger</span>{" "}
-          pour générer plus de demandes.
+          <span className="font-semibold">Votre diagnostic vous donne un plan clair :</span>{" "}
+          ce qui vous freine, ce qu’il faut corriger en premier et les 3 prochaines actions à mettre en place.
         </p>
       </div>
 
@@ -136,7 +136,7 @@ export function AuditHero() {
       </div>
 
       <p className="mt-4 text-xs text-[var(--color-muted)]">
-        Audit gratuit · 1 min · Sans engagement
+        Gratuit · Personnalisé · Sans engagement
       </p>
     </div>
   );
