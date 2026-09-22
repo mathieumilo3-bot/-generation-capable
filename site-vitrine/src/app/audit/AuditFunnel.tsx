@@ -92,6 +92,7 @@ export function AuditFunnel() {
   const [otherTrade, setOtherTrade] = useState("");
   const [otherGoal, setOtherGoal] = useState("");
   const [showCallbackFields, setShowCallbackFields] = useState(false);
+  const [siteError, setSiteError] = useState<string | null>(null);
 
   const engaged = useRef(false);
   const lastReport = useRef<Report | null>(null);
@@ -135,9 +136,16 @@ export function AuditFunnel() {
 
   async function startQuickScan(event?: FormEvent) {
     event?.preventDefault();
-    if (data.siteUrl.trim().length < 4 || previewStatus === "loading") return;
+    if (previewStatus === "loading") return;
+
+    if (data.siteUrl.trim().length < 4) {
+      setSiteError("Entrez l’adresse de votre site pour lancer le diagnostic.");
+      document.getElementById(SITE_URL_FIELD_ID)?.focus();
+      return;
+    }
 
     markEngaged();
+    setSiteError(null);
     setError(null);
     setStage("preview");
     setPreviewStatus("loading");
@@ -377,19 +385,29 @@ export function AuditFunnel() {
               placeholder="votre-entreprise.fr"
               className={inputClass()}
               value={data.siteUrl}
-              onChange={(e) => update("siteUrl", e.target.value)}
+              aria-invalid={siteError ? true : undefined}
+              aria-describedby={siteError ? "audit-site-error" : undefined}
+              onChange={(e) => {
+                update("siteUrl", e.target.value);
+                if (siteError) setSiteError(null);
+              }}
             />
+
+            {siteError && (
+              <p id="audit-site-error" className="mt-2 px-1 text-[11px] text-[#e7c872]" role="alert">
+                {siteError}
+              </p>
+            )}
 
             <button
               type="submit"
-              disabled={data.siteUrl.trim().length < 4}
-              className="audit-primary-cta mt-3 inline-flex min-h-[58px] w-full items-center justify-center rounded-[1.15rem] px-6 text-[15px] font-semibold transition-all duration-300 disabled:cursor-not-allowed"
+              className="audit-primary-cta mt-3 inline-flex min-h-[58px] w-full items-center justify-center rounded-[1.15rem] px-6 text-[15px] font-semibold transition-all duration-300"
             >
-              Analyser mon site gratuitement
+              Voir mon diagnostic gratuit
             </button>
 
             <p className="mt-3 text-center text-[11px] leading-relaxed text-[var(--color-muted)]">
-              Résultat immédiat · gratuit · aucun email demandé
+              Votre premier résultat s’affiche juste après
             </p>
           </motion.form>
         )}

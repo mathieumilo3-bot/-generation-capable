@@ -111,15 +111,15 @@ button, a {
 
 /* Audit conversion experience — calm, premium and conversion-first */
 .audit-experience {
-  --color-accent: #e8c86a;
-  --color-accent-soft: rgba(232, 200, 106, 0.095);
+  --color-accent: #f0cf67;
+  --color-accent-soft: rgba(240, 207, 103, 0.095);
   --color-border-strong: rgba(255, 255, 255, 0.15);
   --color-muted: #a7a8a2;
   position: relative;
   isolation: isolate;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 50% 0%, rgba(232, 200, 106, 0.085), transparent 23rem),
+    radial-gradient(circle at 50% 0%, rgba(240, 207, 103, 0.085), transparent 23rem),
     radial-gradient(circle at 8% 39%, rgba(167, 194, 180, 0.025), transparent 22rem),
     radial-gradient(circle at 92% 48%, rgba(255, 255, 255, 0.018), transparent 20rem),
     #050606;
@@ -160,17 +160,17 @@ button, a {
 }
 
 .audit-input:focus {
-  border-color: rgba(232, 200, 106, 0.6);
+  border-color: rgba(240, 207, 103, 0.6);
   background: rgba(255, 255, 255, 0.04);
   box-shadow:
-    0 0 0 3px rgba(232, 200, 106, 0.075),
+    0 0 0 3px rgba(240, 207, 103, 0.075),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .audit-primary-cta {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #f3e2a2 0%, #e8c86a 57%, #dab34f 100%);
+  background: linear-gradient(135deg, #f7e6a0 0%, #f0cf67 56%, #ddb44e 100%);
   color: #0a0906;
   border: 1px solid rgba(248, 231, 168, 0.7);
   box-shadow:
@@ -180,7 +180,7 @@ button, a {
 
 .audit-primary-cta:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, #f7e9b1 0%, #ebcd74 57%, #ddb751 100%);
+  background: linear-gradient(135deg, #faecb3 0%, #f3d472 56%, #e2b951 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.44),
     0 18px 42px rgba(181, 145, 43, 0.21);
@@ -193,19 +193,19 @@ button, a {
 .audit-primary-cta:focus-visible {
   outline: none;
   box-shadow:
-    0 0 0 3px rgba(232, 200, 106, 0.14),
+    0 0 0 3px rgba(240, 207, 103, 0.14),
     0 16px 40px rgba(181, 145, 43, 0.18);
 }
 
 .audit-primary-cta:disabled {
   opacity: 1;
   color: rgba(10, 9, 6, 0.6);
-  border-color: rgba(239, 220, 155, 0.32);
-  background: linear-gradient(135deg, #d7c894 0%, #c8ad61 100%);
+  border-color: rgba(244, 224, 157, 0.42);
+  background: linear-gradient(135deg, #e2d19b 0%, #cfb365 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.17),
-    0 10px 26px rgba(0, 0, 0, 0.15);
-  filter: saturate(0.74) brightness(0.9);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 26px rgba(0, 0, 0, 0.14);
+  filter: saturate(0.82) brightness(0.94);
 }
 
 .audit-choice {
@@ -215,15 +215,15 @@ button, a {
 }
 
 .audit-choice:hover {
-  border-color: rgba(232, 200, 106, 0.34);
+  border-color: rgba(240, 207, 103, 0.34);
   background: rgba(255, 255, 255, 0.032);
 }
 
 .audit-choice--selected {
-  border-color: rgba(232, 200, 106, 0.62);
-  background: rgba(232, 200, 106, 0.075);
+  border-color: rgba(240, 207, 103, 0.62);
+  background: rgba(240, 207, 103, 0.075);
   color: #f0d77e;
-  box-shadow: inset 0 0 0 1px rgba(232, 200, 106, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(240, 207, 103, 0.04);
 }
 
 .audit-secondary {
@@ -233,16 +233,16 @@ button, a {
 }
 
 .audit-secondary:hover {
-  border-color: rgba(232, 200, 106, 0.3);
+  border-color: rgba(240, 207, 103, 0.3);
   background: rgba(255, 255, 255, 0.028);
   color: var(--color-text);
 }
 
 .audit-result-glow {
   box-shadow:
-    inset 0 0 0 1px rgba(232, 200, 106, 0.04),
+    inset 0 0 0 1px rgba(240, 207, 103, 0.04),
     0 18px 52px rgba(0, 0, 0, 0.29),
-    0 0 36px rgba(232, 200, 106, 0.038);
+    0 0 36px rgba(240, 207, 103, 0.038);
 }
 
 @media (max-width: 639px) {
@@ -251,4 +251,12 @@ button, a {
       0 20px 54px rgba(0, 0, 0, 0.28),
       inset 0 1px 0 rgba(255, 255, 255, 0.038);
   }
+}
+
+
+.audit-experience .gold-text {
+  color: transparent;
+  background: linear-gradient(135deg, #f6de86 0%, #f0cf67 58%, #dfb74f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
