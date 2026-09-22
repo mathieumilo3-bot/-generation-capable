@@ -5,22 +5,21 @@ import { FAQJsonLd } from "@/components/schema/JsonLd";
 import { AuditFunnel } from "./AuditFunnel";
 
 export const metadata: Metadata = {
-  title: "Audit gratuit : transformez votre site en clients",
+  title: "Audit gratuit artisan : site, Google & demandes de devis",
   description:
-    "Audit gratuit de votre site : visibilité Google, crédibilité et conversion. Identifiez rapidement ce qui bloque vos demandes de devis et vos prospects.",
+    "Audit gratuit pour artisans et entreprises du BTP : visibilité locale, crédibilité, réalisations et parcours de demande de devis.",
   alternates: { canonical: "/audit" },
 };
 
 const FAQS = [
   {
     question: "L'audit est-il vraiment gratuit ?",
-    answer:
-      "Oui. Le diagnostic initial est gratuit et sans engagement.",
+    answer: "Oui. Le diagnostic initial est gratuit et sans engagement.",
   },
   {
-    question: "Que contient l'audit ?",
+    question: "Que regardez-vous pour un artisan ?",
     answer:
-      "Nous regardons votre visibilité, votre crédibilité et votre capacité à transformer les visiteurs en demandes.",
+      "Votre visibilité locale, la clarté de vos métiers et zones, vos preuves de savoir-faire et la facilité avec laquelle un prospect peut demander un devis.",
   },
 ];
 
@@ -32,17 +31,17 @@ export default function AuditPage() {
       <Section className="pb-10 pt-10 sm:pb-14 sm:pt-16 lg:pt-20">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mx-auto inline-flex items-center rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)] sm:text-xs">
-            Audit gratuit · Sans engagement
+            Audit artisans & BTP · Gratuit
           </div>
 
           <h1 className="font-display mx-auto mt-6 max-w-3xl text-balance text-[2.65rem] font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
             Votre site vous ramène
-            <span className="gold-text"> vraiment des clients ?</span>
+            <span className="gold-text"> vraiment des demandes de devis ?</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-lg">
-            On identifie rapidement ce qui bloque vos demandes de devis,
-            votre visibilité Google et votre conversion.
+            On vérifie ce qu&apos;un client voit avant de vous appeler :
+            Google, vos métiers, vos réalisations, votre zone et la prise de contact.
           </p>
 
           <div className="mt-8 flex justify-center">
@@ -53,19 +52,19 @@ export default function AuditPage() {
               trackEvent="audit_cta_clicked"
               trackPayload={{ location: "audit_hero" }}
             >
-              Obtenir mon audit gratuit →
+              Vérifier mon site gratuitement →
             </Button>
           </div>
 
           <p className="mt-4 text-xs text-[var(--color-muted)]">
-            Gratuit · Rapide · Réponse personnalisée
+            Gratuit · Sans engagement · Réponse personnalisée
           </p>
 
           <div className="mx-auto mt-9 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
             {[
-              ["01", "Visibilité"],
-              ["02", "Crédibilité"],
-              ["03", "Conversion"],
+              ["01", "Être trouvé"],
+              ["02", "Rassurer"],
+              ["03", "Obtenir un devis"],
             ].map(([number, label]) => (
               <div
                 key={label}
@@ -87,10 +86,10 @@ export default function AuditPage() {
             <div className="mb-7 flex items-center justify-between border-b border-[var(--color-border)] pb-5">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">
-                  Diagnostic gratuit
+                  Diagnostic artisan
                 </p>
                 <p className="font-display mt-1 text-base font-medium">
-                  On commence par votre site
+                  On commence par votre présence en ligne
                 </p>
               </div>
 
@@ -104,7 +103,7 @@ export default function AuditPage() {
           </div>
 
           <p className="mt-5 text-center text-xs leading-relaxed text-[var(--color-muted)]">
-            Pas de blabla. On vous montre ce qui bloque et quoi corriger en priorité.
+            Pas de jargon. On vous montre ce qui peut freiner une vraie demande de devis.
           </p>
         </div>
       </Section>
