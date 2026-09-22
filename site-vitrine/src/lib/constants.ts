@@ -13,9 +13,8 @@ export const PRIMARY_CTA_LABEL = "Analyser mon entreprise";
 // silently scroll to nowhere. Never relink it without a real section behind it.
 export const NAV_LINKS = [
   { label: "Création de site", href: "/creation-site-internet" },
-  { label: "SEO", href: "/seo" },
-  { label: "Référencement local", href: "/solutions/referencement-local" },
   { label: "Solutions", href: "/solutions" },
+  { label: "Avis clients", href: "/#avis-clients" },
   { label: "Ressources", href: "/ressources" },
 ] as const;
 
