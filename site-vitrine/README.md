@@ -193,4 +193,5 @@ La boucle de progression Search Console, le maillage et les règles anti-canniba
 
 
 
-<!-- GC production release trigger — reviews-home-2026-09-22 -->
+
+<!-- GC production release trigger — reviews-only-2026-09-22 -->
