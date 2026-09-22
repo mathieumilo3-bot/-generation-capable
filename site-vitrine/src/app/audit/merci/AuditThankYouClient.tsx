@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AuditReport } from "@/components/audit/AuditReport";
 import { Button } from "@/components/ui/Button";
 import { buildCalendlyUrl, type BookingAttribution } from "@/lib/booking";
+import { trackGoogleAdsLeadConversion } from "@/lib/tracking";
 import type { Report } from "@/lib/audit-engine/types";
 
 type StoredAudit = {
@@ -21,6 +22,11 @@ export function AuditThankYouClient() {
     try {
       const raw = sessionStorage.getItem("gc_audit_result");
       if (raw) setStored(JSON.parse(raw) as StoredAudit);
+
+      if (sessionStorage.getItem("gc_google_ads_conversion_pending") === "1") {
+        trackGoogleAdsLeadConversion();
+        sessionStorage.removeItem("gc_google_ads_conversion_pending");
+      }
     } catch {
       // Fallback below if browser storage is unavailable or malformed.
     } finally {
