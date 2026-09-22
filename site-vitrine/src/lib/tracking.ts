@@ -1,3 +1,4 @@
+// Production release: ads-tracking-search-2026-09-22
 /**
  * Lightweight event layer. It writes to dataLayer when a provider is present,
  * so the site can measure the full commercial funnel instead of only clicks.
