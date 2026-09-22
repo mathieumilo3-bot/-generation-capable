@@ -43,8 +43,8 @@ const TRADE_OPTIONS = [
 ];
 
 const OBJECTIVES = [
-  "Plus de demandes de devis",
   "Plus de chantiers",
+  "Plus de clients locaux",
   "Être mieux trouvé sur Google",
   "Recevoir plus d'appels qualifiés",
   "Autre",
@@ -91,6 +91,7 @@ export function AuditFunnel() {
   const [clickIds, setClickIds] = useState({ gclid: "", gbraid: "", wbraid: "" });
   const [otherTrade, setOtherTrade] = useState("");
   const [otherGoal, setOtherGoal] = useState("");
+  const [showCallbackFields, setShowCallbackFields] = useState(false);
 
   const engaged = useRef(false);
   const lastReport = useRef<Report | null>(null);
@@ -378,13 +379,13 @@ export function AuditFunnel() {
             <button
               type="submit"
               disabled={data.siteUrl.trim().length < 4}
-              className="mt-3 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--color-text)] px-7 text-base font-semibold text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-35"
+              className="audit-primary-cta mt-3 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-35"
             >
-              Voir mes opportunités →
+              Voir comment gagner plus de clients →
             </button>
 
             <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-              Aucun email demandé pour la première lecture.
+              30 sec · Analyse réelle · Aucun email pour voir le premier résultat
             </p>
           </motion.form>
         )}
@@ -400,11 +401,11 @@ export function AuditFunnel() {
             {previewStatus === "loading" ? (
               <div className="py-3">
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-xl font-semibold">Analyse en cours…</p>
+                  <p className="font-display text-xl font-semibold">On cherche ce qui peut vous faire gagner plus.</p>
                   <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
                 </div>
                 <p className="mt-2 text-sm text-[var(--color-muted)]">
-                  On lit ce qu’un prospect voit avant de vous contacter.
+                  Votre site est analysé comme le verrait un futur client : visibilité, confiance, puis envie d’appeler.
                 </p>
 
                 <div className="mt-7 space-y-3">
@@ -425,11 +426,11 @@ export function AuditFunnel() {
             ) : previewStatus === "ready" ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                  Première lecture terminée
+                  Opportunité détectée
                 </p>
 
                 {previewFinding ? (
-                  <div className="mt-4 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-5">
+                  <div className="audit-result-glow mt-4 rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] p-5">
                     <div className="flex items-center justify-between gap-4">
                       <span className="text-xs text-[var(--color-muted)]">
                         {previewFinding.confidence === "observed" ? "Observé sur votre site" : "Signal détecté"}
@@ -451,6 +452,16 @@ export function AuditFunnel() {
                         {previewFinding.evidence[0]}
                       </p>
                     )}
+                    {previewFinding.recommendation && (
+                      <div className="mt-4 rounded-xl border border-[var(--color-accent)]/25 bg-black/20 px-4 py-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                          Première action recommandée
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">
+                          {previewFinding.recommendation}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
@@ -467,12 +478,12 @@ export function AuditFunnel() {
                     setStage("trade");
                     track("audit_step_2");
                   }}
-                  className="mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--color-text)] px-7 text-base font-semibold text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)]"
+                  className="audit-primary-cta mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300"
                 >
-                  Affiner mon plan →
+                  Débloquer mes 3 priorités →
                 </button>
                 <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-                  2 choix rapides · aucun clavier
+                  Encore 2 clics · environ 15 secondes
                 </p>
               </div>
             ) : (
@@ -612,38 +623,61 @@ export function AuditFunnel() {
             </div>
 
             <p className="mt-5 text-sm text-[var(--color-muted)]">
-              Où vous envoyer le diagnostic complet ?
+              Dernière étape : où vous envoyer vos 3 priorités ?
             </p>
 
             <div className="mt-4 space-y-3">
-              <input
-                required
-                type="email"
-                maxLength={FIELD_LIMITS.email}
-                autoComplete="email"
-                placeholder="Votre email"
-                className={inputClass()}
-                value={data.email}
-                onChange={(e) => update("email", e.target.value)}
-              />
-              <input
-                type="text"
-                maxLength={FIELD_LIMITS.nom}
-                autoComplete="name"
-                placeholder="Votre prénom (optionnel)"
-                className={inputClass()}
-                value={data.nom}
-                onChange={(e) => update("nom", e.target.value)}
-              />
-              <input
-                type="tel"
-                maxLength={FIELD_LIMITS.telephone}
-                autoComplete="tel"
-                placeholder="Téléphone si vous souhaitez être rappelé (optionnel)"
-                className={inputClass()}
-                value={data.telephone}
-                onChange={(e) => update("telephone", e.target.value)}
-              />
+              <label className="block text-[11px] font-medium text-[var(--color-muted)]">
+                Email
+                <input
+                  required
+                  type="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  maxLength={FIELD_LIMITS.email}
+                  autoComplete="email"
+                  placeholder="vous@entreprise.fr"
+                  className={`${inputClass()} mt-2`}
+                  value={data.email}
+                  onChange={(e) => update("email", e.target.value)}
+                />
+              </label>
+
+              {!showCallbackFields ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCallbackFields(true)}
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-muted)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+                >
+                  Je préfère être rappelé →
+                </button>
+              ) : (
+                <div className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
+                  <p className="px-1 text-[11px] text-[var(--color-muted)]">
+                    Optionnel · uniquement si vous voulez qu’on vous rappelle
+                  </p>
+                  <input
+                    type="text"
+                    maxLength={FIELD_LIMITS.nom}
+                    autoComplete="name"
+                    placeholder="Votre prénom"
+                    className={inputClass()}
+                    value={data.nom}
+                    onChange={(e) => update("nom", e.target.value)}
+                  />
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    maxLength={FIELD_LIMITS.telephone}
+                    autoComplete="tel"
+                    placeholder="Votre téléphone"
+                    className={inputClass()}
+                    value={data.telephone}
+                    onChange={(e) => update("telephone", e.target.value)}
+                  />
+                </div>
+              )}
             </div>
 
             {error && <p className="mt-3 text-sm text-red-400" role="alert">{error}</p>}
@@ -651,13 +685,13 @@ export function AuditFunnel() {
             <button
               type="submit"
               disabled={submitting || !data.email.includes("@")}
-              className="mt-4 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--color-text)] px-7 text-base font-semibold text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
+              className="audit-primary-cta mt-4 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {submitting ? "Préparation de votre plan…" : "Afficher mon plan →"}
+              {submitting ? "Préparation de votre plan…" : "Voir mes 3 priorités →"}
             </button>
 
             <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-              Gratuit · Sans engagement · Pas de spam
+              Pas de carte · Sans engagement · Vos données ne sont pas vendues
             </p>
           </motion.form>
         )}
