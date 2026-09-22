@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Hero } from "@/components/sections/Hero";
 import { InstantCheck } from "@/components/sections/InstantCheck";
 import { BeforeAfterShowcase } from "@/components/sections/BeforeAfterShowcase";
-import { ReviewsSection } from "@/components/sections/ReviewsSection";
 import { SystemArchitecture } from "@/components/sections/SystemArchitecture";
 import { FAQ } from "@/components/sections/FAQ";
 import { FinalCTA } from "@/components/sections/FinalCTA";
@@ -29,7 +28,6 @@ export default function Home() {
 
       <Hero />
       <BeforeAfterShowcase />
-      <ReviewsSection />
       <InstantCheck />
       <SystemArchitecture />
       <FAQ />
