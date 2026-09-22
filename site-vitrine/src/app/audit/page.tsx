@@ -25,18 +25,18 @@ const FAQS = [
 
 export default function AuditPage() {
   return (
-    <>
+    <div className="audit-experience">
       <FAQJsonLd items={FAQS} />
 
-      <Section className="pb-20 pt-9 sm:pb-24 sm:pt-14 lg:pt-16">
+      <Section className="pb-20 pt-8 sm:pb-24 sm:pt-12 lg:pt-14">
         <AuditHero />
 
-        <div id="audit-form" className="mx-auto mt-7 max-w-2xl scroll-mt-24 sm:mt-9">
-          <div className="rounded-[1.7rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-4 shadow-[0_28px_90px_rgba(0,0,0,0.32)] sm:p-7">
+        <div id="audit-form" className="mx-auto mt-6 max-w-2xl scroll-mt-24 sm:mt-8">
+          <div className="audit-result-glow rounded-[1.7rem] border border-[var(--color-border-strong)] bg-[rgba(10,10,10,0.94)] p-4 backdrop-blur-xl sm:p-7">
             <AuditFunnel />
           </div>
         </div>
       </Section>
-    </>
+    </div>
   );
 }
