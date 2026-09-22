@@ -59,39 +59,6 @@ export default function AuditPage() {
           </p>
         </div>
 
-        <div className="mx-auto mt-12 max-w-4xl border-t border-[var(--color-border)] pt-10 sm:mt-16">
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              {
-                title: "Google & zone",
-                body: "Vos métiers et zones doivent être compris rapidement par Google comme par le prospect.",
-              },
-              {
-                title: "Réalisations & confiance",
-                body: "Photos, avis, garanties et preuves doivent rassurer avant le premier appel.",
-              },
-              {
-                title: "Devis & rappel",
-                body: "La prise de contact doit être simple et donner assez d'informations pour rappeler vite.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
-              >
-                <h2 className="font-display text-base font-semibold">{item.title}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{item.body}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)] px-5 py-4 text-center">
-            <p className="text-sm leading-relaxed">
-              <span className="font-semibold">On ne refait pas tout pour faire joli.</span>{" "}
-              On priorise ce qui peut réellement aider à générer et mieux traiter vos demandes.
-            </p>
-          </div>
-        </div>
       </Section>
     </>
   );
