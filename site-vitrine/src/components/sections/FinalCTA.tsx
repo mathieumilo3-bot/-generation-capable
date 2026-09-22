@@ -19,7 +19,7 @@ export function FinalCTA() {
 
         <div className="mt-8">
           <Button href="/audit" variant="primary" trackEvent="cta_clicked" trackPayload={{ location: "final_cta" }}>
-            Voir ce qui bloque mes demandes →
+            Voir comment obtenir plus de demandes →
           </Button>
         </div>
 
