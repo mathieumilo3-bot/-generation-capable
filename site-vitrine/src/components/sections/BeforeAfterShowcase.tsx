@@ -10,20 +10,14 @@ import { track } from "@/lib/tracking";
 type Version = "avant" | "apres";
 
 const VERSIONS: Record<Version, { label: string; src: string }> = {
-  avant: {
-    label: "Avant",
-    src: "/demos/couvreur/avant.html",
-  },
-  apres: {
-    label: "Après GC",
-    src: "/demos/couvreur/apres.html",
-  },
+  avant: { label: "Avant", src: "/demos/couvreur/avant.html" },
+  apres: { label: "Après GC", src: "/demos/couvreur/apres.html" },
 };
 
 const TRANSFORMATIONS = [
-  ["Message dispersé", "Une promesse claire"],
-  ["Contact générique", "Besoin qualifié"],
-  ["Vitrine passive", "Parcours orienté demande"],
+  ["Services difficiles à lire", "Métiers + zones clairs"],
+  ["Peu de preuves visibles", "Réalisations + confiance"],
+  ["Contact générique", "Demande de devis guidée"],
 ] as const;
 
 export function BeforeAfterShowcase() {
@@ -35,29 +29,27 @@ export function BeforeAfterShowcase() {
     if (next === version) return;
     setDirection(next === "avant" ? 1 : -1);
     setVersion(next);
-    track("cta_clicked", {
-      location: "before_after_switch",
-      version: next,
-    });
+    track("cta_clicked", { location: "before_after_switch", version: next });
   }
 
   return (
     <Section id="demonstration" className="overflow-hidden py-16 sm:py-20">
       <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-end lg:gap-12">
         <Reveal>
-          <Eyebrow>La transformation</Eyebrow>
+          <Eyebrow>Exemple artisan</Eyebrow>
           <h2 className="font-display text-balance mt-4 text-4xl font-semibold leading-[1.02] tracking-tight sm:text-5xl">
-            Même entreprise.
+            Même savoir-faire.
             <br />
-            <span className="text-[var(--color-muted)]">Pas la même valeur perçue.</span>
+            <span className="text-[var(--color-muted)]">Pas la même confiance au premier regard.</span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.08}>
           <div className="max-w-2xl lg:ml-auto">
             <p className="text-balance text-base leading-relaxed text-[var(--color-muted)] sm:text-lg">
-              Le résultat d&apos;abord. Puis l&apos;ancienne version pour mesurer
-              immédiatement la différence.
+              Avant d&apos;appeler, un prospect regarde vos réalisations, vos services,
+              votre zone et la facilité pour demander un devis. Le site doit répondre
+              à ces questions sans lui faire chercher.
             </p>
             <p className="mt-3 text-[10px] uppercase tracking-[0.16em] text-white/35 sm:text-xs">
               Démonstration fictive · aucun résultat inventé
@@ -75,15 +67,11 @@ export function BeforeAfterShowcase() {
               <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-accent)]/60" />
             </span>
             <span className="hidden text-xs text-[var(--color-muted)] sm:inline">
-              Exemple de transformation
+              Exemple couvreur
             </span>
           </div>
 
-          <div
-            className="grid grid-cols-2 rounded-full border border-white/10 bg-black p-1"
-            role="group"
-            aria-label="Comparer avant et après"
-          >
+          <div className="grid grid-cols-2 rounded-full border border-white/10 bg-black p-1" role="group" aria-label="Comparer avant et après">
             {(["apres", "avant"] as Version[]).map((key) => {
               const selected = version === key;
               return (
@@ -126,14 +114,9 @@ export function BeforeAfterShowcase() {
       <Reveal delay={0.12}>
         <div className="mt-5 grid overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] sm:grid-cols-3">
           {TRANSFORMATIONS.map(([before, after]) => (
-            <div
-              key={before}
-              className="border-b border-[var(--color-border)] px-5 py-4 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0"
-            >
+            <div key={before} className="border-b border-[var(--color-border)] px-5 py-4 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0">
               <p className="text-[11px] text-[var(--color-muted)]">{before}</p>
-              <p className="font-display mt-1 text-sm font-semibold text-[var(--color-text)] sm:text-base">
-                → {after}
-              </p>
+              <p className="font-display mt-1 text-sm font-semibold text-[var(--color-text)] sm:text-base">→ {after}</p>
             </div>
           ))}
         </div>
@@ -141,13 +124,8 @@ export function BeforeAfterShowcase() {
 
       <Reveal delay={0.16}>
         <div className="mt-6">
-          <Button
-            href="/audit"
-            variant="primary"
-            trackEvent="cta_clicked"
-            trackPayload={{ location: "before_after_primary" }}
-          >
-            Analyser mon site gratuitement →
+          <Button href="/audit" variant="primary" trackEvent="cta_clicked" trackPayload={{ location: "before_after_primary" }}>
+            Vérifier mon site gratuitement →
           </Button>
         </div>
       </Reveal>
