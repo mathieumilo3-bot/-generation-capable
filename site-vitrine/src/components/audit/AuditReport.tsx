@@ -284,6 +284,26 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
                   <OpportunityCard key={finding.id} finding={finding} rank={index + 1} />
                 ))}
           </div>
+
+          <div className="mt-6 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-5 text-center">
+            <p className="font-display text-lg font-semibold">Vous savez maintenant quoi traiter.</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--color-muted)]">
+              On peut partir directement de ces points et vous montrer l’ordre dans lequel les corriger.
+            </p>
+            <div className="mt-4">
+              <Button
+                href={bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="primary"
+                className="audit-primary-cta min-h-14 px-7 text-base"
+                trackEvent="booking_started"
+                trackPayload={{ location: "audit_priorities", source: "capable_audit" }}
+              >
+                Réserver 30 min pour les corriger →
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
