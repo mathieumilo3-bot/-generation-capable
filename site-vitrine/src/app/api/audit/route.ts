@@ -8,7 +8,13 @@ import {
   type AuditSubmission,
   type ReportEmailSummary,
 } from "@/lib/audit-submission";
-import { clientIpFrom, rateLimit } from "@/lib/rate-limit";\nimport { buildLeadActionLinks, createLeadMeta, upsertLeadContact, type LeadMeta } from "@/lib/lead-tracking";
+import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
+import {
+  buildLeadActionLinks,
+  createLeadMeta,
+  upsertLeadContact,
+  type LeadMeta,
+} from "@/lib/lead-tracking";
 
 /**
  * Reject oversized bodies before parsing them. A real submission is < 1 KB;
@@ -35,7 +41,8 @@ async function sendEmails(
   submission: AuditSubmission,
   apiKey: string,
   notifyEmail: string,
-  reportSummary: ReportEmailSummary | null
+  reportSummary: ReportEmailSummary | null,
+  leadMeta: LeadMeta
 ) {
   const resend = new Resend(apiKey);
   const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
@@ -154,8 +161,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: "received", accepted: true, emailed: false }, { status: 200 });
   }
 
+  const leadMeta = createLeadMeta();
+
   try {
-    await sendEmails(submission, apiKey, notifyEmail, reportSummary);
+    await upsertLeadContact(submission, leadMeta);
+  } catch (error) {
+    console.error("[audit] lead CRM sync failed (non-blocking):", error);
+  }
+
+  try {
+    await sendEmails(submission, apiKey, notifyEmail, reportSummary, leadMeta);
   } catch (error) {
     console.error("[audit] notification email failed:", error);
     return NextResponse.json({ error: "email_failed" }, { status: 502 });
