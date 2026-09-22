@@ -4,72 +4,38 @@ import { Reveal } from "@/components/ui/Reveal";
 
 const ENTRY_POINTS = [
   {
-    href: "/creation-site-internet",
-    title: "Création de site internet pour PME et artisans",
-    description: "Site professionnel, architecture de services, preuves et conversion.",
-  },
-  {
-    href: "/seo",
-    title: "SEO pour PME",
-    description: "Référencement naturel, pages commerciales, contenus et progression organique.",
-  },
-  {
-    href: "/solutions/agence-marketing-digital",
-    title: "Marketing digital",
-    description: "SEO, Ads, contenu, social et acquisition dans un même système.",
-  },
-  {
-    href: "/solutions/referencement-local",
-    title: "Référencement local pour entreprise",
-    description: "Recherches locales, services, zones réellement servies et présence Google.",
-  },
-  {
-    href: "/audit",
-    title: "Audit SEO gratuit",
-    description: "Diagnostic humain, freins prioritaires et plan d'action sans engagement.",
-  },
-  {
-    href: "/solutions/google-business-profile",
-    title: "Google Business Profile",
-    description: "Transformer la visibilité locale en appels, devis et rendez-vous.",
-  },
-  {
-    href: "/solutions/generation-de-leads",
-    title: "Générer des leads",
-    description: "Pages, formulaires et parcours orientés demandes qualifiées.",
-  },
-  {
-    href: "/solutions/generation-leads-b2b",
-    title: "Génération de leads B2B",
-    description: "Pipeline, qualification et rendez-vous commerciaux.",
-  },
-  {
-    href: "/solutions/publicite-google-ads",
-    title: "Google Ads",
-    description: "Capter rapidement les recherches à forte intention.",
+    href: "/solutions/creation-site-artisan",
+    title: "Création de site pour artisans",
+    description: "Un site clair, crédible et orienté demandes de devis.",
   },
   {
     href: "/solutions/marketing-digital-btp",
     title: "Marketing digital BTP",
-    description: "Visibilité locale, prestations et demandes de devis.",
+    description: "Visibilité locale, acquisition et demandes de chantiers.",
+  },
+  {
+    href: "/solutions/publicite-google-ads",
+    title: "Google Ads",
+    description: "Capter les recherches à forte intention et mesurer les demandes.",
+  },
+  {
+    href: "/audit",
+    title: "Audit gratuit",
+    description: "Identifier les freins prioritaires avant d'investir davantage.",
   },
 ] as const;
 
 export function SeoEntryPoints() {
   return (
-    <Section className="py-20 sm:py-24">
+    <Section className="py-14 sm:py-16">
       <Reveal>
         <Eyebrow>Accès directs</Eyebrow>
         <h2 className="font-display text-balance mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-          Trouvez directement la solution qui correspond à votre recherche.
+          Allez directement à votre priorité.
         </h2>
-        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--color-muted)]">
-          Créer un site, être trouvé sur Google ou recevoir davantage de demandes :
-          partez de votre priorité pour découvrir les actions adaptées à votre entreprise.
-        </p>
       </Reveal>
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {ENTRY_POINTS.map((item, index) => (
           <Reveal key={item.href} delay={index * 0.04}>
             <Link
