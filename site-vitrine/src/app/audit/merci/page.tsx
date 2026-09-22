@@ -10,8 +10,10 @@ export const metadata: Metadata = {
 
 export default function AuditThankYouPage() {
   return (
-    <Section className="py-16 sm:py-24 lg:py-28">
-      <AuditThankYouClient />
-    </Section>
+    <div className="audit-experience">
+      <Section className="py-16 sm:py-24 lg:py-28">
+        <AuditThankYouClient />
+      </Section>
+    </div>
   );
 }
