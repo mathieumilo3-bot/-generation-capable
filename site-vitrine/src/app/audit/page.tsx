@@ -28,11 +28,11 @@ export default function AuditPage() {
     <div className="audit-experience">
       <FAQJsonLd items={FAQS} />
 
-      <Section className="pb-20 pt-8 sm:pb-24 sm:pt-12 lg:pt-14">
+      <Section className="pb-20 pt-7 sm:pb-24 sm:pt-11 lg:pt-14">
         <AuditHero />
 
-        <div id="audit-form" className="mx-auto mt-6 max-w-2xl scroll-mt-24 sm:mt-8">
-          <div className="audit-result-glow rounded-[1.7rem] border border-[var(--color-border-strong)] bg-[rgba(10,10,10,0.94)] p-4 backdrop-blur-xl sm:p-7">
+        <div id="audit-form" className="mx-auto mt-5 max-w-2xl scroll-mt-24 sm:mt-7">
+          <div className="audit-form-shell rounded-[1.9rem] p-[18px] backdrop-blur-xl sm:p-7">
             <AuditFunnel />
           </div>
         </div>

@@ -109,18 +109,19 @@ button, a {
 }
 
 
-/* Audit conversion experience — high contrast without sacrificing the premium GC identity */
+/* Audit conversion experience — softer, lighter and still conversion-first */
 .audit-experience {
-  --color-accent: #ffd84a;
-  --color-accent-soft: rgba(255, 216, 74, 0.13);
-  --color-border-strong: rgba(255, 255, 255, 0.24);
+  --color-accent: #f0d16f;
+  --color-accent-soft: rgba(240, 209, 111, 0.105);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --audit-cream: #f7e8ad;
   position: relative;
   isolation: isolate;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 50% 4%, rgba(255, 216, 74, 0.13), transparent 25rem),
-    radial-gradient(circle at 14% 34%, rgba(255, 179, 0, 0.055), transparent 22rem),
-    #050505;
+    radial-gradient(circle at 50% 2%, rgba(240, 209, 111, 0.085), transparent 24rem),
+    radial-gradient(circle at 12% 42%, rgba(179, 203, 190, 0.028), transparent 24rem),
+    #050606;
 }
 
 .audit-experience::before {
@@ -129,61 +130,74 @@ button, a {
   z-index: -1;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.018) 1px, transparent 1px);
-  background-size: 52px 52px;
-  mask-image: linear-gradient(to bottom, black, transparent 70%);
+  background:
+    linear-gradient(to bottom, rgba(255,255,255,0.018), transparent 18rem),
+    radial-gradient(circle at 88% 30%, rgba(255,255,255,0.018), transparent 18rem);
+}
+
+.audit-form-shell {
+  border: 1px solid rgba(255, 255, 255, 0.105);
+  background:
+    linear-gradient(180deg, rgba(17, 18, 17, 0.9), rgba(9, 10, 10, 0.96));
+  box-shadow:
+    0 26px 76px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.audit-input {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.028);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.audit-input::placeholder {
+  color: rgba(245, 245, 240, 0.4);
+}
+
+.audit-input:focus {
+  border-color: rgba(240, 209, 111, 0.64);
+  background: rgba(255, 255, 255, 0.042);
+  box-shadow:
+    0 0 0 3px rgba(240, 209, 111, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 .audit-primary-cta {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #ffe978 0%, #ffd23d 56%, #ffb800 100%);
-  color: #060606;
-  border: 1px solid rgba(255, 238, 159, 0.8);
+  background: linear-gradient(135deg, #f8e9ad 0%, #f0d16f 58%, #e2bb53 100%);
+  color: #090907;
+  border: 1px solid rgba(255, 241, 188, 0.7);
   box-shadow:
-    0 0 0 1px rgba(255, 216, 74, 0.12),
-    0 16px 48px rgba(255, 191, 0, 0.24),
-    0 0 42px rgba(255, 216, 74, 0.13);
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 14px 34px rgba(188, 151, 47, 0.16);
 }
 
-.audit-primary-cta:hover {
-  transform: translateY(-1px) scale(1.01);
+.audit-primary-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
   box-shadow:
-    0 0 0 1px rgba(255, 236, 143, 0.25),
-    0 18px 56px rgba(255, 191, 0, 0.32),
-    0 0 58px rgba(255, 216, 74, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 18px 42px rgba(188, 151, 47, 0.22);
 }
 
-.audit-primary-cta::after {
-  content: "";
-  position: absolute;
-  top: -60%;
-  bottom: -60%;
-  width: 42%;
-  left: -55%;
-  transform: rotate(16deg);
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.52), transparent);
-  animation: audit-cta-shine 3.8s ease-in-out infinite;
+.audit-primary-cta:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.audit-primary-cta:disabled {
+  opacity: 1;
+  color: rgba(9, 9, 7, 0.66);
+  border-color: rgba(241, 222, 157, 0.34);
+  background: linear-gradient(135deg, #d8ca94 0%, #c8ae60 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 28px rgba(0, 0, 0, 0.16);
+  filter: saturate(0.72) brightness(0.82);
 }
 
 .audit-result-glow {
   box-shadow:
-    inset 0 0 0 1px rgba(255, 216, 74, 0.06),
-    0 18px 55px rgba(0, 0, 0, 0.34),
-    0 0 44px rgba(255, 216, 74, 0.07);
-}
-
-@keyframes audit-cta-shine {
-  0%, 56% { left: -55%; opacity: 0; }
-  64% { opacity: 0.8; }
-  82% { left: 125%; opacity: 0; }
-  100% { left: 125%; opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .audit-primary-cta::after {
-    animation: none;
-  }
+    inset 0 0 0 1px rgba(240, 209, 111, 0.045),
+    0 18px 55px rgba(0, 0, 0, 0.3),
+    0 0 40px rgba(240, 209, 111, 0.045);
 }
