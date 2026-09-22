@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "Avis clients | GC Agence",
-  description: "Aperçu de présentation non indexé du futur espace avis et transformations de GC Agence.",
+  description: "Aperçu de présentation non indexé du futur espace avis et réalisations de GC Agence.",
   robots: { index: false, follow: false },
 };
 
@@ -39,142 +40,71 @@ const REVIEWS = [
   },
 ] as const;
 
-const PROJECTS = [
+const SITES = [
   {
-    sector: "Couverture",
-    beforeTitle: "Site vitrine classique",
-    beforeCopy: "Navigation dense, message générique, demande de devis peu guidée.",
-    afterTitle: "Parcours orienté besoin",
-    afterCopy: "Promesse immédiate, qualification courte et prochaine étape évidente.",
-    accent: "01",
+    owner: "Fabien",
+    title: "Atelier Croizé",
+    sector: "Rénovation intérieure",
+    src: "/demos/clients/fabien/index.html",
+    description:
+      "Une présence éditoriale haut de gamme, pensée pour rassurer vite et faire passer naturellement vers l’étude de projet.",
   },
   {
-    sector: "Bien-être",
-    beforeTitle: "Offre difficile à comprendre",
-    beforeCopy: "Plusieurs prestations au même niveau, peu de hiérarchie et peu de réassurance.",
-    afterTitle: "Offre clarifiée",
-    afterCopy: "Une entrée simple, des bénéfices lisibles et une prise de rendez-vous naturelle.",
-    accent: "02",
-  },
-  {
-    sector: "Nettoyage",
-    beforeTitle: "Présence trop générique",
-    beforeCopy: "Services empilés, zone d’intervention peu visible et contact sans qualification.",
-    afterTitle: "Demande cadrée",
-    afterCopy: "Services prioritaires, zone claire et formulaire adapté au besoin réel.",
-    accent: "03",
-  },
-  {
-    sector: "Événementiel",
-    beforeTitle: "Portfolio sans direction",
-    beforeCopy: "Beaucoup d’images mais peu d’aide pour comprendre l’offre et passer à l’action.",
-    afterTitle: "Expérience premium",
-    afterCopy: "Univers visuel fort, offres structurées et passage fluide vers la demande.",
-    accent: "04",
+    owner: "Soraya",
+    title: "Soraya Studio",
+    sector: "Bien-être · accompagnement",
+    src: "/demos/clients/soraya/index.html",
+    description:
+      "Un univers doux et premium, avec une offre clarifiée et des appels à l’action intégrés sans casser l’expérience.",
   },
 ] as const;
 
-function SiteMockup({
-  mode,
-  sector,
-  title,
-  copy,
+function PremiumSitePreview({
+  site,
+  index,
 }: {
-  mode: "before" | "after";
-  sector: string;
-  title: string;
-  copy: string;
+  site: (typeof SITES)[number];
+  index: number;
 }) {
-  const isAfter = mode === "after";
-
   return (
-    <div
-      className={
-        isAfter
-          ? "overflow-hidden rounded-2xl border border-[var(--color-accent)]/30 bg-black shadow-[0_20px_60px_rgba(0,0,0,0.28)]"
-          : "overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[#e8e8e8]"
-      }
-    >
-      <div
-        className={
-          isAfter
-            ? "flex items-center justify-between border-b border-white/10 bg-[#0c0c0c] px-4 py-3"
-            : "flex items-center justify-between border-b border-black/10 bg-[#d8d8d8] px-4 py-3"
-        }
-      >
-        <div className="flex gap-1.5" aria-hidden>
-          <span className={isAfter ? "h-2 w-2 rounded-full bg-white/20" : "h-2 w-2 rounded-full bg-black/20"} />
-          <span className={isAfter ? "h-2 w-2 rounded-full bg-white/20" : "h-2 w-2 rounded-full bg-black/20"} />
-          <span className={isAfter ? "h-2 w-2 rounded-full bg-[var(--color-accent)]" : "h-2 w-2 rounded-full bg-black/20"} />
+    <article className="overflow-hidden rounded-[1.75rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] shadow-[0_24px_80px_rgba(0,0,0,0.16)]">
+      <div className="flex flex-col gap-4 border-b border-[var(--color-border)] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+            Projet {String(index + 1).padStart(2, "0")} · Après
+          </p>
+          <h3 className="font-display mt-2 text-2xl font-semibold">{site.title}</h3>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
+            {site.sector} · avis de {site.owner}
+          </p>
         </div>
-        <span
-          className={
-            isAfter
-              ? "text-[9px] font-semibold uppercase tracking-[0.18em] text-white/45"
-              : "text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45"
-          }
+        <Link
+          href={site.src}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex shrink-0 items-center justify-center rounded-full border border-[var(--color-border-strong)] px-4 py-2.5 text-xs font-semibold transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
         >
-          {isAfter ? "Après GC" : "Avant"}
-        </span>
+          Voir le site plein écran →
+        </Link>
       </div>
 
-      <div className={isAfter ? "min-h-[250px] bg-gradient-to-br from-[#0b0b0b] to-[#171717] p-5 text-white" : "min-h-[250px] bg-[#f0f0f0] p-5 text-[#333]"}>
-        <div
-          className={
-            isAfter
-              ? "mb-7 flex items-center justify-between"
-              : "mb-5 flex items-center justify-between border-b border-black/10 pb-3"
-          }
-        >
-          <p className={isAfter ? "font-display text-sm font-semibold" : "text-xs font-bold uppercase"}>
-            {sector}
-          </p>
-          <span
-            className={
-              isAfter
-                ? "rounded-full border border-white/15 px-3 py-1 text-[9px] text-white/60"
-                : "border border-black/20 bg-white px-2 py-1 text-[9px]"
-            }
-          >
-            {isAfter ? "Votre projet →" : "Contact"}
-          </span>
-        </div>
-
-        <div className={isAfter ? "max-w-[88%]" : "max-w-full"}>
-          <p
-            className={
-              isAfter
-                ? "font-display text-2xl font-semibold leading-tight tracking-tight"
-                : "font-serif text-xl font-bold leading-tight text-[#315d7d]"
-            }
-          >
-            {title}
-          </p>
-          <p
-            className={
-              isAfter
-                ? "mt-3 text-xs leading-relaxed text-white/55"
-                : "mt-3 text-[11px] leading-relaxed text-[#666]"
-            }
-          >
-            {copy}
-          </p>
-        </div>
-
-        <div className={isAfter ? "mt-7 grid grid-cols-3 gap-2" : "mt-6 grid grid-cols-3 gap-1"}>
-          {[0, 1, 2].map((item) => (
-            <div
-              key={item}
-              className={
-                isAfter
-                  ? "h-14 rounded-xl border border-white/10 bg-white/[0.035]"
-                  : "h-12 border border-black/15 bg-white"
-              }
-            />
-          ))}
-        </div>
+      <div className="relative h-[560px] overflow-hidden bg-white sm:h-[650px]">
+        <iframe
+          src={site.src}
+          title={`Aperçu du site premium ${site.title}`}
+          className="pointer-events-none h-full w-full border-0"
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/10 to-transparent" />
       </div>
-    </div>
+
+      <div className="border-t border-[var(--color-border)] p-5 sm:p-6">
+        <p className="max-w-3xl text-sm leading-relaxed text-[var(--color-muted)]">
+          {site.description}
+        </p>
+      </div>
+    </article>
   );
 }
 
@@ -187,14 +117,13 @@ export default function DemoReviewsPage() {
             <div>
               <Eyebrow>Avis clients</Eyebrow>
               <h1 className="font-display text-balance mt-4 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
-                Le résultat se voit.
+                Des retours.
                 <br />
-                <span className="text-[var(--color-muted)]">L’expérience se raconte.</span>
+                <span className="text-[var(--color-muted)]">Et surtout des sites à voir.</span>
               </h1>
               <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-base">
-                Une présentation claire des retours et des transformations pour comprendre
-                rapidement ce qui change entre une présence simplement en ligne et une
-                présence réellement pensée pour convertir.
+                Les témoignages donnent le ressenti. Les réalisations montrent concrètement
+                le niveau de présentation, de clarté et de conversion recherché.
               </p>
             </div>
 
@@ -249,50 +178,22 @@ export default function DemoReviewsPage() {
 
       <Section tone="raised" className="py-16 sm:py-24">
         <div className="mx-auto max-w-6xl">
-          <Eyebrow>Transformations</Eyebrow>
+          <Eyebrow>Réalisations</Eyebrow>
           <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <h2 className="font-display text-balance max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
-              Quatre univers.
+              Pour l’instant,
               <br />
-              <span className="text-[var(--color-muted)]">La même logique de conversion.</span>
+              <span className="text-[var(--color-muted)]">on montre seulement l’Après.</span>
             </h2>
             <p className="max-w-md text-sm leading-relaxed text-[var(--color-muted)]">
-              Chaque projet part d’un contexte différent. Le travail consiste à simplifier
-              ce que le prospect voit, comprend et fait ensuite.
+              Deux premiers univers premium complets. Les deux prochains seront construits
+              sur la même exigence avant d’être ajoutés ici.
             </p>
           </div>
 
           <div className="mt-10 flex flex-col gap-10">
-            {PROJECTS.map((project) => (
-              <article
-                key={project.sector}
-                className="overflow-hidden rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-bg)] p-4 sm:p-6"
-              >
-                <div className="mb-5 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                      Transformation {project.accent}
-                    </p>
-                    <h3 className="font-display mt-2 text-2xl font-semibold">{project.sector}</h3>
-                  </div>
-                  <span className="text-xs text-[var(--color-muted)]">Avant → Après</span>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <SiteMockup
-                    mode="before"
-                    sector={project.sector}
-                    title={project.beforeTitle}
-                    copy={project.beforeCopy}
-                  />
-                  <SiteMockup
-                    mode="after"
-                    sector={project.sector}
-                    title={project.afterTitle}
-                    copy={project.afterCopy}
-                  />
-                </div>
-              </article>
+            {SITES.map((site, index) => (
+              <PremiumSitePreview key={site.title} site={site} index={index} />
             ))}
           </div>
 
@@ -300,7 +201,7 @@ export default function DemoReviewsPage() {
             <div>
               <p className="font-display text-xl font-semibold">Votre site peut être le prochain.</p>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">
-                Le diagnostic permet de voir les changements prioritaires avant de parler refonte, SEO ou publicité.
+                On identifie les changements prioritaires avant de parler refonte, SEO ou publicité.
               </p>
             </div>
             <Button
