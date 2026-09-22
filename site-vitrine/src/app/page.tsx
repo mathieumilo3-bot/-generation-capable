@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Hero } from "@/components/sections/Hero";
 import { InstantCheck } from "@/components/sections/InstantCheck";
-import { Recommendation } from "@/components/sections/Recommendation";
-import { SystemDemo } from "@/components/sections/SystemDemo";
+import { BeforeAfterShowcase } from "@/components/sections/BeforeAfterShowcase";
 import { SystemArchitecture } from "@/components/sections/SystemArchitecture";
 import { Systems } from "@/components/sections/Systems";
 import { FAQ } from "@/components/sections/FAQ";
@@ -29,12 +28,11 @@ export default function Home() {
       />
       <LandingView />
 
-      {/* The homepage now follows one commercial argument:
-          promise → proof of thinking → diagnostic → mechanism → architecture → offer → objections → action. */}
+      {/* One commercial argument:
+          promise → tangible proof → diagnostic → mechanism → offer → objections → action. */}
       <Hero />
-      <Recommendation />
+      <BeforeAfterShowcase />
       <InstantCheck />
-      <SystemDemo />
       <SystemArchitecture />
       <Systems />
       <SeoEntryPoints />
