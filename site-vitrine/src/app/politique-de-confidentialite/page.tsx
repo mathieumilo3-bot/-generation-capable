@@ -22,10 +22,9 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 }
 
 /**
- * This page describes what the site actually does — the Capable Audit form is
- * the only place personal data is collected, and it is delivered by email
- * rather than stored in a database. It is written from the code, not from a
- * template, so it stays true as long as the code does.
+ * This page describes what the site actually does. Audit submissions are
+ * delivered by email and stored in the contact system only to manage the
+ * commercial follow-up and, when consent allows it, measurement of ad quality.
  */
 export default function PolitiqueConfidentialitePage() {
   const controller = LEGAL_ENTITY.denomination || SITE_NAME;
@@ -67,27 +66,34 @@ export default function PolitiqueConfidentialitePage() {
             </ul>
             <p>
               Aucune donnée sensible au sens de l&apos;article 9 du RGPD
-              n&apos;est demandée. Aucun profilage ni décision automatisée
-              n&apos;est appliqué à votre demande : l&apos;analyse est réalisée
-              par une personne.
+              n&apos;est demandée. Les identifiants publicitaires liés à la
+              visite (par exemple GCLID, GBRAID ou WBRAID) peuvent également
+              être conservés lorsqu&apos;ils existent afin de mesurer l&apos;origine
+              d&apos;une demande. Aucun profilage automatisé ne décide de
+              l&apos;acceptation ou du refus d&apos;un prospect.
             </p>
           </Block>
 
           <Block title="Finalité et base légale">
             <p>
-              Ces données servent exclusivement à préparer le diagnostic que
-              vous demandez et à vous recontacter à ce sujet. La base légale
-              est l&apos;exécution de mesures précontractuelles prises à votre
-              demande (article 6.1.b du RGPD). Elles ne sont ni vendues, ni
-              louées, ni transmises à des fins publicitaires.
+              Ces données servent à préparer le diagnostic demandé, à vous
+              recontacter et à suivre l&apos;avancement commercial de la demande.
+              La base légale de ce suivi est l&apos;exécution de mesures
+              précontractuelles prises à votre demande (article 6.1.b du RGPD).
+              Lorsque vous avez accepté les finalités publicitaires dans le
+              bandeau de consentement, certaines données de conversion peuvent
+              aussi être utilisées pour mesurer la qualité des campagnes Google
+              Ads. Elles ne sont ni vendues ni louées.
             </p>
           </Block>
 
           <Block title="Destinataires et sous-traitants">
             <p>
               Votre demande est transmise à l&apos;équipe de {SITE_NAME} par
-              email. Le site ne tient aucune base de données de prospects : vos
-              réponses n&apos;existent que sous la forme de ce message.
+              email et peut être enregistrée dans le système de contacts utilisé
+              pour suivre les étapes lead, lead qualifié, rendez-vous et client.
+              Les données sont limitées aux informations nécessaires au suivi
+              commercial et à la mesure d&apos;acquisition.
             </p>
             <ul className="flex flex-col gap-3">
               {SUBPROCESSORS.map((processor) => (
@@ -147,10 +153,13 @@ export default function PolitiqueConfidentialitePage() {
             <p>
               Si vous acceptez, les catégories de stockage liées à
               l&apos;analyse et à la publicité peuvent être activées par les
-              balises Google configurées pour le site. Si vous refusez,
-              elles restent refusées. Votre choix est conservé localement sur
-              votre appareil afin de ne pas vous redemander votre préférence
-              à chaque visite.
+              balises Google configurées pour le site. Les données de contact
+              fournies dans le formulaire peuvent alors être utilisées de façon
+              sécurisée pour les conversions améliorées et, lorsqu&apos;un lead
+              est ensuite qualifié ou devient client, pour mesurer cette étape
+              dans Google Ads. Si vous refusez, les données personnelles ne sont
+              pas envoyées à Google dans ce flux d&apos;amélioration des
+              conversions. Votre choix est conservé localement sur votre appareil.
             </p>
           </Block>
 

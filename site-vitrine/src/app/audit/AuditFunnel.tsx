@@ -240,6 +240,19 @@ export function AuditFunnel() {
     setSubmitting(true);
 
     try {
+      let adUserDataConsent = "UNSPECIFIED";
+      try {
+        const choice = window.localStorage.getItem("gc-revenue-consent-v1");
+        adUserDataConsent =
+          choice === "accepted"
+            ? "GRANTED"
+            : choice === "refused"
+              ? "DENIED"
+              : "UNSPECIFIED";
+      } catch {
+        // Consent storage may be unavailable; keep it unspecified.
+      }
+
       const res = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -258,6 +271,7 @@ export function AuditFunnel() {
           gclid: clickIds.gclid,
           gbraid: clickIds.gbraid,
           wbraid: clickIds.wbraid,
+          adUserDataConsent,
           [HONEYPOT_FIELD]: honeypot,
         }),
       });
@@ -301,7 +315,7 @@ export function AuditFunnel() {
           "gc_audit_result",
           JSON.stringify({
             report,
-            lead: { nom: data.nom, email: data.email },
+            lead: { nom: data.nom, email: data.email, telephone: data.telephone, adUserDataConsent },
             entreprise: data.entreprise,
             attribution,
           })

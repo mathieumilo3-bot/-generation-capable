@@ -9,7 +9,7 @@ import type { Report } from "@/lib/audit-engine/types";
 
 type StoredAudit = {
   report: Report | null;
-  lead?: { nom?: string; email?: string };
+  lead?: { nom?: string; email?: string; telephone?: string; adUserDataConsent?: string };
   entreprise?: string;
   attribution?: BookingAttribution;
 };
@@ -21,10 +21,11 @@ export function AuditThankYouClient() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("gc_audit_result");
-      if (raw) setStored(JSON.parse(raw) as StoredAudit);
+      const parsed = raw ? (JSON.parse(raw) as StoredAudit) : null;
+      if (parsed) setStored(parsed);
 
       if (sessionStorage.getItem("gc_google_ads_conversion_pending") === "1") {
-        trackGoogleAdsLeadConversion();
+        trackGoogleAdsLeadConversion(parsed?.lead);
         sessionStorage.removeItem("gc_google_ads_conversion_pending");
       }
     } catch {

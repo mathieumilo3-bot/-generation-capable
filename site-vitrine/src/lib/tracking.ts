@@ -47,13 +47,27 @@ export function track(event: TrackingEvent, payload: EventPayload = {}): void {
 
 const GOOGLE_ADS_LEAD_DESTINATION = "AW-18466478982/jQ8BCLOau4AdEIa3wOVE";
 
-export function trackGoogleAdsLeadConversion(): void {
+export function trackGoogleAdsLeadConversion(userData?: {
+  email?: string;
+  telephone?: string;
+  adUserDataConsent?: string;
+}): void {
   if (typeof window === "undefined") return;
 
   try {
     if (sessionStorage.getItem("gc_google_ads_lead_sent") === "1") return;
   } catch {
     // Keep going: a blocked sessionStorage must not block measurement.
+  }
+
+  if (
+    typeof window.gtag === "function" &&
+    userData?.adUserDataConsent === "GRANTED"
+  ) {
+    window.gtag("set", "user_data", {
+      email: userData.email?.trim().toLowerCase(),
+      phone_number: userData.telephone?.trim(),
+    });
   }
 
   if (typeof window.gtag === "function") {

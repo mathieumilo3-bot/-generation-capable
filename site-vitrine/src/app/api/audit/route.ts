@@ -9,6 +9,12 @@ import {
   type ReportEmailSummary,
 } from "@/lib/audit-submission";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
+import {
+  buildLeadActionLinks,
+  createLeadMeta,
+  upsertLeadContact,
+  type LeadMeta,
+} from "@/lib/lead-tracking";
 
 /**
  * Reject oversized bodies before parsing them. A real submission is < 1 KB;
@@ -35,11 +41,31 @@ async function sendEmails(
   submission: AuditSubmission,
   apiKey: string,
   notifyEmail: string,
-  reportSummary: ReportEmailSummary | null
+  reportSummary: ReportEmailSummary | null,
+  leadMeta: LeadMeta
 ) {
   const resend = new Resend(apiKey);
   const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
-  const notification = buildNotificationEmail(submission, reportSummary);
+  const baseNotification = buildNotificationEmail(submission, reportSummary);
+  const actions = buildLeadActionLinks(submission.email, leadMeta.leadId);
+  const actionText = [
+    "",
+    "Qualifier ce lead :",
+    `Lead qualifié : ${actions.qualified}`,
+    `Rendez-vous pris : ${actions.booked}`,
+    `Client gagné : ${actions.client}`,
+  ].join("\n");
+  const actionHtml = `<div style="margin-top:20px;padding-top:16px;border-top:1px solid #ddd;">
+    <p style="margin:0 0 10px;font-weight:700;">Qualifier ce lead</p>
+    <a href="${actions.qualified}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;margin:0 8px 8px 0;">Lead qualifié</a>
+    <a href="${actions.booked}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:9px 14px;border-radius:8px;margin:0 8px 8px 0;">RDV pris</a>
+    <a href="${actions.client}" style="display:inline-block;border:1px solid #111;color:#111;text-decoration:none;padding:9px 14px;border-radius:8px;">Client gagné</a>
+  </div>`;
+  const notification = {
+    ...baseNotification,
+    text: baseNotification.text + actionText,
+    html: baseNotification.html.replace(/<\/div>$/, `${actionHtml}</div>`),
+  };
 
   const sent = await withTimeout(
     resend.emails.send({
@@ -135,8 +161,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: "received", accepted: true, emailed: false }, { status: 200 });
   }
 
+  const leadMeta = createLeadMeta();
+
   try {
-    await sendEmails(submission, apiKey, notifyEmail, reportSummary);
+    await upsertLeadContact(submission, leadMeta);
+  } catch (error) {
+    console.error("[audit] lead CRM sync failed (non-blocking):", error);
+  }
+
+  try {
+    await sendEmails(submission, apiKey, notifyEmail, reportSummary, leadMeta);
   } catch (error) {
     console.error("[audit] notification email failed:", error);
     return NextResponse.json({ error: "email_failed" }, { status: 502 });
