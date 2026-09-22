@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Démonstration GC — une expérience premium pensée pour convertir une visite en demande qualifiée.">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Kerné Couverture — Diagnostic toiture en 20 secondes</title>
+  <script>if(window.self!==window.top)document.documentElement.classList.add('is-embedded')</script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%23091923%22/><path d=%22M24 61L50 33l26 28%22 fill=%22none%22 stroke=%22%23d8ab5c%22 stroke-width=%229%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+  <style>
+    :root{
+      --night:#091923;
+      --night-soft:#102a38;
+      --cream:#f4f0e8;
+      --paper:#fbfaf7;
+      --gold:#d8ab5c;
+      --gold-pale:#f3e4c6;
+      --ink:#13232d;
+      --muted:#61717a;
+      --line:rgba(19,35,45,.13);
+      --white:#fff;
+      --shadow:0 28px 80px rgba(3,15,23,.18);
+      --radius:26px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+    button,input{font:inherit}
+    button,a{-webkit-tap-highlight-color:transparent}
+    a{color:inherit;text-decoration:none}
+    .wrap{width:min(1180px,calc(100% - 48px));margin-inline:auto}
+
+    .hero{position:relative;min-height:780px;overflow:hidden;background:var(--night);color:var(--white)}
+    .hero::before{content:"";position:absolute;inset:0;background:
+      linear-gradient(90deg,var(--night) 0%,rgba(9,25,35,.96) 28%,rgba(9,25,35,.43) 55%,rgba(9,25,35,.08) 100%),
+      linear-gradient(0deg,rgba(9,25,35,.58),transparent 45%),
+      url('assets/couvreur-hero.webp') 63% center/cover no-repeat;transform:scale(1.015)}
+    .hero::after{content:"";position:absolute;inset:auto 0 0;height:180px;background:linear-gradient(transparent,var(--night))}
+    header{position:relative;z-index:2;height:104px;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:13px;font-weight:750;letter-spacing:-.02em}
+    .brand-mark{width:42px;height:42px;border:1px solid rgba(216,171,92,.6);border-radius:13px;display:grid;place-items:center;background:rgba(9,25,35,.4);backdrop-filter:blur(10px)}
+    .brand-mark svg{width:24px}
+    .brand small{display:block;color:rgba(255,255,255,.55);font-size:10px;text-transform:uppercase;letter-spacing:.18em;margin-top:3px}
+    .header-cta{border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:12px 18px;font-size:13px;font-weight:700;background:rgba(9,25,35,.28);backdrop-filter:blur(12px);transition:.25s}
+    .header-cta:hover{border-color:var(--gold);background:rgba(9,25,35,.55)}
+
+    .hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.03fr .82fr;gap:70px;align-items:center;min-height:610px;padding:54px 0 100px}
+    .signal{display:inline-flex;align-items:center;gap:9px;color:var(--gold-pale);font-size:12px;font-weight:750;letter-spacing:.13em;text-transform:uppercase}
+    .signal::before{content:"";width:24px;height:1px;background:var(--gold)}
+    h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:clamp(52px,6.4vw,88px);line-height:.96;letter-spacing:-.055em;max-width:760px;margin:25px 0 27px}
+    .hero-copy>p{max-width:590px;font-size:18px;line-height:1.65;color:rgba(255,255,255,.72);margin:0 0 33px}
+    .primary{display:inline-flex;align-items:center;justify-content:center;gap:12px;border:0;border-radius:999px;padding:17px 23px;background:var(--gold);color:#17130d;font-weight:800;cursor:pointer;box-shadow:0 14px 35px rgba(216,171,92,.24);transition:transform .2s,background .2s}
+    .primary:hover{transform:translateY(-2px);background:#e5bb70}
+    .primary svg{width:18px}
+    .reassurance{display:flex;flex-wrap:wrap;gap:18px;margin-top:26px;color:rgba(255,255,255,.62);font-size:12px}
+    .reassurance span{display:flex;align-items:center;gap:7px}
+    .reassurance span::before{content:"✓";color:var(--gold);font-weight:900}
+
+    .flow-card{position:relative;padding:28px;border:1px solid rgba(255,255,255,.16);border-radius:var(--radius);background:rgba(249,247,241,.94);color:var(--ink);box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    .flow-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:25px}
+    .flow-label{font-size:11px;font-weight:850;letter-spacing:.13em;text-transform:uppercase;color:#8f6d34}
+    .flow-time{font-size:12px;color:var(--muted)}
+    .flow-card h2{font-family:Georgia,"Times New Roman",serif;font-size:29px;font-weight:400;line-height:1.12;letter-spacing:-.025em;margin:0 0 20px}
+    .choices{display:grid;gap:9px}
+    .choice{width:100%;border:1px solid var(--line);border-radius:14px;padding:14px 15px;background:rgba(255,255,255,.8);display:flex;align-items:center;gap:12px;color:var(--ink);text-align:left;cursor:pointer;transition:.2s}
+    .choice:hover,.choice:focus-visible{border-color:rgba(216,171,92,.85);transform:translateX(3px);outline:none}
+    .choice.selected{border-color:var(--gold);background:#fff8ec;box-shadow:inset 0 0 0 1px var(--gold)}
+    .choice-icon{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--cream);color:#9b7130;font-weight:900}
+    .choice strong{font-size:13px}
+    .continue{width:100%;border:0;border-radius:14px;padding:15px;margin-top:12px;background:var(--night);color:#fff;font-weight:800;cursor:pointer;display:none}
+    .continue.visible{display:block;animation:rise .28s ease}
+    .flow-second,.final-message{display:none}
+    .flow-second.visible,.final-message.visible{display:block;animation:rise .3s ease}
+    @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+    .field{display:grid;gap:7px;margin:12px 0}
+    .field label{font-size:12px;font-weight:750}
+    .field input{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;outline:none}
+    .field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(216,171,92,.16)}
+    .privacy{font-size:10px;line-height:1.5;color:var(--muted);margin:12px 3px 0}
+    .final-message{padding:28px 12px 18px;text-align:center}
+    .final-check{width:58px;height:58px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;background:#e8f2e7;color:#3b7438;font-size:25px}
+    .final-message p{color:var(--muted);font-size:13px;line-height:1.55}
+
+    .proof{position:relative;z-index:3;margin-top:-52px}
+    .proof-grid{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-radius:22px;box-shadow:0 20px 65px rgba(19,35,45,.1);overflow:hidden}
+    .proof-item{padding:27px 30px;border-right:1px solid var(--line)}
+    .proof-item:last-child{border:0}
+    .proof-item b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:18px;font-weight:400;margin-bottom:7px}
+    .proof-item span{font-size:12px;color:var(--muted);line-height:1.45}
+
+    section{padding:110px 0}
+    .section-intro{display:flex;align-items:end;justify-content:space-between;gap:40px;margin-bottom:42px}
+    .eyebrow{font-size:11px;font-weight:850;letter-spacing:.16em;text-transform:uppercase;color:#9a7133;margin-bottom:14px}
+    h3{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:clamp(36px,4vw,54px);line-height:1.02;letter-spacing:-.04em;margin:0;max-width:600px}
+    .section-intro>p{max-width:380px;color:var(--muted);font-size:14px;line-height:1.65;margin:0}
+    .needs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .need-card{position:relative;min-height:280px;padding:29px;border:1px solid var(--line);border-radius:20px;background:#fff;overflow:hidden;transition:transform .25s,box-shadow .25s}
+    .need-card:hover{transform:translateY(-5px);box-shadow:0 18px 50px rgba(19,35,45,.08)}
+    .need-num{font-family:Georgia,serif;font-size:50px;color:rgba(216,171,92,.27);line-height:1}
+    .need-card h4{font-family:Georgia,serif;font-size:25px;font-weight:400;margin:38px 0 12px}
+    .need-card p{font-size:13px;line-height:1.6;color:var(--muted);margin:0}
+    .need-card span{position:absolute;right:24px;bottom:22px;color:#a77a35;font-size:20px}
+
+    .process{background:var(--cream)}
+    .process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:50px}
+    .process-step{position:relative;padding:0 42px;border-left:1px solid rgba(19,35,45,.15)}
+    .process-step:first-child{padding-left:0;border:0}
+    .process-step:last-child{padding-right:0}
+    .step-tag{display:inline-grid;place-items:center;width:35px;height:35px;border-radius:50%;background:var(--night);color:#fff;font-size:12px;font-weight:800;margin-bottom:22px}
+    .process-step h4{font-size:16px;margin:0 0 9px}
+    .process-step p{color:var(--muted);font-size:13px;line-height:1.6;margin:0}
+
+    .closing{padding:90px 0;background:var(--night);color:#fff;text-align:center}
+    .closing h3{margin:0 auto 17px;max-width:700px}
+    .closing p{color:rgba(255,255,255,.6);font-size:14px;margin:0 auto 28px}
+    footer{padding:28px 0 92px;background:var(--night);border-top:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);font-size:11px}
+    footer .wrap{display:flex;justify-content:space-between;gap:30px}
+
+    .compare-switch{position:fixed;left:50%;bottom:18px;z-index:50;display:flex;gap:4px;padding:5px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(9,25,35,.91);box-shadow:0 14px 40px rgba(0,0,0,.3);backdrop-filter:blur(16px);transform:translateX(-50%)}
+    .compare-switch a{min-width:92px;padding:10px 15px;border-radius:999px;color:rgba(255,255,255,.64);font-size:12px;font-weight:800;text-align:center;transition:.2s}
+    .compare-switch a:hover{color:#fff}
+    .compare-switch a.active{background:var(--gold);color:#18130c}
+    .is-embedded .compare-switch{display:none}
+
+    @media(max-width:920px){
+      .hero{min-height:auto}
+      .hero::before{background:linear-gradient(180deg,rgba(9,25,35,.4),var(--night) 55%),url('assets/couvreur-hero.webp') 61% top/auto 54% no-repeat}
+      .hero-grid{grid-template-columns:1fr;gap:40px;padding-top:150px}
+      .hero-copy{max-width:670px}
+      .flow-card{max-width:600px}
+      .proof{margin-top:-22px}
+      .proof-grid,.needs-grid,.process-grid{grid-template-columns:1fr}
+      .proof-item{border-right:0;border-bottom:1px solid var(--line)}
+      .process-step{padding:25px 0;border-left:0;border-top:1px solid rgba(19,35,45,.15)}
+      .process-step:first-child{border:0}
+      .section-intro{align-items:start;flex-direction:column}
+    }
+    @media(max-width:600px){
+      .wrap{width:min(100% - 30px,1180px)}
+      header{height:82px}
+      .brand-mark{width:38px;height:38px}
+      .brand small{display:none}
+      .header-cta{padding:10px 13px;font-size:11px}
+      .hero-grid{padding-top:115px;padding-bottom:78px}
+      h1{font-size:48px}
+      .hero-copy>p{font-size:16px}
+      .flow-card{padding:21px;border-radius:20px}
+      .reassurance{gap:11px}
+      section{padding:80px 0}
+      .proof-item{padding:22px}
+      .need-card{min-height:240px}
+      footer .wrap{flex-direction:column}
+      .compare-switch{bottom:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <header class="wrap">
+      <a class="brand" href="#" aria-label="Kerné Couverture, accueil">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 15 12 5l9 10" stroke="#d8ab5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 13.5V20h11v-6.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <span>Kerné Couverture<small>Artisan couvreur en Bretagne</small></span>
+      </a>
+      <button class="header-cta" data-focus>Décrire mon besoin</button>
+    </header>
+
+    <main class="hero-grid wrap">
+      <div class="hero-copy">
+        <div class="signal">Couverture · Étanchéité · Zinguerie</div>
+        <h1>Votre toiture mérite une réponse claire.</h1>
+        <p>Une fuite, une rénovation ou un doute sur l’état du toit ? Décrivez votre besoin en 20 secondes. Nous vous indiquons la prochaine étape, sans engagement.</p>
+        <button class="primary" data-focus>
+          Obtenir mon diagnostic
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="reassurance">
+          <span>Devis gratuit</span>
+          <span>Garantie décennale</span>
+          <span>Intervention en Bretagne</span>
+        </div>
+      </div>
+
+      <div class="flow-card" id="diagnostic">
+        <div class="flow-first">
+          <div class="flow-top">
+            <span class="flow-label">Étape 1 sur 2</span>
+            <span class="flow-time">≈ 20 secondes</span>
+          </div>
+          <h2>Que se passe-t-il sur votre toiture ?</h2>
+          <div class="choices">
+            <button class="choice" data-need="urgence">
+              <span class="choice-icon">!</span>
+              <strong>J’ai une fuite ou une infiltration</strong>
+            </button>
+            <button class="choice" data-need="renovation">
+              <span class="choice-icon">⌂</span>
+              <strong>Je souhaite rénover ma toiture</strong>
+            </button>
+            <button class="choice" data-need="autre">
+              <span class="choice-icon">?</span>
+              <strong>J’ai un autre besoin</strong>
+            </button>
+          </div>
+          <button class="continue" id="continue">Continuer</button>
+        </div>
+
+        <div class="flow-second">
+          <div class="flow-top">
+            <span class="flow-label">Étape 2 sur 2</span>
+            <span class="flow-time">Dernière étape</span>
+          </div>
+          <h2>Où pouvons-nous intervenir ?</h2>
+          <div class="field">
+            <label for="postal">Code postal</label>
+            <input id="postal" inputmode="numeric" maxlength="5" placeholder="Ex. 29000">
+          </div>
+          <div class="field">
+            <label for="phone">Téléphone</label>
+            <input id="phone" type="tel" placeholder="06 00 00 00 00">
+          </div>
+          <button class="continue visible" id="finish">Recevoir mon diagnostic</button>
+          <p class="privacy">Démonstration : aucune donnée n’est transmise. Sur le vrai site, ces informations servent uniquement à rappeler le prospect.</p>
+        </div>
+
+        <div class="final-message">
+          <div class="final-check">✓</div>
+          <h2>Demande prête.</h2>
+          <p>Dans une version réelle, le prospect reçoit ici la confirmation et l’équipe GC une demande déjà qualifiée.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="proof wrap">
+    <div class="proof-grid">
+      <div class="proof-item"><b>Un besoin compris tout de suite</b><span>Le visiteur choisit sa situation au lieu de chercher seul.</span></div>
+      <div class="proof-item"><b>Une réponse adaptée</b><span>Le parcours prépare une prise de contact réellement utile.</span></div>
+      <div class="proof-item"><b>Un contact sans friction</b><span>Deux étapes courtes, pensées d’abord pour le mobile.</span></div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="section-intro">
+        <div>
+          <div class="eyebrow">Votre besoin</div>
+          <h3>Le bon service, sans détour.</h3>
+        </div>
+        <p>Chaque visiteur comprend en quelques secondes ce que l’entreprise peut faire pour lui — et comment avancer.</p>
+      </div>
+      <div class="needs-grid">
+        <article class="need-card">
+          <div class="need-num">01</div>
+          <h4>Urgence</h4>
+          <p>Identifier rapidement une fuite ou une infiltration et organiser la prochaine étape.</p>
+          <span>→</span>
+        </article>
+        <article class="need-card">
+          <div class="need-num">02</div>
+          <h4>Projet</h4>
+          <p>Cadrer une rénovation de toiture avec un échange clair, avant toute proposition.</p>
+          <span>→</span>
+        </article>
+        <article class="need-card">
+          <div class="need-num">03</div>
+          <h4>Prévention</h4>
+          <p>Faire contrôler l’état du toit et éviter qu’un doute ne devienne un problème coûteux.</p>
+          <span>→</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="process">
+    <div class="wrap">
+      <div class="eyebrow">Une méthode lisible</div>
+      <h3>Vous savez toujours ce qui vient ensuite.</h3>
+      <div class="process-grid">
+        <div class="process-step"><span class="step-tag">1</span><h4>Vous décrivez le besoin</h4><p>Une question simple suffit pour commencer, sans formulaire interminable.</p></div>
+        <div class="process-step"><span class="step-tag">2</span><h4>Nous analysons la situation</h4><p>La demande arrive avec le contexte essentiel pour répondre correctement.</p></div>
+        <div class="process-step"><span class="step-tag">3</span><h4>Vous recevez la prochaine étape</h4><p>Un rappel, une visite ou un devis selon la nature réelle du projet.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="wrap">
+      <h3>Un doute sur votre toiture ?</h3>
+      <p>20 secondes pour nous donner l’essentiel. Une réponse claire pour avancer.</p>
+      <button class="primary" data-focus>Commencer le diagnostic</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>Kerné Couverture — Démonstration GC</span>
+      <span>Entreprise et résultats fictifs · Maquette de conversion</span>
+    </div>
+  </footer>
+
+  <nav class="compare-switch" aria-label="Comparer les versions">
+    <a href="avant.html">Avant</a>
+    <a class="active" href="apres.html" aria-current="page">Après GC</a>
+  </nav>
+
+  <script>
+    const card = document.querySelector('#diagnostic');
+    const choices = [...document.querySelectorAll('.choice')];
+    const next = document.querySelector('#continue');
+    let selected = '';
+
+    document.querySelectorAll('[data-focus]').forEach(button => button.addEventListener('click', () => {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => choices[0].focus(), 500);
+    }));
+
+    choices.forEach(choice => choice.addEventListener('click', () => {
+      selected = choice.dataset.need;
+      choices.forEach(item => item.classList.remove('selected'));
+      choice.classList.add('selected');
+      next.classList.add('visible');
+    }));
+
+    next.addEventListener('click', () => {
+      if (!selected) return;
+      document.querySelector('.flow-first').style.display = 'none';
+      document.querySelector('.flow-second').classList.add('visible');
+      document.querySelector('#postal').focus();
+    });
+
+    document.querySelector('#finish').addEventListener('click', () => {
+      document.querySelector('.flow-second').classList.remove('visible');
+      document.querySelector('.final-message').classList.add('visible');
+    });
+  </script>
+</body>
+</html>

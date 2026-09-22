@@ -55,12 +55,12 @@ export function Hero() {
               Recevoir mon diagnostic →
             </Button>
             <Button
-              href="#systeme"
+              href="#demonstration"
               variant="secondary"
               trackEvent="cta_clicked"
               trackPayload={{ location: "hero_secondary" }}
             >
-              Voir le système
+              Voir l&apos;avant / après
             </Button>
           </div>
 
