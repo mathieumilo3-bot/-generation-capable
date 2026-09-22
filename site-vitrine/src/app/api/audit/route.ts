@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     // Answer a bot with the same success shape a human gets: no signal to
     // iterate against, and no email sent.
     if (parsed.error === "rejected_as_bot") {
-      return NextResponse.json({ status: "received" }, { status: 200 });
+      return NextResponse.json({ status: "received", accepted: false, emailed: false }, { status: 200 });
     }
     const status = parsed.error === "invalid_payload" ? 400 : 422;
     return NextResponse.json(parsed, { status });
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "not_configured" }, { status: 500 });
     }
     console.warn(`[audit] email not configured — submission from ${submission.email} logged only`);
-    return NextResponse.json({ status: "received", emailed: false }, { status: 200 });
+    return NextResponse.json({ status: "received", accepted: true, emailed: false }, { status: 200 });
   }
 
   try {
@@ -142,5 +142,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "email_failed" }, { status: 502 });
   }
 
-  return NextResponse.json({ status: "received", emailed: true }, { status: 200 });
+  return NextResponse.json({ status: "received", accepted: true, emailed: true }, { status: 200 });
 }
