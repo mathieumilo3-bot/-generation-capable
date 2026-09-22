@@ -11,9 +11,9 @@ import { ServiceJsonLd } from "@/components/schema/JsonLd";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "GC Agence | Création de site, SEO & marketing digital",
+  title: "GC Agence | Acquisition digitale pour artisans & BTP",
   description:
-    "GC accompagne artisans, TPE et PME sur la création de site, le marketing digital, le SEO, Google Ads, Meta Ads, l'acquisition et la conversion pour générer des demandes qualifiées.",
+    "GC accompagne les artisans et entreprises du BTP sur le site, Google, le SEO local et l’acquisition pour générer davantage de demandes de devis qualifiées.",
   alternates: { canonical: "/" },
 };
 
@@ -21,7 +21,7 @@ export default function Home() {
   return (
     <>
       <ServiceJsonLd
-        name="Systèmes digitaux de génération d'opportunités commerciales"
+        name="Acquisition digitale pour artisans et entreprises du BTP"
         description={SITE_DESCRIPTION}
         url={SITE_URL}
       />
