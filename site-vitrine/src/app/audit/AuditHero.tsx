@@ -53,6 +53,8 @@ export function AuditHero() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    // Variant depends on campaign parameters only available in the browser.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVariant(variantFromContent(params.get("utm_content")));
   }, []);
 
