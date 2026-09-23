@@ -45,8 +45,7 @@ export async function GET(request: Request) {
   if (jobId) {
     const dossierAt = Date.now();
     const dossier = await buildDossier(testCase, { budgetMs: 5_000 });
-    const context = toAuditContext(dossier);
-    const outcome = await collectInvestigation(jobId, context);
+    const outcome = await collectInvestigation(jobId, toAuditContext(dossier));
     return NextResponse.json(
       {
         stage: "poll",

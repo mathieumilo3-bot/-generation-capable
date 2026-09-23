@@ -61,6 +61,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T | null> {
 
 const COMPANY_FIELD_ID = "audit-company-name";
 const CITY_FIELD_ID = "audit-company-city";
+const SITE_FIELD_ID = "audit-company-site";
 const FIXED_OBJECTIVE =
   "Augmenter la visibilité qualifiée et la transformer en davantage de demandes de devis et de prospects qualifiés.";
 
@@ -72,6 +73,9 @@ export function AuditFunnel() {
   const [entreprise, setEntreprise] = useState("");
   const [cityHint, setCityHint] = useState("");
   const [needsCity, setNeedsCity] = useState(false);
+  const [siteHint, setSiteHint] = useState("");
+  const [needsSite, setNeedsSite] = useState(false);
+  const [skipSite, setSkipSite] = useState(false);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState("Prêt à démarrer");
@@ -153,9 +157,12 @@ export function AuditFunnel() {
     }
   }
 
-  async function runAudit(event?: FormEvent) {
+  // `skipSite` is passed explicitly rather than read from state: the button
+  // that sets it starts the run in the same tick, before React re-renders.
+  async function runAudit(event?: FormEvent, override: { skipSite?: boolean } = {}) {
     event?.preventDefault();
     if (running) return;
+    const skippingSite = override.skipSite ?? skipSite;
 
     const rawName = entreprise.trim();
     const rawCity = cityHint.trim();
@@ -168,6 +175,12 @@ export function AuditFunnel() {
     if (needsCity && rawCity.length < 2) {
       setError("Entrez votre ville ou votre code postal.");
       document.getElementById(CITY_FIELD_ID)?.focus();
+      return;
+    }
+
+    if (needsSite && !skippingSite && siteHint.trim().length < 4) {
+      setError("Entrez l’adresse de votre site, ou indiquez que vous n’en avez pas.");
+      document.getElementById(SITE_FIELD_ID)?.focus();
       return;
     }
 
@@ -244,6 +257,20 @@ export function AuditFunnel() {
         return;
       }
 
+      // Identification can fail for a real reason — an unlisted company, or
+      // the search itself being unavailable. Rather than ending on an empty
+      // diagnostic, ask once for the address we could not find.
+      const resolvedSiteUrl = candidate?.website || siteHint.trim();
+      if (!resolvedSiteUrl && !skippingSite) {
+        setDiscovery(candidate);
+        setNeedsSite(true);
+        setRunning(false);
+        setProgress(0);
+        setProgressLabel("Prêt à reprendre");
+        track("audit_site_requested", { had_candidate: Boolean(candidate) });
+        return;
+      }
+
       if (candidate) {
         setNeedsCity(false);
         setDiscovery(candidate);
@@ -261,7 +288,7 @@ export function AuditFunnel() {
       void notifyAuditStarted(candidate, rawName);
 
       const resolvedName = candidate?.name || rawName;
-      const resolvedSite = candidate?.website || "";
+      const resolvedSite = resolvedSiteUrl;
       const resolvedSector = candidate?.sector || "";
       const resolvedCity = candidate?.city || rawCity;
       const companyInput = {
@@ -364,6 +391,68 @@ export function AuditFunnel() {
       setError("L’analyse a rencontré un problème. Réessayez dans quelques instants.");
       setRunning(false);
     }
+  }
+
+  if (needsSite && !running) {
+    return (
+      <form onSubmit={runAudit} className="mx-auto max-w-xl">
+        <div className="rounded-[2rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 sm:p-8">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
+            On a besoin d’un coup de main
+          </p>
+          <h2 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+            Quelle est l’adresse de votre site ?
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+            Nous n’avons pas réussi à retrouver le site officiel de {discovery?.name || entreprise} de façon certaine. Plutôt
+            que d’analyser la mauvaise entreprise, on préfère vous demander.
+          </p>
+
+          <label htmlFor={SITE_FIELD_ID} className="sr-only">Adresse de votre site</label>
+          <input
+            id={SITE_FIELD_ID}
+            name="site"
+            type="text"
+            inputMode="url"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="url"
+            enterKeyHint="go"
+            maxLength={300}
+            placeholder="Ex : votre-entreprise.fr"
+            className={`${inputClass()} mt-5`}
+            value={siteHint}
+            onChange={(event) => {
+              setSiteHint(event.target.value);
+              if (error) setError(null);
+            }}
+          />
+
+          {error && <p className="mt-2 px-1 text-[11px] text-[#e7c872]" role="alert">{error}</p>}
+
+          <button
+            type="submit"
+            className="audit-primary-cta mt-3 inline-flex min-h-[58px] w-full items-center justify-center rounded-[1.15rem] px-6 text-[15px] font-semibold transition-all duration-300"
+          >
+            Analyser mon site →
+          </button>
+
+          <button
+            type="button"
+            className="mt-3 w-full text-center text-[12px] text-[var(--color-muted)] underline underline-offset-4"
+            onClick={() => {
+              setSkipSite(true);
+              setNeedsSite(false);
+              setError(null);
+              void runAudit(undefined, { skipSite: true });
+            }}
+          >
+            Je n’ai pas encore de site
+          </button>
+        </div>
+      </form>
+    );
   }
 
   if (needsCity && !running) {
@@ -516,6 +605,9 @@ export function AuditFunnel() {
           setEntreprise(event.target.value);
           setCityHint("");
           setNeedsCity(false);
+          setSiteHint("");
+          setNeedsSite(false);
+          setSkipSite(false);
           setDiscovery(null);
           if (error) setError(null);
         }}

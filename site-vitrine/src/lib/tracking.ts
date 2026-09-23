@@ -18,6 +18,7 @@ export type TrackingEvent =
   | "audit_analysis_completed"
   | "audit_discovery_fallback"
   | "audit_company_disambiguation_requested"
+  | "audit_site_requested"
   | "audit_intent_captured"
   | "audit_report_viewed"
   | "audit_finding_viewed"

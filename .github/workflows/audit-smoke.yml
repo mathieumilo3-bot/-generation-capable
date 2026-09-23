@@ -14,6 +14,10 @@ on:
         description: "Entreprise de la liste de test (voir /api/audit/self-test)"
         required: false
         default: "gc"
+      journey_site:
+        description: "Site à passer au parcours public (comme après l'identification)"
+        required: false
+        default: "https://gc-agence.com"
 
 jobs:
   smoke:
@@ -62,3 +66,38 @@ jobs:
           jq . poll.json || cat poll.json
           jq -e '.status == "done"' poll.json > /dev/null
           jq -e '.cards | length >= 1' poll.json > /dev/null
+
+  journey:
+    name: Parcours public réel (recherche puis diagnostic)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Étape 1 — lecture du site et lancement de l'enquête
+        run: |
+          set -euo pipefail
+          curl -sS -X POST "${{ inputs.base_url }}/api/audit/research" \
+            -H 'Content-Type: application/json' \
+            --max-time 30 \
+            -d '{"entreprise":"GC Agence","siteUrl":"${{ inputs.journey_site }}","secteur":"Agence web","ville":""}' \
+            -o research.json -w 'HTTP %{http_code} en %{time_total}s\n'
+          jq '{stats, hasContext: (.context != null), investigating: (.jobId != null)}' research.json
+          # Même sans enquête IA, cette étape doit rendre un contexte signé.
+          jq -e '.context != null and .signature != null' research.json > /dev/null
+          jq -e '.stats.pagesAnalyzed >= 1' research.json > /dev/null
+
+      - name: Étape 2 — diagnostic rendu au visiteur
+        run: |
+          set -euo pipefail
+          jq '{context, signature, jobId, token, objectif: ""}' research.json > analyze.json
+          for i in $(seq 1 25); do
+            curl -sS -X POST "${{ inputs.base_url }}/api/audit/analyze" \
+              -H 'Content-Type: application/json' --max-time 30 \
+              -d @analyze.json -o report.json -w 'HTTP %{http_code}\n'
+            STATUS=$(jq -r '.status // "?"' report.json)
+            echo "[$i] $STATUS"
+            if [ "$STATUS" != "pending" ]; then break; fi
+            sleep 6
+          done
+          jq '{status, degradedTo, mode: .report.diagnostic.mode, pages: .report.diagnostic.pagesAnalyzed, queries: .report.diagnostic.queriesRun, cards: [.report.diagnostic.cards[] | {axis, title, score, potential}]}' report.json
+          jq -e '.report.diagnostic.cards | length >= 1' report.json > /dev/null
+          # Un diagnostic sans action concrète ne vaut rien : on l'exige.
+          jq -e '[.report.diagnostic.cards[] | select((.fix | length) > 20 and (.seen | length) > 10)] | length >= 1' report.json > /dev/null

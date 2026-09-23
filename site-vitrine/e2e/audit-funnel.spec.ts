@@ -285,3 +285,35 @@ test.describe("Audit funnel — resilience", () => {
     expect(calls.analyze[0]).not.toContain("jobId");
   });
 });
+
+test.describe("Audit funnel — quand l'entreprise n'est pas retrouvée", () => {
+  test("asks for the site address instead of ending on an empty diagnostic", async ({ page }) => {
+    const calls = await mockApis(page, []);
+    await start(page, "Entreprise Introuvable");
+
+    // No company could be resolved: the funnel asks rather than guessing.
+    const site = page.getByLabel("Adresse de votre site");
+    await expect(site).toBeVisible();
+    expect(calls.research).toHaveLength(0);
+
+    await site.fill("entreprise-introuvable.fr");
+    await page.getByRole("button", { name: /Analyser mon site/ }).click();
+
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3);
+    expect(JSON.parse(calls.research[0])).toMatchObject({
+      entreprise: "Entreprise Introuvable",
+      siteUrl: "entreprise-introuvable.fr",
+    });
+  });
+
+  test("lets a company with no site continue anyway", async ({ page }) => {
+    const calls = await mockApis(page, []);
+    await start(page, "Entreprise Sans Site");
+
+    await expect(page.getByLabel("Adresse de votre site")).toBeVisible();
+    await page.getByRole("button", { name: /Je n’ai pas encore de site/ }).click();
+
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3);
+    expect(JSON.parse(calls.research[0])).toMatchObject({ entreprise: "Entreprise Sans Site", siteUrl: "" });
+  });
+});
