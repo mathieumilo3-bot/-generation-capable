@@ -691,86 +691,78 @@ export function AuditFunnel() {
   }
 
   if (running) {
-    const steps = [
-      { at: 8, label: "Nom reçu" },
-      { at: 30, label: "Entreprise identifiée · site officiel vérifié" },
-      { at: 52, label: "Site lu page par page" },
-      { at: 92, label: "Recherches Google, annuaires et avis recoupées" },
-      { at: 100, label: "3 constats rédigés et vérifiés" },
-    ];
-    const next = steps.find((item) => item.at > progress)?.at;
-
     return (
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-xl rounded-[2rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 sm:p-8"
+        className="mx-auto max-w-xl"
       >
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
-              Diagnostic GC · en direct
-            </p>
-            <h2 className="font-display mt-3 text-2xl font-semibold">
-              On analyse {discovery?.name || entreprise}.
-            </h2>
+        <div className="rounded-[2rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 sm:p-8">
+          <div className="flex items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
+                Diagnostic GC
+              </p>
+              <h2 className="font-display mt-3 truncate text-2xl font-semibold tracking-tight">
+                {discovery?.name || entreprise}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Votre rapport est en préparation.
+              </p>
+            </div>
+            <div className="shrink-0 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-right">
+              <p className="font-display text-2xl font-semibold tracking-[-0.04em]">{progress}%</p>
+              <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">≈ 2 min</p>
+            </div>
           </div>
-          <span className="font-display text-4xl font-semibold tracking-[-0.05em]">{progress}%</span>
+
+          <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+            <motion.div
+              className="h-full rounded-full bg-[var(--color-accent)]"
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <p className="text-sm font-medium text-[var(--color-text)]">{progressLabel}</p>
+            <span className="shrink-0 text-[11px] text-[var(--color-muted)]">
+              {canLeave ? "Traitement lancé" : "Préparation"}
+            </span>
+          </div>
         </div>
 
-        <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
-          <motion.div
-            className="h-full rounded-full bg-[var(--color-accent)]"
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          />
-        </div>
-
-        <p className="mt-3 text-sm font-medium text-[var(--color-text)]">{progressLabel}</p>
-        <p className="mt-1 text-xs text-[var(--color-muted)]">
-          Le pourcentage avance uniquement quand une étape réelle est terminée.
-        </p>
-
-        <div className="mt-6 space-y-2">
-          {steps.map((item) => {
-            const done = progress >= item.at;
-            const active = !done && item.at === next;
-            return (
-              <div
-                key={item.at}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
-                  done
-                    ? "border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)]"
-                    : active
-                      ? "border-[var(--color-border-strong)] bg-[var(--color-bg)]"
-                      : "border-[var(--color-border)] opacity-45"
-                }`}
-              >
-                <span className="text-sm">{item.label}</span>
-                <span className="text-xs font-semibold text-[var(--color-accent)]">
-                  {done ? "OK" : active ? "EN COURS" : ""}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {canLeave && (
-          <div className="mt-6 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-4">
-            {notifyStatus === "saved" ? (
+        <div className="mt-4 rounded-[1.6rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6">
+          {notifyStatus === "saved" ? (
+            leaveReady ? (
               <>
-                <p className="text-sm font-semibold text-[var(--color-text)]">C’est bon. Vous pouvez fermer cette page.</p>
+                <p className="text-sm font-semibold text-[var(--color-text)]">
+                  ✓ C’est lancé. Vous pouvez fermer cette page.
+                </p>
                 <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
-                  On vous envoie un email dès que le diagnostic est prêt, même si vous quittez le site.
+                  On vous envoie votre diagnostic par email dès qu’il est prêt.
                 </p>
               </>
             ) : (
-              <form onSubmit={registerNotification}>
-                <p className="text-sm font-semibold text-[var(--color-text)]">Vous n’avez pas besoin d’attendre.</p>
-                <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
-                  Recevez votre diagnostic dès qu’il est prêt. Vous pourrez fermer cette page juste après.
+              <>
+                <p className="text-sm font-semibold text-[var(--color-text)]">
+                  ✓ Email enregistré.
                 </p>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
+                  Encore quelques secondes : on sécurise le traitement avant que vous quittiez la page.
+                </p>
+              </>
+            )
+          ) : (
+            <form onSubmit={registerNotification}>
+              <p className="text-sm font-semibold text-[var(--color-text)]">
+                Recevez le résultat, sans attendre ici.
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
+                Une adresse email. Rien d’autre. On vous prévient quand le diagnostic est terminé.
+              </p>
 
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <label htmlFor="audit-notify-email" className="sr-only">Votre email</label>
                 <input
                   id="audit-notify-email"
@@ -783,57 +775,28 @@ export function AuditFunnel() {
                     setNotifyEmail(event.target.value);
                     if (notifyStatus === "error") setNotifyStatus("idle");
                   }}
-                  className={`${inputClass()} mt-3`}
+                  className={`${inputClass()} flex-1`}
                   required
                 />
-
-                <label className="mt-3 flex cursor-pointer items-start gap-3 text-[11px] leading-relaxed text-[var(--color-muted)]">
-                  <input
-                    type="checkbox"
-                    checked={marketingConsent}
-                    onChange={(event) => setMarketingConsent(event.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
-                  />
-                  <span>
-                    J’accepte aussi de recevoir les conseils et offres GC par email ou SMS. Facultatif, désinscription possible à tout moment.
-                  </span>
-                </label>
-
-                {marketingConsent && (
-                  <>
-                    <label htmlFor="audit-marketing-phone" className="sr-only">Téléphone facultatif</label>
-                    <input
-                      id="audit-marketing-phone"
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder="Téléphone (facultatif)"
-                      value={marketingPhone}
-                      onChange={(event) => setMarketingPhone(event.target.value)}
-                      className={`${inputClass()} mt-3`}
-                    />
-                  </>
-                )}
-
-                {notifyStatus === "error" && (
-                  <p className="mt-2 text-[11px] text-[#e7c872]">Entrez une adresse email valide.</p>
-                )}
-
                 <button
                   type="submit"
                   disabled={notifyStatus === "saving"}
-                  className="audit-primary-cta mt-3 inline-flex min-h-[48px] w-full items-center justify-center rounded-xl px-5 text-sm font-semibold disabled:opacity-60"
+                  className="audit-primary-cta inline-flex min-h-[54px] shrink-0 items-center justify-center rounded-[1.15rem] px-5 text-sm font-semibold disabled:opacity-60"
                 >
-                  {notifyStatus === "saving" ? "Enregistrement…" : "Me prévenir quand c’est prêt →"}
+                  {notifyStatus === "saving" ? "Enregistrement…" : "Me prévenir →"}
                 </button>
-              </form>
-            )}
-          </div>
-        )}
+              </div>
 
-        <p className="mt-5 text-center text-[11px] text-[var(--color-muted)]">
-          Aucun questionnaire derrière · le diagnostic s’affiche automatiquement.
-        </p>
+              {notifyStatus === "error" && (
+                <p className="mt-2 text-[11px] text-[#e7c872]">Entrez une adresse email valide.</p>
+              )}
+
+              <p className="mt-3 text-[10px] leading-relaxed text-[var(--color-muted)]">
+                Utilisé uniquement pour vous envoyer ce diagnostic. Pas d’inscription automatique à une newsletter.
+              </p>
+            </form>
+          )}
+        </div>
       </motion.div>
     );
   }
