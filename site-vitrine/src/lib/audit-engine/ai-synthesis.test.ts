@@ -112,6 +112,8 @@ function validPayload() {
         confidence: "observed",
         impact: "Donner au visiteur davantage de raisons de faire confiance avant de prendre contact.",
         score: 4,
+        loss: "Une partie des visiteurs peut hésiter au moment de demander un devis faute de preuve proche.",
+        potential: "fort",
         firstAction: "Placer une réalisation réelle avec photo et contexte juste avant la demande de devis.",
         callQuestion: "Quelles preuves réelles l'entreprise peut-elle mettre en avant avant la demande de devis ?",
       },
@@ -145,6 +147,8 @@ describe("OpenAI audit synthesis", () => {
     expect(result?.opportunities[0].pillar).toBe("rassurer");
     expect(result?.companySnapshot).toContain("rénovation");
     expect(result?.opportunities[0].score).toBe(4);
+    expect(result?.opportunities[0].loss).toContain("hésiter");
+    expect(result?.opportunities[0].potential).toBe("fort");
     expect(result?.opportunities[0].firstAction).toContain("réalisation");
     expect(result?.model).toBe("gpt-5.6-sol");
 
