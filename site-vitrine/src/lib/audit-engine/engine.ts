@@ -42,7 +42,16 @@ export async function runAudit(rawInput: DeclaredInput, options: RunAuditOptions
   // sector is only a hint; a verified public company match must win over a
   // mistaken manual choice or an earlier frontend discovery timeout.
   let resolvedInput = input;
-  if (input.entreprise) {
+  const hasUsableSiteUrl = (() => {
+    try {
+      const url = new URL(input.siteUrl);
+      return ["http:", "https:"].includes(url.protocol);
+    } catch {
+      return false;
+    }
+  })();
+
+  if (input.entreprise && !hasUsableSiteUrl) {
     try {
       const discovery = await discover(input.entreprise, { firstTimeoutMs: 14_000, skipRescue: true });
       const candidate =
@@ -72,5 +81,13 @@ export async function runAudit(rawInput: DeclaredInput, options: RunAuditOptions
   const report = buildReport(resolvedInput, site, sector, findings);
 
   const aiSynthesis = await synthesizeAuditWithOpenAI({ input: resolvedInput, site, sector, report });
-  return aiSynthesis ? { ...report, aiSynthesis } : report;
+  if (!aiSynthesis) return report;
+
+  const correctedHeader = {
+    ...report.header,
+    ...(aiSynthesis.detectedSector ? { secteur: aiSynthesis.detectedSector } : {}),
+    ...(aiSynthesis.officialSite ? { siteUrl: aiSynthesis.officialSite } : {}),
+  };
+
+  return { ...report, header: correctedHeader, aiSynthesis };
 }
