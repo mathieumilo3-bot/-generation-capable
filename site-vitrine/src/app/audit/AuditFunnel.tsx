@@ -458,7 +458,7 @@ export function AuditFunnel() {
             ) : previewStatus === "ready" ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                  Votre première opportunité de gagner plus de demandes
+                  Ce qui peut freiner vos demandes de devis
                 </p>
 
                 {previewFinding ? (
@@ -649,7 +649,7 @@ export function AuditFunnel() {
             </div>
 
             <div className="mt-5 grid gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-sm">
-              <span>01 · Votre meilleure opportunité</span>
+              <span>01 · Le point à corriger en priorité</span>
               <span>02 · Le levier à activer en premier</span>
               <span>03 · Vos prochaines actions</span>
             </div>
