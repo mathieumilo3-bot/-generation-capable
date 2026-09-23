@@ -185,7 +185,7 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
         <span className="rounded-full border border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-muted)]">
-          {report.header.siteUrl}
+          {report.header.siteUrl || report.header.entreprise}
         </span>
         <span className="rounded-full border border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-muted)]">
           {report.header.secteur}
