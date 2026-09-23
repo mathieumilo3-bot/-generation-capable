@@ -1,7 +1,7 @@
 import type { AiAuditWebSource } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 20_000;
+const OPENAI_TIMEOUT_MS = 32_000;
 
 type FetchLike = typeof fetch;
 
@@ -114,7 +114,7 @@ function extractSources(body: Record<string, unknown>): AiAuditWebSource[] {
     }
   }
 
-  return Array.from(sourceMap.values()).slice(0, 6);
+  return Array.from(sourceMap.values()).slice(0, 10);
 }
 
 function clean(value: unknown, max: number): string {
@@ -200,7 +200,25 @@ function candidateFromSources(query: string, sources: AiAuditWebSource[]): Compa
     let website = "";
     try {
       const url = new URL(source.url);
-      website = `${url.protocol}//${url.host}/`;
+      const host = url.hostname.toLowerCase().replace(/^www\./, "");
+      const nonOfficialHosts = [
+        "pagesjaunes.fr",
+        "pappers.fr",
+        "societe.com",
+        "verif.com",
+        "facebook.com",
+        "instagram.com",
+        "linkedin.com",
+        "tiktok.com",
+        "youtube.com",
+        "x.com",
+        "twitter.com",
+        "google.com",
+        "maps.google.com",
+      ];
+      if (!nonOfficialHosts.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
+        website = `${url.protocol}//${url.host}/`;
+      }
     } catch {}
 
     return {
@@ -230,9 +248,10 @@ async function runDiscoveryAttempt(
     apiKey: string;
     model: string;
     projectId?: string;
-    contextSize: "low" | "medium";
+    contextSize: "low" | "medium" | "high";
     rescue?: boolean;
     timeoutMs?: number;
+    cityHint?: string;
   }
 ): Promise<CompanyDiscoveryResult> {
   const controller = new AbortController();
@@ -249,7 +268,7 @@ async function runDiscoveryAttempt(
       },
       body: JSON.stringify({
         model: options.model,
-        reasoning: { effort: options.rescue ? "medium" : "low" },
+        reasoning: { effort: options.rescue ? "high" : "medium" },
         tools: [{ type: "web_search", search_context_size: options.contextSize }],
         tool_choice: "required",
         include: ["web_search_call.action.sources"],
@@ -262,20 +281,22 @@ async function runDiscoveryAttempt(
           },
           {
             role: "user",
-            content: `Retrouve l'entreprise correspondant au nom suivant : "${query}".
+            content: `Retrouve l'entreprise correspondant au nom suivant : "${query}".${options.cityHint ? ` La ville ou le code postal fourni par l'utilisateur est : "${options.cityHint}". Utilise-le comme contrainte forte d'identification.` : ""}
 
 MISSION
 Tu dois faire comme un consultant humain qui cherche vraiment cette société sur le web avant un audit commercial.
 
 METHODE OBLIGATOIRE
-1. Recherche le nom exact entre guillemets.
-2. Recherche ensuite le nom sans guillemets + entreprise, artisan, bâtiment, BTP.
-3. Le trafic vient de France : privilégie d'abord les entreprises françaises quand le nom n'indique pas un autre pays.
-4. Si tu vois une ville, un département, un métier, un dirigeant, un téléphone ou un site qui convergent, recoupe-les.
-5. Vérifie le site officiel, Google Business/annuaires professionnels, réseaux sociaux et mentions publiques crédibles quand disponibles.
-6. Une entreprise peut être suffisamment identifiée même si son site officiel est absent ou inaccessible : dans ce cas garde website vide mais renseigne activité, zone et constats à partir des sources publiques.
-7. Ne renvoie plusieurs candidats que s'il existe une vraie ambiguïté.
-8. N'abandonne pas parce qu'un site refuse un accès technique : une page de résultat, un annuaire, une fiche entreprise ou un réseau social peuvent suffire pour identifier la société.
+1. Recherche le nom exact entre guillemets, puis le nom + ville/code postal si une ville est fournie.
+2. Recherche ensuite plusieurs variantes : nom + entreprise, nom + métier probable, nom + bâtiment/BTP/artisan, puis nom + ville + métier.
+3. Cherche explicitement le SITE OFFICIEL : nom + "site officiel", nom + domaine, puis recoupe le domaine trouvé avec les mentions légales, le nom, l'adresse, le téléphone, la ville ou les réseaux sociaux.
+4. Utilise les annuaires, Google Business, PagesJaunes, Pappers/Societe, Facebook, Instagram ou LinkedIn comme SOURCES DE RECOUPEMENT, jamais comme website officiel.
+5. Si un domaine semble officiel, vérifie au moins deux signaux convergents parmi : nom exact, ville/adresse, téléphone, métier, mentions légales, lien depuis un profil officiel, branding cohérent.
+6. Le trafic vient de France : privilégie d'abord les entreprises françaises quand le nom n'indique pas un autre pays.
+7. Si plusieurs entreprises portent le même nom, garde plusieurs candidats et baisse confidence. La ville fournie doit départager fortement.
+8. Une entreprise peut être identifiée sans site officiel : dans ce cas website reste vide. N'invente jamais un domaine.
+9. N'abandonne pas parce qu'un site refuse un accès technique : continue à chercher son domaine via les autres sources publiques.
+10. Avant de conclure qu'aucun site n'existe, essaie plusieurs requêtes ciblées et variantes de domaine.
 
 CRITERES DE L'AUDIT GC
 - ATTIRER : présence sur des recherches métier/service/zone sans connaître la marque.
@@ -346,9 +367,11 @@ export async function discoverCompany(
     model?: string;
     firstTimeoutMs?: number;
     skipRescue?: boolean;
+    cityHint?: string;
   } = {}
 ): Promise<CompanyDiscoveryResult> {
   const query = companyName.trim().slice(0, 160);
+  const cityHint = options.cityHint?.trim().slice(0, 120) || "";
   if (query.length < 2) return { candidates: [], webSources: [] };
 
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
@@ -363,11 +386,18 @@ export async function discoverCompany(
     apiKey,
     model,
     projectId,
-    contextSize: "low",
-    timeoutMs: options.firstTimeoutMs ?? 20_000,
+    contextSize: "high",
+    timeoutMs: options.firstTimeoutMs ?? 32_000,
+    cityHint,
   });
 
-  if (first.candidates.length > 0) return first;
+  const strongFirst = first.candidates.find((candidate) => candidate.confidence === "high" && candidate.website);
+  if (strongFirst) {
+    return {
+      candidates: [strongFirst, ...first.candidates.filter((candidate) => candidate !== strongFirst)].slice(0, 3),
+      webSources: first.webSources,
+    };
+  }
 
   const sourceCandidate = candidateFromSources(query, first.webSources);
   if (sourceCandidate) {
@@ -381,19 +411,38 @@ export async function discoverCompany(
     apiKey,
     model,
     projectId,
-    contextSize: "low",
+    contextSize: "high",
     rescue: true,
-    timeoutMs: 12_000,
+    timeoutMs: 26_000,
+    cityHint,
   });
 
-  if (rescue.candidates.length > 0) {
-    return {
-      candidates: rescue.candidates,
-      webSources: rescue.webSources.length ? rescue.webSources : first.webSources,
-    };
+  const combinedSources = [...first.webSources, ...rescue.webSources].filter(
+    (source, index, all) => all.findIndex((item) => item.url === source.url) === index
+  ).slice(0, 10);
+
+  const combinedCandidates = [...first.candidates, ...rescue.candidates]
+    .filter(
+      (candidate, index, all) =>
+        all.findIndex(
+          (item) =>
+            item.name.toLowerCase() === candidate.name.toLowerCase() &&
+            item.city.toLowerCase() === candidate.city.toLowerCase() &&
+            item.website === candidate.website
+        ) === index
+    )
+    .sort((a, b) => {
+      const confidenceWeight = { high: 3, medium: 2, low: 1 } as const;
+      const aScore = confidenceWeight[a.confidence] + (a.website ? 3 : 0) + (a.city ? 1 : 0);
+      const bScore = confidenceWeight[b.confidence] + (b.website ? 3 : 0) + (b.city ? 1 : 0);
+      return bScore - aScore;
+    })
+    .slice(0, 3);
+
+  if (combinedCandidates.length > 0) {
+    return { candidates: combinedCandidates, webSources: combinedSources };
   }
 
-  const combinedSources = rescue.webSources.length ? rescue.webSources : first.webSources;
   const fallback = candidateFromSources(query, combinedSources);
   return {
     candidates: fallback ? [fallback] : [],
