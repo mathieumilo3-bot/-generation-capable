@@ -1,7 +1,7 @@
 import type { AiAuditWebSource } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 19_000;
+const OPENAI_TIMEOUT_MS = 32_000;
 
 type FetchLike = typeof fetch;
 
@@ -173,6 +173,56 @@ function sanitizeCandidate(value: unknown): CompanyDiscoveryCandidate | null {
   };
 }
 
+
+function normalizedTokens(value: string): string[] {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length >= 3 && !["sarl", "sas", "eurl", "entreprise", "societe"].includes(token));
+}
+
+function candidateFromSources(query: string, sources: AiAuditWebSource[]): CompanyDiscoveryCandidate | null {
+  const tokens = normalizedTokens(query);
+  if (!tokens.length) return null;
+
+  for (const source of sources) {
+    let haystack = source.title.toLowerCase();
+    try {
+      haystack += " " + new URL(source.url).hostname.toLowerCase();
+    } catch {}
+    const normalized = normalizedTokens(haystack).join(" ");
+    const matched = tokens.filter((token) => normalized.includes(token));
+    if (matched.length < Math.min(2, tokens.length)) continue;
+
+    let website = "";
+    try {
+      const url = new URL(source.url);
+      website = `${url.protocol}//${url.host}/`;
+    } catch {}
+
+    return {
+      name: query,
+      website,
+      sector: "",
+      city: "",
+      summary: `Une présence web correspondant fortement à « ${query} » a été retrouvée et sera recoupée pendant l'analyse.`,
+      confidence: "medium",
+      insights: [
+        {
+          title: "Présence officielle probable retrouvée",
+          insight: "Le nom recherché correspond directement à une source web publique identifiable. Le diagnostic va maintenant vérifier le métier, la zone, les preuves et le parcours vers le devis.",
+          evidence: [source.title || source.url],
+        },
+      ],
+    };
+  }
+
+  return null;
+}
+
 async function runDiscoveryAttempt(
   query: string,
   options: {
@@ -182,10 +232,11 @@ async function runDiscoveryAttempt(
     projectId?: string;
     contextSize: "low" | "medium";
     rescue?: boolean;
+    timeoutMs?: number;
   }
 ): Promise<CompanyDiscoveryResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? OPENAI_TIMEOUT_MS);
 
   try {
     const response = await options.fetchFn("https://api.openai.com/v1/responses", {
@@ -219,10 +270,12 @@ Tu dois faire comme un consultant humain qui cherche vraiment cette société su
 METHODE OBLIGATOIRE
 1. Recherche le nom exact entre guillemets.
 2. Recherche ensuite le nom sans guillemets + entreprise, artisan, bâtiment, BTP.
-3. Si tu vois une ville, un département, un métier, un dirigeant, un téléphone ou un site qui convergent, recoupe-les.
-4. Vérifie le site officiel, Google Business/annuaires professionnels, réseaux sociaux et mentions publiques crédibles quand disponibles.
-5. Une entreprise peut être suffisamment identifiée même si son site officiel est absent ou inaccessible : dans ce cas garde website vide mais renseigne activité, zone et constats à partir des sources publiques.
-6. Ne renvoie plusieurs candidats que s'il existe une vraie ambiguïté.
+3. Le trafic vient de France : privilégie d'abord les entreprises françaises quand le nom n'indique pas un autre pays.
+4. Si tu vois une ville, un département, un métier, un dirigeant, un téléphone ou un site qui convergent, recoupe-les.
+5. Vérifie le site officiel, Google Business/annuaires professionnels, réseaux sociaux et mentions publiques crédibles quand disponibles.
+6. Une entreprise peut être suffisamment identifiée même si son site officiel est absent ou inaccessible : dans ce cas garde website vide mais renseigne activité, zone et constats à partir des sources publiques.
+7. Ne renvoie plusieurs candidats que s'il existe une vraie ambiguïté.
+8. N'abandonne pas parce qu'un site refuse un accès technique : une page de résultat, un annuaire, une fiche entreprise ou un réseau social peuvent suffire pour identifier la société.
 
 CRITERES DE L'AUDIT GC
 - ATTIRER : présence sur des recherches métier/service/zone sans connaître la marque.
@@ -304,10 +357,16 @@ export async function discoverCompany(
     apiKey,
     model,
     projectId,
-    contextSize: "low",
+    contextSize: "medium",
+    timeoutMs: 32_000,
   });
 
   if (first.candidates.length > 0) return first;
+
+  const sourceCandidate = candidateFromSources(query, first.webSources);
+  if (sourceCandidate) {
+    return { candidates: [sourceCandidate], webSources: first.webSources };
+  }
 
   const rescue = await runDiscoveryAttempt(query, {
     fetchFn,
@@ -316,10 +375,20 @@ export async function discoverCompany(
     projectId,
     contextSize: "medium",
     rescue: true,
+    timeoutMs: 20_000,
   });
 
+  if (rescue.candidates.length > 0) {
+    return {
+      candidates: rescue.candidates,
+      webSources: rescue.webSources.length ? rescue.webSources : first.webSources,
+    };
+  }
+
+  const combinedSources = rescue.webSources.length ? rescue.webSources : first.webSources;
+  const fallback = candidateFromSources(query, combinedSources);
   return {
-    candidates: rescue.candidates,
-    webSources: rescue.webSources.length ? rescue.webSources : first.webSources,
+    candidates: fallback ? [fallback] : [],
+    webSources: combinedSources,
   };
 }

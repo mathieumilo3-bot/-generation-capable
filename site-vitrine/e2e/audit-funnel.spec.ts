@@ -35,7 +35,7 @@ async function startDiscovery(page: Page, name = "Dupont Couverture") {
 
 async function reachContact(page: Page) {
   await startDiscovery(page);
-  await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+  await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
   await expect(page.getByRole("heading", { name: "Pourquoi faites-vous ce diagnostic ?" })).toBeVisible();
   await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
   await page.getByRole("button", { name: /Analyser selon mes objectifs/ }).click();
@@ -95,7 +95,7 @@ test.describe("Capable Audit funnel", () => {
 
   test("lets a prospect select up to three qualification objectives", async ({ page }) => {
     await startDiscovery(page);
-    await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+    await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
 
     await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
     await page.getByRole("button", { name: "Plus de visibilité", exact: true }).click();
@@ -123,9 +123,9 @@ test.describe("Capable Audit funnel", () => {
 
   test("skips the trade question when the company sector is identified", async ({ page }) => {
     await startDiscovery(page);
-    await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+    await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
     await expect(page.getByRole("heading", { name: "Pourquoi faites-vous ce diagnostic ?" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Quel est votre métier ?" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Quel est votre métier principal ?" })).toHaveCount(0);
   });
 
   test("falls back to manual qualification when no company match is safe", async ({ page }) => {
@@ -140,9 +140,8 @@ test.describe("Capable Audit funnel", () => {
 
     await page.getByLabel("Nom de votre entreprise").fill("Nom ambigu");
     await page.getByRole("button", { name: /Analyser mon entreprise/ }).click();
-    await expect(page.getByRole("heading", { name: /continue l’analyse avec votre activité/ })).toBeVisible();
-    await page.getByRole("button", { name: /Continuer/ }).click();
-    await expect(page.getByRole("heading", { name: "Quel est votre métier ?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Quel est votre métier principal ?" })).toBeVisible();
+    await expect(page.getByText(/On a votre entreprise/)).toBeVisible();
   });
 
   test("preserves Google Ads attribution on the lead", async ({ page }) => {

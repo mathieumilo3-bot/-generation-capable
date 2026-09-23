@@ -16,6 +16,7 @@ export type TrackingEvent =
   | "audit_completed"
   | "audit_analysis_started"
   | "audit_analysis_completed"
+  | "audit_discovery_fallback"
   | "audit_report_viewed"
   | "audit_finding_viewed"
   | "audit_cta_clicked"
