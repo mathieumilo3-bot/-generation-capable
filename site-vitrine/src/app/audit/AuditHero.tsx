@@ -15,14 +15,14 @@ const VARIANTS: Record<string, HeroVariant> = {
     title: "Découvrez comment générer",
     accent: "plus de demandes de devis.",
     body:
-      "Entrez votre site. En quelques secondes, on vous montre votre première opportunité pour attirer plus de clients, puis les actions à prioriser.",
+      "Entrez votre site. En quelques secondes, découvrez ce qui peut vous faire perdre des demandes de devis — et quoi corriger en priorité.",
   },
   chantiers: {
     badge: "Pour artisans du bâtiment",
     title: "Découvrez comment gagner",
     accent: "plus de chantiers.",
     body:
-      "Entrez votre site. En quelques secondes, on vous montre votre première opportunité pour attirer plus de prospects, puis les actions à prioriser.",
+      "Entrez votre site. En quelques secondes, découvrez ce qui peut freiner vos demandes de devis — et quoi corriger en priorité.",
   },
   site: {
     badge: "Diagnostic site pour artisans",
