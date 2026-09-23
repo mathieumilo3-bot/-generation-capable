@@ -331,8 +331,8 @@ export function buildConfirmationEmail(data: AuditSubmission, reportSummary?: Re
     : `Votre demande d'audit pour ${companyLabel} a bien été reçue. Nous préparons votre diagnostic.`;
 
   const nextStepText = diagnosticReady
-    ? "Vous pouvez maintenant choisir un créneau pour transformer ces constats en plan d'action. Nous repartirons directement de votre audit."
-    : "Vous pouvez déjà choisir un créneau. Nous préparerons l'échange à partir des informations que vous venez de transmettre.";
+    ? "Votre audit PDF personnalisé est joint à cet email. Vous pouvez maintenant choisir un créneau pour transformer ces constats en plan d'action. Nous repartirons directement de votre audit."
+    : "Votre audit PDF est joint à cet email avec les éléments disponibles. Vous pouvez déjà choisir un créneau : nous reprendrons l'analyse à partir des informations transmises.";
 
   const text = `${greeting}
 
@@ -353,7 +353,7 @@ GC`;
 ${prioritiesHtml}
 <p>${escapeHtml(nextStepText)}</p>
 <p style="margin:26px 0;"><a href="${escapeHtml(bookingUrl)}" style="background:#111;color:#fff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;">Choisir mon créneau</a></p>
-<p style="color:#666;font-size:13px;">Sans engagement · Votre contexte est déjà transmis · L'échange part de votre audit</p>
+<p style="color:#666;font-size:13px;">Audit PDF joint · Sans engagement · Votre contexte est déjà transmis · L'échange part de votre audit</p>
 <p>GC</p>
 </div>`;
 
