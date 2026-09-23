@@ -55,15 +55,17 @@ export default function PolitiqueConfidentialitePage() {
 
           <Block title="Données collectées">
             <p>
-              Le formulaire Capable Audit est le seul point de collecte de
-              données personnelles du site. Il recueille uniquement ce que
-              vous saisissez volontairement :
+              Le parcours Capable Audit recueille le nom de l&apos;entreprise
+              que vous demandez d&apos;analyser. Les informations publiques
+              nécessaires au diagnostic (site officiel, activité, ville,
+              annuaires et présence publique) sont ensuite recherchées.
             </p>
-            <ul className="flex list-disc flex-col gap-2 pl-5">
-              <li>l&apos;adresse de votre site internet ;</li>
-              <li>votre secteur d&apos;activité et votre objectif principal ;</li>
-              <li>vos nom, entreprise, adresse email et, si vous le souhaitez, téléphone.</li>
-            </ul>
+            <p>
+              Si vous choisissez d&apos;être prévenu lorsque le diagnostic est
+              prêt, vous fournissez volontairement votre adresse email.
+              Un numéro de téléphone peut être ajouté uniquement dans le cadre
+              de l&apos;option facultative de communications GC.
+            </p>
             <p>
               Aucune donnée sensible au sens de l&apos;article 9 du RGPD
               n&apos;est demandée. Les identifiants publicitaires liés à la
@@ -84,16 +86,23 @@ export default function PolitiqueConfidentialitePage() {
               saisi et les informations publiques retrouvées à son sujet peuvent
               être transmis à l&apos;équipe GC afin d&apos;exécuter le diagnostic,
               d&apos;identifier l&apos;entreprise concernée et de suivre les demandes
-              d&apos;audit. À cette étape, aucune adresse email ni aucun numéro de
-              téléphone ne vous est demandé. L&apos;attribution publicitaire
-              (campagne, identifiant de clic) n&apos;est associée à cette demande
-              que si vous avez accepté les finalités de mesure dans le bandeau.
+              d&apos;audit.
             </p>
             <p>
-              Lorsque vous avez accepté les finalités publicitaires dans le
-              bandeau de consentement, certaines données de conversion peuvent
-              aussi être utilisées pour mesurer la qualité des campagnes Google
-              Ads. Elles ne sont ni vendues ni louées.
+              Si vous demandez à être prévenu lorsque l&apos;analyse est prête,
+              l&apos;email fourni est utilisé pour cette notification et pour
+              vous permettre de rouvrir votre diagnostic. Ce traitement est lié
+              au service expressément demandé. L&apos;inscription aux conseils,
+              offres ou autres communications commerciales GC repose sur un
+              consentement séparé, facultatif et non pré-coché.
+            </p>
+            <p>
+              L&apos;acceptation des cookies de mesure ou de publicité ne vaut
+              pas consentement à recevoir des emails ou SMS commerciaux.
+              L&apos;attribution publicitaire (campagne, identifiant de clic)
+              n&apos;est associée à la demande que si vous avez accepté les
+              finalités de mesure dans le bandeau. Ces données ne sont ni
+              vendues ni louées.
             </p>
           </Block>
 
@@ -131,12 +140,13 @@ export default function PolitiqueConfidentialitePage() {
 
           <Block title="Durée de conservation">
             <p>
-              Les demandes restées sans suite sont supprimées au plus tard
-              trois ans après le dernier contact, conformément à la
-              recommandation de la CNIL en matière de prospection. Les données
-              liées à une relation commerciale engagée sont conservées pendant
-              la durée de celle-ci, puis selon les obligations comptables
-              applicables.
+              Les coordonnées collectées uniquement pour vous notifier de la
+              disponibilité d&apos;un diagnostic sont conservées pour une durée
+              maximale de 90 jours, sauf relation commerciale engagée. Lorsque
+              vous avez explicitement accepté les communications commerciales,
+              les données de prospection peuvent être conservées jusqu&apos;à
+              trois ans après le dernier contact, sous réserve de vos droits
+              d&apos;opposition et de retrait du consentement.
             </p>
           </Block>
 
@@ -163,13 +173,13 @@ export default function PolitiqueConfidentialitePage() {
             <p>
               Si vous acceptez, les catégories de stockage liées à
               l&apos;analyse et à la publicité peuvent être activées par les
-              balises Google configurées pour le site. Les données de contact
-              fournies dans le formulaire peuvent alors être utilisées de façon
-              sécurisée pour les conversions améliorées et, lorsqu&apos;un lead
-              est ensuite qualifié ou devient client, pour mesurer cette étape
-              dans Google Ads. Si vous refusez, les données personnelles ne sont
-              pas envoyées à Google dans ce flux d&apos;amélioration des
-              conversions. Votre choix est conservé localement sur votre appareil.
+              balises Google configurées pour le site. Ce choix permet la
+              mesure d&apos;acquisition mais ne permet pas au site de découvrir
+              automatiquement votre adresse email ou votre numéro de téléphone.
+              Ces coordonnées ne sont connues de GC que si vous les fournissez
+              vous-même. Le consentement marketing reste distinct du choix
+              relatif aux cookies. Votre choix de cookies est conservé
+              localement sur votre appareil.
             </p>
           </Block>
 

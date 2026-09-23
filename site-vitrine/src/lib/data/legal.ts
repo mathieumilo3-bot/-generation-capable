@@ -40,9 +40,15 @@ export const HOST = {
 export const SUBPROCESSORS = [
   {
     nom: "Resend",
-    role: "Acheminement des emails de notification du formulaire Capable Audit.",
+    role: "Acheminement des emails de notification du diagnostic et, uniquement après opt-in dédié, gestion des contacts destinés aux communications marketing.",
     pays: "États-Unis",
     site: "https://resend.com/legal/dpa",
+  },
+  {
+    nom: "Supabase",
+    role: "Stockage des demandes de notification du diagnostic, des coordonnées fournies volontairement et du statut de l’analyse.",
+    pays: "Union européenne",
+    site: "https://supabase.com/privacy",
   },
   {
     nom: HOST.nom,
