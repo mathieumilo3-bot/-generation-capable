@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { FIELD_LIMITS } from "@/lib/audit-submission";
 import { track } from "@/lib/tracking";
@@ -34,7 +34,6 @@ export function AuditFunnel() {
   const [discovery, setDiscovery] = useState<CompanyDiscoveryCandidate | null>(null);
   const [attribution, setAttribution] = useState<BookingAttribution>({});
   const [clickIds, setClickIds] = useState({ gclid: "", gbraid: "", wbraid: "" });
-  const started = useRef(false);
 
   useEffect(() => {
     track("audit_started");
@@ -113,7 +112,6 @@ export function AuditFunnel() {
 
     setError(null);
     setRunning(true);
-    started.current = true;
     advance(8, "Nom reçu · recherche de l’entreprise");
     track("form_started");
     track("audit_step_1");
