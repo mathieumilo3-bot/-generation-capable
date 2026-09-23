@@ -315,64 +315,27 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
             ))}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-5 text-center">
-            <p className="font-display text-lg font-semibold">Vous voyez maintenant où se trouvent les leviers.</p>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--color-muted)]">
-              Le plus utile maintenant : reprendre ces points avec vous, les classer par impact et vous montrer quoi mettre en place en premier.
-            </p>
-            <div className="mt-4">
-              <Button
-                href={bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="primary"
-                className="audit-primary-cta min-h-14 px-7 text-base"
-                trackEvent="booking_started"
-                trackPayload={{ location: "audit_priorities", source: "capable_audit" }}
-              >
-                Construire mon plan d’action →
-              </Button>
-            </div>
-          </div>
         </div>
       )}
 
-      <div id="prochaine-etape" className="audit-result-glow mt-8 rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-surface)] p-6 text-center sm:p-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-          Prochaine étape
-        </p>
-        <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Passez du diagnostic au plan d’action.
+      <div id="prochaine-etape" className="audit-result-glow mt-10 rounded-[2rem] border border-[var(--color-accent)]/30 bg-[var(--color-surface)] p-7 text-center sm:p-10">
+        <h3 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          Votre diagnostic est prêt.
         </h3>
-        <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
-          {synthesis?.callBridge ||
-            "Pendant 30 minutes, on part directement de ce diagnostic et on transforme vos priorités en actions concrètes adaptées à votre activité."}
-        </p>
-        <div className="mx-auto mt-6 max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Vous repartez avec</p>
-          <ul className="mt-3 space-y-2 text-sm text-[var(--color-text)]">
-            <li>✓ les 3 leviers prioritaires</li>
-            <li>✓ l’ordre exact dans lequel les activer</li>
-            <li>✓ les prochaines actions adaptées à votre activité</li>
-          </ul>
-        </div>
-        <div className="mt-7">
+        <div className="mx-auto mt-7 max-w-xl">
           <Button
             href={bookingUrl}
             target="_blank"
             rel="noopener noreferrer"
             variant="primary"
-            className="audit-primary-cta min-h-14 px-8 text-base"
+            className="audit-primary-cta min-h-16 w-full px-8 text-lg sm:text-xl"
             trackEvent="booking_started"
             trackPayload={{ location: "audit_report", source: "capable_audit" }}
-            onClick={() => track("audit_cta_clicked", { location: "audit_report", intent: "book_strategy_call" })}
+            onClick={() => track("audit_cta_clicked", { location: "audit_report", intent: "book_action_plan" })}
           >
-            Choisir mon créneau →
+            Construire mon plan d’action →
           </Button>
         </div>
-        <p className="mt-4 text-xs text-[var(--color-muted)]">
-          Votre diagnostic sert de base · On va directement aux actions prioritaires · Sans engagement
-        </p>
       </div>
 
       <p className="mt-8 text-center text-xs leading-relaxed text-[var(--color-muted)]">{report.sectorNote}</p>
