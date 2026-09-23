@@ -7,6 +7,12 @@ import { track } from "@/lib/tracking";
 import type { Report } from "@/lib/audit-engine/types";
 import type { BookingAttribution } from "@/lib/booking";
 
+type ResearchResponse = {
+  dossier: unknown;
+  signature: string;
+  stats: { pagesAnalyzed: number; queriesRun: number; sourcesConsulted: number };
+};
+
 type CompanyDiscoveryCandidate = {
   name: string;
   website: string;
@@ -158,8 +164,12 @@ export function AuditFunnel() {
           candidates[0] ??
           null;
 
+        // A second plausible company elsewhere (not a weak echo of the same
+        // one) is real ambiguity: the city decides.
         const distinctMatches = new Set(
-          candidates.map((item) => `${item.name.toLowerCase()}|${item.city.toLowerCase()}`)
+          candidates
+            .filter((item) => item === candidate || item.confidence !== "low")
+            .map((item) => item.city.trim().toLowerCase() || item.website)
         ).size;
 
         const needsDisambiguation =
@@ -188,7 +198,12 @@ export function AuditFunnel() {
       if (candidate) {
         setNeedsCity(false);
         setDiscovery(candidate);
-        advance(36, "Entreprise identifiée · activité et zone recoupées");
+        advance(
+          30,
+          candidate.website
+            ? `${candidate.name} identifiée · site officiel vérifié`
+            : `${candidate.name} identifiée · pas de site officiel retrouvé`
+        );
         track("audit_analysis_completed");
       } else {
         advance(24, "Nom reçu · recherche élargie en cours");
@@ -199,31 +214,53 @@ export function AuditFunnel() {
       const resolvedName = candidate?.name || rawName;
       const resolvedSite = candidate?.website || "";
       const resolvedSector = candidate?.sector || "";
+      const resolvedCity = candidate?.city || rawCity;
+      const companyInput = {
+        entreprise: resolvedName,
+        siteUrl: resolvedSite,
+        secteur: resolvedSector,
+        ville: resolvedCity,
+      };
 
-      const quickPromise = resolvedSite
-        ? fetch("/api/audit/quick", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ siteUrl: resolvedSite }),
-          })
-            .then(async (res) => {
-              if (!res.ok) return null;
-              const body = (await res.json()) as { report?: Report };
-              if (body.report) advance(52, "Site et parcours vers le devis analysés");
-              return body.report ?? null;
-            })
-            .catch(() => null)
-        : Promise.resolve(null);
-
-      const analyzePromise = fetch("/api/audit/analyze", {
+      // Stage 1 — read the site page by page, then targeted web research.
+      setProgressLabel(
+        resolvedSite
+          ? "Lecture de votre site page par page · recherches Google en cours"
+          : "Recherche de vos traces publiques · annuaires, réseaux, avis"
+      );
+      const research = await fetch("/api/audit/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          entreprise: resolvedName,
-          siteUrl: resolvedSite,
-          secteur: resolvedSector,
-          objectif: FIXED_OBJECTIVE,
-        }),
+        body: JSON.stringify(companyInput),
+      })
+        .then(async (res) => (res.ok ? ((await res.json()) as ResearchResponse) : null))
+        .catch(() => null);
+
+      if (research) {
+        const { pagesAnalyzed, queriesRun } = research.stats;
+        advance(
+          72,
+          [
+            pagesAnalyzed ? `${pagesAnalyzed} page${pagesAnalyzed > 1 ? "s" : ""} du site lue${pagesAnalyzed > 1 ? "s" : ""}` : "",
+            queriesRun ? `${queriesRun} recherche${queriesRun > 1 ? "s" : ""} web` : "",
+          ]
+            .filter(Boolean)
+            .join(" · ") || "Sources publiques consultées"
+        );
+      } else {
+        advance(52, "Recherche élargie en cours");
+      }
+      setProgressLabel("Sélection des 3 points qui vous coûtent le plus de demandes");
+
+      // Stage 2 — write and verify the three cards from what was found.
+      const report = await fetch("/api/audit/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          research
+            ? { dossier: research.dossier, signature: research.signature, objectif: FIXED_OBJECTIVE }
+            : { ...companyInput, objectif: FIXED_OBJECTIVE }
+        ),
       })
         .then(async (res) => {
           if (!res.ok) return null;
@@ -232,16 +269,12 @@ export function AuditFunnel() {
         })
         .catch(() => null);
 
-      const [quickReport, fullReport] = await Promise.all([quickPromise, analyzePromise]);
-      const report = fullReport ?? quickReport;
-
       if (!report) {
         setError("L’analyse n’a pas pu être finalisée. Relancez le diagnostic dans quelques instants.");
         setRunning(false);
         return;
       }
 
-      advance(88, "Recherche web terminée · 3 priorités commerciales sélectionnées");
 
       try {
         sessionStorage.setItem(
@@ -324,10 +357,9 @@ export function AuditFunnel() {
   if (running) {
     const steps = [
       { at: 8, label: "Nom reçu" },
-      { at: 36, label: "Entreprise, activité et zone recoupées" },
-      { at: 52, label: "Site et parcours vers le devis analysés" },
-      { at: 88, label: "Visibilité web et priorités commerciales consolidées" },
-      { at: 100, label: "Diagnostic prêt" },
+      { at: 30, label: "Entreprise identifiée · site officiel vérifié" },
+      { at: 72, label: "Site lu page par page · recherches Google, annuaires, avis" },
+      { at: 100, label: "3 constats rédigés et vérifiés" },
     ];
     const next = steps.find((item) => item.at > progress)?.at;
 

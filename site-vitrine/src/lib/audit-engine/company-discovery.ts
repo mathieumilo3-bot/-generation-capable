@@ -1,3 +1,5 @@
+import { htmlToText, normalize, normalizePhone } from "./crawl";
+import { fetchPublicHtml, type FetchHtmlResult } from "./probe";
 import type { AiAuditWebSource } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
@@ -14,6 +16,8 @@ export type CompanyDiscoveryInsight = {
 export type CompanyDiscoveryCandidate = {
   name: string;
   website: string;
+  /** Set after the site itself was read: what on it matches the company. */
+  verification?: { verified: boolean; evidence: string[] };
   sector: string;
   city: string;
   summary: string;
@@ -121,13 +125,62 @@ function clean(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+/** Directories, marketplaces and social networks: sources, never the official site. */
+const NON_OFFICIAL_HOSTS = [
+  "pagesjaunes.fr",
+  "pappers.fr",
+  "societe.com",
+  "verif.com",
+  "infogreffe.fr",
+  "annuaire-entreprises.data.gouv.fr",
+  "manageo.fr",
+  "corporama.com",
+  "entreprises.lefigaro.fr",
+  "facebook.com",
+  "instagram.com",
+  "linkedin.com",
+  "tiktok.com",
+  "youtube.com",
+  "x.com",
+  "twitter.com",
+  "google.com",
+  "google.fr",
+  "maps.google.com",
+  "g.page",
+  "goo.gl",
+  "houzz.fr",
+  "houzz.com",
+  "habitatpresto.com",
+  "travaux.com",
+  "allovoisins.com",
+  "starofservice.com",
+  "quotatis.fr",
+  "trustlocal.fr",
+  "hellopro.fr",
+  "yelp.fr",
+  "yelp.com",
+  "cylex-france.fr",
+  "118712.fr",
+  "annuaire.118000.fr",
+  "mappy.com",
+  "justacote.com",
+  "leboncoin.fr",
+  "wikipedia.org",
+];
+
+export function isNonOfficialHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^www\./, "");
+  return NON_OFFICIAL_HOSTS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
 function normalizeWebsite(value: unknown): string {
   const raw = clean(value, 300);
   if (!raw) return "";
   try {
     const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
     if (!["http:", "https:"].includes(url.protocol)) return "";
-    return url.toString();
+    if (isNonOfficialHost(url.hostname)) return "";
+    return `${url.protocol}//${url.host}/`;
   } catch {
     return "";
   }
@@ -200,25 +253,7 @@ function candidateFromSources(query: string, sources: AiAuditWebSource[]): Compa
     let website = "";
     try {
       const url = new URL(source.url);
-      const host = url.hostname.toLowerCase().replace(/^www\./, "");
-      const nonOfficialHosts = [
-        "pagesjaunes.fr",
-        "pappers.fr",
-        "societe.com",
-        "verif.com",
-        "facebook.com",
-        "instagram.com",
-        "linkedin.com",
-        "tiktok.com",
-        "youtube.com",
-        "x.com",
-        "twitter.com",
-        "google.com",
-        "maps.google.com",
-      ];
-      if (!nonOfficialHosts.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
-        website = `${url.protocol}//${url.host}/`;
-      }
+      if (!isNonOfficialHost(url.hostname)) website = `${url.protocol}//${url.host}/`;
     } catch {}
 
     return {
@@ -359,7 +394,7 @@ Renvoie uniquement le JSON demandé.`,
   }
 }
 
-export async function discoverCompany(
+async function discoverCompanyUnverified(
   companyName: string,
   options: {
     fetchFn?: FetchLike;
@@ -387,7 +422,7 @@ export async function discoverCompany(
     model,
     projectId,
     contextSize: "high",
-    timeoutMs: options.firstTimeoutMs ?? 32_000,
+    timeoutMs: options.firstTimeoutMs ?? 28_000,
     cityHint,
   });
 
@@ -413,7 +448,7 @@ export async function discoverCompany(
     projectId,
     contextSize: "high",
     rescue: true,
-    timeoutMs: 26_000,
+    timeoutMs: 18_000,
     cityHint,
   });
 
@@ -448,4 +483,104 @@ export async function discoverCompany(
     candidates: fallback ? [fallback] : [],
     webSources: combinedSources,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic check of the official domain
+
+const LEGAL_FORMS = new Set(["sarl", "sas", "sasu", "eurl", "sa", "sci", "ei", "eirl", "entreprise", "societe", "ets", "etablissements", "et", "fils", "les", "des", "de", "du", "la", "le"]);
+
+function brandTokens(name: string): string[] {
+  return normalize(name)
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(" ")
+    .filter((t) => t.length >= 3 && !LEGAL_FORMS.has(t));
+}
+
+/**
+ * Reads the candidate's homepage (and its legal notice when linked) and
+ * checks that the company is really there: name in the domain, title or
+ * text, plus the city or the phone when known. A domain the AI proposed but
+ * that does not carry the company's name is not accepted as official.
+ */
+export async function verifyOfficialSite(
+  candidate: CompanyDiscoveryCandidate,
+  options: { cityHint?: string; fetchPage?: (url: string) => Promise<FetchHtmlResult> } = {}
+): Promise<CompanyDiscoveryCandidate> {
+  if (!candidate.website) return candidate;
+  const fetchPage = options.fetchPage ?? ((url: string) => fetchPublicHtml(url, { timeoutMs: 5_000 }));
+  const home = await fetchPage(candidate.website);
+  if (!home.ok) {
+    return {
+      ...candidate,
+      confidence: candidate.confidence === "high" ? "medium" : candidate.confidence,
+      verification: { verified: false, evidence: ["site officiel non joignable pendant la vérification"] },
+    };
+  }
+
+  let html = home.html;
+  const legalHref = html.match(/<a\b[^>]*href=["']([^"']*mentions?[-_]?l[ée]gales?[^"']*)["']/i)?.[1];
+  if (legalHref) {
+    try {
+      const legalUrl = new URL(legalHref, home.finalUrl);
+      if (legalUrl.hostname === home.finalUrl.hostname) {
+        const legal = await fetchPage(legalUrl.toString());
+        if (legal.ok) html += " " + legal.html;
+      }
+    } catch {}
+  }
+
+  const text = normalize(htmlToText(html));
+  const host = normalize(home.finalUrl.hostname.replace(/^www\./, "")).replace(/[^a-z0-9]/g, "");
+  const tokens = brandTokens(candidate.name);
+  const inText = tokens.filter((t) => text.includes(t));
+  const inHost = tokens.filter((t) => host.includes(t));
+  const needed = Math.min(2, tokens.length);
+  const nameMatch = tokens.length > 0 && (inText.length >= needed || inHost.length >= needed || (inHost.length >= 1 && inText.length >= 1));
+
+  const evidence: string[] = [];
+  if (nameMatch) evidence.push(`nom retrouvé sur le site (${[...new Set([...inHost, ...inText])].join(", ")})`);
+  const city = (options.cityHint || candidate.city || "").trim();
+  const cityMatch = city.length >= 2 && (text.includes(normalize(city)) || (/^\d{5}$/.test(city) && text.includes(city)));
+  if (cityMatch) evidence.push(`ville retrouvée (${city})`);
+  const phones = [...new Set((htmlToText(html).match(/(?:(?:\+|00)33[\s.-]?|\b0)[1-9](?:[\s.-]?\d{2}){4}/g) ?? []).map(normalizePhone).filter(Boolean))];
+  if (phones.length) evidence.push(`téléphone affiché (${phones[0]})`);
+  if (/siret|siren|rcs/i.test(text)) evidence.push("mentions légales avec identifiant d’entreprise");
+
+  if (!nameMatch) {
+    return {
+      ...candidate,
+      website: "",
+      confidence: "low",
+      verification: { verified: false, evidence: [`le nom « ${candidate.name} » n’apparaît pas sur ${home.finalUrl.hostname}`] },
+    };
+  }
+
+  // Name verified on the site. The city then decides between high and medium.
+  let confidence = candidate.confidence === "low" ? "medium" : candidate.confidence;
+  if (city && !cityMatch) confidence = "medium";
+  else if (cityMatch) confidence = "high";
+
+  return {
+    ...candidate,
+    website: `${home.finalUrl.protocol}//${home.finalUrl.host}/`,
+    confidence,
+    verification: { verified: true, evidence },
+  };
+}
+
+export async function discoverCompany(
+  companyName: string,
+  options: Parameters<typeof discoverCompanyUnverified>[1] & {
+    verify?: (candidate: CompanyDiscoveryCandidate, opts: { cityHint?: string }) => Promise<CompanyDiscoveryCandidate>;
+  } = {}
+): Promise<CompanyDiscoveryResult> {
+  const result = await discoverCompanyUnverified(companyName, options);
+  const verify = options.verify ?? verifyOfficialSite;
+  const candidates = await Promise.all(
+    result.candidates.map((candidate, index) => (index < 3 && candidate.website ? verify(candidate, { cityHint: options.cityHint }) : candidate))
+  );
+  const rank = (c: CompanyDiscoveryCandidate) =>
+    ({ high: 3, medium: 2, low: 1 })[c.confidence] + (c.verification?.verified ? 3 : 0) + (c.website ? 1 : 0);
+  return { ...result, candidates: candidates.sort((a, b) => rank(b) - rank(a)) };
 }

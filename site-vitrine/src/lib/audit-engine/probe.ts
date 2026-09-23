@@ -236,7 +236,7 @@ export function parseHtmlSignals(html: string): Omit<SiteSignals, "reachable" | 
   };
 }
 
-function unreachableSignals(reason: SiteSignals["unreachableReason"]): SiteSignals {
+export function unreachableSignals(reason: SiteSignals["unreachableReason"]): SiteSignals {
   const why = `site non analysable (${reason})`;
   return {
     reachable: false,
@@ -262,26 +262,31 @@ function unreachableSignals(reason: SiteSignals["unreachableReason"]): SiteSigna
   };
 }
 
-/**
- * Fetches and reads the target site, bounded on time and size, and returns
- * its parsed signals — or, on any failure, a fully UNKNOWN signal set with
- * the reason attached. Never throws: a probe failure degrades the report,
- * it never breaks the request that asked for one.
- */
-export async function probeSite(rawUrl: string): Promise<SiteSignals> {
-  const resolved = resolveTargetUrl(rawUrl);
-  if (!resolved.ok) return unreachableSignals(resolved.reason);
+export type FetchHtmlResult =
+  | { ok: true; finalUrl: URL; status: number; html: string; responseTimeMs: number }
+  | { ok: false; reason: NonNullable<SiteSignals["unreachableReason"]>; status?: number; responseTimeMs?: number };
 
-  // The hostname passed the literal check in resolveTargetUrl, but that only
-  // catches a private IP typed directly — a hostname resolving to one at
-  // request time (DNS rebinding, an internal zone) slips through it.
-  if (await resolvesToBlockedIp(resolved.url.hostname)) {
-    return unreachableSignals("blocked_target");
-  }
+export type FetchHtmlOptions = {
+  timeoutMs?: number;
+  maxBytes?: number;
+  /** Accept non-HTML text bodies (sitemap.xml). */
+  acceptXml?: boolean;
+};
+
+/**
+ * Fetches one public page with every SSRF guard applied (scheme, literal
+ * private IP, DNS resolution before the first request and before each
+ * redirect), bounded on time and size. Never throws.
+ */
+export async function fetchPublicHtml(rawUrl: string, options: FetchHtmlOptions = {}): Promise<FetchHtmlResult> {
+  const resolved = resolveTargetUrl(rawUrl);
+  if (!resolved.ok) return { ok: false, reason: resolved.reason };
+  if (await resolvesToBlockedIp(resolved.url.hostname)) return { ok: false, reason: "blocked_target" };
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? FETCH_TIMEOUT_MS);
   const startedAt = Date.now();
+  const maxBytes = options.maxBytes ?? MAX_BODY_BYTES;
 
   try {
     let currentUrl = resolved.url;
@@ -291,31 +296,33 @@ export async function probeSite(rawUrl: string): Promise<SiteSignals> {
       response = await fetch(currentUrl, {
         signal: controller.signal,
         redirect: "manual",
-        headers: { "User-Agent": USER_AGENT, Accept: "text/html,*/*;q=0.8" },
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: options.acceptXml ? "application/xml,text/xml,text/html;q=0.9,*/*;q=0.8" : "text/html,*/*;q=0.8",
+          "Accept-Language": "fr-FR,fr;q=0.9",
+        },
       });
 
       if (![301, 302, 303, 307, 308].includes(response.status)) break;
       const location = response.headers.get("location");
-      if (!location || redirectCount === MAX_REDIRECTS) {
-        return unreachableSignals("network_error");
-      }
+      if (!location || redirectCount === MAX_REDIRECTS) return { ok: false, reason: "network_error" };
 
       const next = await resolveSafeRedirect(location, currentUrl);
-      if (!next.ok) return unreachableSignals(next.reason);
+      if (!next.ok) return { ok: false, reason: next.reason };
       currentUrl = next.url;
     }
 
-    if (!response) return unreachableSignals("network_error");
+    if (!response) return { ok: false, reason: "network_error" };
     const responseTimeMs = Date.now() - startedAt;
-
-    if (!response.ok) {
-      return { ...unreachableSignals("http_error"), httpStatus: response.status, responseTimeMs };
-    }
+    if (!response.ok) return { ok: false, reason: "http_error", status: response.status, responseTimeMs };
 
     const contentType = response.headers.get("content-type") ?? "";
-    if (contentType && !contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
-      return { ...unreachableSignals("empty_body"), httpStatus: response.status, responseTimeMs };
-    }
+    const acceptable =
+      !contentType ||
+      contentType.includes("text/html") ||
+      contentType.includes("application/xhtml") ||
+      (options.acceptXml && contentType.includes("xml"));
+    if (!acceptable) return { ok: false, reason: "empty_body", status: response.status, responseTimeMs };
 
     // Read with a hard cap rather than response.text(): a malicious or
     // misconfigured target could otherwise stream an unbounded body.
@@ -324,7 +331,7 @@ export async function probeSite(rawUrl: string): Promise<SiteSignals> {
     if (reader) {
       const decoder = new TextDecoder();
       let bytesRead = 0;
-      while (bytesRead < MAX_BODY_BYTES) {
+      while (bytesRead < maxBytes) {
         const { done, value } = await reader.read();
         if (done) break;
         bytesRead += value.byteLength;
@@ -335,23 +342,40 @@ export async function probeSite(rawUrl: string): Promise<SiteSignals> {
       html = await response.text();
     }
 
-    if (!html.trim()) {
-      return { ...unreachableSignals("empty_body"), httpStatus: response.status, responseTimeMs };
-    }
-
-    const finalUrlObj = currentUrl;
-    return {
-      reachable: true,
-      finalUrl: finalUrlObj.toString(),
-      httpStatus: response.status,
-      responseTimeMs,
-      isHttps: finalUrlObj.protocol === "https:",
-      ...parseHtmlSignals(html),
-    };
+    if (!html.trim()) return { ok: false, reason: "empty_body", status: response.status, responseTimeMs };
+    return { ok: true, finalUrl: currentUrl, status: response.status, html, responseTimeMs };
   } catch (error) {
     const reason = error instanceof Error && error.name === "AbortError" ? "timeout" : "network_error";
-    return unreachableSignals(reason);
+    return { ok: false, reason };
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Turns an already-fetched homepage into the site's signal set. */
+export function signalsFromFetch(result: FetchHtmlResult): SiteSignals {
+  if (!result.ok) {
+    return {
+      ...unreachableSignals(result.reason),
+      ...(result.status ? { httpStatus: result.status } : {}),
+      ...(result.responseTimeMs !== undefined ? { responseTimeMs: result.responseTimeMs } : {}),
+    };
+  }
+  return {
+    reachable: true,
+    finalUrl: result.finalUrl.toString(),
+    httpStatus: result.status,
+    responseTimeMs: result.responseTimeMs,
+    isHttps: result.finalUrl.protocol === "https:",
+    ...parseHtmlSignals(result.html),
+  };
+}
+
+/**
+ * Fetches and reads the target site's homepage and returns its parsed
+ * signals — or, on any failure, a fully UNKNOWN signal set with the reason
+ * attached. Never throws.
+ */
+export async function probeSite(rawUrl: string): Promise<SiteSignals> {
+  return signalsFromFetch(await fetchPublicHtml(rawUrl));
 }

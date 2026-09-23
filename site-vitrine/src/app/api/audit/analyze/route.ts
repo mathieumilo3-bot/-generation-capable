@@ -1,25 +1,26 @@
 import { NextResponse } from "next/server";
-import { runAudit } from "@/lib/audit-engine/engine";
+import { diagnoseDossier, verifyDossier } from "@/lib/audit-engine/diagnostic";
+import { reportFromDiagnostic, runAudit } from "@/lib/audit-engine/engine";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
 /**
- * Runs the Capable Audit analysis engine and returns a Report.
+ * Stage 2 of the diagnostic: turns the signed dossier produced by
+ * /api/audit/research into the three validated cards and returns a Report.
  *
- * Deliberately separate from POST /api/audit: that endpoint captures a lead
- * and sends email — this one only computes an analysis and sends nothing.
- * Keeping them apart means a slow or failing probe here can never delay or
- * break lead capture, and this endpoint needs no PII at all (no name, no
- * email) since it runs before or independently of the coordonnées step.
+ * Without a dossier (research stage failed, older client), it runs the
+ * one-shot pipeline instead — shorter research, same validation.
+ *
+ * Deliberately separate from POST /api/audit: this endpoint captures no
+ * lead and sends no email.
  */
 
-const MAX_BODY_BYTES = 3 * 1024; // entreprise + siteUrl + secteur + objectif, generously.
+const MAX_BODY_BYTES = 160 * 1024; // a signed dossier: ~14 pages of bounded excerpts + research notes.
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const FIELD_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 240 };
-// The engine can spend up to ~5s probing the site, then up to 30s on the
-// structured OpenAI synthesis. Keep the outer guard above both stages while
-// staying below Netlify's 60s synchronous execution limit.
+const FIELD_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 240, ville: 120 };
+// Below Netlify's 60 s synchronous execution limit.
 const ANALYZE_TIMEOUT_MS = 58_000;
+const SYNTHESIS_TIMEOUT_MS = 52_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -28,9 +29,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
-function readString(raw: Record<string, unknown>, key: string, max: number): string {
+function readString(raw: Record<string, unknown>, key: keyof typeof FIELD_LIMITS): string {
   const value = raw[key];
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
+  return typeof value === "string" ? value.trim().slice(0, FIELD_LIMITS[key]) : "";
 }
 
 export async function POST(request: Request) {
@@ -61,23 +62,36 @@ export async function POST(request: Request) {
   }
 
   const source = payload as Record<string, unknown>;
-  const entreprise = readString(source, "entreprise", FIELD_LIMITS.entreprise);
-  const siteUrl = readString(source, "siteUrl", FIELD_LIMITS.siteUrl);
-  const secteur = readString(source, "secteur", FIELD_LIMITS.secteur);
-  const objectif = readString(source, "objectif", FIELD_LIMITS.objectif);
+  const objectif = readString(source, "objectif");
+
+  if ("dossier" in source) {
+    if (!verifyDossier(source.dossier, source.signature)) {
+      return NextResponse.json({ error: "invalid_dossier" }, { status: 400 });
+    }
+    const dossier = source.dossier;
+    try {
+      const diagnostic = await withTimeout(diagnoseDossier(dossier, { timeoutMs: SYNTHESIS_TIMEOUT_MS }), ANALYZE_TIMEOUT_MS);
+      return NextResponse.json({ report: reportFromDiagnostic(dossier, diagnostic, objectif) }, { status: 200 });
+    } catch (error) {
+      console.error("[audit/analyze] diagnosis failed:", error);
+      return NextResponse.json({ error: "analysis_failed" }, { status: 502 });
+    }
+  }
+
+  const entreprise = readString(source, "entreprise");
+  const siteUrl = readString(source, "siteUrl");
+  const secteur = readString(source, "secteur");
+  const ville = readString(source, "ville");
 
   if (!entreprise && !siteUrl) {
     return NextResponse.json({ error: "missing_fields", missing: ["entreprise"] }, { status: 422 });
   }
 
   try {
-    const report = await withTimeout(runAudit({ entreprise, siteUrl, secteur, objectif }), ANALYZE_TIMEOUT_MS);
+    const report = await withTimeout(runAudit({ entreprise, siteUrl, secteur, objectif, ville }), ANALYZE_TIMEOUT_MS);
     return NextResponse.json({ report }, { status: 200 });
   } catch (error) {
-    // The engine itself never throws for a probe failure (it degrades the
-    // report instead) — reaching here means our own outer timeout fired, or
-    // a genuine bug. Either way: fail soft. The funnel's fallback success
-    // message covers this, so a lead is never lost over a broken diagnostic.
+    // Reaching here means our own outer timeout fired, or a genuine bug.
     console.error("[audit/analyze] engine failed:", error);
     return NextResponse.json({ error: "analysis_failed" }, { status: 502 });
   }

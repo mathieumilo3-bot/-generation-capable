@@ -58,7 +58,8 @@ test.describe("POST /api/audit", () => {
     expect(res.status()).toBe(422);
     const body = await res.json();
     expect(body.error).toBe("missing_fields");
-    expect(body.missing).toEqual(expect.arrayContaining(["email", "siteUrl"]));
+    // The site is optional since the funnel starts from the company name.
+    expect(body.missing).toEqual(expect.arrayContaining(["email"]));
   });
 
   test("rejects an invalid email", async ({ request }) => {
@@ -73,7 +74,7 @@ test.describe("POST /api/audit", () => {
   test("does not accept a non-string field", async ({ request }) => {
     const res = await request.post("/api/audit", {
       headers: freshIp(),
-      data: validBody({ siteUrl: { toString: "x" } }),
+      data: validBody({ entreprise: { toString: "x" }, siteUrl: "" }),
     });
     expect(res.status()).toBe(422);
   });
@@ -102,7 +103,7 @@ test.describe("POST /api/audit", () => {
     });
     // Looks like success to the bot, but nothing was sent.
     expect(res.status()).toBe(200);
-    expect((await res.json()).emailed).toBeUndefined();
+    expect((await res.json()).emailed).not.toBe(true);
   });
 
   test("rate limits a flood from one address", async ({ request }) => {
