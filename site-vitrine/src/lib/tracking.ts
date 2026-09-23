@@ -20,6 +20,7 @@ export type TrackingEvent =
   | "audit_company_disambiguation_requested"
   | "audit_site_requested"
   | "audit_intent_captured"
+  | "audit_ready_notification_requested"
   | "audit_report_viewed"
   | "audit_finding_viewed"
   | "audit_cta_clicked"
