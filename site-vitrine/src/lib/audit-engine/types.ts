@@ -1,3 +1,5 @@
+import type { DiagnosticResult } from "./diagnostic";
+
 /**
  * Core types for the Capable Audit business-intelligence engine.
  *
@@ -243,6 +245,8 @@ export type Report = {
   /** The sector profile's own stated caveat — always shown, never folded into a Finding. */
   sectorNote: string;
   engineVersion: string;
-  /** Optional OpenAI synthesis. Missing when no key is configured or the AI layer fails soft. */
+  /** Legacy OpenAI synthesis (engine 1.x). Kept so a stored older report still renders. */
   aiSynthesis?: AiAuditSynthesis;
+  /** The 3-card diagnostic (engine 2.x): multi-page crawl + web research + validated cards. */
+  diagnostic?: DiagnosticResult;
 };

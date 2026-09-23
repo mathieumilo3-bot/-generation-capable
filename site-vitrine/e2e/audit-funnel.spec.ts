@@ -1,185 +1,287 @@
 import { expect, test, type Page } from "@playwright/test";
 
+/**
+ * The real /audit journey: company name → (city only if ambiguous) →
+ * research stage → diagnosis stage → three cards → booking CTA.
+ * Every API is mocked: these tests check the journey and the rendering,
+ * the engine itself is covered by the unit tests.
+ */
+
 const COMPANY = {
-  name: "Dupont Couverture",
-  website: "https://dupont-couverture.fr/",
+  name: "Martin Couverture",
+  website: "https://www.martin-couverture56.fr/",
   sector: "Couvreur / toiture",
-  city: "Rennes",
-  summary: "Entreprise de couverture retrouvée à Rennes.",
+  city: "Vannes",
+  summary: "Couvreur à Vannes.",
   confidence: "high",
-  insights: [
-    {
-      title: "Vos preuves doivent être visibles avant le premier appel",
-      insight: "Les éléments publics retrouvés permettent d’identifier l’activité, mais les preuves doivent être immédiatement reliées à la demande de devis.",
-      evidence: ["Site officiel retrouvé", "Activité de couverture identifiable"],
-    },
-    {
-      title: "Votre zone d’intervention doit être évidente",
-      insight: "La présence locale doit relier clairement le métier aux zones réellement couvertes.",
-      evidence: ["Rennes est identifiable dans les sources publiques"],
-    },
-    {
-      title: "Le chemin vers le devis doit rester direct",
-      insight: "Un prospect prêt à agir doit pouvoir comprendre la prochaine étape sans chercher.",
-      evidence: ["Parcours de contact visible sur le site"],
-    },
-  ],
+  insights: [],
 };
 
-async function startDiscovery(page: Page, name = "Dupont Couverture") {
+const CARDS = [
+  {
+    id: "ai_1",
+    axis: "trouve",
+    title: "Visibilité du service isolation extérieure",
+    score: 4,
+    finding: "« Isolation extérieure » apparaît sur la page d’accueil, mais aucune page dédiée n’a été retrouvée parmi les 8 pages du site.",
+    seen: "« démoussage de toiture et isolation extérieure des murs » — sans page propre à ce service.",
+    loss: "Des prospects qui cherchent « isolation extérieure Vannes » peuvent trouver un concurrent plus explicite avant vous.",
+    potential: "fort",
+    potentialText: "Une page dédiée correspondrait aux recherches de prospects déjà intéressés par ce service.",
+    fix: "Créer une page « Isolation extérieure Vannes » avec 3 chantiers et un bouton devis.",
+    basis: "site + recherche",
+  },
+  {
+    id: "ai_2",
+    axis: "contacte",
+    title: "Votre numéro n’est pas cliquable",
+    score: 3,
+    finding: "Le numéro 02 97 12 34 56 est écrit sur votre site, mais aucun lien d’appel direct n’a été détecté.",
+    seen: "02 97 12 34 56 présent en texte ; 0 lien « tel: » sur la page d’accueil.",
+    loss: "Sur mobile, un prospect pressé peut appeler le concurrent suivant.",
+    potential: "très fort",
+    potentialText: "Un appel en un geste capte les demandes les plus urgentes.",
+    fix: "Rendre le 02 97 12 34 56 cliquable dans l’en-tête.",
+    basis: "site",
+  },
+  {
+    id: "ai_3",
+    axis: "choisi",
+    title: "Vos réalisations sont loin de la décision",
+    score: 5,
+    finding: "Vous avez une page /nos-realisations (6 images), mais l’accueil ne montre aucune preuve près du devis.",
+    seen: "/nos-realisations contient 6 visuels ; l’accueil n’a aucun avis ni témoignage.",
+    loss: "Un visiteur qui compare plusieurs artisans peut partir avant d’avoir vu vos chantiers.",
+    potential: "fort",
+    potentialText: "Rapprocher vos chantiers du bouton de devis rend votre sérieux visible au bon moment.",
+    fix: "Afficher 3 réalisations avant/après au-dessus du bouton de devis de l’accueil.",
+    basis: "site",
+  },
+];
+
+const REPORT = {
+  header: {
+    entreprise: COMPANY.name,
+    secteur: COMPANY.sector,
+    sectorProfile: "artisan",
+    objectif: "",
+    siteUrl: COMPANY.website,
+    generatedAt: new Date().toISOString(),
+    siteReachable: true,
+  },
+  topLeaks: [],
+  worksWell: [],
+  otherFindings: [],
+  actionPlan: [],
+  degraded: false,
+  sectorNote: "Heuristiques sectorielles.",
+  engineVersion: "2.0.0",
+  diagnostic: {
+    company: { name: COMPANY.name, city: COMPANY.city, trade: COMPANY.sector, siteUrl: COMPANY.website, domain: "martin-couverture56.fr" },
+    summary: "Couvreur · Vannes — 8 pages du site et 8 recherches web analysées.",
+    cards: CARDS,
+    pagesAnalyzed: 8,
+    queriesRun: 8,
+    sourcesConsulted: 14,
+    mode: "ai",
+  },
+};
+
+async function acceptConsentIfShown(page: Page) {
+  const consent = page.getByRole("dialog", { name: "Préférences de confidentialité" });
+  // The banner mounts after hydration; give it a moment rather than racing it.
+  if (await consent.waitFor({ state: "visible", timeout: 4_000 }).then(() => true, () => false)) {
+    await consent.getByRole("button", { name: "Refuser", exact: true }).click();
+    await expect(consent).toBeHidden();
+  }
+}
+
+async function mockApis(page: Page, candidates: unknown[] = [COMPANY]) {
+  const calls: Record<string, string[]> = { discover: [], research: [], analyze: [] };
+
+  // Discovery and the investigation run as background jobs: the client
+  // starts one, then polls. The mocks mirror that contract exactly.
+  await page.route("**/api/audit/discover", (route) => {
+    const body = route.request().postData() ?? "";
+    calls.discover.push(body);
+    const polling = body.includes("jobId");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(
+        polling
+          ? { status: "done", candidates }
+          : { status: "started", jobId: "resp_testdiscovery1", token: "t".repeat(64) }
+      ),
+    });
+  });
+
+  await page.route("**/api/audit/intent", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+
+  await page.route("**/api/audit/research", (route) => {
+    calls.research.push(route.request().postData() ?? "");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        context: { v: 1 },
+        signature: "a".repeat(64),
+        jobId: "resp_testinvestigation1",
+        token: "b".repeat(64),
+        stats: { pagesAnalyzed: 8, siteReachable: true, evidenceCards: 6, investigating: true },
+      }),
+    });
+  });
+
+  await page.route("**/api/audit/analyze", (route) => {
+    calls.analyze.push(route.request().postData() ?? "");
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "done", report: REPORT }) });
+  });
+
+  return calls;
+}
+
+async function start(page: Page, name = "Martin Couverture") {
+  await page.goto("/audit");
+  await acceptConsentIfShown(page);
   await page.getByLabel("Nom de votre entreprise").fill(name);
   await page.getByRole("button", { name: /Analyser mon entreprise/ }).click();
-  await expect(page.getByText(COMPANY.name, { exact: true })).toBeVisible();
-  await expect(page.getByText(COMPANY.insights[0].title, { exact: true })).toBeVisible();
 }
 
-async function reachContact(page: Page) {
-  await startDiscovery(page);
-  await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
-  await expect(page.getByRole("heading", { name: "Pourquoi faites-vous ce diagnostic ?" })).toBeVisible();
-  await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
-  await page.getByRole("button", { name: /Analyser selon mes objectifs/ }).click();
-  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
-}
-
-test.describe("Capable Audit funnel", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route("**/api/audit/discover", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ candidates: [COMPANY], webSources: [] }),
-      })
-    );
-    await page.route("**/api/audit/quick", (route) => route.abort());
-    await page.route("**/api/audit/analyze", (route) => route.abort());
-    await page.route("**/api/audit", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ status: "received", accepted: true, emailed: true }),
-      })
-    );
+test.describe("Audit funnel — nom → diagnostic", () => {
+  test("never asks for a website URL", async ({ page }) => {
     await page.goto("/audit");
+    await expect(page.getByLabel("Nom de votre entreprise")).toBeVisible();
+    await expect(page.getByLabel(/Votre site/)).toHaveCount(0);
   });
 
-  test("starts from a company name and submits the resolved company", async ({ page }) => {
-    const requests: string[] = [];
-    page.on("request", (req) => {
-      if (req.url().endsWith("/api/audit")) requests.push(req.postData() ?? "");
-    });
-
-    await reachContact(page);
-    await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Générer mon audit PDF/ }).click();
+  test("runs discovery → research → analysis and shows three precise cards", async ({ page }) => {
+    const calls = await mockApis(page);
+    await start(page);
 
     await expect(page).toHaveURL(/\/audit\/merci$/);
-    await expect(page.getByRole("heading", { name: "Votre audit est en préparation." })).toBeVisible();
+    const cards = page.getByTestId("diagnostic-card");
+    await expect(cards).toHaveCount(3);
+    await expect(cards.first()).toContainText("Visibilité du service isolation extérieure");
+    await expect(cards.first()).toContainText("4/10");
+    await expect(cards.first()).toContainText("Vu :");
+    await expect(cards.first()).toContainText("Ce que vous perdez");
+    await expect(cards.first()).toContainText(/Potentiel\s*:\s*fort/i);
+    await expect(cards.first()).toContainText("À corriger");
+    await expect(page.getByRole("heading", { name: "Votre diagnostic est prêt." })).toBeVisible();
 
-    expect(requests).toHaveLength(1);
-    const payload = JSON.parse(requests[0]);
-    expect(payload).toMatchObject({
-      entreprise: "Dupont Couverture",
-      siteUrl: "https://dupont-couverture.fr/",
-      secteur: "Couvreur / toiture",
-      objectif: "Plus de chantiers",
-      email: "marie@exemple.fr",
+    expect(JSON.parse(calls.research[0])).toMatchObject({ entreprise: "Martin Couverture", siteUrl: COMPANY.website, ville: "Vannes" });
+    // Stage 2 polls the signed job, it never re-sends a bare company name.
+    expect(JSON.parse(calls.analyze[0])).toMatchObject({
+      signature: "a".repeat(64),
+      context: { v: 1 },
+      jobId: "resp_testinvestigation1",
     });
   });
 
-  test("does not ask for a website URL", async ({ page }) => {
-    await expect(page.getByLabel("Nom de votre entreprise")).toBeVisible();
-    await expect(page.getByLabel("Votre site")).toHaveCount(0);
-    await expect(page.getByText(/Pas besoin de connaître l’adresse de votre site/)).toBeVisible();
+  test("the final button opens the booking page with attribution", async ({ page }) => {
+    await mockApis(page);
+    await page.goto("/audit?utm_source=google&utm_medium=cpc&utm_campaign=gc_search_btp");
+    await acceptConsentIfShown(page);
+    await page.getByLabel("Nom de votre entreprise").fill("Martin Couverture");
+    await page.getByRole("button", { name: /Analyser mon entreprise/ }).click();
+
+    const cta = page.getByRole("link", { name: /Construire mon plan d’action/ });
+    await expect(cta).toBeVisible();
+    const href = await cta.getAttribute("href");
+    expect(href).toContain("calendly.com/");
+    expect(href).toContain("utm_source=google");
+    expect(href).toContain("utm_campaign=gc_search_btp");
+    await expect(cta).toHaveAttribute("target", "_blank");
   });
 
-  test("lets a prospect select up to three qualification objectives", async ({ page }) => {
-    await startDiscovery(page);
-    await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
+  test("asks only for the city when the company is ambiguous, then resumes", async ({ page }) => {
+    const calls = await mockApis(page, [
+      { ...COMPANY, confidence: "medium" },
+      { ...COMPANY, city: "Lyon", website: "https://martin-couverture-lyon.fr/", confidence: "medium" },
+    ]);
+    await start(page, "Martin Couverture");
 
-    await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
-    await page.getByRole("button", { name: "Plus de visibilité", exact: true }).click();
-    await page.getByRole("button", { name: "Recevoir plus de demandes de devis", exact: true }).click();
+    const city = page.getByLabel("Ville ou code postal");
+    await expect(city).toBeVisible({ timeout: 15_000 });
+    expect(calls.research).toHaveLength(0);
 
-    await expect(page.getByText("3 / 3 sélectionnés")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Être mieux trouvé sur Google", exact: true })).toBeDisabled();
-
-    await page.getByRole("button", { name: /Analyser selon mes objectifs/ }).click();
-    await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+    await city.fill("56000");
+    await page.getByRole("button", { name: /Continuer l’analyse/ }).click();
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3);
+    expect(JSON.parse(calls.discover[calls.discover.length - 1])).toMatchObject({ companyName: "Martin Couverture", cityHint: "56000" });
   });
 
-  test("Enter launches company discovery without submitting a lead", async ({ page }) => {
-    const leads: string[] = [];
-    page.on("request", (req) => {
-      if (req.url().endsWith("/api/audit")) leads.push(req.url());
-    });
+  test("falls back to a site-only analysis when the research stage fails", async ({ page }) => {
+    const calls = await mockApis(page);
+    await page.unroute("**/api/audit/research");
+    await page.route("**/api/audit/research", (route) => route.fulfill({ status: 502, body: "{}" }));
+    await start(page);
 
-    await page.getByLabel("Nom de votre entreprise").fill("Dupont Couverture");
-    await page.getByLabel("Nom de votre entreprise").press("Enter");
-
-    await expect(page.getByText(COMPANY.name, { exact: true })).toBeVisible();
-    expect(leads).toHaveLength(0);
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3);
+    expect(JSON.parse(calls.analyze[0])).toMatchObject({ entreprise: "Martin Couverture", siteUrl: COMPANY.website });
   });
 
-  test("skips the trade question when the company sector is identified", async ({ page }) => {
-    await startDiscovery(page);
-    await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
-    await expect(page.getByRole("heading", { name: "Pourquoi faites-vous ce diagnostic ?" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Quel est votre métier principal ?" })).toHaveCount(0);
+  test("shows a retry message, not a fake diagnostic, when analysis fails", async ({ page }) => {
+    await mockApis(page);
+    await page.unroute("**/api/audit/analyze");
+    await page.route("**/api/audit/analyze", (route) => route.fulfill({ status: 502, body: "{}" }));
+    await start(page);
+
+    await expect(page.getByText(/n’a pas pu être finalisée/)).toBeVisible();
+    await expect(page).toHaveURL(/\/audit$/);
   });
 
-  test("falls back to manual qualification when no company match is safe", async ({ page }) => {
-    await page.unroute("**/api/audit/discover");
-    await page.route("**/api/audit/discover", (route) =>
-      route.fulfill({
+  test("cards fit a phone screen without horizontal scroll", async ({ page }) => {
+    await mockApis(page);
+    await start(page);
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe("Audit funnel — resilience", () => {
+  test("keeps polling while the investigation runs, then shows its cards", async ({ page }) => {
+    const calls = await mockApis(page);
+    await page.unroute("**/api/audit/analyze");
+    let polls = 0;
+    await page.route("**/api/audit/analyze", (route) => {
+      const body = route.request().postData() ?? "";
+      calls.analyze.push(body);
+      polls += 1;
+      return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ candidates: [], webSources: [] }),
-      })
-    );
-
-    await page.getByLabel("Nom de votre entreprise").fill("Nom ambigu");
-    await page.getByRole("button", { name: /Analyser mon entreprise/ }).click();
-    await expect(page.getByRole("heading", { name: "Quel est votre métier principal ?" })).toBeVisible();
-    await expect(page.getByText(/On a votre entreprise/)).toBeVisible();
-  });
-
-  test("preserves Google Ads attribution on the lead", async ({ page }) => {
-    await page.goto(
-      "/audit?utm_source=google&utm_medium=cpc&utm_campaign=gc_search_btp&utm_content=chantiers&gclid=test-click-id"
-    );
-
-    const requests: string[] = [];
-    page.on("request", (req) => {
-      if (req.url().endsWith("/api/audit")) requests.push(req.postData() ?? "");
+        body: JSON.stringify(polls < 3 ? { status: "pending" } : { status: "done", report: REPORT }),
+      });
     });
 
-    await reachContact(page);
-    await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Générer mon audit PDF/ }).click();
-    await expect(page).toHaveURL(/\/audit\/merci$/);
-
-    const payload = JSON.parse(requests[0]);
-    expect(payload).toMatchObject({
-      utmSource: "google",
-      utmMedium: "cpc",
-      utmCampaign: "gc_search_btp",
-      utmContent: "chantiers",
-      gclid: "test-click-id",
-    });
+    await start(page);
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3, { timeout: 60_000 });
+    expect(polls).toBeGreaterThanOrEqual(3);
   });
 
-  test("shows an actionable submission error and keeps the email", async ({ page }) => {
-    await page.unroute("**/api/audit");
-    await page.route("**/api/audit", (route) =>
-      route.fulfill({ status: 502, body: JSON.stringify({ error: "lead_capture_failed" }) })
-    );
+  test("ships the site-verified cards when no investigation could be started", async ({ page }) => {
+    const calls = await mockApis(page);
+    await page.unroute("**/api/audit/research");
+    await page.route("**/api/audit/research", (route) => {
+      calls.research.push(route.request().postData() ?? "");
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          context: { v: 1 },
+          signature: "a".repeat(64),
+          stats: { pagesAnalyzed: 8, siteReachable: true, evidenceCards: 6, investigating: false },
+        }),
+      });
+    });
 
-    await reachContact(page);
-    await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Générer mon audit PDF/ }).click();
-
-    await expect(page.locator('form [role="alert"]')).toContainText("n'a pas pu être envoyée");
-    await expect(page.getByLabel("Email", { exact: true })).toHaveValue("marie@exemple.fr");
+    await start(page);
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3, { timeout: 60_000 });
+    // Straight to the site-verified diagnostic: no job to poll.
+    expect(JSON.parse(calls.analyze[0])).toMatchObject({ context: { v: 1 }, signature: "a".repeat(64) });
+    expect(calls.analyze[0]).not.toContain("jobId");
   });
 });

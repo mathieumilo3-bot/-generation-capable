@@ -1,3 +1,6 @@
+import { htmlToText, normalize, normalizePhone } from "./crawl";
+import { callResponses, pollBackgroundResponse, startBackgroundResponse } from "./openai";
+import { fetchPublicHtml, type FetchHtmlResult } from "./probe";
 import type { AiAuditWebSource } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
@@ -14,11 +17,14 @@ export type CompanyDiscoveryInsight = {
 export type CompanyDiscoveryCandidate = {
   name: string;
   website: string;
+  /** Set after the site itself was read: what on it matches the company. */
+  verification?: { verified: boolean; evidence: string[] };
   sector: string;
   city: string;
   summary: string;
   confidence: "high" | "medium" | "low";
-  insights: CompanyDiscoveryInsight[];
+  /** Legacy field: kept so a stored older session still parses. */
+  insights?: CompanyDiscoveryInsight[];
 };
 
 export type CompanyDiscoveryResult = {
@@ -38,15 +44,7 @@ function schema() {
         items: {
           type: "object",
           additionalProperties: false,
-          required: [
-            "name",
-            "website",
-            "sector",
-            "city",
-            "summary",
-            "confidence",
-            "insights",
-          ],
+          required: ["name", "website", "sector", "city", "summary", "confidence"],
           properties: {
             name: { type: "string" },
             website: { type: "string" },
@@ -54,21 +52,6 @@ function schema() {
             city: { type: "string" },
             summary: { type: "string" },
             confidence: { type: "string", enum: ["high", "medium", "low"] },
-            insights: {
-              type: "array",
-              minItems: 1,
-              maxItems: 3,
-              items: {
-                type: "object",
-                additionalProperties: false,
-                required: ["title", "insight", "evidence"],
-                properties: {
-                  title: { type: "string" },
-                  insight: { type: "string" },
-                  evidence: { type: "array", maxItems: 3, items: { type: "string" } },
-                },
-              },
-            },
           },
         },
       },
@@ -76,49 +59,56 @@ function schema() {
   };
 }
 
-function extractOutputText(body: Record<string, unknown>): string | null {
-  if (typeof body.output_text === "string") return body.output_text;
-  const output = Array.isArray(body.output) ? body.output : [];
-  for (const item of output) {
-    if (!item || typeof item !== "object") continue;
-    const content = Array.isArray((item as { content?: unknown }).content)
-      ? (item as { content: unknown[] }).content
-      : [];
-    for (const part of content) {
-      if (!part || typeof part !== "object") continue;
-      const candidate = part as { type?: unknown; text?: unknown };
-      if (candidate.type === "output_text" && typeof candidate.text === "string") return candidate.text;
-    }
-  }
-  return null;
-}
-
-function extractSources(body: Record<string, unknown>): AiAuditWebSource[] {
-  const sourceMap = new Map<string, AiAuditWebSource>();
-  const output = Array.isArray(body.output) ? body.output : [];
-
-  for (const item of output) {
-    if (!item || typeof item !== "object") continue;
-    const record = item as Record<string, unknown>;
-    if (record.type === "web_search_call" && record.action && typeof record.action === "object") {
-      const action = record.action as Record<string, unknown>;
-      if (Array.isArray(action.sources)) {
-        for (const source of action.sources) {
-          if (!source || typeof source !== "object") continue;
-          const raw = source as Record<string, unknown>;
-          const url = typeof raw.url === "string" ? raw.url.trim() : "";
-          const title = typeof raw.title === "string" ? raw.title.trim() : "";
-          if (/^https?:\/\//i.test(url)) sourceMap.set(url, { title: title || url, url });
-        }
-      }
-    }
-  }
-
-  return Array.from(sourceMap.values()).slice(0, 10);
-}
-
 function clean(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+/** Directories, marketplaces and social networks: sources, never the official site. */
+const NON_OFFICIAL_HOSTS = [
+  "pagesjaunes.fr",
+  "pappers.fr",
+  "societe.com",
+  "verif.com",
+  "infogreffe.fr",
+  "annuaire-entreprises.data.gouv.fr",
+  "manageo.fr",
+  "corporama.com",
+  "entreprises.lefigaro.fr",
+  "facebook.com",
+  "instagram.com",
+  "linkedin.com",
+  "tiktok.com",
+  "youtube.com",
+  "x.com",
+  "twitter.com",
+  "google.com",
+  "google.fr",
+  "maps.google.com",
+  "g.page",
+  "goo.gl",
+  "houzz.fr",
+  "houzz.com",
+  "habitatpresto.com",
+  "travaux.com",
+  "allovoisins.com",
+  "starofservice.com",
+  "quotatis.fr",
+  "trustlocal.fr",
+  "hellopro.fr",
+  "yelp.fr",
+  "yelp.com",
+  "cylex-france.fr",
+  "118712.fr",
+  "annuaire.118000.fr",
+  "mappy.com",
+  "justacote.com",
+  "leboncoin.fr",
+  "wikipedia.org",
+];
+
+export function isNonOfficialHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^www\./, "");
+  return NON_OFFICIAL_HOSTS.some((domain) => host === domain || host.endsWith(`.${domain}`));
 }
 
 function normalizeWebsite(value: unknown): string {
@@ -127,7 +117,8 @@ function normalizeWebsite(value: unknown): string {
   try {
     const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
     if (!["http:", "https:"].includes(url.protocol)) return "";
-    return url.toString();
+    if (isNonOfficialHost(url.hostname)) return "";
+    return `${url.protocol}//${url.host}/`;
   } catch {
     return "";
   }
@@ -169,7 +160,7 @@ function sanitizeCandidate(value: unknown): CompanyDiscoveryCandidate | null {
     city: clean(raw.city, 120),
     summary: clean(raw.summary, 420),
     confidence,
-    insights,
+    ...(insights.length ? { insights } : {}),
   };
 }
 
@@ -200,25 +191,7 @@ function candidateFromSources(query: string, sources: AiAuditWebSource[]): Compa
     let website = "";
     try {
       const url = new URL(source.url);
-      const host = url.hostname.toLowerCase().replace(/^www\./, "");
-      const nonOfficialHosts = [
-        "pagesjaunes.fr",
-        "pappers.fr",
-        "societe.com",
-        "verif.com",
-        "facebook.com",
-        "instagram.com",
-        "linkedin.com",
-        "tiktok.com",
-        "youtube.com",
-        "x.com",
-        "twitter.com",
-        "google.com",
-        "maps.google.com",
-      ];
-      if (!nonOfficialHosts.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
-        website = `${url.protocol}//${url.host}/`;
-      }
+      if (!isNonOfficialHost(url.hostname)) website = `${url.protocol}//${url.host}/`;
     } catch {}
 
     return {
@@ -228,60 +201,14 @@ function candidateFromSources(query: string, sources: AiAuditWebSource[]): Compa
       city: "",
       summary: `Une présence web correspondant fortement à « ${query} » a été retrouvée et sera recoupée pendant l'analyse.`,
       confidence: "medium",
-      insights: [
-        {
-          title: "Présence officielle probable retrouvée",
-          insight: "Le nom recherché correspond directement à une source web publique identifiable. Le diagnostic va maintenant vérifier le métier, la zone, les preuves et le parcours vers le devis.",
-          evidence: [source.title || source.url],
-        },
-      ],
     };
   }
 
   return null;
 }
 
-async function runDiscoveryAttempt(
-  query: string,
-  options: {
-    fetchFn: FetchLike;
-    apiKey: string;
-    model: string;
-    projectId?: string;
-    contextSize: "low" | "medium" | "high";
-    rescue?: boolean;
-    timeoutMs?: number;
-    cityHint?: string;
-  }
-): Promise<CompanyDiscoveryResult> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? OPENAI_TIMEOUT_MS);
-
-  try {
-    const response = await options.fetchFn("https://api.openai.com/v1/responses", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${options.apiKey}`,
-        "Content-Type": "application/json",
-        ...(options.projectId ? { "OpenAI-Project": options.projectId } : {}),
-      },
-      body: JSON.stringify({
-        model: options.model,
-        reasoning: { effort: options.rescue ? "high" : "medium" },
-        tools: [{ type: "web_search", search_context_size: options.contextSize }],
-        tool_choice: "required",
-        include: ["web_search_call.action.sources"],
-        max_output_tokens: options.rescue ? 1_700 : 1_300,
-        input: [
-          {
-            role: "system",
-            content:
-              "Tu es l'analyste GC chargé d'identifier une entreprise réelle à partir de sources web publiques. Tu dois chercher activement, recouper plusieurs sources et ne jamais inventer.",
-          },
-          {
-            role: "user",
-            content: `Retrouve l'entreprise correspondant au nom suivant : "${query}".${options.cityHint ? ` La ville ou le code postal fourni par l'utilisateur est : "${options.cityHint}". Utilise-le comme contrainte forte d'identification.` : ""}
+function discoveryPrompt(query: string, cityHint: string, rescue: boolean): string {
+  return `Retrouve l'entreprise correspondant au nom suivant : "${query}".${cityHint ? ` La ville ou le code postal fourni par l'utilisateur est : "${cityHint}". Utilise-le comme contrainte forte d'identification.` : ""}
 
 MISSION
 Tu dois faire comme un consultant humain qui cherche vraiment cette société sur le web avant un audit commercial.
@@ -316,50 +243,99 @@ SORTIE
   high = plusieurs signaux convergent ;
   medium = correspondance très probable mais un élément manque ;
   low = vraie ambiguïté.
-- insights : jusqu'à 3 constats spécifiques à cette entreprise, avec preuves.
 
-${options.rescue ? "C'est une tentative de récupération : la première recherche n'a pas donné de candidat exploitable. Élargis les variantes du nom, les annuaires et les réseaux sociaux avant de conclure qu'il n'y a rien." : ""}
+${rescue ? "C'est une tentative de récupération : la première recherche n'a pas donné de candidat exploitable. Élargis les variantes du nom, les annuaires et les réseaux sociaux avant de conclure qu'il n'y a rien." : ""}
 
-Renvoie uniquement le JSON demandé.`,
-          },
-        ],
-        text: {
-          format: {
-            type: "json_schema",
-            name: "gc_company_discovery_v2",
-            strict: true,
-            schema: schema(),
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn("[audit/discovery] OpenAI failed:", response.status);
-      return { candidates: [], webSources: [] };
-    }
-
-    const body = (await response.json()) as Record<string, unknown>;
-    const sources = extractSources(body);
-    const outputText = extractOutputText(body);
-    if (!outputText) return { candidates: [], webSources: sources };
-
-    const parsed = JSON.parse(outputText) as { candidates?: unknown[] };
-    const candidates = Array.isArray(parsed.candidates)
-      ? (parsed.candidates.map(sanitizeCandidate).filter(Boolean).slice(0, 3) as CompanyDiscoveryCandidate[])
-      : [];
-
-    return { candidates, webSources: sources };
-  } catch (error) {
-    const label = error instanceof Error ? error.name : "unknown_error";
-    console.warn("[audit/discovery] attempt unavailable:", label);
-    return { candidates: [], webSources: [] };
-  } finally {
-    clearTimeout(timer);
-  }
+Renvoie uniquement le JSON demandé.`;
 }
 
-export async function discoverCompany(
+function discoveryCall(query: string, options: { cityHint?: string; rescue?: boolean; timeoutMs: number; fetchFn?: FetchLike; apiKey?: string; model?: string }) {
+  return {
+    system:
+      "Tu es l'analyste GC chargé d'identifier une entreprise réelle à partir de sources web publiques. Tu dois chercher activement, recouper plusieurs sources et ne jamais inventer.",
+    user: discoveryPrompt(query, options.cityHint ?? "", Boolean(options.rescue)),
+    schemaName: "gc_company_discovery_v3",
+    schema: schema(),
+    webSearch: true,
+    searchCity: options.cityHint,
+    effort: (options.rescue ? "high" : "medium") as "high" | "medium",
+    maxOutputTokens: 2_000,
+    timeoutMs: options.timeoutMs,
+    fetchFn: options.fetchFn,
+    apiKey: options.apiKey,
+    model: options.model,
+  };
+}
+
+function toDiscoveryResult(data: { candidates?: unknown[] }, webSources: AiAuditWebSource[]): CompanyDiscoveryResult {
+  const candidates = Array.isArray(data.candidates)
+    ? (data.candidates.map(sanitizeCandidate).filter(Boolean).slice(0, 3) as CompanyDiscoveryCandidate[])
+    : [];
+  return { candidates, webSources };
+}
+
+/**
+ * Starts company identification as a background job and returns its id.
+ * Nothing waits here: the caller polls, so this request stays short enough
+ * for any host limit.
+ */
+export async function startCompanyDiscovery(
+  companyName: string,
+  options: { cityHint?: string; rescue?: boolean; fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
+): Promise<string | null> {
+  const query = companyName.trim().slice(0, 160);
+  if (query.length < 2) return null;
+  return startBackgroundResponse(discoveryCall(query, { ...options, timeoutMs: 5_000 }));
+}
+
+export type DiscoveryOutcome =
+  | { status: "pending" }
+  | { status: "done"; result: CompanyDiscoveryResult }
+  | { status: "failed"; reason: string };
+
+/**
+ * Reads the discovery job once and, when it lands, checks each proposed
+ * domain against the site itself before handing anything back.
+ */
+export async function collectCompanyDiscovery(
+  jobId: string,
+  companyName: string,
+  options: {
+    cityHint?: string;
+    fetchFn?: FetchLike;
+    apiKey?: string;
+    verify?: (candidate: CompanyDiscoveryCandidate, opts: { cityHint?: string }) => Promise<CompanyDiscoveryCandidate>;
+  } = {}
+): Promise<DiscoveryOutcome> {
+  const outcome = await pollBackgroundResponse<{ candidates?: unknown[] }>(jobId, { ...options, timeoutMs: 4_000 });
+  if (outcome.status === "pending") return { status: "pending" };
+  if (outcome.status === "failed") return { status: "failed", reason: outcome.reason };
+
+  const raw = toDiscoveryResult(outcome.result.data, outcome.result.webSources);
+  const fallback = raw.candidates.length === 0 ? candidateFromSources(companyName.trim().slice(0, 160), raw.webSources) : null;
+  const candidates = fallback ? [fallback] : raw.candidates;
+  return { status: "done", result: await verifyCandidates(candidates, raw.webSources, options) };
+}
+
+async function runDiscoveryAttempt(
+  query: string,
+  options: {
+    fetchFn?: FetchLike;
+    apiKey?: string;
+    model?: string;
+    rescue?: boolean;
+    timeoutMs?: number;
+    cityHint?: string;
+  }
+): Promise<CompanyDiscoveryResult> {
+  const result = await callResponses<{ candidates?: unknown[] }>(
+    discoveryCall(query, { ...options, timeoutMs: options.timeoutMs ?? OPENAI_TIMEOUT_MS })
+  );
+  if (!result) return { candidates: [], webSources: [] };
+  return toDiscoveryResult(result.data, result.webSources);
+}
+
+async function discoverCompanyUnverified(
   companyName: string,
   options: {
     fetchFn?: FetchLike;
@@ -378,16 +354,13 @@ export async function discoverCompany(
   if (!apiKey) return { candidates: [], webSources: [] };
 
   const model = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
-  const projectId = process.env.OPENAI_PROJECT_ID;
   const fetchFn = options.fetchFn ?? fetch;
 
   const first = await runDiscoveryAttempt(query, {
     fetchFn,
     apiKey,
     model,
-    projectId,
-    contextSize: "high",
-    timeoutMs: options.firstTimeoutMs ?? 32_000,
+    timeoutMs: options.firstTimeoutMs ?? 28_000,
     cityHint,
   });
 
@@ -410,10 +383,8 @@ export async function discoverCompany(
     fetchFn,
     apiKey,
     model,
-    projectId,
-    contextSize: "high",
     rescue: true,
-    timeoutMs: 26_000,
+    timeoutMs: 18_000,
     cityHint,
   });
 
@@ -448,4 +419,125 @@ export async function discoverCompany(
     candidates: fallback ? [fallback] : [],
     webSources: combinedSources,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic check of the official domain
+
+const LEGAL_FORMS = new Set(["sarl", "sas", "sasu", "eurl", "sa", "sci", "ei", "eirl", "entreprise", "societe", "ets", "etablissements", "et", "fils", "les", "des", "de", "du", "la", "le"]);
+
+function brandTokens(name: string): string[] {
+  return normalize(name)
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(" ")
+    .filter((t) => t.length >= 3 && !LEGAL_FORMS.has(t));
+}
+
+/**
+ * Reads the candidate's homepage (and its legal notice when linked) and
+ * checks that the company is really there: name in the domain, title or
+ * text, plus the city or the phone when known. A domain the AI proposed but
+ * that does not carry the company's name is not accepted as official.
+ */
+export async function verifyOfficialSite(
+  candidate: CompanyDiscoveryCandidate,
+  options: { cityHint?: string; fetchPage?: (url: string) => Promise<FetchHtmlResult> } = {}
+): Promise<CompanyDiscoveryCandidate> {
+  if (!candidate.website) return candidate;
+  const fetchPage = options.fetchPage ?? ((url: string) => fetchPublicHtml(url, { timeoutMs: 3_000 }));
+  const home = await fetchPage(candidate.website);
+  if (!home.ok) {
+    return {
+      ...candidate,
+      confidence: candidate.confidence === "high" ? "medium" : candidate.confidence,
+      verification: { verified: false, evidence: ["site officiel non joignable pendant la vérification"] },
+    };
+  }
+
+  let html = home.html;
+  const legalHref = html.match(/<a\b[^>]*href=["']([^"']*mentions?[-_]?l[ée]gales?[^"']*)["']/i)?.[1];
+  if (legalHref) {
+    try {
+      const legalUrl = new URL(legalHref, home.finalUrl);
+      if (legalUrl.hostname === home.finalUrl.hostname) {
+        const legal = await fetchPage(legalUrl.toString());
+        if (legal.ok) html += " " + legal.html;
+      }
+    } catch {}
+  }
+
+  const text = normalize(htmlToText(html));
+  const host = normalize(home.finalUrl.hostname.replace(/^www\./, "")).replace(/[^a-z0-9]/g, "");
+  const tokens = brandTokens(candidate.name);
+  const inText = tokens.filter((t) => text.includes(t));
+  const inHost = tokens.filter((t) => host.includes(t));
+  const needed = Math.min(2, tokens.length);
+  const nameMatch = tokens.length > 0 && (inText.length >= needed || inHost.length >= needed || (inHost.length >= 1 && inText.length >= 1));
+
+  const evidence: string[] = [];
+  if (nameMatch) evidence.push(`nom retrouvé sur le site (${[...new Set([...inHost, ...inText])].join(", ")})`);
+  const city = (options.cityHint || candidate.city || "").trim();
+  const cityMatch = city.length >= 2 && (text.includes(normalize(city)) || (/^\d{5}$/.test(city) && text.includes(city)));
+  if (cityMatch) evidence.push(`ville retrouvée (${city})`);
+  const phones = [...new Set((htmlToText(html).match(/(?:(?:\+|00)33[\s.-]?|\b0)[1-9](?:[\s.-]?\d{2}){4}/g) ?? []).map(normalizePhone).filter(Boolean))];
+  if (phones.length) evidence.push(`téléphone affiché (${phones[0]})`);
+  if (/siret|siren|rcs/i.test(text)) evidence.push("mentions légales avec identifiant d’entreprise");
+
+  if (!nameMatch) {
+    return {
+      ...candidate,
+      website: "",
+      confidence: "low",
+      verification: { verified: false, evidence: [`le nom « ${candidate.name} » n’apparaît pas sur ${home.finalUrl.hostname}`] },
+    };
+  }
+
+  // Name verified on the site. The city then decides between high and medium.
+  let confidence = candidate.confidence === "low" ? "medium" : candidate.confidence;
+  if (city && !cityMatch) confidence = "medium";
+  else if (cityMatch) confidence = "high";
+
+  return {
+    ...candidate,
+    website: `${home.finalUrl.protocol}//${home.finalUrl.host}/`,
+    confidence,
+    verification: { verified: true, evidence },
+  };
+}
+
+/** Checking a domain means fetching it, so the whole step is capped. */
+const VERIFICATION_DEADLINE_MS = 4_500;
+
+async function verifyCandidates(
+  candidates: CompanyDiscoveryCandidate[],
+  webSources: AiAuditWebSource[],
+  options: {
+    cityHint?: string;
+    verify?: (candidate: CompanyDiscoveryCandidate, opts: { cityHint?: string }) => Promise<CompanyDiscoveryCandidate>;
+    deadlineMs?: number;
+  }
+): Promise<CompanyDiscoveryResult> {
+  const verify = options.verify ?? verifyOfficialSite;
+  const verified = await Promise.race([
+    Promise.all(
+      candidates.map((candidate, index) => (index < 2 && candidate.website ? verify(candidate, { cityHint: options.cityHint }) : candidate))
+    ),
+    // Out of time: hand back what the search found rather than nothing.
+    new Promise<CompanyDiscoveryCandidate[]>((resolve) =>
+      setTimeout(() => resolve(candidates), options.deadlineMs ?? VERIFICATION_DEADLINE_MS)
+    ),
+  ]);
+  const rank = (c: CompanyDiscoveryCandidate) =>
+    ({ high: 3, medium: 2, low: 1 })[c.confidence] + (c.verification?.verified ? 3 : 0) + (c.website ? 1 : 0);
+  return { candidates: verified.sort((a, b) => rank(b) - rank(a)), webSources };
+}
+
+export async function discoverCompany(
+  companyName: string,
+  options: Parameters<typeof discoverCompanyUnverified>[1] & {
+    verify?: (candidate: CompanyDiscoveryCandidate, opts: { cityHint?: string }) => Promise<CompanyDiscoveryCandidate>;
+  } = {}
+): Promise<CompanyDiscoveryResult> {
+  const result = await discoverCompanyUnverified(companyName, options);
+  return verifyCandidates(result.candidates, result.webSources, options);
 }

@@ -50,9 +50,27 @@ test.describe("POST /api/audit/analyze", () => {
   test("rejects an oversized payload", async ({ request }) => {
     const res = await request.post("/api/audit/analyze", {
       headers: freshIp(),
-      data: { siteUrl: "https://exemple.fr", secteur: "x".repeat(20_000), objectif: "" },
+      data: { siteUrl: "https://exemple.fr", secteur: "x".repeat(200_000), objectif: "" },
     });
     expect(res.status()).toBe(413);
+  });
+
+  test("rejects a context whose signature does not match", async ({ request }) => {
+    const res = await request.post("/api/audit/analyze", {
+      headers: freshIp(),
+      data: { context: { v: 1, company: { name: "Forgé" } }, signature: "0".repeat(64) },
+    });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toBe("invalid_context");
+  });
+
+  test("refuses to poll a job id it never issued", async ({ request }) => {
+    const res = await request.post("/api/audit/analyze", {
+      headers: freshIp(),
+      data: { context: { v: 1 }, signature: "0".repeat(64), jobId: "resp_someoneelsesjob", token: "0".repeat(64) },
+    });
+    // The context is checked first, so a forged pair never reaches OpenAI.
+    expect(res.status()).toBe(400);
   });
 
   test("returns a complete, degraded report for a blocked SSRF target — never a 500", async ({ request }) => {
@@ -65,8 +83,7 @@ test.describe("POST /api/audit/analyze", () => {
     expect(body.report.degraded).toBe(true);
     expect(body.report.degradedReason).toBeTruthy();
     expect(body.report.header.sectorProfile).toBe("restaurant");
-    expect(Array.isArray(body.report.topLeaks)).toBe(true);
-    expect(Array.isArray(body.report.worksWell)).toBe(true);
+    expect(body.report.diagnostic.cards).toEqual([]);
     expect(body.report.engineVersion).toBeTruthy();
   });
 
