@@ -32,6 +32,11 @@ type CompanyDiscoveryCandidate = {
   confidence: "high" | "medium" | "low";
 };
 
+type AuditLeadHandle = {
+  id: string;
+  token: string;
+};
+
 /**
  * The host cuts every request at 10 seconds, while a real investigation
  * runs far longer — so the server starts a background job and we poll it.
@@ -86,6 +91,11 @@ export function AuditFunnel() {
   const [discovery, setDiscovery] = useState<CompanyDiscoveryCandidate | null>(null);
   const [attribution, setAttribution] = useState<BookingAttribution>({});
   const [clickIds, setClickIds] = useState({ gclid: "", gbraid: "", wbraid: "" });
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [marketingPhone, setMarketingPhone] = useState("");
+  const [notifyStatus, setNotifyStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [canLeave, setCanLeave] = useState(false);
 
   useEffect(() => {
     track("audit_started");
@@ -116,6 +126,73 @@ export function AuditFunnel() {
   }, []);
 
   const progressRef = useRef(0);
+  const leadRef = useRef<AuditLeadHandle | null>(null);
+  const researchRef = useRef<ResearchResponse | null>(null);
+
+  async function attachLeadToResearch(handle: AuditLeadHandle, research: ResearchResponse) {
+    if (!research.jobId || !research.token) return;
+    await postJson("/api/audit/contact", {
+      action: "attach",
+      id: handle.id,
+      token: handle.token,
+      context: research.context,
+      signature: research.signature,
+      jobId: research.jobId,
+      jobToken: research.token,
+    });
+  }
+
+  async function registerNotification(event: FormEvent) {
+    event.preventDefault();
+    if (notifyStatus === "saving" || notifyStatus === "saved") return;
+
+    const email = notifyEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setNotifyStatus("error");
+      return;
+    }
+
+    setNotifyStatus("saving");
+    let measurementConsent = false;
+    try {
+      measurementConsent = window.localStorage.getItem("gc-revenue-consent-v1") === "accepted";
+    } catch {}
+
+    const registered = await postJson<{ status?: string; id?: string; token?: string }>("/api/audit/contact", {
+      action: "register",
+      companyName: discovery?.name || entreprise.trim(),
+      companyCity: discovery?.city || cityHint.trim(),
+      siteUrl: discovery?.website || siteHint.trim(),
+      email,
+      phone: marketingConsent ? marketingPhone.trim() : "",
+      marketingConsent,
+      attribution: measurementConsent
+        ? {
+            ...attribution,
+            gclid: clickIds.gclid || undefined,
+            gbraid: clickIds.gbraid || undefined,
+            wbraid: clickIds.wbraid || undefined,
+          }
+        : {},
+    });
+
+    if (!registered?.id || !registered.token) {
+      setNotifyStatus("error");
+      return;
+    }
+
+    const handle = { id: registered.id, token: registered.token };
+    leadRef.current = handle;
+    try {
+      window.localStorage.setItem("gc-audit-return-v1", JSON.stringify(handle));
+    } catch {}
+
+    if (researchRef.current) {
+      await attachLeadToResearch(handle, researchRef.current);
+    }
+    setNotifyStatus("saved");
+    track("audit_ready_notification_requested", { marketing_opt_in: marketingConsent });
+  }
 
   function advance(value: number, label: string) {
     progressRef.current = Math.max(progressRef.current, value);
@@ -395,6 +472,14 @@ export function AuditFunnel() {
       );
       const research = await postJson<ResearchResponse>("/api/audit/research", companyInput);
 
+      if (research?.jobId && research.token) {
+        researchRef.current = research;
+        setCanLeave(true);
+        if (leadRef.current) {
+          void attachLeadToResearch(leadRef.current, research);
+        }
+      }
+
       if (research) {
         const pages = research.stats.pagesAnalyzed;
         advance(
@@ -452,6 +537,15 @@ export function AuditFunnel() {
         setError("L’analyse n’a pas pu être finalisée. Relancez le diagnostic dans quelques instants.");
         setRunning(false);
         return;
+      }
+
+      if (leadRef.current) {
+        await postJson("/api/audit/contact", {
+          action: "complete",
+          id: leadRef.current.id,
+          token: leadRef.current.token,
+          report,
+        });
       }
 
       try {
@@ -658,6 +752,82 @@ export function AuditFunnel() {
             );
           })}
         </div>
+
+        {canLeave && (
+          <div className="mt-6 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-4">
+            {notifyStatus === "saved" ? (
+              <>
+                <p className="text-sm font-semibold text-[var(--color-text)]">C’est bon. Vous pouvez fermer cette page.</p>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
+                  On vous envoie un email dès que le diagnostic est prêt, même si vous quittez le site.
+                </p>
+              </>
+            ) : (
+              <form onSubmit={registerNotification}>
+                <p className="text-sm font-semibold text-[var(--color-text)]">Vous n’avez pas besoin d’attendre.</p>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
+                  Recevez votre diagnostic dès qu’il est prêt. Vous pourrez fermer cette page juste après.
+                </p>
+
+                <label htmlFor="audit-notify-email" className="sr-only">Votre email</label>
+                <input
+                  id="audit-notify-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="Votre email"
+                  value={notifyEmail}
+                  onChange={(event) => {
+                    setNotifyEmail(event.target.value);
+                    if (notifyStatus === "error") setNotifyStatus("idle");
+                  }}
+                  className={`${inputClass()} mt-3`}
+                  required
+                />
+
+                <label className="mt-3 flex cursor-pointer items-start gap-3 text-[11px] leading-relaxed text-[var(--color-muted)]">
+                  <input
+                    type="checkbox"
+                    checked={marketingConsent}
+                    onChange={(event) => setMarketingConsent(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+                  />
+                  <span>
+                    J’accepte aussi de recevoir les conseils et offres GC par email ou SMS. Facultatif, désinscription possible à tout moment.
+                  </span>
+                </label>
+
+                {marketingConsent && (
+                  <>
+                    <label htmlFor="audit-marketing-phone" className="sr-only">Téléphone facultatif</label>
+                    <input
+                      id="audit-marketing-phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="Téléphone (facultatif)"
+                      value={marketingPhone}
+                      onChange={(event) => setMarketingPhone(event.target.value)}
+                      className={`${inputClass()} mt-3`}
+                    />
+                  </>
+                )}
+
+                {notifyStatus === "error" && (
+                  <p className="mt-2 text-[11px] text-[#e7c872]">Entrez une adresse email valide.</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={notifyStatus === "saving"}
+                  className="audit-primary-cta mt-3 inline-flex min-h-[48px] w-full items-center justify-center rounded-xl px-5 text-sm font-semibold disabled:opacity-60"
+                >
+                  {notifyStatus === "saving" ? "Enregistrement…" : "Me prévenir quand c’est prêt →"}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
 
         <p className="mt-5 text-center text-[11px] text-[var(--color-muted)]">
           Aucun questionnaire derrière · le diagnostic s’affiche automatiquement.
