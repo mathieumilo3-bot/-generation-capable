@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 48_000;
+const OPENAI_TIMEOUT_MS = 36_000;
 const MAX_SITE_EXCERPT = 8_000;
 
 type FetchLike = typeof fetch;
@@ -400,7 +400,7 @@ export async function synthesizeAuditWithOpenAI(
       },
       body: JSON.stringify({
         model,
-        reasoning: { effort: "high" },
+        reasoning: { effort: "medium" },
         tools: [{ type: "web_search", search_context_size: "medium" }],
         tool_choice: "auto",
         include: ["web_search_call.action.sources"],
