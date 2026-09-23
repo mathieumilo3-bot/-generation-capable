@@ -146,11 +146,11 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
  */
 export type ReportEmailSummary = {
   degraded: boolean;
-  topLeaks: { title: string; dimension: string }[];
+  topLeaks: { title: string; dimension: string; statement?: string; recommendation?: string }[];
   otherFindingsCount: number;
 };
 
-const REPORT_SUMMARY_LIMITS = { title: 200, dimension: 60, maxLeaks: 5 };
+const REPORT_SUMMARY_LIMITS = { title: 200, dimension: 60, statement: 700, recommendation: 700, maxLeaks: 5 };
 
 /**
  * Defensive, permissive parsing: this is supplementary content for a human
@@ -164,7 +164,7 @@ export function parseReportEmailSummary(raw: unknown): ReportEmailSummary | null
   if (typeof source.degraded !== "boolean") return null;
   if (!Array.isArray(source.topLeaks)) return null;
 
-  const topLeaks: { title: string; dimension: string }[] = [];
+  const topLeaks: { title: string; dimension: string; statement?: string; recommendation?: string }[] = [];
   for (const entry of source.topLeaks.slice(0, REPORT_SUMMARY_LIMITS.maxLeaks)) {
     if (typeof entry !== "object" || entry === null) continue;
     const title = typeof (entry as Record<string, unknown>).title === "string"
@@ -173,7 +173,18 @@ export function parseReportEmailSummary(raw: unknown): ReportEmailSummary | null
     const dimension = typeof (entry as Record<string, unknown>).dimension === "string"
       ? ((entry as Record<string, unknown>).dimension as string).trim().slice(0, REPORT_SUMMARY_LIMITS.dimension)
       : "";
-    if (title) topLeaks.push({ title, dimension });
+    const statement = typeof (entry as Record<string, unknown>).statement === "string"
+      ? ((entry as Record<string, unknown>).statement as string).trim().slice(0, REPORT_SUMMARY_LIMITS.statement)
+      : "";
+    const recommendation = typeof (entry as Record<string, unknown>).recommendation === "string"
+      ? ((entry as Record<string, unknown>).recommendation as string).trim().slice(0, REPORT_SUMMARY_LIMITS.recommendation)
+      : "";
+    if (title) topLeaks.push({
+      title,
+      dimension,
+      ...(statement ? { statement } : {}),
+      ...(recommendation ? { recommendation } : {}),
+    });
   }
 
   const otherFindingsCount =
@@ -289,12 +300,23 @@ export function buildConfirmationEmail(data: AuditSubmission, reportSummary?: Re
   );
 
   const prioritiesText = diagnosticReady
-    ? `\n\nVos priorités détectées :\n${priorities.map((item, i) => `${i + 1}. ${item.title}`).join("\n")}`
+    ? `\n\nVos priorités détectées :\n${priorities.map((item, i) => {
+        const details = [
+          `${i + 1}. ${item.title}`,
+          item.statement ? `Constat : ${item.statement}` : "",
+          item.recommendation ? `Action recommandée : ${item.recommendation}` : "",
+        ].filter(Boolean);
+        return details.join("\n");
+      }).join("\n\n")}`
     : "";
   const prioritiesHtml = diagnosticReady
     ? `<div style="margin:20px 0;padding:18px;border:1px solid #e5b94a;border-radius:12px;">
-        <p style="margin:0 0 10px;font-weight:700;">Vos priorités détectées</p>
-        <ol style="margin:0;padding-left:20px;">${priorities.map((item) => `<li style="margin:6px 0;">${escapeHtml(item.title)}</li>`).join("")}</ol>
+        <p style="margin:0 0 12px;font-weight:700;">Votre diagnostic — 3 priorités</p>
+        <ol style="margin:0;padding-left:20px;">${priorities.map((item) => `<li style="margin:0 0 16px;">
+          <strong>${escapeHtml(item.title)}</strong>
+          ${item.statement ? `<div style="margin-top:5px;color:#444;">${escapeHtml(item.statement)}</div>` : ""}
+          ${item.recommendation ? `<div style="margin-top:6px;"><strong>Action recommandée :</strong> ${escapeHtml(item.recommendation)}</div>` : ""}
+        </li>`).join("")}</ol>
       </div>`
     : "";
 
