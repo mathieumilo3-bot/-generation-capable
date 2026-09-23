@@ -5,7 +5,7 @@ import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 const MAX_BODY_BYTES = 1024;
 const RATE_LIMIT_MAX = 12;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const DISCOVERY_TIMEOUT_MS = 28_000;
+const DISCOVERY_TIMEOUT_MS = 44_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
