@@ -63,13 +63,31 @@ const OBJECTIVES = [
 ];
 
 const COMPANY_FIELD_ID = "audit-company-name";
-const REPORT_WAIT_MS = 8_000;
+const REPORT_WAIT_MS = 14_000;
 
 function inputClass() {
   return "audit-input w-full rounded-[1.15rem] px-5 py-[17px] text-base text-[var(--color-text)] outline-none transition-all duration-200";
 }
 
 function toEmailSummary(report: Report) {
+  if (report.aiSynthesis?.opportunities?.length) {
+    return {
+      degraded: false,
+      topLeaks: report.aiSynthesis.opportunities.map((item) => ({
+        title: item.title,
+        dimension:
+          item.pillar === "attirer"
+            ? "Être trouvé"
+            : item.pillar === "rassurer"
+              ? "Être choisi"
+              : "Être contacté",
+        statement: item.diagnosis,
+        recommendation: item.callQuestion,
+      })),
+      otherFindingsCount: report.otherFindings.length,
+    };
+  }
+
   return {
     degraded: report.degraded,
     topLeaks: report.topLeaks.map((f) => ({
@@ -79,6 +97,21 @@ function toEmailSummary(report: Report) {
       recommendation: f.recommendation,
     })),
     otherFindingsCount: report.otherFindings.length,
+  };
+}
+
+function toDiscoveryEmailSummary(candidate: CompanyDiscoveryCandidate) {
+  return {
+    degraded: false,
+    topLeaks: [
+      {
+        title: candidate.insightTitle || "Premier constat sur votre présence en ligne",
+        dimension: "Présence publique",
+        statement: candidate.insight || candidate.summary,
+        recommendation: "",
+      },
+    ],
+    otherFindingsCount: 0,
   };
 }
 
@@ -327,13 +360,21 @@ export function AuditFunnel() {
       } catch {}
 
       const summaryReport = lastReport.current ?? quickReport;
+      const reportSummary =
+        summaryReport?.aiSynthesis
+          ? toEmailSummary(summaryReport)
+          : discovery?.insightTitle
+            ? toDiscoveryEmailSummary(discovery)
+            : summaryReport
+              ? toEmailSummary(summaryReport)
+              : undefined;
 
       const res = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          ...(summaryReport ? { reportSummary: toEmailSummary(summaryReport) } : {}),
+          ...(reportSummary ? { reportSummary } : {}),
           utmSource: attribution.source,
           utmMedium: attribution.medium,
           utmCampaign: attribution.campaign,
