@@ -5,7 +5,7 @@ import { buildReport } from "./report";
 import { synthesizeAuditWithOpenAI } from "./ai-synthesis";
 import type { DeclaredInput, Report } from "./types";
 
-const INPUT_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 120 };
+const INPUT_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 240 };
 
 export type RunAuditOptions = {
   /** Injectable for tests — defaults to the real network probe. */
