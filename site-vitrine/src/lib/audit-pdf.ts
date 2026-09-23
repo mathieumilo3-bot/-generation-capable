@@ -89,10 +89,10 @@ export function buildAuditPdf(
   const goal = submission.objectif || "Developper les opportunites commerciales";
 
   const page1: PdfLine[] = [
-    { text: "GC - AUDIT DE VISIBILITE & DE CONVERSION", size: 10, bold: true, gapAfter: 12 },
+    { text: "GC - DIAGNOSTIC ACQUISITION, VISIBILITE & CONVERSION", size: 10, bold: true, gapAfter: 12 },
     { text: company, size: 24, bold: true, gapAfter: 4 },
     { text: `Objectifs declares : ${goal}`, size: 11, gapAfter: 16 },
-    { text: "Comment votre entreprise est trouvee, ce que decouvre un prospect et ou se trouvent les opportunites.", size: 15, bold: true, gapAfter: 18 },
+    { text: "Les points qui influencent votre capacite a etre trouve, choisi, contacte et a recevoir des demandes mieux qualifiees.", size: 15, bold: true, gapAfter: 18 },
     { text: "01 - ATTIRER", size: 13, bold: true },
     { text: "Etes-vous visible lorsqu'un prospect recherche votre metier, vos services ou votre zone sans connaitre votre nom ?", size: 11, gapAfter: 10 },
     { text: "02 - RASSURER", size: 13, bold: true },
@@ -104,16 +104,16 @@ export function buildAuditPdf(
   ];
 
   const page2: PdfLine[] = [
-    { text: "LES OPPORTUNITES IDENTIFIEES", size: 20, bold: true, gapAfter: 12 },
-    { text: "Nous retenons uniquement les points qui peuvent avoir une utilite commerciale directe.", size: 11, gapAfter: 14 },
+    { text: "3 PRIORITES. PAS 20.", size: 20, bold: true, gapAfter: 12 },
+    { text: "Nous retenons uniquement les points capables d'ameliorer la visibilite utile, la confiance ou la transformation en demande qualifiee.", size: 11, gapAfter: 14 },
   ];
 
   if (priorities.length) {
     priorities.forEach((item, index) => {
       page2.push(
         { text: `${String(index + 1).padStart(2, "0")} - ${item.title}`, size: 14, bold: true, gapAfter: 2 },
-        { text: `Probleme : ${item.statement || "Point a verifier dans le parcours prospect."}`, size: 10, gapAfter: 2 },
-        { text: `A trancher : ${item.recommendation || "Definir l'action la plus rentable a lancer en premier."}`, size: 10, gapAfter: 10 },
+        { text: `SITUATION / ECART : ${item.statement || "Point a verifier dans le parcours prospect."}`, size: 10, gapAfter: 2 },
+        { text: `DECISION PRIORITAIRE : ${item.recommendation || "Definir l'action la plus rentable a lancer en premier."}`, size: 10, gapAfter: 10 },
       );
     });
   } else {
@@ -124,16 +124,17 @@ export function buildAuditPdf(
   }
 
   const page3: PdfLine[] = [
-    { text: "VOTRE PARCOURS PRIORITAIRE", size: 20, bold: true, gapAfter: 12 },
+    { text: "LE PARCOURS A CONSTRUIRE", size: 20, bold: true, gapAfter: 12 },
     { text: "01 - RECHERCHE : le prospect exprime un besoin.", size: 11 },
     { text: "02 - DECOUVERTE : il trouve votre entreprise.", size: 11 },
     { text: "03 - COMPREHENSION : il comprend rapidement l'offre.", size: 11 },
     { text: "04 - CONFIANCE : il voit les preuves pertinentes.", size: 11 },
-    { text: "05 - ACTION : il sait exactement quoi faire.", size: 11, gapAfter: 18 },
+    { text: "05 - QUALIFICATION : la demande contient assez de contexte pour etre exploitable.", size: 11 },
+    { text: "06 - ACTION : le prospect sait exactement quoi faire et l'entreprise sait quoi rappeler.", size: 11, gapAfter: 18 },
     { text: "PRIORITE", size: 13, bold: true },
     { text: "Le but n'est pas de tout changer. Le but est de corriger ce qui bloque le plus, puis de mesurer.", size: 11, gapAfter: 18 },
     { text: "ECHANGE GC", size: 13, bold: true },
-    { text: "Nous pouvons parcourir ensemble les opportunites identifiees et definir les prochaines etapes.", size: 11, gapAfter: 8 },
+    { text: "Nous pouvons reprendre ces trois priorites, les classer par impact et definir l'ordre exact des actions a lancer.", size: 11, gapAfter: 8 },
     { text: "30 minutes - Analyse - Plan d'action priorise", size: 12, bold: true },
     { text: "Le lien de reservation est disponible dans l'email qui accompagne ce PDF.", size: 10 },
   ];

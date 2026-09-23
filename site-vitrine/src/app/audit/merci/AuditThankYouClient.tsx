@@ -74,38 +74,22 @@ export function AuditThankYouClient() {
 
   return (
     <div className="mx-auto max-w-xl text-center">
-      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[var(--color-accent)]">
-        <span className="h-2 w-2 rounded-full bg-[var(--color-accent)]" />
-      </span>
-      <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--color-accent)]">
-        Demande reçue
-      </p>
-      <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
-        Votre audit est en préparation.
+      <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-5xl">
+        Votre diagnostic est prêt.
       </h1>
-      <p className="mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-[var(--color-muted)]">
-        Nous avons bien reçu les informations pour {stored?.entreprise || "votre entreprise"}.
-        Vous pouvez déjà réserver un créneau pendant que nous préparons les priorités.
-      </p>
-      <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+      <div className="mx-auto mt-8 max-w-xl">
         <Button
           href={bookingUrl}
           target="_blank"
           rel="noopener noreferrer"
           variant="primary"
-          className="audit-primary-cta min-h-14 px-8 text-base"
+          className="audit-primary-cta min-h-16 w-full px-8 text-lg sm:text-xl"
           trackEvent="booking_started"
           trackPayload={{ location: "audit_thank_you", source: "capable_audit" }}
         >
-          Construire mon plan avec GC →
-        </Button>
-        <Button href="/" variant="secondary">
-          Retour à l’accueil
+          Construire mon plan d’action →
         </Button>
       </div>
-      <p className="mt-5 text-xs text-[var(--color-muted)]">
-        30 min · On part de votre audit · Sans engagement
-      </p>
     </div>
   );
 }

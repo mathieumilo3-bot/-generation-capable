@@ -19,7 +19,7 @@ const FIELD_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 24
 // The engine can spend up to ~5s probing the site, then up to 30s on the
 // structured OpenAI synthesis. Keep the outer guard above both stages while
 // staying below Netlify's 60s synchronous execution limit.
-const ANALYZE_TIMEOUT_MS = 58_000;
+const ANALYZE_TIMEOUT_MS = 44_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([

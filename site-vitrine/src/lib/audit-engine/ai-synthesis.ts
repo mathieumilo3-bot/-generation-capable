@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 48_000;
+const OPENAI_TIMEOUT_MS = 36_000;
 const MAX_SITE_EXCERPT = 8_000;
 
 type FetchLike = typeof fetch;
@@ -86,13 +86,25 @@ function buildAuditContext({ input, site, sector, report }: SynthesisInput) {
 function buildPrompt(context: ReturnType<typeof buildAuditContext>) {
   return `Tu réalises un mini-audit commercial personnalisé pour GC.
 
-Tu dois raisonner comme un consultant qui vient réellement d'ouvrir le site du prospect. Le rendu doit être très court, très concret et immédiatement compréhensible par un dirigeant. Il doit montrer ce qui freine la découverte, la confiance ou la prise de contact, sans donner gratuitement tout le plan d'implémentation.
+Tu dois raisonner comme un consultant acquisition senior qui vient réellement d'ouvrir le site du prospect, puis de chercher l'entreprise comme le ferait un client potentiel. Ton rôle n'est pas de "noter un site" : tu dois comprendre le système commercial complet qui transforme une recherche en prospect qualifié.
+
+Le rendu public doit être très court, très concret et immédiatement compréhensible par un dirigeant. Architecture mentale : une liste militaire de priorités. Zéro blabla, zéro jargon décoratif. Chaque point doit répondre à : CE QUI SE PASSE → CE QUI BLOQUE → POURQUOI ÇA COÛTE DES OPPORTUNITÉS → CE QU'IL FAUT DÉCIDER.
+
+Tu dois chercher les forces ET les faiblesses, mais n'afficher publiquement que les éléments les plus utiles commercialement. Le diagnostic doit montrer ce qui freine la découverte, la confiance, la qualification ou la prise de contact, sans donner gratuitement tout le plan d'implémentation.
 
 CADRE GC
 1. ATTIRER / ÊTRE TROUVÉ — Quand un prospect cherche le métier, le service ou le besoin dans sa zone sans connaître l'entreprise, peut-il raisonnablement tomber sur elle ?
 2. RASSURER / CONVAINCRE — Une fois arrivé, comprend-il vite l'offre et trouve-t-il des preuves suffisantes pour faire confiance ?
 3. CONVERTIR / FAIRE AGIR — Sait-il immédiatement quoi faire ensuite : appeler, demander un devis, réserver ou acheter ?
-Parcours à analyser : recherche → découverte → compréhension → confiance → action.
+Parcours à analyser : recherche → découverte → compréhension → confiance → qualification → action.
+
+ANGLE BUSINESS À TOUJOURS ÉVALUER
+- ACQUISITION : par quels chemins un prospect peut découvrir cette entreprise aujourd'hui ?
+- VISIBILITÉ QUALIFIÉE : est-elle visible pour des recherches qui correspondent à un vrai besoin d'achat, pas seulement à son nom de marque ?
+- PREUVE : quelles preuves visibles réduisent le risque perçu : avis, réalisations, photos, références, garanties, cas clients ?
+- CONVERSION : le site transforme-t-il clairement l'intérêt en appel, devis ou rendez-vous ?
+- QUALIFICATION : le parcours collecte-t-il assez d'informations pour distinguer une demande sérieuse d'un simple curieux sans créer trop de friction ?
+- CONTINUITÉ : Google, site, réseaux sociaux, annuaires et formulaire racontent-ils la même offre et conduisent-ils vers la même action ?
 
 RECHERCHE WEB POUR IDENTIFIER ET QUALIFIER L'ENTREPRISE
 - Si "entreprise" est renseigné dans les données, commence TOUJOURS par une recherche de marque exacte afin d'identifier l'entreprise, son site officiel, son activité et sa zone.
@@ -103,6 +115,10 @@ RECHERCHE WEB POUR IDENTIFIER ET QUALIFIER L'ENTREPRISE
 - Formule les constats comme "dans les recherches web consultées", "la présence ressort / ressort peu" ou "à confirmer", jamais comme une position Google certaine.
 - Si la recherche web ne fournit pas assez d'éléments, dis-le explicitement.
 - Pour une activité locale, la partie ATTIRER doit traiter en priorité la découvrabilité locale/métier, pas seulement le texte du site.
+- Vérifie quand c'est possible la cohérence entre site officiel, fiche Google/présence locale, annuaires, réseaux sociaux et pages services.
+- Cherche des requêtes à forte intention : métier + ville, service + ville, problème + ville, devis + service, urgence + service si pertinent.
+- Vérifie si les pages correspondent vraiment à ces intentions : titre, service, zone, preuve, CTA.
+- Vérifie si le formulaire ou le parcours de contact permet de qualifier le prospect : type de besoin, zone, délai, budget ou contexte seulement quand pertinent.
 - Chaque opportunité doit être spécifique à CETTE entreprise : cite au moins un élément public concret quand la recherche web a été utilisée.
 
 FICHE GC A RESPECTER
@@ -111,7 +127,8 @@ FICHE GC A RESPECTER
 - RASSURER : vérifier clarté de l'offre, avis, réalisations, photos, garanties, références et cohérence des preuves.
 - CONVERTIR : vérifier si un prospect comprend immédiatement comment appeler, demander un devis ou avancer.
 - Retenir seulement 3 à 5 opportunités maximum, et dans le rendu public seulement les 3 plus fortes.
-- Chaque opportunité suit : PROBLÈME → PREUVE → IMPACT → DÉCISION À PRENDRE.
+- Chaque opportunité suit : SITUATION ACTUELLE → MANQUE / ÉCART → PREUVE → IMPACT COMMERCIAL → DÉCISION À PRENDRE.
+- Les 3 opportunités finales doivent idéalement couvrir trois leviers différents : acquisition/visibilité, confiance/preuve, conversion/qualification. Si un seul levier concentre réellement le problème, ne force pas artificiellement les trois catégories.
 - Le résultat doit être suffisamment spécifique pour qu'on puisse reconnaître l'entreprise sans voir son nom.
 - Si le site officiel est inaccessible, l'analyse doit CONTINUER grâce aux recherches web, annuaires, réseaux sociaux et sources publiques. Ne jamais remplacer cela par un simple "non vérifiable automatiquement".
 
@@ -125,10 +142,10 @@ CE QUE TU DOIS PRODUIRE
 - Pour chaque opportunité :
   * pillar : attirer, rassurer ou convertir
   * title : un constat concret, pas une formule marketing
-  * diagnosis : ce qui est observé et pourquoi cela peut freiner le parcours
+  * diagnosis : une formulation compacte "Situation actuelle → manque/écart", basée sur ce qui est observé et sur ce qui peut freiner le parcours
   * evidence : 1 à 3 preuves précises tirées du site ou de la recherche web
   * confidence : observed si directement visible, inferred si c'est une déduction prudente
-  * impact : pourquoi ce point compte commercialement, sans chiffre inventé
+  * impact : le résultat commercial recherché : plus de visibilité utile, plus de confiance, plus de demandes ou de demandes mieux qualifiées, sans chiffre inventé
   * callQuestion : la décision stratégique à trancher pendant l'appel
 - "worksWell" : une chose réellement positive à conserver si tu en vois une ; sinon "À confirmer pendant le bilan".
 - "callBridge" : une phrase simple qui explique ce qu'on décidera pendant le bilan de 30 minutes.
@@ -383,7 +400,7 @@ export async function synthesizeAuditWithOpenAI(
       },
       body: JSON.stringify({
         model,
-        reasoning: { effort: "high" },
+        reasoning: { effort: "medium" },
         tools: [{ type: "web_search", search_context_size: "medium" }],
         tool_choice: "auto",
         include: ["web_search_call.action.sources"],

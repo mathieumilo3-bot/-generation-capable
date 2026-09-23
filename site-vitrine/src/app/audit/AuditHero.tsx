@@ -12,17 +12,17 @@ type HeroVariant = {
 const VARIANTS: Record<string, HeroVariant> = {
   default: {
     badge: "Pour artisans du bâtiment",
-    title: "Découvrez comment générer",
-    accent: "plus de demandes de devis.",
+    title: "Découvrez ce qui vous fait perdre",
+    accent: "des demandes de devis.",
     body:
-      "Entrez simplement le nom de votre entreprise. On retrouve votre présence en ligne et on vous montre ce qui peut améliorer votre visibilité et vos demandes de devis.",
+      "Entrez uniquement le nom de votre entreprise. On retrouve votre présence en ligne, on identifie les freins prioritaires et on vous montre quoi corriger en premier.",
   },
   chantiers: {
     badge: "Pour artisans du bâtiment",
-    title: "Découvrez comment gagner",
+    title: "Découvrez ce qui vous empêche de gagner",
     accent: "plus de chantiers.",
     body:
-      "Entrez le nom de votre entreprise. On la retrouve en ligne et on identifie ce qui peut freiner vos demandes de devis — puis quoi corriger en priorité.",
+      "Entrez uniquement le nom de votre entreprise. On retrouve votre présence en ligne et on vous montre les points qui peuvent freiner vos demandes de chantier.",
   },
   site: {
     badge: "Diagnostic site pour artisans",
@@ -76,11 +76,11 @@ export function AuditHero() {
       </p>
 
       <p className="mx-auto mt-4 max-w-xl text-[10.5px] font-medium tracking-[0.01em] text-[var(--color-muted)] sm:mt-5 sm:text-[11px]">
-        Rapide
-        <span className="mx-2 text-white/20">·</span>
         Gratuit
         <span className="mx-2 text-white/20">·</span>
-        Premier résultat sans email
+        Aucun site à chercher
+        <span className="mx-2 text-white/20">·</span>
+        Premier résultat avant l’email
       </p>
     </div>
   );

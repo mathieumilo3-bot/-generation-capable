@@ -1,7 +1,7 @@
 import type { AiAuditWebSource } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 32_000;
+const OPENAI_TIMEOUT_MS = 20_000;
 
 type FetchLike = typeof fetch;
 
@@ -363,8 +363,8 @@ export async function discoverCompany(
     apiKey,
     model,
     projectId,
-    contextSize: "medium",
-    timeoutMs: options.firstTimeoutMs ?? 32_000,
+    contextSize: "low",
+    timeoutMs: options.firstTimeoutMs ?? 20_000,
   });
 
   if (first.candidates.length > 0) return first;
@@ -381,9 +381,9 @@ export async function discoverCompany(
     apiKey,
     model,
     projectId,
-    contextSize: "medium",
+    contextSize: "low",
     rescue: true,
-    timeoutMs: 20_000,
+    timeoutMs: 12_000,
   });
 
   if (rescue.candidates.length > 0) {
