@@ -3,6 +3,7 @@ import { probeSite } from "./probe";
 import { runAllAnalyzers } from "./analyzers";
 import { buildReport } from "./report";
 import { synthesizeAuditWithOpenAI } from "./ai-synthesis";
+import { discoverCompany } from "./company-discovery";
 import type { DeclaredInput, Report } from "./types";
 
 const INPUT_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 240 };
@@ -10,6 +11,8 @@ const INPUT_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 24
 export type RunAuditOptions = {
   /** Injectable for tests — defaults to the real network probe. */
   probe?: (url: string) => ReturnType<typeof probeSite>;
+  /** Injectable for tests — defaults to the real company web discovery. */
+  discover?: typeof discoverCompany;
 };
 
 function clampInput(input: DeclaredInput): DeclaredInput {
@@ -33,15 +36,58 @@ function clampInput(input: DeclaredInput): DeclaredInput {
 export async function runAudit(rawInput: DeclaredInput, options: RunAuditOptions = {}): Promise<Report> {
   const input = clampInput(rawInput);
   const probe = options.probe ?? probeSite;
+  const discover = options.discover ?? discoverCompany;
+
+  // Resolve the company again on the server before the audit. The visitor's
+  // sector is only a hint; a verified public company match must win over a
+  // mistaken manual choice or an earlier frontend discovery timeout.
+  let resolvedInput = input;
+  const hasUsableSiteUrl = (() => {
+    try {
+      const url = new URL(input.siteUrl);
+      return ["http:", "https:"].includes(url.protocol);
+    } catch {
+      return false;
+    }
+  })();
+
+  if (input.entreprise && !hasUsableSiteUrl) {
+    try {
+      const discovery = await discover(input.entreprise, { firstTimeoutMs: 14_000, skipRescue: true });
+      const candidate =
+        discovery.candidates.find((item) => item.confidence === "high") ??
+        discovery.candidates.find((item) => item.confidence === "medium") ??
+        discovery.candidates[0];
+
+      if (candidate) {
+        resolvedInput = {
+          ...input,
+          entreprise: candidate.name || input.entreprise,
+          siteUrl: candidate.website || input.siteUrl,
+          secteur: candidate.sector || input.secteur,
+        };
+      }
+    } catch (error) {
+      console.warn("[audit-engine] server company resolution unavailable:", error);
+    }
+  }
 
   const [site, sector] = await Promise.all([
-    probe(input.siteUrl),
-    Promise.resolve(classifySector(input.secteur)),
+    probe(resolvedInput.siteUrl),
+    Promise.resolve(classifySector(resolvedInput.secteur)),
   ]);
 
-  const findings = runAllAnalyzers(input, site, sector);
-  const report = buildReport(input, site, sector, findings);
+  const findings = runAllAnalyzers(resolvedInput, site, sector);
+  const report = buildReport(resolvedInput, site, sector, findings);
 
-  const aiSynthesis = await synthesizeAuditWithOpenAI({ input, site, sector, report });
-  return aiSynthesis ? { ...report, aiSynthesis } : report;
+  const aiSynthesis = await synthesizeAuditWithOpenAI({ input: resolvedInput, site, sector, report });
+  if (!aiSynthesis) return report;
+
+  const correctedHeader = {
+    ...report.header,
+    ...(aiSynthesis.detectedSector ? { secteur: aiSynthesis.detectedSector } : {}),
+    ...(aiSynthesis.officialSite ? { siteUrl: aiSynthesis.officialSite } : {}),
+  };
+
+  return { ...report, header: correctedHeader, aiSynthesis };
 }

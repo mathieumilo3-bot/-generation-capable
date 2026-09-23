@@ -160,6 +160,8 @@ export type AiAuditWebSource = {
 };
 
 export type AiAuditSynthesis = {
+  detectedSector: string;
+  officialSite: string;
   executiveSummary: string;
   companySnapshot: string;
   attirer: string;
