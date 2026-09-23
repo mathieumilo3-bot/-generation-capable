@@ -33,7 +33,7 @@ export function buildReport(
 
   return {
     header: {
-      entreprise: input.siteUrl,
+      entreprise: input.entreprise || input.siteUrl || "Entreprise analysée",
       secteur: input.secteur || sector.label,
       sectorProfile: sector.id,
       objectif: input.objectif,
