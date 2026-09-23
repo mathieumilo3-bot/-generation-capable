@@ -16,9 +16,10 @@ type ResearchResponse = {
 };
 
 type DiscoverResponse = {
-  status?: "started" | "pending" | "done" | "failed" | "unavailable";
+  status?: "started" | "pending" | "done" | "failed" | "unavailable" | "needs_city";
   jobId?: string;
   token?: string;
+  resolvedCity?: string;
   candidates?: CompanyDiscoveryCandidate[];
 };
 
@@ -216,8 +217,13 @@ export function AuditFunnel() {
           ...(rescue ? { rescue: true } : {}),
         });
 
+        if (started?.status === "needs_city") {
+          return { candidates: started.candidates ?? [], needsCity: true };
+        }
+
         let found: CompanyDiscoveryCandidate[] = started?.status === "done" ? (started.candidates ?? []) : [];
         if (started?.status === "started" && started.jobId && started.token) {
+          const effectiveCity = started.resolvedCity || city;
           const deadline = Date.now() + DISCOVERY_DEADLINE_MS;
           let first = true;
           while (Date.now() < deadline) {
@@ -225,7 +231,7 @@ export function AuditFunnel() {
             first = false;
             const poll = await postJson<DiscoverResponse>("/api/audit/discover", {
               companyName,
-              ...(city ? { cityHint: city } : {}),
+              ...(effectiveCity ? { cityHint: effectiveCity } : {}),
               ...(rescue ? { rescue: true } : {}),
               jobId: started.jobId,
               token: started.token,
@@ -238,7 +244,7 @@ export function AuditFunnel() {
             advance(Math.min(26, progressRef.current + 2), "Recherche de votre entreprise · sources publiques");
           }
         }
-        return found;
+        return { candidates: found, needsCity: false };
       };
 
       const pickCandidate = (items: CompanyDiscoveryCandidate[]) => {
@@ -256,7 +262,21 @@ export function AuditFunnel() {
 
       // Once the visitor has given the city, skip the shallow pass: go
       // straight to the identity-bridge search instead of doing two searches in series.
-      let candidates = await runDiscoveryPass(rawName, rawCity, Boolean(rawCity));
+      const firstPass = await runDiscoveryPass(rawName, rawCity, Boolean(rawCity));
+      if (firstPass.needsCity && !rawCity) {
+        setDiscovery(null);
+        setNeedsCity(true);
+        setRunning(false);
+        setProgressLabel("Plusieurs entreprises portent ce nom");
+        track("audit_company_disambiguation_requested", {
+          candidate_count: firstPass.candidates.length,
+          website_found: false,
+          source: "registre_entreprises",
+        });
+        return;
+      }
+
+      let candidates = firstPass.candidates;
       candidate = pickCandidate(candidates);
 
       // A legal name can be completely different from the commercial name
@@ -274,7 +294,20 @@ export function AuditFunnel() {
         advance(Math.max(18, progressRef.current), "Site non certain · recherche renforcée de l’enseigne officielle");
         const rescueCity = rawCity || candidate?.city || "";
         const rescueName = candidate?.name || rawName;
-        const rescued = await runDiscoveryPass(rescueName, rescueCity, true);
+        const rescuePass = await runDiscoveryPass(rescueName, rescueCity, true);
+        if (rescuePass.needsCity && !rawCity) {
+          setDiscovery(null);
+          setNeedsCity(true);
+          setRunning(false);
+          setProgressLabel("Plusieurs entreprises portent ce nom");
+          track("audit_company_disambiguation_requested", {
+            candidate_count: rescuePass.candidates.length,
+            website_found: false,
+            source: "registre_entreprises",
+          });
+          return;
+        }
+        const rescued = rescuePass.candidates;
 
         candidates = [...rescued, ...candidates].filter(
           (item, index, all) =>
@@ -521,7 +554,7 @@ export function AuditFunnel() {
             Dans quelle ville est {discovery?.name || entreprise} ?
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            On l’utilise uniquement pour verrouiller la bonne entreprise et retrouver son site officiel.
+            Plusieurs entreprises peuvent porter ce nom. Votre ville suffit pour sélectionner la bonne et lancer l’analyse immédiatement.
           </p>
 
           <label htmlFor={CITY_FIELD_ID} className="sr-only">Ville ou code postal</label>

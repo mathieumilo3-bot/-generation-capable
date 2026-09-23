@@ -195,21 +195,51 @@ test.describe("Audit funnel — nom → diagnostic", () => {
     await expect(cta).toHaveAttribute("target", "_blank");
   });
 
-  test("asks only for the city when the company is ambiguous, then resumes", async ({ page }) => {
-    const calls = await mockApis(page, [
-      { ...COMPANY, confidence: "medium" },
-      { ...COMPANY, city: "Lyon", website: "https://martin-couverture-lyon.fr/", confidence: "medium" },
-    ]);
+  test("asks for the city immediately when the registry already knows there are homonyms, then resumes", async ({ page }) => {
+    const calls = await mockApis(page);
+    await page.unroute("**/api/audit/discover");
+    let startCount = 0;
+    await page.route("**/api/audit/discover", (route) => {
+      const body = route.request().postData() ?? "{}";
+      calls.discover.push(body);
+      const payload = JSON.parse(body) as { cityHint?: string; jobId?: string };
+
+      if (!payload.cityHint && !payload.jobId && startCount++ === 0) {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            status: "needs_city",
+            candidates: [
+              { ...COMPANY, website: "", confidence: "medium" },
+              { ...COMPANY, city: "Lyon", website: "", confidence: "medium" },
+            ],
+          }),
+        });
+      }
+
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(
+          payload.jobId
+            ? { status: "done", candidates: [COMPANY] }
+            : { status: "started", jobId: "resp_testdiscovery2", token: "t".repeat(64), resolvedCity: "Vannes" }
+        ),
+      });
+    });
+
     await start(page, "Martin Couverture");
 
     const city = page.getByLabel("Ville ou code postal");
-    await expect(city).toBeVisible({ timeout: 15_000 });
+    await expect(city).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/Plusieurs entreprises peuvent porter ce nom/)).toBeVisible();
     expect(calls.research).toHaveLength(0);
 
     await city.fill("56000");
     await page.getByRole("button", { name: /Continuer l’analyse/ }).click();
     await expect(page.getByTestId("diagnostic-card")).toHaveCount(3);
-    expect(JSON.parse(calls.discover[calls.discover.length - 1])).toMatchObject({ companyName: "Martin Couverture", cityHint: "56000" });
+    expect(JSON.parse(calls.discover[calls.discover.length - 1])).toMatchObject({ companyName: "Martin Couverture", cityHint: "Vannes" });
   });
 
   test("falls back to a site-only analysis when the research stage fails", async ({ page }) => {

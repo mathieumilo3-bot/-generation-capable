@@ -4,6 +4,7 @@ import { fetchPublicHtml, type FetchHtmlResult } from "./probe";
 import type { AiAuditWebSource } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
+const FAST_DISCOVERY_MODEL = "gpt-5.6-luna";
 const OPENAI_TIMEOUT_MS = 32_000;
 
 type FetchLike = typeof fetch;
@@ -206,8 +207,8 @@ function candidateFromSources(query: string, sources: AiAuditWebSource[]): Compa
   return null;
 }
 
-function discoveryPrompt(query: string, cityHint: string, rescue: boolean): string {
-  return `Retrouve l'entreprise correspondant au nom suivant : "${query}".${cityHint ? ` La ville ou le code postal fourni par l'utilisateur est : "${cityHint}". Utilise-le comme contrainte forte d'identification.` : ""}
+function discoveryPrompt(query: string, cityHint: string, rescue: boolean, identityHint = ""): string {
+  return `Retrouve l'entreprise correspondant au nom suivant : "${query}".${cityHint ? ` La ville ou le code postal de référence est : "${cityHint}". Utilise-le comme contrainte forte d'identification.` : ""}${identityHint ? ` Le registre public français a déjà identifié cette entité : "${identityHint}". Utilise surtout le SIREN, la raison sociale et le siège comme ancres pour retrouver très vite son site officiel ; ne recommence pas une recherche générale d'homonymes sauf contradiction.` : ""}
 
 MISSION
 Tu dois faire comme un consultant humain qui cherche vraiment cette société sur le web avant un audit commercial.
@@ -249,11 +250,11 @@ ${rescue ? "C'est une tentative de récupération : la première recherche n'a p
 Renvoie uniquement le JSON demandé.`;
 }
 
-function discoveryCall(query: string, options: { cityHint?: string; rescue?: boolean; timeoutMs: number; fetchFn?: FetchLike; apiKey?: string; model?: string }) {
+function discoveryCall(query: string, options: { cityHint?: string; identityHint?: string; rescue?: boolean; timeoutMs: number; fetchFn?: FetchLike; apiKey?: string; model?: string }) {
   return {
     system:
       "Tu es l'analyste GC chargé d'identifier une entreprise réelle à partir de sources web publiques. Tu dois chercher activement, recouper plusieurs sources et ne jamais inventer.",
-    user: discoveryPrompt(query, options.cityHint ?? "", Boolean(options.rescue)),
+    user: discoveryPrompt(query, options.cityHint ?? "", Boolean(options.rescue), options.identityHint ?? ""),
     schemaName: "gc_company_discovery_v3",
     schema: schema(),
     webSearch: true,
@@ -284,11 +285,15 @@ function toDiscoveryResult(data: { candidates?: unknown[] }, webSources: AiAudit
  */
 export async function startCompanyDiscovery(
   companyName: string,
-  options: { cityHint?: string; rescue?: boolean; fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
+  options: { cityHint?: string; identityHint?: string; rescue?: boolean; fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
 ): Promise<string | null> {
   const query = companyName.trim().slice(0, 160);
   if (query.length < 2) return null;
-  return startBackgroundResponse(discoveryCall(query, { ...options, timeoutMs: 5_000 }));
+  const model =
+    options.model ??
+    process.env.OPENAI_DISCOVERY_MODEL ??
+    (options.rescue ? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL : FAST_DISCOVERY_MODEL);
+  return startBackgroundResponse(discoveryCall(query, { ...options, model, timeoutMs: 5_000 }));
 }
 
 export type DiscoveryOutcome =
@@ -329,6 +334,7 @@ async function runDiscoveryAttempt(
     rescue?: boolean;
     timeoutMs?: number;
     cityHint?: string;
+    identityHint?: string;
   }
 ): Promise<CompanyDiscoveryResult> {
   const result = await callResponses<{ candidates?: unknown[] }>(
@@ -347,6 +353,7 @@ async function discoverCompanyUnverified(
     firstTimeoutMs?: number;
     skipRescue?: boolean;
     cityHint?: string;
+    identityHint?: string;
   } = {}
 ): Promise<CompanyDiscoveryResult> {
   const query = companyName.trim().slice(0, 160);
@@ -356,15 +363,17 @@ async function discoverCompanyUnverified(
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
   if (!apiKey) return { candidates: [], webSources: [] };
 
-  const model = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
+  const fastModel = options.model ?? process.env.OPENAI_DISCOVERY_MODEL ?? FAST_DISCOVERY_MODEL;
+  const rescueModel = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
   const fetchFn = options.fetchFn ?? fetch;
 
   const first = await runDiscoveryAttempt(query, {
     fetchFn,
     apiKey,
-    model,
+    model: fastModel,
     timeoutMs: options.firstTimeoutMs ?? 18_000,
     cityHint,
+    identityHint: options.identityHint,
   });
 
   const strongFirst = first.candidates.find((candidate) => candidate.confidence === "high" && candidate.website);
@@ -385,10 +394,11 @@ async function discoverCompanyUnverified(
   const rescue = await runDiscoveryAttempt(query, {
     fetchFn,
     apiKey,
-    model,
+    model: rescueModel,
     rescue: true,
     timeoutMs: 14_000,
     cityHint,
+    identityHint: options.identityHint,
   });
 
   const combinedSources = [...first.webSources, ...rescue.webSources].filter(

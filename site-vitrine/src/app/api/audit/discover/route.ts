@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { collectCompanyDiscovery, discoverCompany, startCompanyDiscovery } from "@/lib/audit-engine/company-discovery";
+import { lookupFrenchRegistry, registryIdentityHint } from "@/lib/audit-engine/company-registry";
 import { signJob, verifyJob } from "@/lib/audit-engine/diagnostic";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
@@ -78,13 +79,57 @@ export async function POST(request: Request) {
   if (companyName.length < 2) return NextResponse.json({ error: "missing_company_name" }, { status: 422 });
 
   try {
-    const jobId = await startCompanyDiscovery(companyName, { cityHint, rescue });
-    if (jobId) return NextResponse.json({ status: "started", jobId, token: signJob(STAGE, jobId) }, { status: 200 });
+    // Fast deterministic preflight against the official French company
+    // registry. It is only an accelerator: if unavailable or inconclusive,
+    // the existing web discovery below remains the fallback.
+    const registry = await lookupFrenchRegistry(companyName, cityHint);
+
+    // Exact homonyms in different cities: do not spend 10–20 seconds
+    // researching websites we cannot safely choose between. Ask the visitor
+    // for the city immediately.
+    if (!cityHint && registry.status === "ambiguous") {
+      return NextResponse.json(
+        {
+          status: "needs_city",
+          candidates: registry.candidates.map((candidate) => ({
+            name: candidate.name,
+            website: "",
+            sector: "",
+            city: candidate.city,
+            summary: `Entreprise française enregistrée sous le SIREN ${candidate.siren}.`,
+            confidence: "medium",
+          })),
+        },
+        { status: 200 }
+      );
+    }
+
+    const registryCandidate = registry.status === "unique" ? registry.candidates[0] : null;
+    const effectiveCity = cityHint || registryCandidate?.city || "";
+    const identityHint = registryCandidate ? registryIdentityHint(registryCandidate) : "";
+
+    const jobId = await startCompanyDiscovery(companyName, {
+      cityHint: effectiveCity,
+      identityHint,
+      rescue,
+    });
+    if (jobId) {
+      return NextResponse.json(
+        {
+          status: "started",
+          jobId,
+          token: signJob(STAGE, jobId),
+          ...(effectiveCity ? { resolvedCity: effectiveCity } : {}),
+        },
+        { status: 200 }
+      );
+    }
 
     // Background mode unavailable: one bounded attempt in this request
     // rather than sending the visitor on with nothing but the typed name.
     const direct = await discoverCompany(companyName, {
-      cityHint,
+      cityHint: effectiveCity,
+      identityHint,
       firstTimeoutMs: SYNC_FALLBACK_TIMEOUT_MS,
       skipRescue: !rescue,
     });
