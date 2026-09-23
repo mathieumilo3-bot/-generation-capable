@@ -130,18 +130,24 @@ export function AuditFunnel() {
 
   async function attachLeadToResearch(handle: AuditLeadHandle, research: ResearchResponse) {
     if (!research.jobId || !research.token) return false;
-    const attached = await postJson<{ status?: string }>("/api/audit/contact", {
-      action: "attach",
-      id: handle.id,
-      token: handle.token,
-      context: research.context,
-      signature: research.signature,
-      jobId: research.jobId,
-      jobToken: research.token,
-    });
-    const ok = attached?.status === "attached";
-    if (ok) setLeaveReady(true);
-    return ok;
+
+    for (const delay of [0, 500, 1_200]) {
+      if (delay) await wait(delay);
+      const attached = await postJson<{ status?: string }>("/api/audit/contact", {
+        action: "attach",
+        id: handle.id,
+        token: handle.token,
+        context: research.context,
+        signature: research.signature,
+        jobId: research.jobId,
+        jobToken: research.token,
+      });
+      if (attached?.status === "attached") {
+        setLeaveReady(true);
+        return true;
+      }
+    }
+    return false;
   }
 
   async function registerNotification(event: FormEvent) {
@@ -190,7 +196,11 @@ export function AuditFunnel() {
     } catch {}
 
     if (researchRef.current) {
-      await attachLeadToResearch(handle, researchRef.current);
+      const attached = await attachLeadToResearch(handle, researchRef.current);
+      if (!attached) {
+        setNotifyStatus("error");
+        return;
+      }
     }
     setNotifyStatus("saved");
     track("audit_ready_notification_requested", { marketing_opt_in: false });
@@ -788,7 +798,7 @@ export function AuditFunnel() {
               </div>
 
               {notifyStatus === "error" && (
-                <p className="mt-2 text-[11px] text-[#e7c872]">Entrez une adresse email valide.</p>
+                <p className="mt-2 text-[11px] text-[#e7c872]">Vérifiez votre email puis réessayez.</p>
               )}
 
               <p className="mt-3 text-[10px] leading-relaxed text-[var(--color-muted)]">
