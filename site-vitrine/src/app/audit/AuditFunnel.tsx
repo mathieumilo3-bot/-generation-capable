@@ -196,42 +196,82 @@ export function AuditFunnel() {
     let candidate: CompanyDiscoveryCandidate | null = null;
 
     try {
-      const started = await postJson<DiscoverResponse>("/api/audit/discover", {
-        companyName: rawName,
-        ...(rawCity ? { cityHint: rawCity } : {}),
-      });
+      const runDiscoveryPass = async (companyName: string, city: string, rescue = false) => {
+        const started = await postJson<DiscoverResponse>("/api/audit/discover", {
+          companyName,
+          ...(city ? { cityHint: city } : {}),
+          ...(rescue ? { rescue: true } : {}),
+        });
 
-      let candidates: CompanyDiscoveryCandidate[] = started?.status === "done" ? (started.candidates ?? []) : [];
-      if (started?.status === "started" && started.jobId && started.token) {
-        const deadline = Date.now() + DISCOVERY_DEADLINE_MS;
-        let first = true;
-        while (Date.now() < deadline) {
-          await wait(first ? FIRST_POLL_MS : POLL_INTERVAL_MS);
-          first = false;
-          const poll = await postJson<DiscoverResponse>("/api/audit/discover", {
-            companyName: rawName,
-            ...(rawCity ? { cityHint: rawCity } : {}),
-            jobId: started.jobId,
-            token: started.token,
-          });
-          if (!poll || poll.status === "failed") break;
-          if (poll.status === "done") {
-            candidates = poll.candidates ?? [];
-            break;
+        let found: CompanyDiscoveryCandidate[] = started?.status === "done" ? (started.candidates ?? []) : [];
+        if (started?.status === "started" && started.jobId && started.token) {
+          const deadline = Date.now() + DISCOVERY_DEADLINE_MS;
+          let first = true;
+          while (Date.now() < deadline) {
+            await wait(first ? FIRST_POLL_MS : POLL_INTERVAL_MS);
+            first = false;
+            const poll = await postJson<DiscoverResponse>("/api/audit/discover", {
+              companyName,
+              ...(city ? { cityHint: city } : {}),
+              ...(rescue ? { rescue: true } : {}),
+              jobId: started.jobId,
+              token: started.token,
+            });
+            if (!poll || poll.status === "failed") break;
+            if (poll.status === "done") {
+              found = poll.candidates ?? [];
+              break;
+            }
+            advance(Math.min(26, progressRef.current + 2), "Recherche de votre entreprise · sources publiques");
           }
-          advance(Math.min(26, progressRef.current + 2), "Recherche de votre entreprise · sources publiques");
         }
-      }
+        return found;
+      };
 
-      const websiteCandidates = candidates.filter((item) => item.website);
-      candidate =
-        websiteCandidates.find((item) => item.confidence === "high") ??
-        websiteCandidates.find((item) => item.confidence === "medium") ??
-        websiteCandidates[0] ??
-        candidates.find((item) => item.confidence === "high") ??
-        candidates.find((item) => item.confidence === "medium") ??
-        candidates[0] ??
-        null;
+      const pickCandidate = (items: CompanyDiscoveryCandidate[]) => {
+        const websiteCandidates = items.filter((item) => item.website);
+        return (
+          websiteCandidates.find((item) => item.confidence === "high") ??
+          websiteCandidates.find((item) => item.confidence === "medium") ??
+          websiteCandidates[0] ??
+          items.find((item) => item.confidence === "high") ??
+          items.find((item) => item.confidence === "medium") ??
+          items[0] ??
+          null
+        );
+      };
+
+      let candidates = await runDiscoveryPass(rawName, rawCity);
+      candidate = pickCandidate(candidates);
+
+      // A legal name can be completely different from the commercial name
+      // used on the website. Before asking the visitor for anything, run a
+      // second, identity-bridge search using the city/name we just learned.
+      const firstDistinctMatches = new Set(
+        candidates
+          .filter((item) => item === candidate || item.confidence !== "low")
+          .map((item) => item.city.trim().toLowerCase() || item.website)
+          .filter(Boolean)
+      ).size;
+      const firstPassIsAmbiguous = !rawCity && firstDistinctMatches > 1;
+
+      if (!firstPassIsAmbiguous && (!candidate?.website || candidate.confidence !== "high")) {
+        advance(Math.max(18, progressRef.current), "Site non certain · recherche renforcée de l’enseigne officielle");
+        const rescueCity = rawCity || candidate?.city || "";
+        const rescueName = candidate?.name || rawName;
+        const rescued = await runDiscoveryPass(rescueName, rescueCity, true);
+
+        candidates = [...rescued, ...candidates].filter(
+          (item, index, all) =>
+            all.findIndex(
+              (other) =>
+                other.name.toLowerCase() === item.name.toLowerCase() &&
+                other.city.toLowerCase() === item.city.toLowerCase() &&
+                other.website === item.website
+            ) === index
+        );
+        candidate = pickCandidate(candidates);
+      }
 
       // A second plausible company elsewhere (not a weak echo of the same
       // one) is real ambiguity: the city decides.
@@ -242,7 +282,9 @@ export function AuditFunnel() {
       ).size;
 
       const needsDisambiguation =
-        !rawCity && candidates.length > 0 && (!candidate || !candidate.website || candidate.confidence !== "high" || distinctMatches > 1);
+        !rawCity &&
+        candidates.length > 0 &&
+        (!candidate || distinctMatches > 1 || (candidate.confidence === "low" && !candidate.city));
 
       if (needsDisambiguation) {
         setDiscovery(candidate);

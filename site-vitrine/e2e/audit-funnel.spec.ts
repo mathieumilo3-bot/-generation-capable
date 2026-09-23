@@ -242,6 +242,36 @@ test.describe("Audit funnel — nom → diagnostic", () => {
 });
 
 test.describe("Audit funnel — resilience", () => {
+  test("runs an automatic identity rescue before asking the visitor for the site", async ({ page }) => {
+    const calls = await mockApis(page);
+    await page.unroute("**/api/audit/discover");
+    await page.route("**/api/audit/discover", (route) => {
+      const body = route.request().postData() ?? "{}";
+      calls.discover.push(body);
+      const payload = JSON.parse(body) as { jobId?: string; rescue?: boolean };
+      const weakCandidate = { ...COMPANY, website: "", confidence: "high" };
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(
+          payload.jobId
+            ? { status: "done", candidates: payload.rescue ? [COMPANY] : [weakCandidate] }
+            : {
+                status: "started",
+                jobId: payload.rescue ? "resp_testrescue0001" : "resp_testdiscovery1",
+                token: "t".repeat(64),
+              }
+        ),
+      });
+    });
+
+    await start(page, "AATP");
+
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3, { timeout: 60_000 });
+    expect(calls.discover.some((body) => JSON.parse(body).rescue === true)).toBe(true);
+    expect(JSON.parse(calls.research[0])).toMatchObject({ siteUrl: COMPANY.website });
+  });
+
   test("keeps polling while the investigation runs, then shows its cards", async ({ page }) => {
     const calls = await mockApis(page);
     await page.unroute("**/api/audit/analyze");
