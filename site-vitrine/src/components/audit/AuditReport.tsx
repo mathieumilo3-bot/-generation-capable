@@ -133,18 +133,52 @@ function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: numbe
   );
 }
 
+type AuditDiscovery = {
+  name: string;
+  website: string;
+  sector: string;
+  city: string;
+  summary: string;
+  confidence: "high" | "medium" | "low";
+  insights: { title: string; insight: string; evidence: string[] }[];
+};
+
 type AuditReportProps = {
   report: Report;
   lead?: { nom?: string; email?: string };
   attribution?: BookingAttribution;
+  discovery?: AuditDiscovery | null;
 };
 
-export function AuditReport({ report, lead, attribution }: AuditReportProps) {
+export function AuditReport({ report, lead, attribution, discovery }: AuditReportProps) {
   const viewedTracked = useRef(false);
   const bookingUrl = buildCalendlyUrl(lead, attribution);
   const priorities = report.topLeaks.slice(0, 3);
   const synthesis = report.aiSynthesis;
-  const aiOpportunities = synthesis?.opportunities ?? [];
+  const discoveryOpportunities: AiAuditOpportunity[] = (discovery?.insights ?? []).slice(0, 3).map((item, index) => ({
+    id: `discovery_${index + 1}`,
+    pillar: index === 0 ? "attirer" : index === 1 ? "rassurer" : "convertir",
+    title: item.title,
+    diagnosis: item.insight,
+    evidence: item.evidence,
+    confidence: "inferred",
+    impact:
+      index === 0
+        ? "Améliorer la capacité à être découvert par des prospects qui ne connaissent pas encore l’entreprise."
+        : index === 1
+          ? "Renforcer la confiance au moment où un prospect compare plusieurs entreprises."
+          : "Réduire les frictions entre l’intérêt du prospect et sa demande de devis ou son appel.",
+    callQuestion:
+      index === 0
+        ? "Quelles recherches et zones doivent devenir prioritaires ?"
+        : index === 1
+          ? "Quelles preuves doivent être mises en avant en premier ?"
+          : "Quel parcours de contact doit être simplifié en priorité ?",
+  }));
+  const aiOpportunities = synthesis?.opportunities?.length
+    ? synthesis.opportunities
+    : discoveryOpportunities;
+  const hasUsefulResearch = aiOpportunities.length > 0;
 
   useEffect(() => {
     if (viewedTracked.current) return;
@@ -175,10 +209,10 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
           {synthesis?.executiveSummary ||
             "On a analysé votre présence comme le ferait un futur client : est-ce qu’il vous trouve, vous choisit et vous contacte facilement ?"}
         </p>
-        {synthesis?.companySnapshot && (
+        {(synthesis?.companySnapshot || discovery?.summary) && (
           <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">Activité détectée</p>
-            <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">{synthesis.companySnapshot}</p>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">{synthesis?.companySnapshot || discovery?.summary}</p>
           </div>
         )}
       </div>
@@ -192,7 +226,7 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
         </span>
       </div>
 
-      {report.degraded && report.degradedReason && (
+      {report.degraded && report.degradedReason && !hasUsefulResearch && (
         <div className="mt-8 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-5 py-4">
           <p className="text-sm text-[var(--color-text)]">
             <span className="font-semibold">Analyse partielle.</span> {report.degradedReason}
@@ -214,10 +248,10 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
                     : synthesis?.convertir || pillar.question}
               </p>
               <p className={`mt-4 text-xs font-semibold ${state.tone}`}>
-                {synthesis
+                {hasUsefulResearch
                   ? aiOpportunities.some((item) => item.pillar === pillar.id)
                     ? "Potentiel à développer"
-                    : "Base solide détectée"
+                    : "Point secondaire"
                   : state.label}
               </p>
             </div>
@@ -264,10 +298,10 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
         </div>
       ) : null}
 
-      {(aiOpportunities.length > 0 || priorities.length > 0) && (
+      {hasUsefulResearch && (
         <div className="mt-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
-            {aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length} constat{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""} concret{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""}
+            {aiOpportunities.length} constat{aiOpportunities.length > 1 ? "s" : ""} concret{aiOpportunities.length > 1 ? "s" : ""}
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
             Commencez par ces priorités.
@@ -276,13 +310,9 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
             Chaque priorité part d’un élément observé ou clairement identifié dans votre présence en ligne.
           </p>
           <div className="mt-6 flex flex-col gap-4">
-            {aiOpportunities.length > 0
-              ? aiOpportunities.map((item, index) => (
-                  <OpportunityCard key={item.id} rank={index + 1} ai={item} />
-                ))
-              : priorities.map((finding, index) => (
-                  <OpportunityCard key={finding.id} finding={finding} rank={index + 1} />
-                ))}
+            {aiOpportunities.map((item, index) => (
+              <OpportunityCard key={item.id} rank={index + 1} ai={item} />
+            ))}
           </div>
 
           <div className="mt-6 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-5 text-center">
