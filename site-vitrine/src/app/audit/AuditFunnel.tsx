@@ -39,6 +39,8 @@ export function AuditFunnel() {
     track("audit_started");
     const params = new URLSearchParams(window.location.search);
 
+    // URL-derived attribution is only available after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAttribution({
       source: params.get("utm_source")?.trim().slice(0, 120) || undefined,
       medium: params.get("utm_medium")?.trim().slice(0, 120) || undefined,
@@ -47,6 +49,7 @@ export function AuditFunnel() {
       term: params.get("utm_term")?.trim().slice(0, 120) || undefined,
     });
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setClickIds({
       gclid: params.get("gclid")?.trim().slice(0, 220) || "",
       gbraid: params.get("gbraid")?.trim().slice(0, 220) || "",
@@ -54,7 +57,10 @@ export function AuditFunnel() {
     });
 
     const preset = params.get("entreprise")?.trim().slice(0, FIELD_LIMITS.entreprise) || "";
-    if (preset) setEntreprise(preset);
+    if (preset) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEntreprise(preset);
+    }
   }, []);
 
   function advance(value: number, label: string) {
