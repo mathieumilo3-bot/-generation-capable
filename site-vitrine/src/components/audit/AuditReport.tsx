@@ -165,7 +165,7 @@ type AuditReportProps = {
   discovery?: AuditDiscovery | null;
 };
 
-export function AuditReport({ report, lead, attribution, discovery }: AuditReportProps) {
+export function AuditReport({ report, discovery }: AuditReportProps) {
   const viewedTracked = useRef(false);
   const synthesis = report.aiSynthesis;
   const discoveryOpportunities: AiAuditOpportunity[] = (discovery?.insights ?? []).slice(0, 3).map((item, index) => {
