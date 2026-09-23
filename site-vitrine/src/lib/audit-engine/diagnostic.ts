@@ -494,34 +494,37 @@ export function investigationPrompt(dossier: Dossier): string {
   return `Tu réalises le diagnostic GC de "${company.name}"${company.city ? ` — ${company.city}` : ""}${company.trade ? ` — métier : ${company.trade}` : ""}.
 Site officiel retenu : ${company.siteUrl || "aucun site officiel identifié"}.
 
-Le dirigeant doit se dire en lisant le résultat : "ils ont vraiment regardé MA boîte, ils ont trouvé des choses que je n'avais pas vues, je veux voir le plan d'action".
+Le dirigeant doit se dire en lisant le résultat : "ils ont vraiment regardé MA boîte, ils voient ce que j'ai déjà de solide, ils ont identifié où je peux gagner en visibilité et en demandes, je veux le plan d'action".
 
 ${researchInstructions(researchQueries(company, dossier.facts))}
 
-PARTIE 2 — LES 3 CONSTATS
+PARTIE 2 — LES 3 LEVIERS DE CROISSANCE
 
 MATIÈRE DISPONIBLE (seules sources autorisées : ta recherche ci-dessus et les données ci-dessous)
 - pagesLues : les pages du site réellement ouvertes par notre robot (titre, H1, H2, CTA, formulaires, extraits).
 - faitsVerifies : faits calculés à partir de ces pages (services cités et pages dédiées, zone, téléphone, formulaires, preuves, labels).
-- constatsPreVerifies : constats déjà vérifiés sur le site, avec note. Tu peux les reprendre, les préciser avec ta recherche, ou les remplacer par un problème plus important.
+- constatsPreVerifies : constats déjà vérifiés sur le site, avec note. Tu peux les reprendre, les reformuler comme levier de croissance, les préciser avec ta recherche, ou les remplacer par une opportunité commerciale plus importante.
 
 SÉLECTION
-- Retiens les 3 problèmes qui coûtent le plus de demandes de devis à CETTE entreprise (maximum 3, idéalement 3).
+- Retiens les 3 LEVIERS les plus capables d'améliorer la visibilité qualifiée, la confiance ou la prise de contact de CETTE entreprise (maximum 3, idéalement 3).
+- Pars d'abord de ce que l'entreprise a DÉJÀ : services, réalisations, avis, labels, zone, réputation, ancienneté, présence locale. Montre comment mieux exploiter ces actifs pour créer plus d'opportunités.
 - Le dirigeant doit apprendre quelque chose d'utile qu'il n'aurait probablement pas vu en regardant seulement sa page d'accueil.
-- Priorité absolue aux écarts à intention commerciale forte : service précis recherché mais sans page dédiée ; coordonnées incohérentes ; formulaire/contact qui freine ; preuves/avis/chantiers présents ailleurs mais mal exploités ; concurrent observé avec une réponse beaucoup plus claire au même besoin ; service rentable montré publiquement mais absent du parcours de devis.
+- Priorité absolue aux leviers à intention commerciale forte : service déjà proposé mais sans porte d'entrée dédiée ; coordonnées à harmoniser ; parcours de devis à simplifier ; preuves/avis/chantiers déjà disponibles mais sous-exploités ; concurrent observé avec une réponse plus claire au même besoin ; service rentable déjà visible publiquement mais pas encore relié à un vrai parcours de devis.
 - Couvre si possible ÊTRE TROUVÉ (trouve), ÊTRE CHOISI (choisi), ÊTRE CONTACTÉ (contacte) — mais si deux problèmes majeurs sont sur le même axe, garde-les : on veut les 3 plus gros problèmes, pas 3 cases remplies.
 - Privilégie les constats qui croisent site + recherche web (ex : un service montré sur Instagram mais absent du site ; une requête "service + ville" où ressortent des concurrents avec une page dédiée alors que le site n'en a pas ; une incohérence de téléphone entre annuaire et site ; des avis visibles ailleurs mais absents du site).
-- Un simple détail de balise, de titre ou de formulation ne mérite PAS une carte à lui seul. Il ne devient prioritaire que si la recherche externe montre clairement le manque commercial correspondant.
-- Ne retiens pas un point qui fonctionne bien (note ≥ 8) sauf s'il n'existe pas 3 vrais problèmes.
+- Un simple détail de balise, de titre ou de formulation ne mérite PAS une carte à lui seul. Il ne devient prioritaire que si la recherche externe montre clairement l'opportunité commerciale correspondante.
+- Ne retiens pas un point qui fonctionne bien (note ≥ 8) sauf s'il n'existe pas 3 leviers plus utiles.
+- N'écris jamais comme si tu cherchais la petite bête. Le ton doit être : "vous avez déjà X ; en l'activant mieux, voilà ce que ça peut débloquer".
+- Évite les titres accusateurs ou négatifs ("invisible", "mauvais", "vous perdez", "aucun", "problème") quand une formulation orientée solution est possible.
 
 FORMAT DE CHAQUE CARTE
-- title : titre court du problème, spécifique (ex : "Visibilité du service isolation extérieure", "Numéro non cliquable sur mobile", "Réalisations cachées à 2 clics du devis"). Jamais "SEO" ou "Optimisation" seul.
+- title : titre court, spécifique et orienté action/croissance. Exemples : "Faire de l'isolation extérieure une porte d'entrée de devis", "Unifier vos numéros pour sécuriser chaque appel", "Mettre vos réalisations au cœur de la décision". Jamais "SEO", "Optimisation" seul, ni un titre qui rabaisse l'entreprise.
 - score : note /10 heuristique cohérente avec la preuve. 1–3 gros frein visible ; 4–5 faible ou incomplet ; 6–7 correct mais améliorable ; 8–10 solide.
-- finding : 1 ou 2 phrases MAXIMUM qui disent ce qui a réellement été trouvé, avec un détail propre à cette entreprise (nom de service, page, ville, texte exact, requête, profil).
+- finding : 1 ou 2 phrases MAXIMUM. Commence si possible par l'actif déjà présent ("Vous proposez déjà...", "Vous avez déjà...", "Votre site montre déjà..."), puis montre ce qui reste à activer pour en tirer plus de valeur commerciale. Garde un détail propre à cette entreprise (service, page, ville, texte exact, requête, profil).
 - seen : UNE preuve concrète observée, commençant directement par le fait (pas par "Vu :"). Ex : l'URL/la page, le texte exact entre « », la requête et ce qui ressort, le nombre de champs du formulaire.
-- loss : UNE phrase sur la conséquence commerciale actuelle, au conditionnel prudent ("peut", "risque de"). Aucun chiffre.
-- potentialText : UNE phrase qui explique le MÉCANISME commercial précis de la correction : quel prospect est mieux capté, rassuré ou amené à contacter. Aucun chiffre ni promesse.
-- fix : UNE action exécutable sans rendez-vous. Elle doit préciser OÙ agir + QUOI mettre/changer + l'élément de conversion à ajouter. Ex : "Créer /isolation-exterieure-vannes avec un H1 dédié, 3 chantiers locaux, les aides réellement proposées et un bouton « Demander un devis » visible dès le premier écran".
+- loss : UNE phrase sur l'OPPORTUNITÉ immédiate qui n'est pas encore pleinement captée. Formule-la positivement : quel type de prospect ou de demande pourrait être mieux capté, rassuré ou converti. Aucun chiffre.
+- potentialText : UNE phrase qui explique le MÉCANISME commercial précis du levier : pourquoi cette amélioration peut faire progresser la visibilité, la confiance ou la prise de contact. Aucun chiffre ni promesse.
+- fix : UNE PREMIÈRE ACTION exécutable sans rendez-vous. Elle doit préciser OÙ agir + QUOI mettre/changer + l'élément de conversion à ajouter. Ex : "Créer /isolation-exterieure-vannes avec un H1 dédié, 3 chantiers locaux, les aides réellement proposées et un bouton « Demander un devis » visible dès le premier écran".
 - basis : "site", "recherche" ou "site + recherche".
 - summary : UNE phrase d'identification factuelle (métier, ville, ce qui a été analysé). Ex : "Couvreur à Vannes — 11 pages du site et 8 recherches analysées."
 
@@ -532,7 +535,7 @@ INTERDITS (la carte sera rejetée automatiquement)
 - Affirmer qu'une chose n'existe pas : dire "n'a pas été retrouvé(e) sur les pages analysées" / "dans les résultats consultés" / "à confirmer".
 
 Écris en français naturel, direct, vouvoiement. Phrases courtes.
-Le résultat doit donner envie d'agir maintenant par sa précision, jamais par du sensationnalisme : preuve → conséquence → correction concrète.
+Le résultat doit donner envie d'agir maintenant par sa précision et par la perspective de croissance, jamais par la peur. Structure mentale : actif déjà présent → opportunité à débloquer → mécanisme commercial → première action concrète. Le dirigeant doit ressortir avec l'impression "ma boîte a du potentiel et voilà comment l'activer", pas "mon entreprise est nulle".
 
 DONNÉES
 <gc_dossier>
