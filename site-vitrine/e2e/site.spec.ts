@@ -69,7 +69,7 @@ test.describe("pages", () => {
     await expect(page.getByRole("heading", { name: /Cette page n'existe pas/ })).toBeVisible();
     // The dead end still offers the primary action.
     await expect(
-      page.getByRole("link", { name: /Analyser mon entreprise/ }).filter({ visible: true }).first()
+      page.getByRole("link", { name: /Analyser mon site|Recevoir mon diagnostic|Analyser mon entreprise|Vérifier mon site/ }).filter({ visible: true }).first()
     ).toBeVisible();
   });
 
@@ -113,6 +113,13 @@ test.describe("navigation", () => {
 
   test("the primary CTA leads to the audit funnel", async ({ page }) => {
     await page.goto("/");
+    // Settle the page first: the consent dialog mounts after hydration, and a
+    // tap landing in that window is exactly what makes this flaky on mobile.
+    const consent = page.getByRole("dialog", { name: "Préférences de confidentialité" });
+    if (await consent.waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false)) {
+      await consent.getByRole("button", { name: "Refuser", exact: true }).click();
+      await expect(consent).toBeHidden();
+    }
     await page
       .getByRole("link", { name: /Voir comment gagner plus de demandes/ })
       .click();
@@ -202,25 +209,39 @@ test.describe("legal pages", () => {
 });
 
 test.describe("analytics", () => {
-  test("loads no third-party tag while NEXT_PUBLIC_GTM_ID is unset", async ({ page }) => {
+  test("denies ad and analytics storage until the visitor consents", async ({ page }) => {
     const thirdParty: string[] = [];
     page.on("request", (req) => {
       const url = new URL(req.url());
-      if (!["localhost", "127.0.0.1"].includes(url.hostname)) thirdParty.push(req.url());
+      if (!["localhost", "127.0.0.1"].includes(url.hostname)) thirdParty.push(url.hostname);
     });
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
-    expect(thirdParty).toEqual([]);
+    await page.waitForLoadState("networkidle").catch(() => {});
+
+    // Only Google's own tag may load, and only with consent denied by default.
+    expect([...new Set(thirdParty)].filter((host) => !/^(www\.)?google(tagmanager)?\.(com|fr)$/.test(host))).toEqual([]);
+
+    const consentDefault = await page.evaluate(() =>
+      (window.dataLayer ?? []).map((entry) => JSON.stringify(entry)).find((entry) => entry.includes("consent") && entry.includes("default"))
+    );
+    expect(consentDefault).toContain('"ad_storage":"denied"');
+    expect(consentDefault).toContain('"analytics_storage":"denied"');
   });
 
   test("the funnel events land on a dataLayer a tag manager can read", async ({ page }) => {
     await page.goto("/");
     // landing_view is pushed from an effect, so poll rather than sample once.
-    const firstEntryKeys = () =>
-      page.evaluate(() => Object.keys((window.dataLayer ?? [])[0] ?? {}).sort());
+    // gtag's own consent bootstrap sits first, so look for our event shape.
+    const ourEvent = () =>
+      page.evaluate(() =>
+        (window.dataLayer ?? [])
+          .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object" && "event" in entry)
+          .map((entry) => Object.keys(entry).sort())
+          .at(0) ?? []
+      );
 
-    await expect.poll(firstEntryKeys).toContain("event");
-    expect(await firstEntryKeys()).toContain("timestamp");
+    await expect.poll(ourEvent).toContain("event");
+    expect(await ourEvent()).toContain("timestamp");
   });
 });
 
@@ -332,7 +353,7 @@ test.describe("consent banner", () => {
     // The primary CTA sits away from the banner's corner position — confirms
     // the dialog doesn't cover the page with an interaction-blocking overlay.
     await expect(
-      page.getByRole("link", { name: /Recevoir mon diagnostic|Analyser mon entreprise/ }).filter({ visible: true }).first()
+      page.getByRole("link", { name: /Analyser mon site|Recevoir mon diagnostic|Analyser mon entreprise|Vérifier mon site/ }).filter({ visible: true }).first()
     ).toBeVisible();
   });
 });

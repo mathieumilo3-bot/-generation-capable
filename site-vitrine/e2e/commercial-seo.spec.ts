@@ -58,7 +58,7 @@ test.describe("commercial SEO landing pages", () => {
       );
 
       await expect(
-        page.getByRole("link", { name: /Recevoir mon diagnostic|Analyser mon entreprise/ }).first()
+        page.getByRole("link", { name: /Analyser mon site|Recevoir mon diagnostic|Analyser mon entreprise|Vérifier mon site/ }).first()
       ).toBeVisible();
     });
   }
@@ -83,19 +83,22 @@ test.describe("commercial SEO landing pages", () => {
   test("sitewide navigation pushes the priority commercial pages", async ({ page }) => {
     await page.goto("/");
 
+    // On a phone the navigation lives behind the menu button.
+    const menuButton = page.getByRole("button", { name: "Ouvrir le menu" });
+    if (await menuButton.isVisible().catch(() => false)) await menuButton.click();
+
     const nav = page.getByRole("navigation", { name: "Navigation principale" }).first();
     await expect(nav.getByRole("link", { name: "Création de site" })).toHaveAttribute(
       "href",
       "/creation-site-internet"
     );
-    await expect(nav.getByRole("link", { name: "SEO", exact: true })).toHaveAttribute(
-      "href",
-      "/seo"
-    );
-    await expect(nav.getByRole("link", { name: "Référencement local" })).toHaveAttribute(
-      "href",
-      "/solutions/referencement-local"
-    );
+    await expect(nav.getByRole("link", { name: "Solutions", exact: true })).toHaveAttribute("href", "/solutions");
+
+    // The navigation was deliberately narrowed to push the funnel: the SEO
+    // pages are reached from /solutions, and the header carries the audit CTA.
+    await expect(page.getByRole("link", { name: /Analyser mon site/ }).first()).toHaveAttribute("href", "/audit");
+    await page.goto("/solutions");
+    await expect(page.getByRole("link", { name: /Référencement local/ }).first()).toBeVisible();
   });
 
   test("existing guides pass contextual relevance into priority commercial pages", async ({ page }) => {
