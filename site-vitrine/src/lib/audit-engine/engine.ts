@@ -1,6 +1,14 @@
 import { classifySector } from "./classify";
 import { discoverCompany } from "./company-discovery";
-import { buildDossier, diagnoseDossier, type Dossier, type DiagnosticResult } from "./diagnostic";
+import {
+  buildDossier,
+  diagnoseDossier,
+  siteOnlyDiagnostic,
+  toAuditContext,
+  type AuditContext,
+  type Dossier,
+  type DiagnosticResult,
+} from "./diagnostic";
 import { crawlSite } from "./crawl";
 import type { DeclaredInput, Report } from "./types";
 
@@ -22,26 +30,28 @@ function clampInput(input: DeclaredInput & { ville?: string }): DeclaredInput & 
  * Wraps a diagnostic into the Report contract the funnel, the thank-you page
  * and older stored sessions already understand.
  */
-export function reportFromDiagnostic(dossier: Dossier, diagnostic: DiagnosticResult, objectif = ""): Report {
-  const sector = classifySector(dossier.company.trade);
+export function reportFromContext(context: AuditContext, diagnostic: DiagnosticResult, objectif = ""): Report {
+  const company = context.company;
+  const sector = classifySector(company.trade);
+  const reachable = context.stats.siteReachable;
   return {
     header: {
-      entreprise: dossier.company.name || dossier.company.domain || "Entreprise analysée",
-      secteur: dossier.company.trade || sector.label,
+      entreprise: company.name || company.domain || "Entreprise analysée",
+      secteur: company.trade || sector.label,
       sectorProfile: sector.id,
       objectif,
-      siteUrl: dossier.company.siteUrl,
+      siteUrl: company.siteUrl,
       generatedAt: new Date().toISOString(),
-      siteReachable: dossier.site.reachable,
+      siteReachable: reachable,
     },
     topLeaks: [],
     worksWell: [],
     otherFindings: [],
     actionPlan: diagnostic.cards.map((card, index) => ({ order: index + 1, title: card.title, recommendation: card.fix })),
-    degraded: !dossier.site.reachable,
-    degradedReason: dossier.site.reachable
+    degraded: !reachable,
+    degradedReason: reachable
       ? undefined
-      : dossier.company.siteUrl
+      : company.siteUrl
         ? "Le site officiel n’a pas pu être lu directement ; le diagnostic s’appuie sur les sources publiques retrouvées."
         : "Aucun site officiel n’a été identifié ; le diagnostic s’appuie sur les sources publiques retrouvées.",
     sectorNote: sector.limits,
@@ -50,11 +60,21 @@ export function reportFromDiagnostic(dossier: Dossier, diagnostic: DiagnosticRes
   };
 }
 
+export function reportFromDossier(dossier: Dossier, diagnostic: DiagnosticResult, objectif = ""): Report {
+  return reportFromContext(toAuditContext(dossier), diagnostic, objectif);
+}
+
 export type RunAuditOptions = {
   discover?: typeof discoverCompany;
   crawl?: typeof crawlSite;
   build?: typeof buildDossier;
   diagnose?: typeof diagnoseDossier;
+  /**
+   * Run the full investigation in this same call. Only for places where a
+   * long request is allowed (scripts, tests) — the funnel uses the
+   * background job instead, because the host cuts requests at 10 s.
+   */
+  withInvestigation?: boolean;
 };
 
 /**
@@ -76,7 +96,7 @@ export async function runAudit(rawInput: DeclaredInput & { ville?: string }, opt
   const hasUsableSiteUrl = /^https?:\/\/[^/\s]+\.[^/\s]+/i.test(input.siteUrl);
   if (input.entreprise && !hasUsableSiteUrl) {
     try {
-      const discovery = await discover(input.entreprise, { firstTimeoutMs: 14_000, skipRescue: true, cityHint: input.ville });
+      const discovery = await discover(input.entreprise, { firstTimeoutMs: options.withInvestigation ? 20_000 : 3_500, skipRescue: true, cityHint: input.ville });
       const candidate =
         discovery.candidates.find((item) => item.confidence === "high" && item.website) ??
         discovery.candidates.find((item) => item.website) ??
@@ -95,11 +115,12 @@ export async function runAudit(rawInput: DeclaredInput & { ville?: string }, opt
     }
   }
 
-  const elapsed = Date.now() - started;
   const dossier = await build(
     { entreprise: resolved.entreprise ?? "", siteUrl: resolved.siteUrl, secteur: resolved.secteur, ville: resolved.ville },
-    { budgetMs: Math.max(12_000, 30_000 - elapsed), crawl: options.crawl }
+    { budgetMs: 5_000, crawl: options.crawl }
   );
-  const diagnostic = await diagnose(dossier, { timeoutMs: Math.max(5_000, 55_000 - (Date.now() - started)) });
-  return reportFromDiagnostic(dossier, diagnostic, resolved.objectif);
+  const diagnostic = options.withInvestigation
+    ? await diagnose(dossier, { timeoutMs: Math.max(5_000, 90_000 - (Date.now() - started)) })
+    : siteOnlyDiagnostic(toAuditContext(dossier));
+  return reportFromDossier(dossier, diagnostic, resolved.objectif);
 }

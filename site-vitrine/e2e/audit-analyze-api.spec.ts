@@ -55,13 +55,22 @@ test.describe("POST /api/audit/analyze", () => {
     expect(res.status()).toBe(413);
   });
 
-  test("rejects a dossier whose signature does not match", async ({ request }) => {
+  test("rejects a context whose signature does not match", async ({ request }) => {
     const res = await request.post("/api/audit/analyze", {
       headers: freshIp(),
-      data: { dossier: { v: 1, company: { name: "Forgé" } }, signature: "0".repeat(64) },
+      data: { context: { v: 1, company: { name: "Forgé" } }, signature: "0".repeat(64) },
     });
     expect(res.status()).toBe(400);
-    expect((await res.json()).error).toBe("invalid_dossier");
+    expect((await res.json()).error).toBe("invalid_context");
+  });
+
+  test("refuses to poll a job id it never issued", async ({ request }) => {
+    const res = await request.post("/api/audit/analyze", {
+      headers: freshIp(),
+      data: { context: { v: 1 }, signature: "0".repeat(64), jobId: "resp_someoneelsesjob", token: "0".repeat(64) },
+    });
+    // The context is checked first, so a forged pair never reaches OpenAI.
+    expect(res.status()).toBe(400);
   });
 
   test("returns a complete, degraded report for a blocked SSRF target — never a 500", async ({ request }) => {

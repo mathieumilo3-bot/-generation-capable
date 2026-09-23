@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
-import { buildDossier, signDossier } from "@/lib/audit-engine/diagnostic";
+import { buildDossier, signContext, signJob, startInvestigation, toAuditContext } from "@/lib/audit-engine/diagnostic";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
 /**
- * Stage 1 of the diagnostic: reads the official site (multi-page crawl),
- * extracts verifiable facts, then runs the targeted web research. Returns a
- * signed dossier that stage 2 (/api/audit/analyze) turns into the three
- * cards. Captures no lead and sends no email.
+ * Stage 1 of the diagnostic: read the official site page by page, turn it
+ * into verified facts and site-verified cards, then hand the whole dossier
+ * to a background job that will search the web and write the diagnostic.
+ *
+ * Bounded so the whole request stays comfortably inside the host's
+ * synchronous limit: the crawl gets 5 s, starting the job at most 3.5 s.
+ * Captures no lead and sends no email.
  */
 
 const MAX_BODY_BYTES = 2 * 1024;
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-// Crawl (≤12 s) + research, all under the 60 s synchronous function limit.
-const STAGE_BUDGET_MS = 54_000;
+const CRAWL_BUDGET_MS = 5_000;
+const JOB_START_TIMEOUT_MS = 3_500;
 const FIELD_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, ville: 120 };
 
 function readString(raw: Record<string, unknown>, key: keyof typeof FIELD_LIMITS): string {
@@ -56,15 +59,20 @@ export async function POST(request: Request) {
   }
 
   try {
-    const dossier = await buildDossier(input, { budgetMs: STAGE_BUDGET_MS });
+    const dossier = await buildDossier(input, { budgetMs: CRAWL_BUDGET_MS });
+    const context = toAuditContext(dossier);
+    const jobId = await startInvestigation(dossier, { timeoutMs: JOB_START_TIMEOUT_MS });
+
     return NextResponse.json(
       {
-        dossier,
-        signature: signDossier(dossier),
+        context,
+        signature: signContext(context),
+        ...(jobId ? { jobId, token: signJob("investigation", jobId) } : {}),
         stats: {
-          pagesAnalyzed: dossier.site.pages.length,
-          queriesRun: dossier.research?.webQueries.length ?? 0,
-          sourcesConsulted: dossier.research?.webSources.length ?? 0,
+          pagesAnalyzed: context.stats.pagesAnalyzed,
+          siteReachable: context.stats.siteReachable,
+          evidenceCards: context.evidenceCards.length,
+          investigating: Boolean(jobId),
         },
       },
       { status: 200 }

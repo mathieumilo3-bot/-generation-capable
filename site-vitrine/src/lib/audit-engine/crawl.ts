@@ -104,10 +104,13 @@ export type CrawlOptions = {
   cityHint?: string;
 };
 
-const DEFAULT_MAX_PAGES = 14;
-const DEFAULT_BUDGET_MS = 13_000;
-const PAGE_TIMEOUT_MS = 5_500;
-const CONCURRENCY = 5;
+// The host cuts every request at 10 s, so the crawl works to a hard budget:
+// wide concurrency, short per-page timeouts, and whatever is read when the
+// budget runs out is what the diagnostic is built on.
+const DEFAULT_MAX_PAGES = 12;
+const DEFAULT_BUDGET_MS = 5_000;
+const PAGE_TIMEOUT_MS = 3_000;
+const CONCURRENCY = 8;
 const MAX_TEXT = 20_000;
 
 // ---------------------------------------------------------------------------
@@ -553,7 +556,7 @@ function socialLinksIn(htmls: string[]): Partial<Record<SocialNetwork, string>> 
 async function withBudget<T>(items: T[], worker: (item: T) => Promise<void>, deadline: number): Promise<void> {
   const queue = [...items];
   const runners = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
-    while (queue.length > 0 && Date.now() < deadline - 800) {
+    while (queue.length > 0 && Date.now() < deadline - 500) {
       const item = queue.shift()!;
       await worker(item);
     }
@@ -570,7 +573,7 @@ export async function crawlSite(rawUrl: string, options: CrawlOptions = {}): Pro
   const maxPages = options.maxPages ?? DEFAULT_MAX_PAGES;
   const remaining = () => Math.max(1_000, Math.min(PAGE_TIMEOUT_MS, deadline - Date.now()));
 
-  const homeFetch = await fetchPage(rawUrl, { timeoutMs: Math.min(7_000, budget) });
+  const homeFetch = await fetchPage(rawUrl, { timeoutMs: Math.min(4_000, budget) });
   const homeSignals = signalsFromFetch(homeFetch);
   if (!homeFetch.ok) {
     return {
@@ -598,8 +601,8 @@ export async function crawlSite(rawUrl: string, options: CrawlOptions = {}): Pro
   let sitemapPages: string[] = [];
   let sitemapFound = false;
   for (const path of ["/sitemap.xml", "/sitemap_index.xml", "/wp-sitemap.xml"]) {
-    if (Date.now() > deadline - 3_000) break;
-    const result = await fetchPage(new URL(path, root).toString(), { acceptXml: true, timeoutMs: Math.min(4_000, remaining()) });
+    if (Date.now() > deadline - 2_000) break;
+    const result = await fetchPage(new URL(path, root).toString(), { acceptXml: true, timeoutMs: Math.min(2_500, remaining()) });
     if (!result.ok || !/<(urlset|sitemapindex)/i.test(result.html)) continue;
     sitemapFound = true;
     const parsed = parseSitemap(result.html);
@@ -609,7 +612,7 @@ export async function crawlSite(rawUrl: string, options: CrawlOptions = {}): Pro
       .sort((a, b) => Number(/page/i.test(b)) - Number(/page/i.test(a)))
       .slice(0, 3);
     const childResults = await Promise.all(
-      children.map((child) => fetchPage(child, { acceptXml: true, timeoutMs: Math.min(4_000, remaining()) }))
+      children.map((child) => fetchPage(child, { acceptXml: true, timeoutMs: Math.min(2_500, remaining()) }))
     );
     for (const child of childResults) if (child.ok) sitemapPages.push(...parseSitemap(child.html).pages);
     break;

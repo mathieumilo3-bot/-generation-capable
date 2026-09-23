@@ -1,26 +1,36 @@
 import { NextResponse } from "next/server";
-import { diagnoseDossier, verifyDossier } from "@/lib/audit-engine/diagnostic";
-import { reportFromDiagnostic, runAudit } from "@/lib/audit-engine/engine";
+import {
+  collectInvestigation,
+  siteOnlyDiagnostic,
+  verifyContext,
+  verifyJob,
+  type AuditContext,
+} from "@/lib/audit-engine/diagnostic";
+import { reportFromContext, runAudit } from "@/lib/audit-engine/engine";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
 /**
- * Stage 2 of the diagnostic: turns the signed dossier produced by
- * /api/audit/research into the three validated cards and returns a Report.
+ * Stage 2 of the diagnostic: read the background investigation once and,
+ * when it lands, validate every card before returning the report.
  *
- * Without a dossier (research stage failed, older client), it runs the
- * one-shot pipeline instead — shorter research, same validation.
+ * Three shapes, all short:
+ *  - context + job  → poll; "pending" until the investigation finishes.
+ *  - context alone  → the site-verified diagnostic (what ships when the
+ *                     investigation could not be started or gave nothing).
+ *  - company fields → a bounded crawl + site-verified diagnostic, for a
+ *                     client that never reached stage 1.
  *
  * Deliberately separate from POST /api/audit: this endpoint captures no
  * lead and sends no email.
  */
 
-const MAX_BODY_BYTES = 160 * 1024; // a signed dossier: ~14 pages of bounded excerpts + research notes.
-const RATE_LIMIT_MAX = 10;
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const MAX_BODY_BYTES = 150 * 1024; // a signed context: bounded evidence + anchors.
+const WINDOW_MS = 10 * 60 * 1000;
+const START_MAX = 10;
+const POLL_MAX = 300;
 const FIELD_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 240, ville: 120 };
-// Below Netlify's 60 s synchronous execution limit.
-const ANALYZE_TIMEOUT_MS = 58_000;
-const SYNTHESIS_TIMEOUT_MS = 52_000;
+// Well inside the host's synchronous limit: one poll, or one bounded crawl.
+const REQUEST_TIMEOUT_MS = 8_500;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -36,14 +46,6 @@ function readString(raw: Record<string, unknown>, key: keyof typeof FIELD_LIMITS
 
 export async function POST(request: Request) {
   const ip = clientIpFrom(request);
-  const limit = rateLimit(`audit-analyze:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
-
-  if (!limit.allowed) {
-    return NextResponse.json(
-      { error: "rate_limited" },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
-    );
-  }
 
   const rawBody = await request.text();
   if (rawBody.length > MAX_BODY_BYTES) {
@@ -64,18 +66,46 @@ export async function POST(request: Request) {
   const source = payload as Record<string, unknown>;
   const objectif = readString(source, "objectif");
 
-  if ("dossier" in source) {
-    if (!verifyDossier(source.dossier, source.signature)) {
-      return NextResponse.json({ error: "invalid_dossier" }, { status: 400 });
+  // --- context-driven: poll the investigation, or ship what the site proved ---
+  if ("context" in source) {
+    const limit = rateLimit(`audit-analyze-poll:${ip}`, POLL_MAX, WINDOW_MS);
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
     }
-    const dossier = source.dossier;
+    if (!verifyContext(source.context, source.signature)) {
+      return NextResponse.json({ error: "invalid_context" }, { status: 400 });
+    }
+    const context: AuditContext = source.context;
+
+    if (source.jobId === undefined) {
+      return NextResponse.json({ status: "done", report: reportFromContext(context, siteOnlyDiagnostic(context), objectif) }, { status: 200 });
+    }
+    if (!verifyJob("investigation", source.jobId, source.token)) {
+      return NextResponse.json({ error: "invalid_job" }, { status: 400 });
+    }
+
     try {
-      const diagnostic = await withTimeout(diagnoseDossier(dossier, { timeoutMs: SYNTHESIS_TIMEOUT_MS }), ANALYZE_TIMEOUT_MS);
-      return NextResponse.json({ report: reportFromDiagnostic(dossier, diagnostic, objectif) }, { status: 200 });
+      const outcome = await withTimeout(collectInvestigation(source.jobId, context), REQUEST_TIMEOUT_MS);
+      if (outcome.status === "pending") return NextResponse.json({ status: "pending" }, { status: 200 });
+      if (outcome.status === "failed") {
+        // The investigation is gone for good: ship the site-verified cards
+        // rather than leaving the visitor with nothing.
+        return NextResponse.json(
+          { status: "done", degradedTo: "site", report: reportFromContext(context, siteOnlyDiagnostic(context), objectif) },
+          { status: 200 }
+        );
+      }
+      return NextResponse.json({ status: "done", report: reportFromContext(context, outcome.diagnostic, objectif) }, { status: 200 });
     } catch (error) {
-      console.error("[audit/analyze] diagnosis failed:", error);
-      return NextResponse.json({ error: "analysis_failed" }, { status: 502 });
+      console.error("[audit/analyze] poll failed:", error);
+      return NextResponse.json({ status: "pending" }, { status: 200 });
     }
+  }
+
+  // --- no context: crawl and diagnose from the site alone, bounded ---
+  const limit = rateLimit(`audit-analyze:${ip}`, START_MAX, WINDOW_MS);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
   }
 
   const entreprise = readString(source, "entreprise");
@@ -88,8 +118,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const report = await withTimeout(runAudit({ entreprise, siteUrl, secteur, objectif, ville }), ANALYZE_TIMEOUT_MS);
-    return NextResponse.json({ report }, { status: 200 });
+    const report = await withTimeout(runAudit({ entreprise, siteUrl, secteur, objectif, ville }), REQUEST_TIMEOUT_MS);
+    return NextResponse.json({ status: "done", report }, { status: 200 });
   } catch (error) {
     // Reaching here means our own outer timeout fired, or a genuine bug.
     console.error("[audit/analyze] engine failed:", error);

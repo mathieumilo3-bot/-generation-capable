@@ -96,25 +96,48 @@ async function acceptConsentIfShown(page: Page) {
   }
 }
 
-async function mockApis(page: Page, discover: unknown = { candidates: [COMPANY], webSources: [] }) {
+async function mockApis(page: Page, candidates: unknown[] = [COMPANY]) {
   const calls: Record<string, string[]> = { discover: [], research: [], analyze: [] };
+
+  // Discovery and the investigation run as background jobs: the client
+  // starts one, then polls. The mocks mirror that contract exactly.
   await page.route("**/api/audit/discover", (route) => {
-    calls.discover.push(route.request().postData() ?? "");
-    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(discover) });
+    const body = route.request().postData() ?? "";
+    calls.discover.push(body);
+    const polling = body.includes("jobId");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(
+        polling
+          ? { status: "done", candidates }
+          : { status: "started", jobId: "resp_testdiscovery1", token: "t".repeat(64) }
+      ),
+    });
   });
+
   await page.route("**/api/audit/intent", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+
   await page.route("**/api/audit/research", (route) => {
     calls.research.push(route.request().postData() ?? "");
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ dossier: { v: 1 }, signature: "a".repeat(64), stats: { pagesAnalyzed: 8, queriesRun: 8, sourcesConsulted: 14 } }),
+      body: JSON.stringify({
+        context: { v: 1 },
+        signature: "a".repeat(64),
+        jobId: "resp_testinvestigation1",
+        token: "b".repeat(64),
+        stats: { pagesAnalyzed: 8, siteReachable: true, evidenceCards: 6, investigating: true },
+      }),
     });
   });
+
   await page.route("**/api/audit/analyze", (route) => {
     calls.analyze.push(route.request().postData() ?? "");
-    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ report: REPORT }) });
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "done", report: REPORT }) });
   });
+
   return calls;
 }
 
@@ -148,8 +171,12 @@ test.describe("Audit funnel — nom → diagnostic", () => {
     await expect(page.getByRole("heading", { name: "Votre diagnostic est prêt." })).toBeVisible();
 
     expect(JSON.parse(calls.research[0])).toMatchObject({ entreprise: "Martin Couverture", siteUrl: COMPANY.website, ville: "Vannes" });
-    // Stage 2 receives the signed dossier, not a bare company name.
-    expect(JSON.parse(calls.analyze[0])).toMatchObject({ signature: "a".repeat(64), dossier: { v: 1 } });
+    // Stage 2 polls the signed job, it never re-sends a bare company name.
+    expect(JSON.parse(calls.analyze[0])).toMatchObject({
+      signature: "a".repeat(64),
+      context: { v: 1 },
+      jobId: "resp_testinvestigation1",
+    });
   });
 
   test("the final button opens the booking page with attribution", async ({ page }) => {
@@ -169,26 +196,23 @@ test.describe("Audit funnel — nom → diagnostic", () => {
   });
 
   test("asks only for the city when the company is ambiguous, then resumes", async ({ page }) => {
-    const calls = await mockApis(page, {
-      candidates: [
-        { ...COMPANY, confidence: "medium" },
-        { ...COMPANY, city: "Lyon", website: "https://martin-couverture-lyon.fr/", confidence: "medium" },
-      ],
-      webSources: [],
-    });
+    const calls = await mockApis(page, [
+      { ...COMPANY, confidence: "medium" },
+      { ...COMPANY, city: "Lyon", website: "https://martin-couverture-lyon.fr/", confidence: "medium" },
+    ]);
     await start(page, "Martin Couverture");
 
     const city = page.getByLabel("Ville ou code postal");
-    await expect(city).toBeVisible();
+    await expect(city).toBeVisible({ timeout: 15_000 });
     expect(calls.research).toHaveLength(0);
 
     await city.fill("56000");
     await page.getByRole("button", { name: /Continuer l’analyse/ }).click();
     await expect(page.getByTestId("diagnostic-card")).toHaveCount(3);
-    expect(JSON.parse(calls.discover[1])).toMatchObject({ companyName: "Martin Couverture", cityHint: "56000" });
+    expect(JSON.parse(calls.discover[calls.discover.length - 1])).toMatchObject({ companyName: "Martin Couverture", cityHint: "56000" });
   });
 
-  test("falls back to the one-shot analysis when the research stage fails", async ({ page }) => {
+  test("falls back to a site-only analysis when the research stage fails", async ({ page }) => {
     const calls = await mockApis(page);
     await page.unroute("**/api/audit/research");
     await page.route("**/api/audit/research", (route) => route.fulfill({ status: 502, body: "{}" }));
@@ -214,5 +238,50 @@ test.describe("Audit funnel — nom → diagnostic", () => {
     await expect(page.getByTestId("diagnostic-card")).toHaveCount(3);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe("Audit funnel — resilience", () => {
+  test("keeps polling while the investigation runs, then shows its cards", async ({ page }) => {
+    const calls = await mockApis(page);
+    await page.unroute("**/api/audit/analyze");
+    let polls = 0;
+    await page.route("**/api/audit/analyze", (route) => {
+      const body = route.request().postData() ?? "";
+      calls.analyze.push(body);
+      polls += 1;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(polls < 3 ? { status: "pending" } : { status: "done", report: REPORT }),
+      });
+    });
+
+    await start(page);
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3, { timeout: 60_000 });
+    expect(polls).toBeGreaterThanOrEqual(3);
+  });
+
+  test("ships the site-verified cards when no investigation could be started", async ({ page }) => {
+    const calls = await mockApis(page);
+    await page.unroute("**/api/audit/research");
+    await page.route("**/api/audit/research", (route) => {
+      calls.research.push(route.request().postData() ?? "");
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          context: { v: 1 },
+          signature: "a".repeat(64),
+          stats: { pagesAnalyzed: 8, siteReachable: true, evidenceCards: 6, investigating: false },
+        }),
+      });
+    });
+
+    await start(page);
+    await expect(page.getByTestId("diagnostic-card")).toHaveCount(3, { timeout: 60_000 });
+    // Straight to the site-verified diagnostic: no job to poll.
+    expect(JSON.parse(calls.analyze[0])).toMatchObject({ context: { v: 1 }, signature: "a".repeat(64) });
+    expect(calls.analyze[0]).not.toContain("jobId");
   });
 });

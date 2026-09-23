@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { FIELD_LIMITS } from "@/lib/audit-submission";
 import { track } from "@/lib/tracking";
@@ -8,9 +8,18 @@ import type { Report } from "@/lib/audit-engine/types";
 import type { BookingAttribution } from "@/lib/booking";
 
 type ResearchResponse = {
-  dossier: unknown;
+  context: unknown;
   signature: string;
-  stats: { pagesAnalyzed: number; queriesRun: number; sourcesConsulted: number };
+  jobId?: string;
+  token?: string;
+  stats: { pagesAnalyzed: number; siteReachable: boolean; evidenceCards: number; investigating: boolean };
+};
+
+type DiscoverResponse = {
+  status?: "started" | "pending" | "done" | "failed" | "unavailable";
+  jobId?: string;
+  token?: string;
+  candidates?: CompanyDiscoveryCandidate[];
 };
 
 type CompanyDiscoveryCandidate = {
@@ -20,8 +29,35 @@ type CompanyDiscoveryCandidate = {
   city: string;
   summary: string;
   confidence: "high" | "medium" | "low";
-  insights: { title: string; insight: string; evidence: string[] }[];
 };
+
+/**
+ * The host cuts every request at 10 seconds, while a real investigation
+ * runs far longer — so the server starts a background job and we poll it.
+ * Waiting here, in the browser, is what buys the diagnostic its depth.
+ */
+const FIRST_POLL_MS = 1_200;
+const POLL_INTERVAL_MS = 2_500;
+const DISCOVERY_DEADLINE_MS = 75_000;
+const INVESTIGATION_DEADLINE_MS = 120_000;
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function postJson<T>(url: string, body: unknown): Promise<T | null> {
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
 
 const COMPANY_FIELD_ID = "audit-company-name";
 const CITY_FIELD_ID = "audit-company-city";
@@ -72,8 +108,11 @@ export function AuditFunnel() {
     }
   }, []);
 
+  const progressRef = useRef(0);
+
   function advance(value: number, label: string) {
-    setProgress((current) => Math.max(current, value));
+    progressRef.current = Math.max(progressRef.current, value);
+    setProgress(progressRef.current);
     setProgressLabel(label);
   }
 
@@ -134,6 +173,8 @@ export function AuditFunnel() {
 
     setError(null);
     setRunning(true);
+    progressRef.current = 0;
+    setProgress(0);
     advance(8, "Nom reçu · recherche de l’entreprise");
     track("form_started");
     track("audit_step_1");
@@ -142,57 +183,65 @@ export function AuditFunnel() {
     let candidate: CompanyDiscoveryCandidate | null = null;
 
     try {
-      const discoverRes = await fetch("/api/audit/discover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          companyName: rawName,
-          ...(rawCity ? { cityHint: rawCity } : {}),
-        }),
+      const started = await postJson<DiscoverResponse>("/api/audit/discover", {
+        companyName: rawName,
+        ...(rawCity ? { cityHint: rawCity } : {}),
       });
 
-      if (discoverRes.ok) {
-        const body = (await discoverRes.json()) as { candidates?: CompanyDiscoveryCandidate[] };
-        const candidates = body.candidates ?? [];
-        const websiteCandidates = candidates.filter((item) => item.website);
-        candidate =
-          websiteCandidates.find((item) => item.confidence === "high") ??
-          websiteCandidates.find((item) => item.confidence === "medium") ??
-          websiteCandidates[0] ??
-          candidates.find((item) => item.confidence === "high") ??
-          candidates.find((item) => item.confidence === "medium") ??
-          candidates[0] ??
-          null;
-
-        // A second plausible company elsewhere (not a weak echo of the same
-        // one) is real ambiguity: the city decides.
-        const distinctMatches = new Set(
-          candidates
-            .filter((item) => item === candidate || item.confidence !== "low")
-            .map((item) => item.city.trim().toLowerCase() || item.website)
-        ).size;
-
-        const needsDisambiguation =
-          !rawCity &&
-          (
-            !candidate ||
-            !candidate.website ||
-            candidate.confidence !== "high" ||
-            distinctMatches > 1
-          );
-
-        if (needsDisambiguation) {
-          setDiscovery(candidate);
-          setNeedsCity(true);
-          setRunning(false);
-          setProgress(0);
-          setProgressLabel("Prêt à reprendre");
-          track("audit_company_disambiguation_requested", {
-            candidate_count: candidates.length,
-            website_found: Boolean(candidate?.website),
+      let candidates: CompanyDiscoveryCandidate[] = started?.status === "done" ? (started.candidates ?? []) : [];
+      if (started?.status === "started" && started.jobId && started.token) {
+        const deadline = Date.now() + DISCOVERY_DEADLINE_MS;
+        let first = true;
+        while (Date.now() < deadline) {
+          await wait(first ? FIRST_POLL_MS : POLL_INTERVAL_MS);
+          first = false;
+          const poll = await postJson<DiscoverResponse>("/api/audit/discover", {
+            companyName: rawName,
+            ...(rawCity ? { cityHint: rawCity } : {}),
+            jobId: started.jobId,
+            token: started.token,
           });
-          return;
+          if (!poll || poll.status === "failed") break;
+          if (poll.status === "done") {
+            candidates = poll.candidates ?? [];
+            break;
+          }
+          advance(Math.min(26, progressRef.current + 2), "Recherche de votre entreprise · sources publiques");
         }
+      }
+
+      const websiteCandidates = candidates.filter((item) => item.website);
+      candidate =
+        websiteCandidates.find((item) => item.confidence === "high") ??
+        websiteCandidates.find((item) => item.confidence === "medium") ??
+        websiteCandidates[0] ??
+        candidates.find((item) => item.confidence === "high") ??
+        candidates.find((item) => item.confidence === "medium") ??
+        candidates[0] ??
+        null;
+
+      // A second plausible company elsewhere (not a weak echo of the same
+      // one) is real ambiguity: the city decides.
+      const distinctMatches = new Set(
+        candidates
+          .filter((item) => item === candidate || item.confidence !== "low")
+          .map((item) => item.city.trim().toLowerCase() || item.website)
+      ).size;
+
+      const needsDisambiguation =
+        !rawCity && candidates.length > 0 && (!candidate || !candidate.website || candidate.confidence !== "high" || distinctMatches > 1);
+
+      if (needsDisambiguation) {
+        setDiscovery(candidate);
+        setNeedsCity(true);
+        setRunning(false);
+        setProgress(0);
+        setProgressLabel("Prêt à reprendre");
+        track("audit_company_disambiguation_requested", {
+          candidate_count: candidates.length,
+          website_found: Boolean(candidate?.website),
+        });
+        return;
       }
 
       if (candidate) {
@@ -222,59 +271,73 @@ export function AuditFunnel() {
         ville: resolvedCity,
       };
 
-      // Stage 1 — read the site page by page, then targeted web research.
+      // Stage 1 — read the site page by page, then hand it to the
+      // background investigation.
       setProgressLabel(
         resolvedSite
-          ? "Lecture de votre site page par page · recherches Google en cours"
+          ? "Lecture de votre site page par page"
           : "Recherche de vos traces publiques · annuaires, réseaux, avis"
       );
-      const research = await fetch("/api/audit/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(companyInput),
-      })
-        .then(async (res) => (res.ok ? ((await res.json()) as ResearchResponse) : null))
-        .catch(() => null);
+      const research = await postJson<ResearchResponse>("/api/audit/research", companyInput);
 
       if (research) {
-        const { pagesAnalyzed, queriesRun } = research.stats;
+        const pages = research.stats.pagesAnalyzed;
         advance(
-          72,
-          [
-            pagesAnalyzed ? `${pagesAnalyzed} page${pagesAnalyzed > 1 ? "s" : ""} du site lue${pagesAnalyzed > 1 ? "s" : ""}` : "",
-            queriesRun ? `${queriesRun} recherche${queriesRun > 1 ? "s" : ""} web` : "",
-          ]
-            .filter(Boolean)
-            .join(" · ") || "Sources publiques consultées"
+          52,
+          pages > 1
+            ? `${pages} pages de votre site analysées`
+            : research.stats.siteReachable
+              ? "Page d’accueil analysée"
+              : "Site officiel non lisible · recherche publique en cours"
         );
       } else {
-        advance(52, "Recherche élargie en cours");
+        advance(40, "Recherche élargie en cours");
       }
-      setProgressLabel("Sélection des 3 points qui vous coûtent le plus de demandes");
 
-      // Stage 2 — write and verify the three cards from what was found.
-      const report = await fetch("/api/audit/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          research
-            ? { dossier: research.dossier, signature: research.signature, objectif: FIXED_OBJECTIVE }
-            : { ...companyInput, objectif: FIXED_OBJECTIVE }
-        ),
-      })
-        .then(async (res) => {
-          if (!res.ok) return null;
-          const body = (await res.json()) as { report?: Report };
-          return body.report ?? null;
-        })
-        .catch(() => null);
+      // Stage 2 — the investigation runs on the model side; we poll it.
+      let report: Report | null = null;
+      if (research?.jobId && research.token) {
+        setProgressLabel("Recherches Google, annuaires et avis · comparaison avec votre site");
+        const deadline = Date.now() + INVESTIGATION_DEADLINE_MS;
+        let first = true;
+        while (Date.now() < deadline && !report) {
+          await wait(first ? FIRST_POLL_MS : POLL_INTERVAL_MS);
+          first = false;
+          const poll = await postJson<{ status?: string; report?: Report }>("/api/audit/analyze", {
+            context: research.context,
+            signature: research.signature,
+            jobId: research.jobId,
+            token: research.token,
+            objectif: FIXED_OBJECTIVE,
+          });
+          if (poll?.status === "done" && poll.report) {
+            report = poll.report;
+            break;
+          }
+          if (!poll) break;
+          advance(Math.min(92, progressRef.current + 2), "Recoupement des sources et sélection des priorités");
+        }
+      }
+
+      // Whatever happened above, the visitor still gets what the site itself
+      // proved — never a blank page, never an invented diagnostic.
+      if (!report) {
+        setProgressLabel("Finalisation du diagnostic");
+        const fallback = research
+          ? await postJson<{ report?: Report }>("/api/audit/analyze", {
+              context: research.context,
+              signature: research.signature,
+              objectif: FIXED_OBJECTIVE,
+            })
+          : await postJson<{ report?: Report }>("/api/audit/analyze", { ...companyInput, objectif: FIXED_OBJECTIVE });
+        report = fallback?.report ?? null;
+      }
 
       if (!report) {
         setError("L’analyse n’a pas pu être finalisée. Relancez le diagnostic dans quelques instants.");
         setRunning(false);
         return;
       }
-
 
       try {
         sessionStorage.setItem(
@@ -358,7 +421,8 @@ export function AuditFunnel() {
     const steps = [
       { at: 8, label: "Nom reçu" },
       { at: 30, label: "Entreprise identifiée · site officiel vérifié" },
-      { at: 72, label: "Site lu page par page · recherches Google, annuaires, avis" },
+      { at: 52, label: "Site lu page par page" },
+      { at: 92, label: "Recherches Google, annuaires et avis recoupées" },
       { at: 100, label: "3 constats rédigés et vérifiés" },
     ];
     const next = steps.find((item) => item.at > progress)?.at;

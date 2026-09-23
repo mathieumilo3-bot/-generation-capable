@@ -3,14 +3,20 @@ import { classifyUrl, crawlSite, parseHomeLayout } from "./crawl";
 import { buildEvidenceCards, extractFacts, pickTopCards, potentialForScore } from "./facts";
 import {
   buildDossier,
+  collectInvestigation,
   diagnoseDossier,
   dossierAnchors,
   dossierHaystack,
   mergeCards,
   researchQueries,
   signDossier,
+  signJob,
+  siteOnlyDiagnostic,
+  startInvestigation,
+  toAuditContext,
   validateCard,
   verifyDossier,
+  verifyJob,
   type Dossier,
 } from "./diagnostic";
 import { verifyOfficialSite } from "./company-discovery";
@@ -162,7 +168,7 @@ describe("card validation", () => {
   it("accepts a specific card and forces a coherent potential", async () => {
     const dossier = await dossierFixture();
     const ctx = { haystack: dossierHaystack(dossier), anchors: dossierAnchors(dossier) };
-    const result = validateCard({ ...good, score: 2 }, dossier, ctx);
+    const result = validateCard({ ...good, score: 2 }, ctx);
     expect("reason" in result).toBe(false);
     if (!("reason" in result)) expect(result.potential).toBe("très fort");
   });
@@ -176,13 +182,13 @@ describe("card validation", () => {
       ctx
     );
     expect(generic).toMatchObject({ reason: expect.any(String) });
-    expect(validateCard({ ...good, loss: "Vous perdez environ 30 % de vos demandes." }, dossier, ctx)).toMatchObject({ reason: "chiffre non observé" });
-    expect(validateCard({ ...good, loss: "Vous perdez 12 clients par mois." }, dossier, ctx)).toMatchObject({ reason: "chiffre non observé" });
-    expect(validateCard({ ...good, finding: "Vous êtes en 7e position sur Google pour isolation extérieure." }, dossier, ctx)).toMatchObject({
+    expect(validateCard({ ...good, loss: "Vous perdez environ 30 % de vos demandes." }, ctx)).toMatchObject({ reason: "chiffre non observé" });
+    expect(validateCard({ ...good, loss: "Vous perdez 12 clients par mois." }, ctx)).toMatchObject({ reason: "chiffre non observé" });
+    expect(validateCard({ ...good, finding: "Vous êtes en 7e position sur Google pour isolation extérieure." }, ctx)).toMatchObject({
       reason: "chiffre non observé",
     });
     expect(
-      validateCard({ ...good, seen: "La page d’accueil dit « nous sommes les meilleurs couvreurs de Bretagne depuis toujours »." }, dossier, ctx)
+      validateCard({ ...good, seen: "La page d’accueil dit « nous sommes les meilleurs couvreurs de Bretagne depuis toujours »." }, ctx)
     ).toMatchObject({ reason: "citation introuvable dans les sources" });
   });
 
@@ -273,5 +279,209 @@ describe("verifyOfficialSite", () => {
     const result = await verifyOfficialSite({ ...candidate, confidence: "high" }, { fetchPage: fakeFetch({}) });
     expect(result.confidence).toBe("medium");
     expect(result.website).toBe(ROOT);
+  });
+});
+
+describe("background investigation", () => {
+  function reply(body: unknown, status = 200) {
+    return (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+  }
+
+  it("starts a job and returns only the id — no waiting", async () => {
+    const dossier = await dossierFixture();
+    const calls: RequestInit[] = [];
+    const fetchFn = (async (_url: string, init: RequestInit) => {
+      calls.push(init);
+      return new Response(JSON.stringify({ id: "resp_abc123456789", status: "queued" }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const jobId = await startInvestigation(dossier, { apiKey: "test", fetchFn });
+    expect(jobId).toBe("resp_abc123456789");
+    const body = JSON.parse(String(calls[0].body));
+    expect(body.background).toBe(true);
+    expect(body.tools[0].type).toBe("web_search");
+    // The prompt carries the verified facts, so the model never re-guesses them.
+    expect(String(body.input[1].content)).toContain("isolation extérieure");
+  });
+
+  it("reports pending while the job runs, then validates the cards it returns", async () => {
+    const dossier = await dossierFixture();
+    const context = toAuditContext(dossier);
+
+    const pending = await collectInvestigation("resp_abc123456789", context, {
+      apiKey: "test",
+      fetchFn: reply({ status: "in_progress" }),
+    });
+    expect(pending.status).toBe("pending");
+
+    const done = await collectInvestigation("resp_abc123456789", context, {
+      apiKey: "test",
+      fetchFn: reply({
+        status: "completed",
+        output: [
+          {
+            type: "web_search_call",
+            action: { queries: ["couvreur Vannes", "isolation extérieure Vannes"], sources: [{ url: "https://exemple.fr/a", title: "Annuaire" }] },
+          },
+          {
+            type: "message",
+            content: [
+              {
+                type: "output_text",
+                text: JSON.stringify({
+                  research: {
+                    identityCheck: "Le site correspond bien à Martin Couverture à Vannes.",
+                    observations: [
+                      {
+                        axis: "trouve",
+                        query: "isolation extérieure Vannes",
+                        finding: "Des concurrents avec une page dédiée ressortent avant le site dans les résultats consultés.",
+                        sourceUrl: "https://exemple.fr/a",
+                      },
+                    ],
+                    profiles: [{ platform: "Facebook", url: "https://www.facebook.com/martincouverture56", note: "Chantiers récents publiés." }],
+                    reviews: "non trouvé",
+                    servicesOutsideSite: [],
+                    inconsistencies: [],
+                  },
+                  summary: "Couvreur · Vannes — 8 pages du site et 2 recherches analysées.",
+                  cards: [
+                    {
+                      axis: "trouve",
+                      title: "Visibilité du service isolation extérieure",
+                      score: 4,
+                      finding: "Le service isolation extérieure est cité sur l’accueil mais n’a aucune page dédiée.",
+                      seen: "Dans les résultats consultés pour « isolation extérieure Vannes », des concurrents avec une page dédiée ressortent.",
+                      loss: "Des prospects qui cherchent ce service peuvent trouver un concurrent avant vous.",
+                      potentialText: "Une page dédiée correspondrait à ces recherches.",
+                      fix: "Créer une page « Isolation extérieure Vannes » avec 3 chantiers et un bouton devis.",
+                      basis: "site + recherche",
+                    },
+                  ],
+                }),
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    expect(done.status).toBe("done");
+    if (done.status !== "done") return;
+    expect(done.diagnostic.mode).toBe("ai");
+    expect(done.diagnostic.cards[0].potential).toBe("fort");
+    expect(done.diagnostic.queriesRun).toBe(2);
+    expect(done.diagnostic.cards).toHaveLength(3);
+  });
+
+  it("treats a terminal OpenAI status as failed, not as an endless wait", async () => {
+    const dossier = await dossierFixture();
+    const outcome = await collectInvestigation("resp_abc123456789", toAuditContext(dossier), {
+      apiKey: "test",
+      fetchFn: reply({ status: "failed" }),
+    });
+    expect(outcome).toMatchObject({ status: "failed" });
+  });
+
+  it("only polls job ids this server issued", async () => {
+    expect(verifyJob("investigation", "resp_abc123456789", signJob("investigation", "resp_abc123456789"))).toBe(true);
+    expect(verifyJob("investigation", "resp_abc123456789", signJob("discovery", "resp_abc123456789"))).toBe(false);
+    expect(verifyJob("investigation", "resp_forged987654321", signJob("investigation", "resp_abc123456789"))).toBe(false);
+    expect(verifyJob("investigation", "not-an-id", "0".repeat(64))).toBe(false);
+  });
+
+  it("falls back to site-verified cards when the job never lands", async () => {
+    const dossier = await dossierFixture();
+    const result = siteOnlyDiagnostic(toAuditContext(dossier));
+    expect(result.mode).toBe("site");
+    expect(result.cards).toHaveLength(3);
+    expect(result.cards[0].finding.toLowerCase()).toContain("isolation extérieure");
+  });
+});
+
+describe("request budgets", () => {
+  it("keeps the crawl inside the host's request limit even on a slow site", async () => {
+    // Every page takes 2 s: the crawl must stop on its budget, not on the
+    // page count, and still return what it managed to read.
+    const slowFetch = async (url: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      return fakeFetch(ARTISAN_PAGES)(url);
+    };
+    const started = Date.now();
+    const dossier = await buildDossier(
+      { entreprise: "Martin Couverture", siteUrl: ROOT, secteur: "Couvreur / toiture", ville: "Vannes" },
+      { crawl: (url, opts) => crawlSite(url, { ...opts, fetchPage: slowFetch }), apiKey: "", budgetMs: 5_000 }
+    );
+    const elapsed = Date.now() - started;
+    expect(elapsed).toBeLessThan(9_000);
+    expect(dossier.site.pages.length).toBeGreaterThanOrEqual(1);
+  }, 15_000);
+});
+
+describe("company without a readable site", () => {
+  it("still ships research-based cards instead of rejecting everything", async () => {
+    const dossier = await buildDossier(
+      { entreprise: "Toiture Le Gall", siteUrl: "", secteur: "Couvreur / toiture", ville: "Lorient" },
+      { apiKey: "" }
+    );
+    expect(dossier.site.reachable).toBe(false);
+    const context = toAuditContext(dossier);
+
+    const outcome = await collectInvestigation("resp_abc123456789", context, {
+      apiKey: "test",
+      fetchFn: (async () =>
+        new Response(
+          JSON.stringify({
+            status: "completed",
+            output: [
+              {
+                type: "message",
+                content: [
+                  {
+                    type: "output_text",
+                    text: JSON.stringify({
+                      research: {
+                        identityCheck: "Aucun site officiel retrouvé pour Toiture Le Gall à Lorient.",
+                        observations: [
+                          {
+                            axis: "trouve",
+                            query: "couvreur Lorient",
+                            finding: "Seule une fiche annuaire ressort dans les résultats consultés.",
+                            sourceUrl: "https://www.pagesjaunes.fr/exemple",
+                          },
+                        ],
+                        profiles: [{ platform: "PagesJaunes", url: "https://www.pagesjaunes.fr/exemple", note: "Fiche sans photos." }],
+                        reviews: "non trouvé",
+                        servicesOutsideSite: [],
+                        inconsistencies: [],
+                      },
+                      summary: "Couvreur · Lorient — présence publique analysée.",
+                      cards: [
+                        {
+                          axis: "trouve",
+                          title: "Toiture Le Gall n’a pas de site officiel retrouvé",
+                          score: 2,
+                          finding: "Aucun site officiel n’a été retrouvé pour Toiture Le Gall : seule une fiche annuaire ressort.",
+                          seen: "Dans les résultats consultés pour « couvreur Lorient », une fiche PagesJaunes ressort, sans site.",
+                          loss: "Un prospect qui compare plusieurs artisans peut ne trouver aucune preuve de votre travail.",
+                          potentialText: "Une page officielle donnerait un point d’arrivée à toutes vos recherches.",
+                          fix: "Publier une page avec vos services, votre zone, 5 chantiers et un bouton d’appel.",
+                          basis: "recherche",
+                        },
+                      ],
+                    }),
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200 }
+        )) as unknown as typeof fetch,
+    });
+
+    expect(outcome.status).toBe("done");
+    if (outcome.status !== "done") return;
+    expect(outcome.diagnostic.mode).toBe("ai");
+    expect(outcome.diagnostic.cards).toHaveLength(1);
   });
 });
