@@ -151,6 +151,8 @@ export type AiAuditOpportunity = {
   evidence: string[];
   confidence: "observed" | "inferred";
   impact: string;
+  /** One concrete low-risk action the prospect can understand and start immediately. */
+  firstAction?: string;
   callQuestion: string;
 };
 
