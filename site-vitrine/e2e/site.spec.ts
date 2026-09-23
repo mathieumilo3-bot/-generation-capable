@@ -114,12 +114,10 @@ test.describe("navigation", () => {
   test("the primary CTA leads to the audit funnel", async ({ page }) => {
     await page.goto("/");
     await page
-      .getByRole("link", { name: /Analyser mon entreprise/ })
-      .filter({ visible: true })
-      .first()
+      .getByRole("link", { name: /Voir comment gagner plus de demandes/ })
       .click();
     await expect(page).toHaveURL(/\/audit$/);
-    await expect(page.getByRole("heading", { name: "Votre site" })).toBeVisible();
+    await expect(page.getByLabel("Nom de votre entreprise")).toBeVisible();
   });
 });
 
@@ -262,8 +260,8 @@ test.describe("accessibility", () => {
 
   test("no page relies on colour alone for its focus ring", async ({ page }) => {
     await page.goto("/audit");
-    await page.getByLabel("Votre site").focus();
-    const outline = await page.getByLabel("Votre site").evaluate((el) => {
+    await page.getByLabel("Nom de votre entreprise").focus();
+    const outline = await page.getByLabel("Nom de votre entreprise").evaluate((el) => {
       const style = getComputedStyle(el);
       return { border: style.borderColor, shadow: style.boxShadow };
     });
