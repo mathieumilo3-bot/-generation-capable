@@ -11,25 +11,25 @@ type HeroVariant = {
 
 const VARIANTS: Record<string, HeroVariant> = {
   default: {
-    badge: "Pour artisans du bâtiment",
-    title: "Découvrez où votre entreprise peut gagner",
-    accent: "plus de demandes de devis.",
+    badge: "Sites web & acquisition pour artisans",
+    title: "Votre présence en ligne doit faire plus que",
+    accent: "présenter votre métier.",
     body:
-      "Entrez uniquement le nom de votre entreprise. On retrouve votre présence en ligne et on vous montre les 3 leviers les plus utiles à activer pour être mieux trouvé, mieux choisi et plus contacté.",
+      "GC crée et optimise des sites web pour artisans pensés pour être trouvés, rassurer et générer des demandes de devis. Commencez par votre diagnostic gratuit.",
   },
   chantiers: {
-    badge: "Pour artisans du bâtiment",
-    title: "Découvrez où votre entreprise peut gagner",
-    accent: "plus de chantiers.",
+    badge: "Acquisition pour artisans du bâtiment",
+    title: "Transformez votre présence en ligne en",
+    accent: "plus de demandes de chantier.",
     body:
-      "Entrez uniquement le nom de votre entreprise. On retrouve votre présence en ligne et on vous montre les leviers à activer pour transformer plus de recherches en demandes de chantier.",
+      "Site, visibilité locale, preuves et parcours de devis : on identifie les leviers les plus utiles à activer pour votre entreprise.",
   },
   site: {
-    badge: "Diagnostic site pour artisans",
-    title: "Découvrez comment votre site peut",
-    accent: "générer plus de demandes.",
+    badge: "Site web pour artisans",
+    title: "Un site pensé pour votre métier.",
+    accent: "Construit pour générer des demandes.",
     body:
-      "Entrez le nom de votre entreprise. On retrouve votre site et vos signaux publics, puis on vous montre la première amélioration à prioriser.",
+      "Création complète ou refonte : GC construit des sites d’artisans autour de vos prestations, votre zone, vos preuves et votre demande de devis. Le diagnostic vous montre par où commencer.",
   },
   seo: {
     badge: "Diagnostic visibilité locale",
@@ -40,11 +40,17 @@ const VARIANTS: Record<string, HeroVariant> = {
   },
 };
 
-function variantFromContent(content: string | null): HeroVariant {
-  const value = (content || "").toLowerCase();
-  if (value.includes("seo_artisan")) return VARIANTS.seo;
-  if (value.includes("site_artisan")) return VARIANTS.site;
-  if (value.includes("chantiers") || value.includes("artisan_devis")) return VARIANTS.chantiers;
+function variantFromTraffic(content: string | null, term: string | null): HeroVariant {
+  const value = `${content || ""} ${term || ""}`.toLowerCase();
+  if (value.includes("seo_artisan") || value.includes("seo artisan") || value.includes("visibilité google")) return VARIANTS.seo;
+  if (
+    value.includes("site_artisan") ||
+    value.includes("site web artisan") ||
+    value.includes("site internet artisan") ||
+    value.includes("création site artisan") ||
+    value.includes("creation site artisan")
+  ) return VARIANTS.site;
+  if (value.includes("chantiers") || value.includes("artisan_devis") || value.includes("trouver chantier")) return VARIANTS.chantiers;
   return VARIANTS.default;
 }
 
@@ -55,7 +61,7 @@ export function AuditHero() {
     const params = new URLSearchParams(window.location.search);
     // Variant depends on campaign parameters only available in the browser.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setVariant(variantFromContent(params.get("utm_content")));
+    setVariant(variantFromTraffic(params.get("utm_content"), params.get("utm_term")));
   }, []);
 
   return (
