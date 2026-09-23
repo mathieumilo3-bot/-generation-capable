@@ -20,6 +20,13 @@ jobs:
     name: Diagnostic complet sur l'hébergement réel
     runs-on: ubuntu-latest
     steps:
+      - name: Vérifier l'accès au modèle
+        run: |
+          set -euo pipefail
+          HTTP=$(curl -sS -o health.json -w '%{http_code}' --max-time 30 "${{ inputs.base_url }}/api/audit/ai-health")
+          echo "HTTP $HTTP"
+          jq . health.json || cat health.json
+
       - name: Démarrer le diagnostic
         id: start
         run: |

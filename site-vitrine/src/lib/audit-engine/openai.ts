@@ -217,7 +217,25 @@ export async function pollBackgroundResponse<T>(
     const body = (await response.json()) as Record<string, unknown>;
     const openAiStatus = String(body.status ?? "");
     if (openAiStatus === "queued" || openAiStatus === "in_progress") return { status: "pending" };
-    if (openAiStatus !== "completed") return { status: "failed", reason: openAiStatus || "unknown_status" };
+    if (openAiStatus !== "completed") {
+      // Carry the upstream explanation: without it a failed job is a dead
+      // end, and the funnel silently degrades with no way to know why.
+      const error = body.error && typeof body.error === "object" ? (body.error as Record<string, unknown>) : null;
+      const incomplete =
+        body.incomplete_details && typeof body.incomplete_details === "object"
+          ? (body.incomplete_details as Record<string, unknown>)
+          : null;
+      const detail = [
+        typeof error?.code === "string" ? error.code : "",
+        typeof error?.message === "string" ? error.message : "",
+        typeof incomplete?.reason === "string" ? `incomplet: ${incomplete.reason}` : "",
+      ]
+        .filter(Boolean)
+        .join(" — ")
+        .slice(0, 300);
+      console.warn("[audit/openai] job did not complete:", openAiStatus, detail);
+      return { status: "failed", reason: detail ? `${openAiStatus}: ${detail}` : openAiStatus || "unknown_status" };
+    }
 
     const text = extractOutputText(body);
     if (!text) return { status: "failed", reason: "empty_output" };
