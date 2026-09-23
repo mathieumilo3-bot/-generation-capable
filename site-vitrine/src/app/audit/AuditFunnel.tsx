@@ -226,7 +226,7 @@ export function AuditFunnel() {
           consent: "GRANTED",
         }),
       });
-      track("audit_intent_captured" as TrackingEvent, {
+      track("audit_intent_captured", {
         has_site: Boolean(candidate?.website || data.siteUrl),
         has_sector: Boolean(candidate?.sector || data.secteur),
       });
