@@ -216,13 +216,14 @@ METHODE OBLIGATOIRE
 1. Recherche le nom exact entre guillemets, puis le nom + ville/code postal si une ville est fournie.
 2. Recherche ensuite plusieurs variantes : nom + entreprise, nom + métier probable, nom + bâtiment/BTP/artisan, puis nom + ville + métier.
 3. Cherche explicitement le SITE OFFICIEL : nom + "site officiel", nom + domaine, puis recoupe le domaine trouvé avec les mentions légales, le nom, l'adresse, le téléphone, la ville ou les réseaux sociaux.
-4. Utilise les annuaires, Google Business, PagesJaunes, Pappers/Societe, Facebook, Instagram ou LinkedIn comme SOURCES DE RECOUPEMENT, jamais comme website officiel.
-5. Si un domaine semble officiel, vérifie au moins deux signaux convergents parmi : nom exact, ville/adresse, téléphone, métier, mentions légales, lien depuis un profil officiel, branding cohérent.
-6. Le trafic vient de France : privilégie d'abord les entreprises françaises quand le nom n'indique pas un autre pays.
-7. Si plusieurs entreprises portent le même nom, garde plusieurs candidats et baisse confidence. La ville fournie doit départager fortement.
-8. Une entreprise peut être identifiée sans site officiel : dans ce cas website reste vide. N'invente jamais un domaine.
-9. N'abandonne pas parce qu'un site refuse un accès technique : continue à chercher son domaine via les autres sources publiques.
-10. Avant de conclure qu'aucun site n'existe, essaie plusieurs requêtes ciblées et variantes de domaine.
+4. Si le nom saisi est un sigle, une raison sociale ou un ancien nom, IDENTIFIE D'ABORD les passerelles d'identité publiques : enseigne/marque commerciale, dirigeant, adresse, code postal, téléphone, SIREN/SIRET/RCS. Recherche ensuite ces identifiants exacts entre guillemets pour retrouver le domaine utilisé publiquement. Exemple de cas à traiter : une SARL appelée "AATP" peut communiquer sous une enseigne totalement différente sur son site.
+5. Utilise les annuaires, Google Business, PagesJaunes, Pappers/Societe, annuaire-entreprises.data.gouv.fr, Facebook, Instagram ou LinkedIn comme SOURCES DE RECOUPEMENT, jamais comme website officiel.
+6. Si un domaine semble officiel, vérifie au moins deux signaux convergents parmi : raison sociale ou enseigne, ville/adresse, téléphone, métier, SIREN/SIRET/RCS, mentions légales, lien depuis un profil officiel, branding cohérent. Une différence entre raison sociale et marque du site n'est PAS un motif de rejet si les identifiants légaux ou de contact concordent.
+7. Le trafic vient de France : privilégie d'abord les entreprises françaises quand le nom n'indique pas un autre pays.
+8. Si plusieurs entreprises portent le même nom, garde plusieurs candidats et baisse confidence. La ville fournie doit départager fortement.
+9. Une entreprise peut être identifiée sans site officiel : dans ce cas website reste vide. N'invente jamais un domaine.
+10. N'abandonne pas parce qu'un site refuse un accès technique : continue à chercher son domaine via les autres sources publiques.
+11. Avant de conclure qu'aucun site n'existe, essaie AU MINIMUM les variantes suivantes quand les données existent : raison sociale + ville, enseigne + ville, téléphone exact, SIREN/SIRET exact, adresse + métier, dirigeant + métier + ville, puis domaine/mentions légales.
 
 CRITERES DE L'AUDIT GC
 - ATTIRER : présence sur des recherches métier/service/zone sans connaître la marque.
@@ -466,9 +467,13 @@ export async function verifyOfficialSite(
   }
 
   const text = normalize(htmlToText(html));
+  // Legal names and acronyms are often written with spaces or punctuation
+  // in legal notices ("A A T P" vs "AATP"). Keep a compact representation
+  // so a verified legal identity is not discarded just because of typography.
+  const compactText = text.replace(/[^a-z0-9]/g, "");
   const host = normalize(home.finalUrl.hostname.replace(/^www\./, "")).replace(/[^a-z0-9]/g, "");
   const tokens = brandTokens(candidate.name);
-  const inText = tokens.filter((t) => text.includes(t));
+  const inText = tokens.filter((t) => text.includes(t) || compactText.includes(t));
   const inHost = tokens.filter((t) => host.includes(t));
   const needed = Math.min(2, tokens.length);
   const nameMatch = tokens.length > 0 && (inText.length >= needed || inHost.length >= needed || (inHost.length >= 1 && inText.length >= 1));
