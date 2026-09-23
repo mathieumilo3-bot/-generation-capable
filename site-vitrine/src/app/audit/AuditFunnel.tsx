@@ -27,9 +27,11 @@ type CompanyDiscoveryCandidate = {
   city: string;
   summary: string;
   confidence: "high" | "medium" | "low";
-  insightTitle: string;
-  insight: string;
-  evidence: string[];
+  insights: {
+    title: string;
+    insight: string;
+    evidence: string[];
+  }[];
 };
 
 const EMPTY_STATE: FormState = {
@@ -101,16 +103,20 @@ function toEmailSummary(report: Report) {
 }
 
 function toDiscoveryEmailSummary(candidate: CompanyDiscoveryCandidate) {
+  const dimensions = ["Être trouvé", "Être choisi", "Être contacté"];
   return {
     degraded: false,
-    topLeaks: [
-      {
-        title: candidate.insightTitle || "Premier constat sur votre présence en ligne",
-        dimension: "Présence publique",
-        statement: candidate.insight || candidate.summary,
-        recommendation: "",
-      },
-    ],
+    topLeaks: candidate.insights.slice(0, 3).map((item, index) => ({
+      title: item.title,
+      dimension: dimensions[index] ?? "Présence publique",
+      statement: [
+        item.insight,
+        item.evidence.length ? `Preuves : ${item.evidence.join(" · ")}` : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      recommendation: "",
+    })),
     otherFindingsCount: 0,
   };
 }
@@ -367,7 +373,7 @@ export function AuditFunnel() {
       const reportSummary =
         summaryReport?.aiSynthesis
           ? toEmailSummary(summaryReport)
-          : discovery?.insightTitle
+          : discovery?.insights.length
             ? toDiscoveryEmailSummary(discovery)
             : summaryReport
               ? toEmailSummary(summaryReport)
@@ -582,21 +588,26 @@ export function AuditFunnel() {
                   </div>
                 )}
 
-                {discovery?.insightTitle ? (
+                {discovery?.insights[0] ? (
                   <div className="audit-result-glow mt-4 rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] p-5">
                     <span className="text-xs text-[var(--color-muted)]">D’après les éléments publics retrouvés</span>
                     <h2 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-                      {discovery.insightTitle}
+                      {discovery.insights[0].title}
                     </h2>
                     <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-                      {discovery.insight}
+                      {discovery.insights[0].insight}
                     </p>
-                    {discovery.evidence.length > 0 && (
+                    {discovery.insights[0].evidence.length > 0 && (
                       <div className="mt-4 border-t border-[var(--color-border)] pt-3">
-                        {discovery.evidence.slice(0, 2).map((item, index) => (
+                        {discovery.insights[0].evidence.slice(0, 2).map((item, index) => (
                           <p key={index} className="mt-1 text-xs leading-relaxed text-[var(--color-text)]">• {item}</p>
                         ))}
                       </div>
+                    )}
+                    {discovery.insights.length > 1 && (
+                      <p className="mt-4 text-[11px] font-medium text-[var(--color-accent)]">
+                        + {discovery.insights.length - 1} autre{discovery.insights.length > 2 ? "s" : ""} point{discovery.insights.length > 2 ? "s" : ""} déjà identifié{discovery.insights.length > 2 ? "s" : ""}
+                      </p>
                     )}
                   </div>
                 ) : previewFinding ? (
