@@ -18,6 +18,7 @@ type CompanyDiscoveryCandidate = {
 };
 
 const COMPANY_FIELD_ID = "audit-company-name";
+const CITY_FIELD_ID = "audit-company-city";
 const FIXED_OBJECTIVE =
   "Augmenter la visibilité qualifiée et la transformer en davantage de demandes de devis et de prospects qualifiés.";
 
@@ -27,6 +28,8 @@ function inputClass() {
 
 export function AuditFunnel() {
   const [entreprise, setEntreprise] = useState("");
+  const [cityHint, setCityHint] = useState("");
+  const [needsCity, setNeedsCity] = useState(false);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState("Prêt à démarrer");
@@ -110,9 +113,16 @@ export function AuditFunnel() {
     if (running) return;
 
     const rawName = entreprise.trim();
+    const rawCity = cityHint.trim();
     if (rawName.length < 2) {
       setError("Entrez simplement le nom de votre entreprise.");
       document.getElementById(COMPANY_FIELD_ID)?.focus();
+      return;
+    }
+
+    if (needsCity && rawCity.length < 2) {
+      setError("Entrez votre ville ou votre code postal.");
+      document.getElementById(CITY_FIELD_ID)?.focus();
       return;
     }
 
@@ -129,21 +139,54 @@ export function AuditFunnel() {
       const discoverRes = await fetch("/api/audit/discover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName: rawName }),
+        body: JSON.stringify({
+          companyName: rawName,
+          ...(rawCity ? { cityHint: rawCity } : {}),
+        }),
       });
 
       if (discoverRes.ok) {
         const body = (await discoverRes.json()) as { candidates?: CompanyDiscoveryCandidate[] };
         const candidates = body.candidates ?? [];
+        const websiteCandidates = candidates.filter((item) => item.website);
         candidate =
+          websiteCandidates.find((item) => item.confidence === "high") ??
+          websiteCandidates.find((item) => item.confidence === "medium") ??
+          websiteCandidates[0] ??
           candidates.find((item) => item.confidence === "high") ??
           candidates.find((item) => item.confidence === "medium") ??
-          candidates.find((item) => item.website && (item.sector || item.city)) ??
           candidates[0] ??
           null;
+
+        const distinctMatches = new Set(
+          candidates.map((item) => `${item.name.toLowerCase()}|${item.city.toLowerCase()}`)
+        ).size;
+
+        const needsDisambiguation =
+          !rawCity &&
+          (
+            !candidate ||
+            !candidate.website ||
+            candidate.confidence !== "high" ||
+            distinctMatches > 1
+          );
+
+        if (needsDisambiguation) {
+          setDiscovery(candidate);
+          setNeedsCity(true);
+          setRunning(false);
+          setProgress(0);
+          setProgressLabel("Prêt à reprendre");
+          track("audit_company_disambiguation_requested", {
+            candidate_count: candidates.length,
+            website_found: Boolean(candidate?.website),
+          });
+          return;
+        }
       }
 
       if (candidate) {
+        setNeedsCity(false);
         setDiscovery(candidate);
         advance(36, "Entreprise identifiée · activité et zone recoupées");
         track("audit_analysis_completed");
@@ -225,6 +268,57 @@ export function AuditFunnel() {
       setError("L’analyse a rencontré un problème. Réessayez dans quelques instants.");
       setRunning(false);
     }
+  }
+
+  if (needsCity && !running) {
+    return (
+      <form onSubmit={runAudit} className="mx-auto max-w-xl">
+        <div className="rounded-[2rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 sm:p-8">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
+            Une dernière précision
+          </p>
+          <h2 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+            Dans quelle ville est {discovery?.name || entreprise} ?
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+            On l’utilise uniquement pour verrouiller la bonne entreprise et retrouver son site officiel.
+          </p>
+
+          <label htmlFor={CITY_FIELD_ID} className="sr-only">Ville ou code postal</label>
+          <input
+            id={CITY_FIELD_ID}
+            name="city"
+            type="text"
+            autoCapitalize="words"
+            autoCorrect="on"
+            spellCheck
+            autoComplete="address-level2"
+            enterKeyHint="go"
+            maxLength={120}
+            placeholder="Ex : Pontivy ou 56300"
+            className={`${inputClass()} mt-5`}
+            value={cityHint}
+            onChange={(event) => {
+              setCityHint(event.target.value);
+              if (error) setError(null);
+            }}
+          />
+
+          {error && <p className="mt-2 px-1 text-[11px] text-[#e7c872]" role="alert">{error}</p>}
+
+          <button
+            type="submit"
+            className="audit-primary-cta mt-3 inline-flex min-h-[58px] w-full items-center justify-center rounded-[1.15rem] px-6 text-[15px] font-semibold transition-all duration-300"
+          >
+            Continuer l’analyse →
+          </button>
+
+          <p className="mt-3 text-center text-[11px] leading-relaxed text-[var(--color-muted)]">
+            Pas besoin de retrouver votre URL.
+          </p>
+        </div>
+      </form>
+    );
   }
 
   if (running) {
@@ -324,6 +418,9 @@ export function AuditFunnel() {
         value={entreprise}
         onChange={(event) => {
           setEntreprise(event.target.value);
+          setCityHint("");
+          setNeedsCity(false);
+          setDiscovery(null);
           if (error) setError(null);
         }}
       />

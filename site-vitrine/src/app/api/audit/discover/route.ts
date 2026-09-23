@@ -5,7 +5,7 @@ import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 const MAX_BODY_BYTES = 1024;
 const RATE_LIMIT_MAX = 12;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const DISCOVERY_TIMEOUT_MS = 58_000;
+const DISCOVERY_TIMEOUT_MS = 72_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -48,12 +48,20 @@ export async function POST(request: Request) {
       ? ((payload as Record<string, unknown>).companyName as string).trim().slice(0, 160)
       : "";
 
+  const cityHint =
+    typeof (payload as Record<string, unknown>).cityHint === "string"
+      ? ((payload as Record<string, unknown>).cityHint as string).trim().slice(0, 120)
+      : "";
+
   if (companyName.length < 2) {
     return NextResponse.json({ error: "missing_company_name" }, { status: 422 });
   }
 
   try {
-    const result = await withTimeout(discoverCompany(companyName), DISCOVERY_TIMEOUT_MS);
+    const result = await withTimeout(
+      discoverCompany(companyName, { cityHint }),
+      DISCOVERY_TIMEOUT_MS
+    );
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     console.error("[audit/discover] failed:", error);
