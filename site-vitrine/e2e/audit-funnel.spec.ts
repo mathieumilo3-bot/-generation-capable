@@ -35,7 +35,7 @@ async function startDiscovery(page: Page, name = "Dupont Couverture") {
 
 async function reachContact(page: Page) {
   await startDiscovery(page);
-  await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+  await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
   await expect(page.getByRole("heading", { name: "Pourquoi faites-vous ce diagnostic ?" })).toBeVisible();
   await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
   await page.getByRole("button", { name: /Analyser selon mes objectifs/ }).click();
@@ -95,7 +95,7 @@ test.describe("Capable Audit funnel", () => {
 
   test("lets a prospect select up to three qualification objectives", async ({ page }) => {
     await startDiscovery(page);
-    await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+    await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
 
     await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
     await page.getByRole("button", { name: "Plus de visibilité", exact: true }).click();
@@ -123,7 +123,7 @@ test.describe("Capable Audit funnel", () => {
 
   test("skips the trade question when the company sector is identified", async ({ page }) => {
     await startDiscovery(page);
-    await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+    await page.getByRole("button", { name: /Personnaliser mon diagnostic/ }).click();
     await expect(page.getByRole("heading", { name: "Pourquoi faites-vous ce diagnostic ?" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Quel est votre métier principal ?" })).toHaveCount(0);
   });
