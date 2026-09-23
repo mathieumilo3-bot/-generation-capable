@@ -80,14 +80,14 @@ export default function PolitiqueConfidentialitePage() {
               recontacter et à suivre l&apos;avancement commercial de la demande.
               La base légale de ce suivi est l&apos;exécution de mesures
               précontractuelles prises à votre demande (article 6.1.b du RGPD).
-              Lorsque vous avez accepté les finalités de mesure dans le bandeau,
-              le nom d&apos;entreprise saisi, les informations publiques retrouvées
-              à son sujet et l&apos;attribution de campagne peuvent également être
-              transmis à l&apos;équipe GC au moment où le diagnostic démarre, afin
-              de mesurer les audits commencés même lorsqu&apos;ils ne sont pas menés
-              jusqu&apos;à l&apos;étape email. À cette étape, aucune adresse email ni
-              aucun numéro de téléphone n&apos;est collecté si vous ne les avez pas
-              encore saisis.
+              Lorsque vous lancez un diagnostic, le nom d&apos;entreprise
+              saisi et les informations publiques retrouvées à son sujet peuvent
+              être transmis à l&apos;équipe GC afin d&apos;exécuter le diagnostic,
+              d&apos;identifier l&apos;entreprise concernée et de suivre les demandes
+              d&apos;audit. À cette étape, aucune adresse email ni aucun numéro de
+              téléphone ne vous est demandé. L&apos;attribution publicitaire
+              (campagne, identifiant de clic) n&apos;est associée à cette demande
+              que si vous avez accepté les finalités de mesure dans le bandeau.
             </p>
             <p>
               Lorsque vous avez accepté les finalités publicitaires dans le
