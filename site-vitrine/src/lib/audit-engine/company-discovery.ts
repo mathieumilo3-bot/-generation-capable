@@ -4,6 +4,7 @@ import { fetchPublicHtml, type FetchHtmlResult } from "./probe";
 import type { AiAuditWebSource } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
+const FAST_DISCOVERY_MODEL = "gpt-5.6-luna";
 const OPENAI_TIMEOUT_MS = 32_000;
 
 type FetchLike = typeof fetch;
@@ -288,7 +289,11 @@ export async function startCompanyDiscovery(
 ): Promise<string | null> {
   const query = companyName.trim().slice(0, 160);
   if (query.length < 2) return null;
-  return startBackgroundResponse(discoveryCall(query, { ...options, timeoutMs: 5_000 }));
+  const model =
+    options.model ??
+    process.env.OPENAI_DISCOVERY_MODEL ??
+    (options.rescue ? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL : FAST_DISCOVERY_MODEL);
+  return startBackgroundResponse(discoveryCall(query, { ...options, model, timeoutMs: 5_000 }));
 }
 
 export type DiscoveryOutcome =
@@ -358,13 +363,14 @@ async function discoverCompanyUnverified(
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
   if (!apiKey) return { candidates: [], webSources: [] };
 
-  const model = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
+  const fastModel = options.model ?? process.env.OPENAI_DISCOVERY_MODEL ?? FAST_DISCOVERY_MODEL;
+  const rescueModel = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
   const fetchFn = options.fetchFn ?? fetch;
 
   const first = await runDiscoveryAttempt(query, {
     fetchFn,
     apiKey,
-    model,
+    model: fastModel,
     timeoutMs: options.firstTimeoutMs ?? 18_000,
     cityHint,
     identityHint: options.identityHint,
@@ -388,7 +394,7 @@ async function discoverCompanyUnverified(
   const rescue = await runDiscoveryAttempt(query, {
     fetchFn,
     apiKey,
-    model,
+    model: rescueModel,
     rescue: true,
     timeoutMs: 14_000,
     cityHint,
