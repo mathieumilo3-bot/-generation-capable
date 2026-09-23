@@ -87,8 +87,8 @@ function toEmailSummary(report: Report) {
             : item.pillar === "rassurer"
               ? "Être choisi"
               : "Être contacté",
-        statement: item.diagnosis,
-        recommendation: item.callQuestion,
+        statement: `${item.diagnosis} Impact : ${item.impact}`,
+        recommendation: `Décision à trancher : ${item.callQuestion}`,
       })),
       otherFindingsCount: report.otherFindings.length,
     };
