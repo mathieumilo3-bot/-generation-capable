@@ -155,6 +155,14 @@ test.describe("Audit funnel — nom → diagnostic", () => {
     await expect(page.getByLabel(/Votre site/)).toHaveCount(0);
   });
 
+  test("matches site web artisan search intent and shows both service situations", async ({ page }) => {
+    await page.goto("/audit?utm_term=site%20web%20artisan");
+    await expect(page.getByText("Site web pour artisans")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Un site pensé pour votre métier/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "On construit la base complète." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "On transforme l’existant." })).toBeVisible();
+  });
+
   test("runs discovery → research → analysis and shows three precise cards", async ({ page }) => {
     const calls = await mockApis(page);
     await start(page);
