@@ -153,6 +153,10 @@ export type AiAuditOpportunity = {
   impact: string;
   /** Heuristic audit score, 1–10, derived from observed/public evidence — never a traffic or conversion metric. */
   score?: number;
+  /** Short, evidence-based description of what opportunity is being lost today. */
+  loss?: string;
+  /** Qualitative upside only — never a fabricated lead/client count. */
+  potential?: "faible" | "moyen" | "fort" | "très fort";
   /** One concrete low-risk action the prospect can understand and start immediately. */
   firstAction?: string;
   callQuestion: string;
