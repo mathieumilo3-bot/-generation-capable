@@ -159,8 +159,10 @@ CE QUE TU DOIS PRODUIRE
   * diagnosis : une formulation compacte "Situation actuelle → manque/écart", basée sur ce qui est observé et sur ce qui peut freiner le parcours
   * evidence : 1 à 3 preuves précises tirées du site ou de la recherche web
   * confidence : observed si directement visible, inferred si c'est une déduction prudente
-  * impact : le résultat commercial recherché : plus de visibilité utile, plus de confiance, plus de demandes ou de demandes mieux qualifiées, sans chiffre inventé
+  * impact : ce que l'entreprise peut récupérer en améliorant ce point : davantage de visibilité utile, de confiance, de demandes ou de demandes mieux qualifiées. Une phrase courte, sans chiffre inventé.
   * score : note HEURISTIQUE de 1 à 10 sur la qualité du point analysé aujourd'hui, basée uniquement sur les preuves observées/publiques. 1 = très faible / frein net ; 5 = moyen / incomplet ; 10 = très solide. Ce n'est JAMAIS une mesure de trafic, de conversion, de classement Google ou de performance financière.
+  * loss : UNE phrase très courte expliquant ce que ce défaut fait perdre aujourd'hui. Exemple de forme : "Des prospects qui cherchent X peuvent ne jamais arriver jusqu'à vous." ou "Une partie des visiteurs peut hésiter au moment du devis faute de preuve proche." Jamais de nombre de clients si aucune donnée réelle ne le permet.
+  * potential : faible, moyen, fort ou très fort. C'est une appréciation qualitative de l'opportunité commerciale d'après les preuves observées, pas une projection chiffrée.
   * firstAction : UNE action simple, concrète et crédible que l'entreprise peut commencer immédiatement. Elle doit être spécifique au constat et ne doit pas nécessiter tout le plan d'implémentation. Exemple de niveau attendu : créer une page dédiée au service exact absent, rapprocher une preuve existante du CTA, ajouter un appel direct au-dessus de la ligne de flottaison si aucun lien téléphone n'est détecté.
   * callQuestion : la décision stratégique à trancher pendant l'appel
 - "worksWell" : une chose réellement positive à conserver si tu en vois une ; sinon "À confirmer pendant le bilan".
@@ -175,6 +177,9 @@ RÈGLES STRICTES
 - Pas de blabla générique. Chaque diagnostic doit pouvoir être relié à une preuve concrète.
 - Si l'entreprise a été retrouvée par son nom mais que son site est inaccessible, utilise les sources publiques retrouvées pour produire des constats qualitatifs au lieu d'afficher seulement "site non joignable".
 - Écris en français naturel, direct, professionnel. Phrases courtes. Pas de jargon SEO inutile.
+- Le rendu doit être extrêmement lisible sur mobile : chaque opportunité doit tenir mentalement en 4 blocs très courts : NOTE → CE QUE VOUS PERDEZ → POTENTIEL → À CORRIGER.
+- Le "diagnosis" ne doit pas dépasser deux phrases courtes. Le "loss", l'"impact" et le "firstAction" doivent tenir chacun en une phrase.
+- Ne remplis jamais pour remplir : préfère une phrase courte et précise à une explication longue.
 
 DONNÉES
 <gc_audit_data>
@@ -211,7 +216,7 @@ function schema() {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["id", "pillar", "title", "diagnosis", "evidence", "confidence", "impact", "score", "firstAction", "callQuestion"],
+          required: ["id", "pillar", "title", "diagnosis", "evidence", "confidence", "impact", "score", "loss", "potential", "firstAction", "callQuestion"],
           properties: {
             id: { type: "string" },
             pillar: { type: "string", enum: ["attirer", "rassurer", "convertir"] },
@@ -221,6 +226,8 @@ function schema() {
             confidence: { type: "string", enum: ["observed", "inferred"] },
             impact: { type: "string" },
             score: { type: "integer", minimum: 1, maximum: 10 },
+            loss: { type: "string" },
+            potential: { type: "string", enum: ["faible", "moyen", "fort", "très fort"] },
             firstAction: { type: "string" },
             callQuestion: { type: "string" },
           },
@@ -320,6 +327,8 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
   const diagnosis = cleanText(raw.diagnosis, 600);
   const impact = cleanText(raw.impact, 320);
   const score = Number(raw.score);
+  const loss = cleanText(raw.loss, 320);
+  const potential = cleanText(raw.potential, 40);
   const firstAction = cleanText(raw.firstAction, 360);
   const callQuestion = cleanText(raw.callQuestion, 320);
   const pillar = raw.pillar;
@@ -335,6 +344,8 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     !Number.isInteger(score) ||
     score < 1 ||
     score > 10 ||
+    !loss ||
+    !["faible", "moyen", "fort", "très fort"].includes(potential) ||
     !firstAction ||
     !callQuestion ||
     evidence.length === 0 ||
@@ -344,7 +355,7 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     return null;
   }
 
-  const combined = [title, diagnosis, impact, firstAction].join(" ");
+  const combined = [title, diagnosis, impact, loss, firstAction].join(" ");
   if (UNSUPPORTED_METRIC.test(combined)) return null;
 
   return {
@@ -356,6 +367,8 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     confidence: confidence as AiAuditOpportunity["confidence"],
     impact,
     score,
+    loss,
+    potential: potential as AiAuditOpportunity["potential"],
     firstAction,
     callQuestion,
   };
