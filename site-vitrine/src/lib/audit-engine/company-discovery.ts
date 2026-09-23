@@ -340,7 +340,13 @@ Renvoie uniquement le JSON demandé.`,
 
 export async function discoverCompany(
   companyName: string,
-  options: { fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
+  options: {
+    fetchFn?: FetchLike;
+    apiKey?: string;
+    model?: string;
+    firstTimeoutMs?: number;
+    skipRescue?: boolean;
+  } = {}
 ): Promise<CompanyDiscoveryResult> {
   const query = companyName.trim().slice(0, 160);
   if (query.length < 2) return { candidates: [], webSources: [] };
@@ -358,7 +364,7 @@ export async function discoverCompany(
     model,
     projectId,
     contextSize: "medium",
-    timeoutMs: 32_000,
+    timeoutMs: options.firstTimeoutMs ?? 32_000,
   });
 
   if (first.candidates.length > 0) return first;
@@ -367,6 +373,8 @@ export async function discoverCompany(
   if (sourceCandidate) {
     return { candidates: [sourceCandidate], webSources: first.webSources };
   }
+
+  if (options.skipRescue) return first;
 
   const rescue = await runDiscoveryAttempt(query, {
     fetchFn,
