@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 36_000;
+const OPENAI_TIMEOUT_MS = 50_000;
 const MAX_SITE_EXCERPT = 8_000;
 
 type FetchLike = typeof fetch;
@@ -112,6 +112,14 @@ ANGLE BUSINESS À TOUJOURS ÉVALUER
 - QUALIFICATION : le parcours collecte-t-il assez d'informations pour distinguer une demande sérieuse d'un simple curieux sans créer trop de friction ?
 - CONTINUITÉ : Google, site, réseaux sociaux, annuaires et formulaire racontent-ils la même offre et conduisent-ils vers la même action ?
 
+RECHERCHE WEB APPROFONDIE — OBLIGATOIRE
+- Utilise réellement la recherche web avant de conclure. Ne te contente jamais du seul HTML de la page d'accueil quand des sources publiques existent.
+- Effectue plusieurs recherches complémentaires (idéalement 5 à 8 quand les données le permettent) : marque exacte, métier + ville, service principal + ville, devis + service, avis/preuves, puis une requête site: sur le domaine officiel pour repérer les pages services/locales.
+- Recoupe au minimum deux types de sources publiques quand elles existent : site officiel + annuaire/fiche locale/réseau social/avis.
+- Si le site officiel possède plusieurs pages indexées pertinentes, utilise les résultats de recherche pour inspecter leur contenu public et vérifier si les services, zones, preuves et CTA sont réellement visibles.
+- Cherche activement une anomalie précise : service important absent ou peu visible, zone mal explicitée, CTA faible, preuve trop éloignée, incohérence entre sources, page locale manquante, offre peu claire, formulaire peu qualifiant.
+- Ne termine pas tant que tu n'as pas essayé de trouver au moins 3 constats distincts et spécifiques à cette entreprise, sauf si les sources disponibles sont réellement insuffisantes.
+
 RECHERCHE WEB POUR IDENTIFIER ET QUALIFIER L'ENTREPRISE
 - Si "entreprise" est renseigné dans les données, commence TOUJOURS par une recherche de marque exacte afin d'identifier l'entreprise, son site officiel, son activité et sa zone.
 - Si le site fourni est vide, invalide ou inaccessible, ne te rabats pas sur un audit générique : utilise la recherche web pour retrouver les pages publiques réellement associées à l'entreprise.
@@ -152,6 +160,7 @@ CE QUE TU DOIS PRODUIRE
   * evidence : 1 à 3 preuves précises tirées du site ou de la recherche web
   * confidence : observed si directement visible, inferred si c'est une déduction prudente
   * impact : le résultat commercial recherché : plus de visibilité utile, plus de confiance, plus de demandes ou de demandes mieux qualifiées, sans chiffre inventé
+  * score : note HEURISTIQUE de 1 à 10 sur la qualité du point analysé aujourd'hui, basée uniquement sur les preuves observées/publiques. 1 = très faible / frein net ; 5 = moyen / incomplet ; 10 = très solide. Ce n'est JAMAIS une mesure de trafic, de conversion, de classement Google ou de performance financière.
   * firstAction : UNE action simple, concrète et crédible que l'entreprise peut commencer immédiatement. Elle doit être spécifique au constat et ne doit pas nécessiter tout le plan d'implémentation. Exemple de niveau attendu : créer une page dédiée au service exact absent, rapprocher une preuve existante du CTA, ajouter un appel direct au-dessus de la ligne de flottaison si aucun lien téléphone n'est détecté.
   * callQuestion : la décision stratégique à trancher pendant l'appel
 - "worksWell" : une chose réellement positive à conserver si tu en vois une ; sinon "À confirmer pendant le bilan".
@@ -202,7 +211,7 @@ function schema() {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["id", "pillar", "title", "diagnosis", "evidence", "confidence", "impact", "firstAction", "callQuestion"],
+          required: ["id", "pillar", "title", "diagnosis", "evidence", "confidence", "impact", "score", "firstAction", "callQuestion"],
           properties: {
             id: { type: "string" },
             pillar: { type: "string", enum: ["attirer", "rassurer", "convertir"] },
@@ -211,6 +220,7 @@ function schema() {
             evidence: { type: "array", items: { type: "string" } },
             confidence: { type: "string", enum: ["observed", "inferred"] },
             impact: { type: "string" },
+            score: { type: "integer", minimum: 1, maximum: 10 },
             firstAction: { type: "string" },
             callQuestion: { type: "string" },
           },
@@ -309,6 +319,7 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
   const title = cleanText(raw.title, 180);
   const diagnosis = cleanText(raw.diagnosis, 600);
   const impact = cleanText(raw.impact, 320);
+  const score = Number(raw.score);
   const firstAction = cleanText(raw.firstAction, 360);
   const callQuestion = cleanText(raw.callQuestion, 320);
   const pillar = raw.pillar;
@@ -321,6 +332,9 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     !title ||
     !diagnosis ||
     !impact ||
+    !Number.isInteger(score) ||
+    score < 1 ||
+    score > 10 ||
     !firstAction ||
     !callQuestion ||
     evidence.length === 0 ||
@@ -341,6 +355,7 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     evidence,
     confidence: confidence as AiAuditOpportunity["confidence"],
     impact,
+    score,
     firstAction,
     callQuestion,
   };
@@ -411,11 +426,11 @@ export async function synthesizeAuditWithOpenAI(
       },
       body: JSON.stringify({
         model,
-        reasoning: { effort: "medium" },
-        tools: [{ type: "web_search", search_context_size: "medium" }],
-        tool_choice: "auto",
+        reasoning: { effort: "high" },
+        tools: [{ type: "web_search", search_context_size: "high" }],
+        tool_choice: "required",
         include: ["web_search_call.action.sources"],
-        max_output_tokens: 2_600,
+        max_output_tokens: 3_600,
         input: [
           { role: "system", content: "Tu es un analyste commercial GC. Respecte strictement les données fournies." },
           { role: "user", content: buildPrompt(context) },
