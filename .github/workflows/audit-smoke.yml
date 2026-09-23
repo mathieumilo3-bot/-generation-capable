@@ -1,0 +1,57 @@
+name: Audit — test de fumée en production
+
+# Manual only: each run exercises the real diagnostic pipeline on the
+# deployed site (crawl + OpenAI background job), so it is a deliberate check
+# after a deploy, not something to run on every push.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Site à tester"
+        required: false
+        default: "https://gc-agence.com"
+      case:
+        description: "Entreprise de la liste de test (voir /api/audit/self-test)"
+        required: false
+        default: "gc"
+
+jobs:
+  smoke:
+    name: Diagnostic complet sur l'hébergement réel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Démarrer le diagnostic
+        id: start
+        run: |
+          set -euo pipefail
+          URL="${{ inputs.base_url }}/api/audit/self-test?case=${{ inputs.case }}"
+          echo "POST $URL"
+          START=$(date +%s)
+          HTTP=$(curl -sS -o start.json -w '%{http_code}' --max-time 30 "$URL")
+          ELAPSED=$(( $(date +%s) - START ))
+          echo "HTTP $HTTP en ${ELAPSED}s"
+          cat start.json | jq . || cat start.json
+          test "$HTTP" = "200"
+          # The whole point of the two-stage design: this request must land
+          # well inside the host's 10 s limit.
+          jq -e '.withinRequestBudget == true' start.json > /dev/null
+          jq -e '.site.reachable == true' start.json > /dev/null
+          jq -e '.backgroundMode == true' start.json > /dev/null
+          echo "job=$(jq -r .job start.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Attendre et relever le diagnostic
+        run: |
+          set -euo pipefail
+          URL="${{ inputs.base_url }}/api/audit/self-test?case=${{ inputs.case }}&job=${{ steps.start.outputs.job }}"
+          START=$(date +%s)
+          for i in $(seq 1 40); do
+            sleep 6
+            HTTP=$(curl -sS -o poll.json -w '%{http_code}' --max-time 30 "$URL")
+            STATUS=$(jq -r '.status // "http_'"$HTTP"'"' poll.json)
+            echo "[$i] HTTP $HTTP · $STATUS · $(( $(date +%s) - START ))s"
+            if [ "$STATUS" = "done" ] || [ "$STATUS" = "failed" ]; then break; fi
+          done
+          echo "--- Diagnostic rendu en $(( $(date +%s) - START ))s ---"
+          jq . poll.json || cat poll.json
+          jq -e '.status == "done"' poll.json > /dev/null
+          jq -e '.cards | length >= 1' poll.json > /dev/null

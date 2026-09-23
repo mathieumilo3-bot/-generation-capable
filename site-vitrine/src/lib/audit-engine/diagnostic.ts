@@ -641,7 +641,10 @@ export async function startInvestigation(
     ...INVESTIGATION_CALL,
     user: investigationPrompt(dossier),
     searchCity: dossier.company.city,
-    effort: (process.env.OPENAI_AUDIT_EFFORT as "low" | "medium" | "high" | undefined) ?? "high",
+    // "medium" keeps a real investigation (the searches are what matter)
+    // while landing in roughly a minute rather than three. Raise it with
+    // OPENAI_AUDIT_EFFORT=high when depth matters more than the wait.
+    effort: (process.env.OPENAI_AUDIT_EFFORT as "low" | "medium" | "high" | undefined) ?? "medium",
     timeoutMs: options.timeoutMs ?? 7_000,
     fetchFn: options.fetchFn,
     apiKey: options.apiKey,
