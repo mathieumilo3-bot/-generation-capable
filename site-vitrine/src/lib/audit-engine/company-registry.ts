@@ -82,6 +82,7 @@ export function classifyRegistryResults(
   cityHint = ""
 ): RegistryPreflight {
   const query = normalizeRegistryName(companyName);
+  const queryCompact = query.replace(/\s+/g, "");
   if (!query || !Array.isArray(rawResults)) return { status: "none", candidates: [] };
 
   const exact: RegistryCandidate[] = [];
@@ -94,7 +95,10 @@ export function classifyRegistryResults(
     if (clean(company.etat_administratif, 8).toUpperCase() === "F") continue;
 
     const aliases = aliasesOf(company).map(normalizeRegistryName).filter(Boolean);
-    if (!aliases.includes(query)) continue;
+    const exactName = aliases.some(
+      (alias) => alias === query || alias.replace(/\s+/g, "") === queryCompact
+    );
+    if (!exactName) continue;
 
     const siren = clean(company.siren, 20);
     if (!/^\d{9}$/.test(siren)) continue;
