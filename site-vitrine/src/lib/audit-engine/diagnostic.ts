@@ -192,6 +192,7 @@ ${queries.map((q, i) => `${i + 1}. ${q}`).join("\n")}
 
 Pour chaque recherche, note ce qui ressort RÉELLEMENT dans les résultats consultés :
 - Recherches métier/service + ville (sans le nom) : le site de l'entreprise ressort-il dans les résultats consultés ? Quels types de sites ressortent à la place (concurrents, annuaires, plateformes de mise en relation) ? Cite le nom d'un ou deux résultats concrets.
+- Sur les requêtes les plus proches d'une demande de devis, compare ce que les résultats concurrents montrent de concret : page dédiée au service, ville dans le titre, avis/preuves visibles, urgence, devis/appel. Ne parle jamais de leur position exacte.
 - site:domaine : quelles pages sont indexées ? Y a-t-il des pages services / villes ? Combien environ dans les résultats vus ?
 - Nom + avis : une note ou un nombre d'avis est-il VISIBLE dans une source (Google, PagesJaunes, Facebook…) ? Recopie exactement ce qui est affiché, avec la source. Sinon écris "non trouvé".
 - Profils publics : Google Business, PagesJaunes, Facebook, Instagram, LinkedIn, Houzz, annuaires. Pour chacun : URL et ce qui est notable (activité récente, services montrés, photos de chantiers, incohérence de nom/téléphone/adresse/ville avec le site).
@@ -506,8 +507,11 @@ MATIÈRE DISPONIBLE (seules sources autorisées : ta recherche ci-dessus et les 
 
 SÉLECTION
 - Retiens les 3 problèmes qui coûtent le plus de demandes de devis à CETTE entreprise (maximum 3, idéalement 3).
+- Le dirigeant doit apprendre quelque chose d'utile qu'il n'aurait probablement pas vu en regardant seulement sa page d'accueil.
+- Priorité absolue aux écarts à intention commerciale forte : service précis recherché mais sans page dédiée ; coordonnées incohérentes ; formulaire/contact qui freine ; preuves/avis/chantiers présents ailleurs mais mal exploités ; concurrent observé avec une réponse beaucoup plus claire au même besoin ; service rentable montré publiquement mais absent du parcours de devis.
 - Couvre si possible ÊTRE TROUVÉ (trouve), ÊTRE CHOISI (choisi), ÊTRE CONTACTÉ (contacte) — mais si deux problèmes majeurs sont sur le même axe, garde-les : on veut les 3 plus gros problèmes, pas 3 cases remplies.
 - Privilégie les constats qui croisent site + recherche web (ex : un service montré sur Instagram mais absent du site ; une requête "service + ville" où ressortent des concurrents avec une page dédiée alors que le site n'en a pas ; une incohérence de téléphone entre annuaire et site ; des avis visibles ailleurs mais absents du site).
+- Un simple détail de balise, de titre ou de formulation ne mérite PAS une carte à lui seul. Il ne devient prioritaire que si la recherche externe montre clairement le manque commercial correspondant.
 - Ne retiens pas un point qui fonctionne bien (note ≥ 8) sauf s'il n'existe pas 3 vrais problèmes.
 
 FORMAT DE CHAQUE CARTE
@@ -516,8 +520,8 @@ FORMAT DE CHAQUE CARTE
 - finding : 1 ou 2 phrases MAXIMUM qui disent ce qui a réellement été trouvé, avec un détail propre à cette entreprise (nom de service, page, ville, texte exact, requête, profil).
 - seen : UNE preuve concrète observée, commençant directement par le fait (pas par "Vu :"). Ex : l'URL/la page, le texte exact entre « », la requête et ce qui ressort, le nombre de champs du formulaire.
 - loss : UNE phrase sur la conséquence commerciale actuelle, au conditionnel prudent ("peut", "risque de"). Aucun chiffre.
-- potentialText : UNE phrase sur ce que l'entreprise pourrait récupérer en corrigeant ce point. Aucun chiffre.
-- fix : UNE action concrète, simple, immédiatement compréhensible, spécifique (ex : "Créer une page « Isolation extérieure Vannes » avec 3 chantiers et un bouton devis").
+- potentialText : UNE phrase qui explique le MÉCANISME commercial précis de la correction : quel prospect est mieux capté, rassuré ou amené à contacter. Aucun chiffre ni promesse.
+- fix : UNE action exécutable sans rendez-vous. Elle doit préciser OÙ agir + QUOI mettre/changer + l'élément de conversion à ajouter. Ex : "Créer /isolation-exterieure-vannes avec un H1 dédié, 3 chantiers locaux, les aides réellement proposées et un bouton « Demander un devis » visible dès le premier écran".
 - basis : "site", "recherche" ou "site + recherche".
 - summary : UNE phrase d'identification factuelle (métier, ville, ce qui a été analysé). Ex : "Couvreur à Vannes — 11 pages du site et 8 recherches analysées."
 
@@ -528,6 +532,7 @@ INTERDITS (la carte sera rejetée automatiquement)
 - Affirmer qu'une chose n'existe pas : dire "n'a pas été retrouvé(e) sur les pages analysées" / "dans les résultats consultés" / "à confirmer".
 
 Écris en français naturel, direct, vouvoiement. Phrases courtes.
+Le résultat doit donner envie d'agir maintenant par sa précision, jamais par du sensationnalisme : preuve → conséquence → correction concrète.
 
 DONNÉES
 <gc_dossier>

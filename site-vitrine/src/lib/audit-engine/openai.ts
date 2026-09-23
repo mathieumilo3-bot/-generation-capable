@@ -17,6 +17,8 @@ export type ResponsesCall = {
   schemaName: string;
   schema: Record<string, unknown>;
   webSearch?: boolean;
+  /** Web-search context size. Discovery can stay lean; the full diagnostic keeps high context. */
+  searchContextSize?: "low" | "medium" | "high";
   /** Approximate searcher location for local results (France + city). */
   searchCity?: string;
   effort?: "low" | "medium" | "high";
@@ -103,7 +105,7 @@ function requestBody(call: ResponsesCall, model: string, background: boolean) {
           tools: [
             {
               type: "web_search",
-              search_context_size: "high",
+              search_context_size: call.searchContextSize ?? "high",
               user_location: { type: "approximate", country: "FR", ...(call.searchCity ? { city: call.searchCity.slice(0, 60) } : {}) },
             },
           ],

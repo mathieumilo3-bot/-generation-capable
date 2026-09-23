@@ -36,9 +36,11 @@ type CompanyDiscoveryCandidate = {
  * runs far longer — so the server starts a background job and we poll it.
  * Waiting here, in the browser, is what buys the diagnostic its depth.
  */
-const FIRST_POLL_MS = 1_200;
-const POLL_INTERVAL_MS = 2_500;
-const DISCOVERY_DEADLINE_MS = 75_000;
+const DISCOVERY_FIRST_POLL_MS = 450;
+const DISCOVERY_POLL_INTERVAL_MS = 900;
+const INVESTIGATION_FIRST_POLL_MS = 1_200;
+const INVESTIGATION_POLL_INTERVAL_MS = 2_500;
+const DISCOVERY_DEADLINE_MS = 45_000;
 const INVESTIGATION_DEADLINE_MS = 120_000;
 
 function wait(ms: number) {
@@ -184,11 +186,22 @@ export function AuditFunnel() {
       return;
     }
 
+    const resuming = needsCity || needsSite;
     setError(null);
     setRunning(true);
-    progressRef.current = 0;
-    setProgress(0);
-    advance(8, "Nom reçu · recherche de l’entreprise");
+    if (resuming) {
+      // Never send the progress bar backwards after a precision step.
+      // Also stop displaying a stale candidate while the stronger lookup runs.
+      setDiscovery(null);
+      advance(
+        Math.max(progressRef.current, 26),
+        needsCity ? "Ville reçue · vérification accélérée du site officiel" : "Site reçu · vérification en cours"
+      );
+    } else {
+      progressRef.current = 0;
+      setProgress(0);
+      advance(8, "Nom reçu · recherche de l’entreprise");
+    }
     track("form_started");
     track("audit_step_1");
     track("audit_analysis_started");
@@ -208,7 +221,7 @@ export function AuditFunnel() {
           const deadline = Date.now() + DISCOVERY_DEADLINE_MS;
           let first = true;
           while (Date.now() < deadline) {
-            await wait(first ? FIRST_POLL_MS : POLL_INTERVAL_MS);
+            await wait(first ? DISCOVERY_FIRST_POLL_MS : DISCOVERY_POLL_INTERVAL_MS);
             first = false;
             const poll = await postJson<DiscoverResponse>("/api/audit/discover", {
               companyName,
@@ -241,7 +254,9 @@ export function AuditFunnel() {
         );
       };
 
-      let candidates = await runDiscoveryPass(rawName, rawCity);
+      // Once the visitor has given the city, skip the shallow pass: go
+      // straight to the identity-bridge search instead of doing two searches in series.
+      let candidates = await runDiscoveryPass(rawName, rawCity, Boolean(rawCity));
       candidate = pickCandidate(candidates);
 
       // A legal name can be completely different from the commercial name
@@ -255,7 +270,7 @@ export function AuditFunnel() {
       ).size;
       const firstPassIsAmbiguous = !rawCity && firstDistinctMatches > 1;
 
-      if (!firstPassIsAmbiguous && (!candidate?.website || candidate.confidence !== "high")) {
+      if (!rawCity && !firstPassIsAmbiguous && (!candidate?.website || candidate.confidence !== "high")) {
         advance(Math.max(18, progressRef.current), "Site non certain · recherche renforcée de l’enseigne officielle");
         const rescueCity = rawCity || candidate?.city || "";
         const rescueName = candidate?.name || rawName;
@@ -290,7 +305,6 @@ export function AuditFunnel() {
         setDiscovery(candidate);
         setNeedsCity(true);
         setRunning(false);
-        setProgress(0);
         setProgressLabel("Prêt à reprendre");
         track("audit_company_disambiguation_requested", {
           candidate_count: candidates.length,
@@ -307,7 +321,6 @@ export function AuditFunnel() {
         setDiscovery(candidate);
         setNeedsSite(true);
         setRunning(false);
-        setProgress(0);
         setProgressLabel("Prêt à reprendre");
         track("audit_site_requested", { had_candidate: Boolean(candidate) });
         return;
@@ -370,7 +383,7 @@ export function AuditFunnel() {
         const deadline = Date.now() + INVESTIGATION_DEADLINE_MS;
         let first = true;
         while (Date.now() < deadline && !report) {
-          await wait(first ? FIRST_POLL_MS : POLL_INTERVAL_MS);
+          await wait(first ? INVESTIGATION_FIRST_POLL_MS : INVESTIGATION_POLL_INTERVAL_MS);
           first = false;
           const poll = await postJson<{ status?: string; report?: Report }>("/api/audit/analyze", {
             context: research.context,

@@ -257,9 +257,12 @@ function discoveryCall(query: string, options: { cityHint?: string; rescue?: boo
     schemaName: "gc_company_discovery_v3",
     schema: schema(),
     webSearch: true,
+    // Company identification only needs short result snippets and identity
+    // signals. Keep this lean; the full diagnostic later still uses high-context search.
+    searchContextSize: (options.rescue ? "medium" : "low") as "medium" | "low",
     searchCity: options.cityHint,
-    effort: (options.rescue ? "high" : "medium") as "high" | "medium",
-    maxOutputTokens: 2_000,
+    effort: (options.rescue ? "medium" : "low") as "medium" | "low",
+    maxOutputTokens: 1_200,
     timeoutMs: options.timeoutMs,
     fetchFn: options.fetchFn,
     apiKey: options.apiKey,
@@ -360,7 +363,7 @@ async function discoverCompanyUnverified(
     fetchFn,
     apiKey,
     model,
-    timeoutMs: options.firstTimeoutMs ?? 28_000,
+    timeoutMs: options.firstTimeoutMs ?? 18_000,
     cityHint,
   });
 
@@ -384,7 +387,7 @@ async function discoverCompanyUnverified(
     apiKey,
     model,
     rescue: true,
-    timeoutMs: 18_000,
+    timeoutMs: 14_000,
     cityHint,
   });
 
