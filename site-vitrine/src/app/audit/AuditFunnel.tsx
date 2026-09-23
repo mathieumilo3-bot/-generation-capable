@@ -152,6 +152,8 @@ export function AuditFunnel() {
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [showCallbackFields, setShowCallbackFields] = useState(false);
   const [siteError, setSiteError] = useState<string | null>(null);
+  const [auditProgress, setAuditProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("Prêt à démarrer");
 
   const engaged = useRef(false);
   const intentCaptured = useRef(false);
@@ -244,6 +246,11 @@ export function AuditFunnel() {
     return () => window.removeEventListener("gc:consent-changed", onConsent);
   }, [discovery]);
 
+  function advanceProgress(value: number, label: string) {
+    setAuditProgress((current) => Math.max(current, value));
+    setProgressLabel(label);
+  }
+
   function markEngaged() {
     if (engaged.current) return;
     engaged.current = true;
@@ -271,6 +278,8 @@ export function AuditFunnel() {
     setStage("preview");
     setPreviewStatus("loading");
     setDiscovery(null);
+    setAuditProgress(8);
+    setProgressLabel("Nom reçu · recherche de l’entreprise");
     track("audit_step_1");
     track("audit_analysis_started");
 
@@ -311,6 +320,7 @@ export function AuditFunnel() {
         secteur: candidate.sector || prev.secteur,
       }));
       setPreviewStatus("ready");
+      advanceProgress(36, "Entreprise identifiée · activité et zone recoupées");
       track("audit_analysis_completed");
       void captureAuditIntent(candidate);
 
@@ -318,6 +328,7 @@ export function AuditFunnel() {
       // background too. It enriches the email/report without delaying the
       // first useful result shown to the visitor.
       if (candidate.website) {
+        advanceProgress(42, "Site officiel retrouvé · lecture technique en cours");
         fetch("/api/audit/quick", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -332,6 +343,7 @@ export function AuditFunnel() {
             if (!report) return;
             setQuickReport(report);
             lastReport.current = report;
+            advanceProgress(52, "Site lu · premiers freins commerciaux détectés");
           })
           .catch(() => null);
       }
@@ -344,6 +356,7 @@ export function AuditFunnel() {
 
   function startRefinedAnalysis(secteur: string, objectif: string) {
     setRefinedLoading(true);
+    advanceProgress(62, "Objectif compris · analyse acquisition approfondie");
 
     const promise = fetch("/api/audit/analyze", {
       method: "POST",
@@ -362,7 +375,12 @@ export function AuditFunnel() {
       })
       .catch(() => null)
       .then((report) => {
-        if (report) lastReport.current = report;
+        if (report) {
+          lastReport.current = report;
+          advanceProgress(88, "Recherche web terminée · 3 priorités sélectionnées");
+        } else {
+          advanceProgress(76, "Analyse principale terminée · consolidation du diagnostic");
+        }
         setRefinedLoading(false);
         return report;
       });
@@ -441,6 +459,7 @@ export function AuditFunnel() {
 
     setSubmitting(true);
     setError(null);
+    advanceProgress(Math.max(auditProgress, 90), "Finalisation du diagnostic et du PDF");
 
     try {
       let adUserDataConsent = "UNSPECIFIED";
@@ -498,6 +517,7 @@ export function AuditFunnel() {
         return;
       }
 
+      advanceProgress(100, "Diagnostic terminé");
       track("audit_completed");
       track("form_completed");
       track("generate_lead", {
@@ -620,27 +640,50 @@ export function AuditFunnel() {
           >
             {previewStatus === "loading" ? (
               <div className="py-3">
-                <div className="flex items-center justify-between">
-                  <p className="font-display text-xl font-semibold">On construit votre diagnostic.</p>
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+                      Analyse réelle en cours
+                    </p>
+                    <p className="font-display mt-2 text-xl font-semibold">On construit votre diagnostic.</p>
+                  </div>
+                  <span className="font-display text-4xl font-semibold tracking-[-0.04em] text-[var(--color-text)]">
+                    {auditProgress}%
+                  </span>
                 </div>
-                <p className="mt-2 text-sm text-[var(--color-muted)]">
-                  On recherche votre entreprise comme le ferait un consultant : site officiel, activité, zone, présence publique, preuves et chemin vers le devis. Cela peut prendre quelques secondes.
+
+                <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                  <motion.div
+                    className="h-full rounded-full bg-[var(--color-accent)]"
+                    animate={{ width: `${auditProgress}%` }}
+                    transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                  />
+                </div>
+                <p className="mt-3 text-sm font-medium text-[var(--color-text)]">{progressLabel}</p>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
+                  Le pourcentage avance uniquement lorsqu’une étape réelle est terminée. Pas de compteur fictif.
                 </p>
 
-                <div className="mt-7 space-y-3">
-                  {["01 · Retrouver la bonne entreprise", "02 · Recouper site, activité & zone", "03 · Vérifier visibilité, preuves & devis", "04 · Prioriser les opportunités commerciales"].map((label, index) => (
-                    <motion.div
-                      key={label}
-                      initial={{ opacity: 0.3 }}
-                      animate={{ opacity: [0.35, 1, 0.35] }}
-                      transition={{ duration: 1.4, repeat: Infinity, delay: index * 0.25 }}
-                      className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] px-4 py-3"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
-                      <span className="text-sm">{label}</span>
-                    </motion.div>
-                  ))}
+                <div className="mt-7 space-y-2">
+                  {[
+                    { at: 8, label: "Nom reçu" },
+                    { at: 36, label: "Entreprise, activité et zone recoupées" },
+                    { at: 52, label: "Site et parcours vers le devis analysés" },
+                    { at: 88, label: "Visibilité web et priorités commerciales consolidées" },
+                    { at: 100, label: "Diagnostic + PDF finalisés" },
+                  ].map((item) => {
+                    const done = auditProgress >= item.at;
+                    const active = !done && item.at === [8, 36, 52, 88, 100].find((value) => value > auditProgress);
+                    return (
+                      <div
+                        key={item.at}
+                        className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${done ? "border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)]" : active ? "border-[var(--color-border-strong)] bg-[var(--color-surface)]" : "border-[var(--color-border)] opacity-50"}`}
+                      >
+                        <span className="text-sm">{item.label}</span>
+                        <span className="text-xs font-semibold text-[var(--color-accent)]">{done ? "OK" : active ? "EN COURS" : ""}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : previewStatus === "ready" ? (
@@ -902,30 +945,46 @@ export function AuditFunnel() {
               animate={{ opacity: 1, y: 0 }}
               className="rounded-[2rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 sm:p-8"
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">Analyse GC en cours</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">Diagnostic GC</p>
                   <h2 className="font-display mt-3 text-2xl font-semibold">On finalise vos 3 priorités.</h2>
                 </div>
-                <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--color-accent)]" />
+                <span className="font-display text-4xl font-semibold tracking-[-0.04em]">{auditProgress}%</span>
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">
-                On recoupe les sources publiques, votre site quand il est disponible et vos objectifs avant de générer le PDF. On ne vous renvoie pas un diagnostic générique.
+
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                <motion.div
+                  className="h-full rounded-full bg-[var(--color-accent)]"
+                  animate={{ width: `${auditProgress}%` }}
+                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                />
+              </div>
+              <p className="mt-3 text-sm font-medium text-[var(--color-text)]">{progressLabel}</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">
+                Chaque saut correspond à un traitement réellement terminé.
               </p>
-              <div className="mt-6 space-y-3">
-                {["Recherche marque + activité + zone", "Lecture de la présence et des preuves", "Analyse du parcours vers le devis", "Sélection des 3 priorités", "Génération de votre PDF"].map((label, index) => (
-                  <motion.div
-                    key={label}
-                    animate={{ opacity: [0.35, 1, 0.35] }}
-                    transition={{ duration: 1.6, repeat: Infinity, delay: index * 0.22 }}
-                    className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3"
+
+              <div className="mt-6 space-y-2">
+                {[
+                  { at: 36, label: "Entreprise vérifiée" },
+                  { at: 52, label: "Site et conversion lus" },
+                  { at: 62, label: "Objectif commercial intégré" },
+                  { at: 88, label: "Recherche web + priorités terminées" },
+                  { at: 100, label: "PDF et résultat prêts" },
+                ].map((item) => (
+                  <div
+                    key={item.at}
+                    className={`flex items-center justify-between rounded-xl border px-4 py-3 ${auditProgress >= item.at ? "border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)]" : "border-[var(--color-border)] bg-[var(--color-bg)]"}`}
                   >
-                    <span className="font-display text-xs text-[var(--color-accent)]">{String(index + 1).padStart(2, "0")}</span>
-                    <span className="text-sm">{label}</span>
-                  </motion.div>
+                    <span className="text-sm">{item.label}</span>
+                    <span className="text-xs font-semibold text-[var(--color-accent)]">
+                      {auditProgress >= item.at ? "OK" : "…"}
+                    </span>
+                  </div>
                 ))}
               </div>
-              <p className="mt-5 text-center text-[11px] text-[var(--color-muted)]">Encore quelques secondes · vos priorités s’affichent automatiquement.</p>
+              <p className="mt-5 text-center text-[11px] text-[var(--color-muted)]">Gardez cette page ouverte · le résultat s’affiche automatiquement.</p>
             </motion.div>
           ) : (
           <motion.form
