@@ -20,6 +20,18 @@ type FormState = {
 type Stage = "site" | "preview" | "trade" | "goal" | "contact" | "done";
 type PreviewStatus = "idle" | "loading" | "ready" | "failed";
 
+type CompanyDiscoveryCandidate = {
+  name: string;
+  website: string;
+  sector: string;
+  city: string;
+  summary: string;
+  confidence: "high" | "medium" | "low";
+  insightTitle: string;
+  insight: string;
+  evidence: string[];
+};
+
 const EMPTY_STATE: FormState = {
   siteUrl: "",
   secteur: "",
@@ -50,7 +62,7 @@ const OBJECTIVES = [
   "Autre",
 ];
 
-const SITE_URL_FIELD_ID = "audit-site-url";
+const COMPANY_FIELD_ID = "audit-company-name";
 const REPORT_WAIT_MS = 8_000;
 
 function inputClass() {
@@ -85,6 +97,7 @@ export function AuditFunnel() {
   const [data, setData] = useState<FormState>(EMPTY_STATE);
   const [previewStatus, setPreviewStatus] = useState<PreviewStatus>("idle");
   const [quickReport, setQuickReport] = useState<Report | null>(null);
+  const [discovery, setDiscovery] = useState<CompanyDiscoveryCandidate | null>(null);
   const [refinedLoading, setRefinedLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +117,8 @@ export function AuditFunnel() {
     track("audit_started");
 
     const params = new URLSearchParams(window.location.search);
-    const fromHomepage = params.get("site")?.trim().slice(0, FIELD_LIMITS.siteUrl) ?? "";
+    const fromHomepageCompany = params.get("entreprise")?.trim().slice(0, FIELD_LIMITS.entreprise) ?? "";
+    const fromHomepageSite = params.get("site")?.trim().slice(0, FIELD_LIMITS.siteUrl) ?? "";
 
     setAttribution({
       source: params.get("utm_source")?.trim().slice(0, 120) || undefined,
@@ -120,8 +134,12 @@ export function AuditFunnel() {
       wbraid: params.get("wbraid")?.trim().slice(0, 220) || "",
     });
 
-    if (fromHomepage) {
-      setData((prev) => ({ ...prev, siteUrl: fromHomepage }));
+    if (fromHomepageCompany || fromHomepageSite) {
+      setData((prev) => ({
+        ...prev,
+        entreprise: fromHomepageCompany || prev.entreprise,
+        siteUrl: fromHomepageSite || prev.siteUrl,
+      }));
     }
   }, []);
 
@@ -136,13 +154,13 @@ export function AuditFunnel() {
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function startQuickScan(event?: FormEvent) {
+  async function startCompanyDiscovery(event?: FormEvent) {
     event?.preventDefault();
     if (previewStatus === "loading") return;
 
-    if (data.siteUrl.trim().length < 4) {
-      setSiteError("Entrez l’adresse de votre site pour lancer le diagnostic.");
-      document.getElementById(SITE_URL_FIELD_ID)?.focus();
+    if (data.entreprise.trim().length < 2) {
+      setSiteError("Entrez simplement le nom de votre entreprise.");
+      document.getElementById(COMPANY_FIELD_ID)?.focus();
       return;
     }
 
@@ -151,14 +169,15 @@ export function AuditFunnel() {
     setError(null);
     setStage("preview");
     setPreviewStatus("loading");
+    setDiscovery(null);
     track("audit_step_1");
     track("audit_analysis_started");
 
     try {
-      const res = await fetch("/api/audit/quick", {
+      const res = await fetch("/api/audit/discover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siteUrl: data.siteUrl.trim() }),
+        body: JSON.stringify({ companyName: data.entreprise.trim() }),
       });
 
       if (!res.ok) {
@@ -166,14 +185,45 @@ export function AuditFunnel() {
         return;
       }
 
-      const body = (await res.json()) as { report?: Report };
-      const report = body.report ?? null;
-      setQuickReport(report);
-      if (report) {
-        lastReport.current = report;
-        track("audit_analysis_completed");
+      const body = (await res.json()) as { candidates?: CompanyDiscoveryCandidate[] };
+      const candidate = body.candidates?.[0] ?? null;
+
+      if (!candidate) {
+        setPreviewStatus("failed");
+        return;
       }
-      setPreviewStatus(report ? "ready" : "failed");
+
+      setDiscovery(candidate);
+      setData((prev) => ({
+        ...prev,
+        entreprise: candidate.name || prev.entreprise,
+        siteUrl: candidate.website || prev.siteUrl,
+        secteur: candidate.sector || prev.secteur,
+      }));
+      setPreviewStatus("ready");
+      track("audit_analysis_completed");
+
+      // If an official site was found, run the deterministic page scan in the
+      // background too. It enriches the email/report without delaying the
+      // first useful result shown to the visitor.
+      if (candidate.website) {
+        fetch("/api/audit/quick", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ siteUrl: candidate.website }),
+        })
+          .then(async (quickRes) => {
+            if (!quickRes.ok) return null;
+            const quickBody = (await quickRes.json()) as { report?: Report };
+            return quickBody.report ?? null;
+          })
+          .then((report) => {
+            if (!report) return;
+            setQuickReport(report);
+            lastReport.current = report;
+          })
+          .catch(() => null);
+      }
     } catch {
       setPreviewStatus("failed");
     }
@@ -186,6 +236,7 @@ export function AuditFunnel() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        entreprise: data.entreprise,
         siteUrl: data.siteUrl,
         secteur,
         objectif,
@@ -367,7 +418,7 @@ export function AuditFunnel() {
         {stage === "site" && (
           <motion.form
             key="site"
-            onSubmit={startQuickScan}
+            onSubmit={startCompanyDiscovery}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
@@ -375,32 +426,31 @@ export function AuditFunnel() {
           >
             <div className="mb-4 flex items-center justify-between gap-4">
               <p className="text-[11px] font-semibold tracking-[-0.01em] text-[var(--color-text)]">
-                Analyse de votre site
+                Retrouvons votre entreprise
               </p>
               <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-[10px] font-medium text-[var(--color-muted)]">
                 Sans email pour commencer
               </span>
             </div>
 
-            <label htmlFor={SITE_URL_FIELD_ID} className="sr-only">Votre site</label>
+            <label htmlFor={COMPANY_FIELD_ID} className="sr-only">Nom de votre entreprise</label>
             <input
-              id={SITE_URL_FIELD_ID}
-              name="siteUrl"
+              id={COMPANY_FIELD_ID}
+              name="entreprise"
               type="text"
-              inputMode="url"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              autoComplete="url"
-              enterKeyHint="go"
-              maxLength={FIELD_LIMITS.siteUrl}
-              placeholder="votre-entreprise.fr"
+              autoCapitalize="words"
+              autoCorrect="on"
+              spellCheck={true}
+              autoComplete="organization"
+              enterKeyHint="search"
+              maxLength={FIELD_LIMITS.entreprise}
+              placeholder="Ex : Gonçalves Bâtiment"
               className={inputClass()}
-              value={data.siteUrl}
+              value={data.entreprise}
               aria-invalid={siteError ? true : undefined}
               aria-describedby={siteError ? "audit-site-error" : undefined}
               onChange={(e) => {
-                update("siteUrl", e.target.value);
+                update("entreprise", e.target.value);
                 if (siteError) setSiteError(null);
               }}
             />
@@ -415,11 +465,11 @@ export function AuditFunnel() {
               type="submit"
               className="audit-primary-cta mt-3 inline-flex min-h-[58px] w-full items-center justify-center rounded-[1.15rem] px-6 text-[15px] font-semibold transition-all duration-300"
             >
-              Voir mon diagnostic gratuit
+              Retrouver mon entreprise →
             </button>
 
             <p className="mt-3 text-center text-[11px] leading-relaxed text-[var(--color-muted)]">
-              Votre premier résultat s’affiche juste après
+              Pas besoin de connaître l’adresse de votre site · Premier constat sans email
             </p>
           </motion.form>
         )}
@@ -435,15 +485,15 @@ export function AuditFunnel() {
             {previewStatus === "loading" ? (
               <div className="py-3">
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-xl font-semibold">On cherche où votre site peut vous apporter plus de clients.</p>
+                  <p className="font-display text-xl font-semibold">On retrouve votre entreprise et sa présence en ligne.</p>
                   <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
                 </div>
                 <p className="mt-2 text-sm text-[var(--color-muted)]">
-                  On vérifie ce qu’un futur client voit avant de choisir : visibilité, confiance et facilité à vous contacter.
+                  On recoupe le nom, le site officiel, l’activité, la zone et les signaux publics utiles avant de vous montrer un vrai point d’amélioration.
                 </p>
 
                 <div className="mt-7 space-y-3">
-                  {["Visibilité locale", "Confiance & preuves", "Parcours vers le devis"].map((label, index) => (
+                  {["Entreprise & site officiel", "Visibilité & preuves publiques", "Parcours vers le devis"].map((label, index) => (
                     <motion.div
                       key={label}
                       initial={{ opacity: 0.3 }}
@@ -460,10 +510,51 @@ export function AuditFunnel() {
             ) : previewStatus === "ready" ? (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                  Ce qui peut freiner vos demandes de devis
+                  Premier constat sur votre entreprise
                 </p>
 
-                {previewFinding ? (
+                {discovery && (
+                  <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="font-display text-lg font-semibold">{discovery.name}</p>
+                        <p className="mt-1 text-xs text-[var(--color-muted)]">
+                          {[discovery.sector, discovery.city].filter(Boolean).join(" · ") || "Activité retrouvée en ligne"}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-[var(--color-border)] px-2.5 py-1 text-[10px] text-[var(--color-muted)]">
+                        {discovery.confidence === "high" ? "Correspondance forte" : discovery.confidence === "medium" ? "Correspondance probable" : "À confirmer"}
+                      </span>
+                    </div>
+                    {discovery.website && (
+                      <p className="mt-3 text-xs text-[var(--color-accent)]">
+                        Site retrouvé : {discovery.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                      </p>
+                    )}
+                    {discovery.summary && (
+                      <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{discovery.summary}</p>
+                    )}
+                  </div>
+                )}
+
+                {discovery?.insightTitle ? (
+                  <div className="audit-result-glow mt-4 rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] p-5">
+                    <span className="text-xs text-[var(--color-muted)]">D’après les éléments publics retrouvés</span>
+                    <h2 className="font-display mt-3 text-2xl font-semibold tracking-tight">
+                      {discovery.insightTitle}
+                    </h2>
+                    <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+                      {discovery.insight}
+                    </p>
+                    {discovery.evidence.length > 0 && (
+                      <div className="mt-4 border-t border-[var(--color-border)] pt-3">
+                        {discovery.evidence.slice(0, 2).map((item, index) => (
+                          <p key={index} className="mt-1 text-xs leading-relaxed text-[var(--color-text)]">• {item}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : previewFinding ? (
                   <div className="audit-result-glow mt-4 rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] p-5">
                     <div className="flex items-center justify-between gap-4">
                       <span className="text-xs text-[var(--color-muted)]">
@@ -509,22 +600,27 @@ export function AuditFunnel() {
                 <button
                   type="button"
                   onClick={() => {
-                    setStage("trade");
                     track("audit_step_2");
+                    if (data.secteur.trim()) {
+                      setStage("goal");
+                      track("audit_step_3");
+                    } else {
+                      setStage("trade");
+                    }
                   }}
                   className="audit-primary-cta mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300"
                 >
-                  {previewCount > 1 ? `Voir les ${previewCount - 1} autres points →` : "Voir mon plan complet →"}
+                  Continuer vers mes priorités →
                 </button>
                 <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-                  Encore 2 réponses rapides
+                  {data.secteur.trim() ? "Encore 1 réponse rapide" : "Encore 2 réponses rapides"}
                 </p>
               </div>
             ) : (
               <div>
-                <h2 className="font-display text-2xl font-semibold">On affine autrement.</h2>
+                <h2 className="font-display text-2xl font-semibold">On n’a pas encore une correspondance assez sûre.</h2>
                 <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-                  La lecture automatique n’a pas pu récupérer assez d’éléments. Deux réponses suffisent pour préparer le diagnostic.
+                  Ce n’est pas bloquant : on garde le nom de votre entreprise et deux réponses rapides suffisent pour lancer une recherche plus large et préparer le diagnostic.
                 </p>
                 <button
                   type="button"
