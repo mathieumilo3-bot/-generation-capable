@@ -455,6 +455,7 @@ export function AuditFunnel() {
               adUserDataConsent,
             },
             entreprise: data.entreprise,
+            discovery,
             attribution,
           })
         );
@@ -693,16 +694,23 @@ export function AuditFunnel() {
               </div>
             ) : (
               <div>
-                <h2 className="font-display text-2xl font-semibold">On n’a pas encore une correspondance assez sûre.</h2>
-                <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-                  Ce n’est pas bloquant : on garde le nom de votre entreprise et deux réponses rapides suffisent pour lancer une recherche plus large et préparer le diagnostic.
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+                  Recherche élargie
                 </p>
+                <h2 className="font-display mt-3 text-2xl font-semibold">On continue l’analyse avec votre activité.</h2>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
+                  Le nom seul ne suffit pas toujours à isoler immédiatement une présence publique. On garde votre entreprise et on recoupe maintenant votre métier, vos objectifs et les sources web avant de produire le diagnostic final.
+                </p>
+                <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                  <p className="text-sm font-medium text-[var(--color-text)]">Votre audit continue normalement.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">Aucune information à rechercher vous-même · encore 2 réponses rapides</p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setStage("trade")}
-                  className="mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[var(--color-text)] px-7 text-base font-semibold text-[var(--color-bg)]"
+                  className="audit-primary-cta mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300"
                 >
-                  Continuer →
+                  Continuer mon diagnostic →
                 </button>
               </div>
             )}
