@@ -1,7 +1,7 @@
 import type { AiAuditWebSource } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 22_000;
+const OPENAI_TIMEOUT_MS = 19_000;
 
 type FetchLike = typeof fetch;
 
@@ -173,61 +173,78 @@ function sanitizeCandidate(value: unknown): CompanyDiscoveryCandidate | null {
   };
 }
 
-export async function discoverCompany(
-  companyName: string,
-  options: { fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
+async function runDiscoveryAttempt(
+  query: string,
+  options: {
+    fetchFn: FetchLike;
+    apiKey: string;
+    model: string;
+    projectId?: string;
+    contextSize: "low" | "medium";
+    rescue?: boolean;
+  }
 ): Promise<CompanyDiscoveryResult> {
-  const query = companyName.trim().slice(0, 160);
-  if (query.length < 2) return { candidates: [], webSources: [] };
-
-  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
-  if (!apiKey) return { candidates: [], webSources: [] };
-
-  const model = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
-  const projectId = process.env.OPENAI_PROJECT_ID;
-  const fetchFn = options.fetchFn ?? fetch;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
 
   try {
-    const response = await fetchFn("https://api.openai.com/v1/responses", {
+    const response = await options.fetchFn("https://api.openai.com/v1/responses", {
       method: "POST",
       signal: controller.signal,
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${options.apiKey}`,
         "Content-Type": "application/json",
-        ...(projectId ? { "OpenAI-Project": projectId } : {}),
+        ...(options.projectId ? { "OpenAI-Project": options.projectId } : {}),
       },
       body: JSON.stringify({
-        model,
-        reasoning: { effort: "low" },
-        tools: [{ type: "web_search", search_context_size: "low" }],
+        model: options.model,
+        reasoning: { effort: options.rescue ? "medium" : "low" },
+        tools: [{ type: "web_search", search_context_size: options.contextSize }],
         tool_choice: "required",
         include: ["web_search_call.action.sources"],
-        max_output_tokens: 1_200,
+        max_output_tokens: options.rescue ? 1_700 : 1_300,
         input: [
           {
             role: "system",
             content:
-              "Tu identifies des entreprises à partir de sources web publiques. N'invente jamais un site, une ville, une activité ou un fait.",
+              "Tu es l'analyste GC chargé d'identifier une entreprise réelle à partir de sources web publiques. Tu dois chercher activement, recouper plusieurs sources et ne jamais inventer.",
           },
           {
             role: "user",
             content: `Retrouve l'entreprise correspondant au nom suivant : "${query}".
 
-OBJECTIF
-- Le visiteur ne donne que le nom de son entreprise.
-- Recherche d'abord la marque exacte, puis les variantes orthographiques évidentes.
-- Priorise la France et les entreprises locales/artisans/BTP si plusieurs résultats portent un nom proche, sans exclure un autre résultat si les preuves sont plus fortes.
-- Identifie le site officiel uniquement s'il est clairement relié à l'entreprise. Sinon laisse website vide.
-- Renvoie jusqu'à 3 candidats uniquement si une vraie ambiguïté existe. Sinon renvoie un seul candidat.
-- Pour "sector", utilise si possible l'une de ces valeurs : "Couvreur / toiture", "Plombier / chauffagiste", "Électricien", "Menuisier", "Peintre / façadier", "Maçon", "Paysagiste", "Entreprise générale BTP". Pour un autre métier, écris "Autre — <métier>".
-- "summary" = activité + zone en une phrase courte.
-- "insights" doit fournir jusqu'à 3 constats commerciaux distincts et vraiment spécifiques à cette entreprise, dans cet ordre quand les preuves le permettent : 1) être trouvé, 2) rassurer/être choisi, 3) faciliter la prise de contact/devis.
-- Pour chaque insight : un titre concret, un diagnostic utile et 1 à 3 preuves publiques précises. Ne répète pas la même idée sous trois formes.
-- Si une dimension n'est pas suffisamment vérifiable, dis exactement ce qui reste à confirmer au lieu d'inventer. Pas de conseil générique.
-- Ne donne aucun chiffre non vérifié. Ne prétends pas mesurer une position Google ou Google Maps exacte.
-- confidence = high seulement si nom + activité + zone/site convergent clairement ; medium si le rapprochement est plausible ; low si ambigu.
+MISSION
+Tu dois faire comme un consultant humain qui cherche vraiment cette société sur le web avant un audit commercial.
+
+METHODE OBLIGATOIRE
+1. Recherche le nom exact entre guillemets.
+2. Recherche ensuite le nom sans guillemets + entreprise, artisan, bâtiment, BTP.
+3. Si tu vois une ville, un département, un métier, un dirigeant, un téléphone ou un site qui convergent, recoupe-les.
+4. Vérifie le site officiel, Google Business/annuaires professionnels, réseaux sociaux et mentions publiques crédibles quand disponibles.
+5. Une entreprise peut être suffisamment identifiée même si son site officiel est absent ou inaccessible : dans ce cas garde website vide mais renseigne activité, zone et constats à partir des sources publiques.
+6. Ne renvoie plusieurs candidats que s'il existe une vraie ambiguïté.
+
+CRITERES DE L'AUDIT GC
+- ATTIRER : présence sur des recherches métier/service/zone sans connaître la marque.
+- RASSURER : clarté de l'offre, réalisations, avis, garanties, photos, références, cohérence de la présence publique.
+- CONVERTIR : facilité pour appeler, demander un devis ou comprendre la prochaine action.
+- Retenir seulement 1 à 3 opportunités réellement utiles commercialement.
+- Toujours relier chaque constat à une preuve publique précise.
+- Jamais de classement Google inventé, de trafic estimé, de taux de conversion ou de chiffre non vérifié.
+
+SORTIE
+- name : nom le plus probable.
+- website : uniquement le site officiel vérifié, sinon chaîne vide.
+- sector : métier réel ; utilise si possible Couvreur / toiture, Plombier / chauffagiste, Électricien, Menuisier, Peintre / façadier, Maçon, Paysagiste, Entreprise générale BTP ; sinon Autre — <métier>.
+- city : ville/zone la plus solide, sinon chaîne vide.
+- summary : activité + zone + élément qui permet l'identification.
+- confidence :
+  high = plusieurs signaux convergent ;
+  medium = correspondance très probable mais un élément manque ;
+  low = vraie ambiguïté.
+- insights : jusqu'à 3 constats spécifiques à cette entreprise, avec preuves.
+
+${options.rescue ? "C'est une tentative de récupération : la première recherche n'a pas donné de candidat exploitable. Élargis les variantes du nom, les annuaires et les réseaux sociaux avant de conclure qu'il n'y a rien." : ""}
 
 Renvoie uniquement le JSON demandé.`,
           },
@@ -235,7 +252,7 @@ Renvoie uniquement le JSON demandé.`,
         text: {
           format: {
             type: "json_schema",
-            name: "gc_company_discovery_v1",
+            name: "gc_company_discovery_v2",
             strict: true,
             schema: schema(),
           },
@@ -249,20 +266,60 @@ Renvoie uniquement le JSON demandé.`,
     }
 
     const body = (await response.json()) as Record<string, unknown>;
+    const sources = extractSources(body);
     const outputText = extractOutputText(body);
-    if (!outputText) return { candidates: [], webSources: extractSources(body) };
+    if (!outputText) return { candidates: [], webSources: sources };
 
     const parsed = JSON.parse(outputText) as { candidates?: unknown[] };
     const candidates = Array.isArray(parsed.candidates)
-      ? parsed.candidates.map(sanitizeCandidate).filter(Boolean).slice(0, 3) as CompanyDiscoveryCandidate[]
+      ? (parsed.candidates.map(sanitizeCandidate).filter(Boolean).slice(0, 3) as CompanyDiscoveryCandidate[])
       : [];
 
-    return { candidates, webSources: extractSources(body) };
+    return { candidates, webSources: sources };
   } catch (error) {
     const label = error instanceof Error ? error.name : "unknown_error";
-    console.warn("[audit/discovery] unavailable:", label);
+    console.warn("[audit/discovery] attempt unavailable:", label);
     return { candidates: [], webSources: [] };
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function discoverCompany(
+  companyName: string,
+  options: { fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
+): Promise<CompanyDiscoveryResult> {
+  const query = companyName.trim().slice(0, 160);
+  if (query.length < 2) return { candidates: [], webSources: [] };
+
+  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
+  if (!apiKey) return { candidates: [], webSources: [] };
+
+  const model = options.model ?? process.env.OPENAI_AUDIT_MODEL ?? DEFAULT_MODEL;
+  const projectId = process.env.OPENAI_PROJECT_ID;
+  const fetchFn = options.fetchFn ?? fetch;
+
+  const first = await runDiscoveryAttempt(query, {
+    fetchFn,
+    apiKey,
+    model,
+    projectId,
+    contextSize: "low",
+  });
+
+  if (first.candidates.length > 0) return first;
+
+  const rescue = await runDiscoveryAttempt(query, {
+    fetchFn,
+    apiKey,
+    model,
+    projectId,
+    contextSize: "medium",
+    rescue: true,
+  });
+
+  return {
+    candidates: rescue.candidates,
+    webSources: rescue.webSources.length ? rescue.webSources : first.webSources,
+  };
 }

@@ -7,10 +7,21 @@ import { buildCalendlyUrl, type BookingAttribution } from "@/lib/booking";
 import { trackGoogleAdsLeadConversion } from "@/lib/tracking";
 import type { Report } from "@/lib/audit-engine/types";
 
+type DiscoverySnapshot = {
+  name: string;
+  website: string;
+  sector: string;
+  city: string;
+  summary: string;
+  confidence: "high" | "medium" | "low";
+  insights: { title: string; insight: string; evidence: string[] }[];
+};
+
 type StoredAudit = {
   report: Report | null;
   lead?: { nom?: string; email?: string; telephone?: string; adUserDataConsent?: string };
   entreprise?: string;
+  discovery?: DiscoverySnapshot | null;
   attribution?: BookingAttribution;
 };
 
@@ -54,6 +65,7 @@ export function AuditThankYouClient() {
         report={stored.report}
         lead={stored.lead}
         attribution={stored.attribution}
+        discovery={stored.discovery}
       />
     );
   }

@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 30_000;
+const OPENAI_TIMEOUT_MS = 42_000;
 const MAX_SITE_EXCERPT = 8_000;
 
 type FetchLike = typeof fetch;
@@ -104,6 +104,16 @@ RECHERCHE WEB POUR IDENTIFIER ET QUALIFIER L'ENTREPRISE
 - Si la recherche web ne fournit pas assez d'éléments, dis-le explicitement.
 - Pour une activité locale, la partie ATTIRER doit traiter en priorité la découvrabilité locale/métier, pas seulement le texte du site.
 - Chaque opportunité doit être spécifique à CETTE entreprise : cite au moins un élément public concret quand la recherche web a été utilisée.
+
+FICHE GC A RESPECTER
+- Le diagnostic doit suivre la logique ATTIRER → RASSURER → CONVERTIR.
+- ATTIRER : vérifier si l'entreprise peut être découverte sur son métier, ses services et sa zone par quelqu'un qui ne connaît pas son nom.
+- RASSURER : vérifier clarté de l'offre, avis, réalisations, photos, garanties, références et cohérence des preuves.
+- CONVERTIR : vérifier si un prospect comprend immédiatement comment appeler, demander un devis ou avancer.
+- Retenir seulement 3 à 5 opportunités maximum, et dans le rendu public seulement les 3 plus fortes.
+- Chaque opportunité suit : PROBLÈME → PREUVE → IMPACT → DÉCISION À PRENDRE.
+- Le résultat doit être suffisamment spécifique pour qu'on puisse reconnaître l'entreprise sans voir son nom.
+- Si le site officiel est inaccessible, l'analyse doit CONTINUER grâce aux recherches web, annuaires, réseaux sociaux et sources publiques. Ne jamais remplacer cela par un simple "non vérifiable automatiquement".
 
 CE QUE TU DOIS PRODUIRE
 - Un résumé exécutif de 2 phrases maximum, spécifique au site.
@@ -363,8 +373,8 @@ export async function synthesizeAuditWithOpenAI(
       },
       body: JSON.stringify({
         model,
-        reasoning: { effort: "low" },
-        tools: [{ type: "web_search", search_context_size: "low" }],
+        reasoning: { effort: "medium" },
+        tools: [{ type: "web_search", search_context_size: "medium" }],
         tool_choice: "auto",
         include: ["web_search_call.action.sources"],
         max_output_tokens: 1_800,
