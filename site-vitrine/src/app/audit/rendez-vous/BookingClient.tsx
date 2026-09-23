@@ -29,9 +29,13 @@ export function BookingClient() {
     try {
       const raw = sessionStorage.getItem("gc_audit_result");
       stored = raw ? (JSON.parse(raw) as StoredAudit) : null;
+      // Session storage exists only after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBookingUrl(buildCalendlyUrl(stored?.lead, stored?.attribution));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCompany(stored?.entreprise || "");
     } catch {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBookingUrl(buildCalendlyUrl());
     }
 
