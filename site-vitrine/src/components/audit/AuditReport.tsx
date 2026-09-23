@@ -107,9 +107,17 @@ function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: numbe
           </span>
         </div>
       </div>
-      <h3 className="font-display mt-4 text-xl font-semibold tracking-tight text-[var(--color-text)]">
-        {ai?.title || finding?.title}
-      </h3>
+      <div className="mt-4 flex items-start justify-between gap-4">
+        <h3 className="font-display text-xl font-semibold tracking-tight text-[var(--color-text)]">
+          {ai?.title || finding?.title}
+        </h3>
+        {ai?.score ? (
+          <div className="shrink-0 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-center">
+            <span className="font-display text-2xl font-semibold leading-none text-[var(--color-text)]">{ai.score}</span>
+            <span className="ml-1 text-xs text-[var(--color-muted)]">/10</span>
+          </div>
+        ) : null}
+      </div>
       <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
         {ai?.diagnosis || finding?.statement}
       </p>
@@ -322,7 +330,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
             Les points qui vous font perdre le plus d’opportunités.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Pour chaque point : ce qu’on a vu, la preuve, pourquoi ça compte et une première action immédiatement exploitable.
+            Pour chaque point : ce qu’on a vu, la preuve, une note sur 10 fondée sur les éléments observés, pourquoi ça compte et une première action immédiatement exploitable.
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {aiOpportunities.map((item, index) => (
