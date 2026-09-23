@@ -43,22 +43,6 @@ function pillarForFinding(finding: Finding): PillarId {
   return PILLARS.find((pillar) => pillar.dimensions.includes(finding.dimension))?.id ?? "rassurer";
 }
 
-function pillarState(report: Report, pillarId: PillarId) {
-  const pillar = PILLARS.find((item) => item.id === pillarId)!;
-  const leaks = report.topLeaks.filter((finding) => pillar.dimensions.includes(finding.dimension));
-  const strengths = report.worksWell.filter((finding) => pillar.dimensions.includes(finding.dimension));
-
-  if (leaks.length > 0) return { label: "Potentiel à développer", tone: "text-[var(--color-accent)]" };
-  if (strengths.length > 0) return { label: "Base présente", tone: "text-[var(--color-text)]" };
-  return { label: "À explorer", tone: "text-[var(--color-muted)]" };
-}
-
-const CONFIDENCE_LABEL = {
-  observed: "Observé sur votre site",
-  inferred: "Déduit",
-  unknown: "À vérifier ensemble",
-} as const;
-
 function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: number; ai?: AiAuditOpportunity }) {
   const ref = useRef<HTMLDivElement>(null);
   const seen = useRef(false);
@@ -194,7 +178,6 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
       diagnosis: item.insight,
       evidence: item.evidence,
       confidence: "inferred",
-      score: pillar === "rassurer" ? 5 : 4,
       loss:
         pillar === "attirer"
           ? "Des prospects qui cherchent vos services sans connaître votre nom peuvent ne jamais arriver jusqu’à vous."
@@ -223,7 +206,15 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
     };
   });
   const aiOpportunities = synthesis?.opportunities?.length
-    ? synthesis.opportunities
+    ? [
+        ...synthesis.opportunities,
+        ...discoveryOpportunities.filter(
+          (candidate) =>
+            !synthesis.opportunities.some(
+              (existing) => existing.title.trim().toLowerCase() === candidate.title.trim().toLowerCase()
+            )
+        ),
+      ].slice(0, 3)
     : discoveryOpportunities;
   const hasUsefulResearch = aiOpportunities.length > 0;
 
