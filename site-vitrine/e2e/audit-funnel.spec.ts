@@ -211,10 +211,10 @@ test.describe("Audit funnel — nom → diagnostic", () => {
     });
 
     await start(page);
-    await expect(page.getByText("Vous n’avez pas besoin d’attendre.")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Recevez le résultat, sans attendre ici.")).toBeVisible({ timeout: 15_000 });
     await page.getByLabel("Votre email").fill("artisan@example.com");
-    await page.getByRole("button", { name: /Me prévenir quand c’est prêt/ }).click();
-    await expect(page.getByText("C’est bon. Vous pouvez fermer cette page.")).toBeVisible();
+    await page.getByRole("button", { name: /Me prévenir/ }).click();
+    await expect(page.getByText(/Vous pouvez fermer cette page/)).toBeVisible();
 
     const registration = contactCalls.find((call) => call.action === "register");
     expect(registration).toMatchObject({
