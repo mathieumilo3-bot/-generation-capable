@@ -116,6 +116,8 @@ FICHE GC A RESPECTER
 - Si le site officiel est inaccessible, l'analyse doit CONTINUER grâce aux recherches web, annuaires, réseaux sociaux et sources publiques. Ne jamais remplacer cela par un simple "non vérifiable automatiquement".
 
 CE QUE TU DOIS PRODUIRE
+- "detectedSector" : le métier réel vérifié d'après le site/sources publiques. Si le secteur déclaré par le visiteur est faux, corrige-le.
+- "officialSite" : l'URL du site officiel vérifié si tu l'as retrouvé, sinon chaîne vide.
 - Un résumé exécutif de 2 phrases maximum, spécifique au site.
 - Un "companySnapshot" : activité, cible et zone visibles, uniquement d'après les données fournies et la recherche web si elle a été utilisée.
 - Une observation spécifique pour ATTIRER, RASSURER et CONVERTIR.
@@ -152,6 +154,8 @@ function schema() {
     type: "object",
     additionalProperties: false,
     required: [
+      "detectedSector",
+      "officialSite",
       "executiveSummary",
       "companySnapshot",
       "attirer",
@@ -162,6 +166,8 @@ function schema() {
       "callBridge",
     ],
     properties: {
+      detectedSector: { type: "string" },
+      officialSite: { type: "string" },
       executiveSummary: { type: "string" },
       companySnapshot: { type: "string" },
       attirer: { type: "string" },
@@ -323,6 +329,8 @@ function sanitizeSynthesis(
 
   if (opportunities.length === 0) return null;
 
+  const detectedSector = cleanText((raw as Record<string, unknown>).detectedSector, 140);
+  const officialSite = cleanText((raw as Record<string, unknown>).officialSite, 300);
   const executiveSummary = cleanText(raw.executiveSummary, 520);
   const companySnapshot = cleanText(raw.companySnapshot, 500);
   const attirer = cleanText(raw.attirer, 420);
@@ -334,6 +342,8 @@ function sanitizeSynthesis(
   if (!executiveSummary || !companySnapshot || !attirer || !rassurer || !convertir || !callBridge) return null;
 
   return {
+    detectedSector,
+    officialSite,
     executiveSummary,
     companySnapshot,
     attirer,
