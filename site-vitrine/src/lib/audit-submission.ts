@@ -50,7 +50,7 @@ export const FIELD_LIMITS: Record<keyof AuditSubmission, number> = {
 /** Name of the hidden field real visitors never fill — bots usually do. */
 export const HONEYPOT_FIELD = "site_web_confirmation";
 
-const REQUIRED_FIELDS: (keyof AuditSubmission)[] = ["entreprise", "secteur", "objectif", "email"];
+const REQUIRED_FIELDS: (keyof AuditSubmission)[] = ["secteur", "objectif", "email"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 export function escapeHtml(value: string): string {
@@ -125,6 +125,7 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
   }
 
   const missing = REQUIRED_FIELDS.filter((field) => (candidate[field] ?? "").length === 0);
+  if (!candidate.entreprise && !candidate.siteUrl) missing.unshift("entreprise");
   if (missing.length > 0) {
     return { ok: false, error: "missing_fields", missing };
   }
@@ -220,7 +221,11 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
           reportSummary.degraded
             ? "Diagnostic Capable Audit (analyse partielle — site non joignable) :"
             : "Diagnostic Capable Audit — principales fuites détectées :",
-          ...reportSummary.topLeaks.map((leak, i) => `${i + 1}. ${leak.title}${leak.dimension ? ` (${leak.dimension})` : ""}`),
+          ...reportSummary.topLeaks.flatMap((leak, i) => [
+            `${i + 1}. ${leak.title}${leak.dimension ? ` (${leak.dimension})` : ""}`,
+            leak.statement ? `   Constat : ${leak.statement}` : "",
+            leak.recommendation ? `   À trancher : ${leak.recommendation}` : "",
+          ]).filter(Boolean),
           reportSummary.otherFindingsCount > 0
             ? `+ ${reportSummary.otherFindingsCount} autre(s) observation(s) non retenue(s) dans le résumé.`
             : "",
@@ -248,7 +253,7 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
       ${reportSummary.topLeaks
         .map(
           (leak) =>
-            `<li>${escapeHtml(leak.title)}${leak.dimension ? ` <span style="color:#666;">(${escapeHtml(leak.dimension)})</span>` : ""}</li>`
+            `<li style="margin-bottom:14px;"><strong>${escapeHtml(leak.title)}</strong>${leak.dimension ? ` <span style="color:#666;">(${escapeHtml(leak.dimension)})</span>` : ""}${leak.statement ? `<div style="margin-top:4px;color:#333;">${escapeHtml(leak.statement)}</div>` : ""}${leak.recommendation ? `<div style="margin-top:5px;color:#666;"><strong>À trancher :</strong> ${escapeHtml(leak.recommendation)}</div>` : ""}</li>`
         )
         .join("")}
     </ol>
