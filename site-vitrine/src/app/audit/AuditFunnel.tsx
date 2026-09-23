@@ -120,7 +120,7 @@ export function AuditFunnel() {
     setProgressLabel(label);
   }
 
-  async function notifyAuditStarted(candidate: CompanyDiscoveryCandidate | null, rawName: string) {
+  async function notifyAuditStarted(candidate: CompanyDiscoveryCandidate | null, rawName: string, resolvedSiteUrl = "") {
     let consent = "UNSPECIFIED";
     try {
       consent = window.localStorage.getItem("gc-revenue-consent-v1") === "accepted" ? "GRANTED" : "UNSPECIFIED";
@@ -133,7 +133,7 @@ export function AuditFunnel() {
         keepalive: true,
         body: JSON.stringify({
           entreprise: candidate?.name || rawName,
-          siteUrl: candidate?.website || "",
+          siteUrl: resolvedSiteUrl || candidate?.website || "",
           secteur: candidate?.sector || "",
           ville: candidate?.city || "",
           purpose: "REQUESTED_AUDIT",
@@ -327,7 +327,7 @@ export function AuditFunnel() {
         advance(24, "Nom reçu · recherche élargie en cours");
       }
 
-      void notifyAuditStarted(candidate, rawName);
+      void notifyAuditStarted(candidate, rawName, resolvedSiteUrl);
 
       const resolvedName = candidate?.name || rawName;
       const resolvedSite = resolvedSiteUrl;
