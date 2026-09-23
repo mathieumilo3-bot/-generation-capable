@@ -15,28 +15,28 @@ const VARIANTS: Record<string, HeroVariant> = {
     title: "Découvrez comment générer",
     accent: "plus de demandes de devis.",
     body:
-      "Entrez votre site et découvrez en quelques secondes ce que vous pouvez améliorer pour gagner en visibilité et obtenir plus de demandes de devis.",
+      "Entrez simplement le nom de votre entreprise. On retrouve votre présence en ligne et on vous montre ce qui peut améliorer votre visibilité et vos demandes de devis.",
   },
   chantiers: {
     badge: "Pour artisans du bâtiment",
     title: "Découvrez comment gagner",
     accent: "plus de chantiers.",
     body:
-      "Entrez votre site. En quelques secondes, découvrez ce qui peut freiner vos demandes de devis — et quoi corriger en priorité.",
+      "Entrez le nom de votre entreprise. On la retrouve en ligne et on identifie ce qui peut freiner vos demandes de devis — puis quoi corriger en priorité.",
   },
   site: {
     badge: "Diagnostic site pour artisans",
     title: "Découvrez comment votre site peut",
     accent: "générer plus de demandes.",
     body:
-      "Entrez votre site. On vous montre la première amélioration qui peut renforcer la confiance et faciliter la prise de contact, puis les actions à prioriser.",
+      "Entrez le nom de votre entreprise. On retrouve votre site et vos signaux publics, puis on vous montre la première amélioration à prioriser.",
   },
   seo: {
     badge: "Diagnostic visibilité locale",
     title: "Découvrez comment gagner",
     accent: "en visibilité sur Google.",
     body:
-      "Entrez votre site. On vérifie vos signaux locaux et on vous montre la première amélioration à prioriser pour être mieux trouvé et plus contacté.",
+      "Entrez le nom de votre entreprise. On vérifie votre présence publique et vos signaux locaux, puis on vous montre quoi prioriser pour être mieux trouvé et plus contacté.",
   },
 };
 
