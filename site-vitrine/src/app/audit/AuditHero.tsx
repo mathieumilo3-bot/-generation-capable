@@ -15,7 +15,7 @@ const VARIANTS: Record<string, HeroVariant> = {
     title: "Découvrez comment générer",
     accent: "plus de demandes de devis.",
     body:
-      "Entrez votre site. En quelques secondes, découvrez ce qui peut vous faire perdre des demandes de devis — et quoi corriger en priorité.",
+      "Entrez votre site et découvrez en quelques secondes ce que vous pouvez améliorer pour gagner en visibilité et obtenir plus de demandes de devis.",
   },
   chantiers: {
     badge: "Pour artisans du bâtiment",
