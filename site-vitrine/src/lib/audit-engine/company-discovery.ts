@@ -5,6 +5,12 @@ const OPENAI_TIMEOUT_MS = 22_000;
 
 type FetchLike = typeof fetch;
 
+export type CompanyDiscoveryInsight = {
+  title: string;
+  insight: string;
+  evidence: string[];
+};
+
 export type CompanyDiscoveryCandidate = {
   name: string;
   website: string;
@@ -12,9 +18,7 @@ export type CompanyDiscoveryCandidate = {
   city: string;
   summary: string;
   confidence: "high" | "medium" | "low";
-  insightTitle: string;
-  insight: string;
-  evidence: string[];
+  insights: CompanyDiscoveryInsight[];
 };
 
 export type CompanyDiscoveryResult = {
@@ -41,9 +45,7 @@ function schema() {
             "city",
             "summary",
             "confidence",
-            "insightTitle",
-            "insight",
-            "evidence",
+            "insights",
           ],
           properties: {
             name: { type: "string" },
@@ -52,9 +54,21 @@ function schema() {
             city: { type: "string" },
             summary: { type: "string" },
             confidence: { type: "string", enum: ["high", "medium", "low"] },
-            insightTitle: { type: "string" },
-            insight: { type: "string" },
-            evidence: { type: "array", maxItems: 3, items: { type: "string" } },
+            insights: {
+              type: "array",
+              minItems: 1,
+              maxItems: 3,
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["title", "insight", "evidence"],
+                properties: {
+                  title: { type: "string" },
+                  insight: { type: "string" },
+                  evidence: { type: "array", maxItems: 3, items: { type: "string" } },
+                },
+              },
+            },
           },
         },
       },
@@ -128,6 +142,26 @@ function sanitizeCandidate(value: unknown): CompanyDiscoveryCandidate | null {
     ? (raw.confidence as CompanyDiscoveryCandidate["confidence"])
     : "low";
 
+  const insights = Array.isArray(raw.insights)
+    ? raw.insights
+        .map((value) => {
+          if (!value || typeof value !== "object") return null;
+          const item = value as Record<string, unknown>;
+          const title = clean(item.title, 180);
+          const insight = clean(item.insight, 620);
+          if (!title || !insight) return null;
+          return {
+            title,
+            insight,
+            evidence: Array.isArray(item.evidence)
+              ? item.evidence.map((entry) => clean(entry, 240)).filter(Boolean).slice(0, 3)
+              : [],
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 3) as CompanyDiscoveryInsight[]
+    : [];
+
   return {
     name,
     website: normalizeWebsite(raw.website),
@@ -135,11 +169,7 @@ function sanitizeCandidate(value: unknown): CompanyDiscoveryCandidate | null {
     city: clean(raw.city, 120),
     summary: clean(raw.summary, 420),
     confidence,
-    insightTitle: clean(raw.insightTitle, 180),
-    insight: clean(raw.insight, 520),
-    evidence: Array.isArray(raw.evidence)
-      ? raw.evidence.map((item) => clean(item, 220)).filter(Boolean).slice(0, 3)
-      : [],
+    insights,
   };
 }
 
@@ -193,7 +223,9 @@ OBJECTIF
 - Renvoie jusqu'à 3 candidats uniquement si une vraie ambiguïté existe. Sinon renvoie un seul candidat.
 - Pour "sector", utilise si possible l'une de ces valeurs : "Couvreur / toiture", "Plombier / chauffagiste", "Électricien", "Menuisier", "Peintre / façadier", "Maçon", "Paysagiste", "Entreprise générale BTP". Pour un autre métier, écris "Autre — <métier>".
 - "summary" = activité + zone en une phrase courte.
-- "insightTitle", "insight" et "evidence" doivent fournir UN premier constat commercial concret et utile fondé sur ce qui est réellement visible dans les résultats publics : découvrabilité, clarté de l'offre, preuves, avis, site, prise de contact, cohérence locale. Pas de conseil générique.
+- "insights" doit fournir jusqu'à 3 constats commerciaux distincts et vraiment spécifiques à cette entreprise, dans cet ordre quand les preuves le permettent : 1) être trouvé, 2) rassurer/être choisi, 3) faciliter la prise de contact/devis.
+- Pour chaque insight : un titre concret, un diagnostic utile et 1 à 3 preuves publiques précises. Ne répète pas la même idée sous trois formes.
+- Si une dimension n'est pas suffisamment vérifiable, dis exactement ce qui reste à confirmer au lieu d'inventer. Pas de conseil générique.
 - Ne donne aucun chiffre non vérifié. Ne prétends pas mesurer une position Google ou Google Maps exacte.
 - confidence = high seulement si nom + activité + zone/site convergent clairement ; medium si le rapprochement est plausible ; low si ambigu.
 
