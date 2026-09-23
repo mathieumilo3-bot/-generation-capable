@@ -92,7 +92,7 @@ function DiagnosticCardView({ card, rank }: { card: DiagnosticCard; rank: number
 
       <div className="mt-5 space-y-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Ce que vous perdez</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">L’opportunité à débloquer</p>
           <p className="mt-1 text-sm leading-relaxed text-[var(--color-text)]">{card.loss}</p>
         </div>
 
@@ -108,7 +108,7 @@ function DiagnosticCardView({ card, rank }: { card: DiagnosticCard; rank: number
       </div>
 
       <div className="mt-5 rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">À corriger</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">Première action</p>
         <p className="mt-1.5 text-sm font-semibold leading-relaxed text-[var(--color-text)]">{card.fix}</p>
       </div>
     </article>
@@ -150,7 +150,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
       className="mx-auto max-w-2xl"
     >
       <header className="text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">Votre diagnostic</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">Vos 3 leviers prioritaires</p>
         <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{companyName}</h2>
         {summary ? <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">{summary}</p> : null}
       </header>
@@ -174,7 +174,10 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
       )}
 
       <div id="prochaine-etape" className="audit-result-glow mt-10 rounded-[2rem] border border-[var(--color-accent)]/30 bg-[var(--color-surface)] p-7 text-center sm:p-10">
-        <h3 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Votre diagnostic est prêt.</h3>
+        <h3 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Votre potentiel est clair. Passons au plan.</h3>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">
+          On transforme maintenant ces 3 leviers en actions simples, dans le bon ordre, pour faire progresser votre visibilité et vos demandes.
+        </p>
         <div className="mx-auto mt-7 max-w-xl">
           <Button
             href={bookingUrl}
