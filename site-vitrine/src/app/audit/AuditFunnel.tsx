@@ -63,6 +63,8 @@ function toEmailSummary(report: Report) {
     topLeaks: report.topLeaks.map((f) => ({
       title: f.title,
       dimension: DIMENSION_LABELS[f.dimension],
+      statement: f.statement,
+      recommendation: f.recommendation,
     })),
     otherFindingsCount: report.otherFindings.length,
   };
@@ -376,7 +378,7 @@ export function AuditFunnel() {
                 Analyse de votre site
               </p>
               <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-[10px] font-medium text-[var(--color-muted)]">
-                Sans email
+                Sans email pour commencer
               </span>
             </div>
 
