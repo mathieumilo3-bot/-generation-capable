@@ -129,6 +129,16 @@ function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: numbe
         </p>
         <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{ai?.impact || pillar.impact}</p>
       </div>
+      {ai?.firstAction ? (
+        <div className="mt-4 rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-4 py-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+            À faire maintenant
+          </p>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-[var(--color-text)]">
+            {ai.firstAction}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -203,7 +213,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
         <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
           Votre diagnostic
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Les 3 priorités qui peuvent vous faire gagner plus de demandes</h2>
+        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Voilà ce qu’on a réellement trouvé.</h2>
         <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)]">
           {synthesis?.executiveSummary ||
             "On a analysé votre présence comme le ferait un futur client : est-ce qu’il vous trouve, vous choisit et vous contacte facilement ?"}
@@ -214,6 +224,12 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
             <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">{synthesis?.companySnapshot || discovery?.summary}</p>
           </div>
         )}
+        {synthesis?.worksWell && synthesis.worksWell !== "À confirmer pendant le bilan." ? (
+          <div className="mx-auto mt-3 max-w-xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 text-left">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Ce qui fonctionne déjà</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{synthesis.worksWell}</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
@@ -303,10 +319,10 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
             {aiOpportunities.length} constat{aiOpportunities.length > 1 ? "s" : ""} concret{aiOpportunities.length > 1 ? "s" : ""}
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-            Commencez par ces priorités.
+            Les points qui vous font perdre le plus d’opportunités.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Chaque priorité part d’un élément observé ou clairement identifié dans votre présence en ligne.
+            Pour chaque point : ce qu’on a vu, la preuve, pourquoi ça compte et une première action immédiatement exploitable.
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {aiOpportunities.map((item, index) => (
