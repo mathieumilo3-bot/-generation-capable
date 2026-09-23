@@ -44,7 +44,7 @@ export async function runAudit(rawInput: DeclaredInput, options: RunAuditOptions
   let resolvedInput = input;
   if (input.entreprise) {
     try {
-      const discovery = await discover(input.entreprise);
+      const discovery = await discover(input.entreprise, { firstTimeoutMs: 14_000, skipRescue: true });
       const candidate =
         discovery.candidates.find((item) => item.confidence === "high") ??
         discovery.candidates.find((item) => item.confidence === "medium") ??
