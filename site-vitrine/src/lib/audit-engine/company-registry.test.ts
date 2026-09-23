@@ -57,9 +57,8 @@ describe("company registry preflight", () => {
     const result = classifyRegistryResults("AATP", [
       {
         siren: "451619258",
-        nom_complet: "AATP",
+        nom_complet: "A A T P",
         nom_raison_sociale: "A A T P",
-        sigle: "AATP",
         etat_administratif: "A",
         siege: {
           libelle_commune: "Bastelicaccia",
