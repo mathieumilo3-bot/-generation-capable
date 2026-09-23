@@ -95,6 +95,8 @@ function openAiResponse(payload: object) {
 
 function validPayload() {
   return {
+    detectedSector: "Artisan rénovation",
+    officialSite: "https://artisan-exemple.fr/",
     executiveSummary: "Le site présente clairement une activité artisanale, mais plusieurs éléments du parcours peuvent être rendus plus convaincants.",
     companySnapshot: "L'entreprise se présente comme un artisan de rénovation et dépannage et invite le visiteur à demander un devis.",
     attirer: "Le positionnement métier est visible, mais la manière dont une personne non familière avec la marque découvre le site reste à approfondir.",
