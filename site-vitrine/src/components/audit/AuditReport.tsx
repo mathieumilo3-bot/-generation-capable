@@ -153,7 +153,6 @@ type AuditReportProps = {
 export function AuditReport({ report, lead, attribution, discovery }: AuditReportProps) {
   const viewedTracked = useRef(false);
   const bookingUrl = buildCalendlyUrl(lead, attribution);
-  const priorities = report.topLeaks.slice(0, 3);
   const synthesis = report.aiSynthesis;
   const discoveryOpportunities: AiAuditOpportunity[] = (discovery?.insights ?? []).slice(0, 3).map((item, index) => ({
     id: `discovery_${index + 1}`,
