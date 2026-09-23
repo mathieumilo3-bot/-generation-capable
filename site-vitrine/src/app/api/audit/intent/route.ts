@@ -48,9 +48,10 @@ export async function POST(request: Request) {
 
   const source = payload as Record<string, unknown>;
   const consent = readString(source, "consent", 20);
+  const purpose = readString(source, "purpose", 40);
   const entreprise = readString(source, "entreprise", 160);
 
-  if (consent !== "GRANTED" || entreprise.length < 2) {
+  if (purpose !== "REQUESTED_AUDIT" || entreprise.length < 2) {
     return NextResponse.json({ status: "ignored" }, { status: 200 });
   }
 
@@ -59,14 +60,14 @@ export async function POST(request: Request) {
     siteUrl: readString(source, "siteUrl", 300),
     secteur: readString(source, "secteur", 160),
     ville: readString(source, "ville", 160),
-    utmSource: readString(source, "utmSource", 120),
-    utmMedium: readString(source, "utmMedium", 120),
-    utmCampaign: readString(source, "utmCampaign", 120),
-    utmContent: readString(source, "utmContent", 120),
-    utmTerm: readString(source, "utmTerm", 120),
-    gclid: readString(source, "gclid", 220),
-    gbraid: readString(source, "gbraid", 220),
-    wbraid: readString(source, "wbraid", 220),
+    utmSource: consent === "GRANTED" ? readString(source, "utmSource", 120) : "",
+    utmMedium: consent === "GRANTED" ? readString(source, "utmMedium", 120) : "",
+    utmCampaign: consent === "GRANTED" ? readString(source, "utmCampaign", 120) : "",
+    utmContent: consent === "GRANTED" ? readString(source, "utmContent", 120) : "",
+    utmTerm: consent === "GRANTED" ? readString(source, "utmTerm", 120) : "",
+    gclid: consent === "GRANTED" ? readString(source, "gclid", 220) : "",
+    gbraid: consent === "GRANTED" ? readString(source, "gbraid", 220) : "",
+    wbraid: consent === "GRANTED" ? readString(source, "wbraid", 220) : "",
   };
 
   const apiKey = process.env.RESEND_API_KEY;
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
       to: notifyEmail,
       subject: `Audit commence — ${data.entreprise}`,
       text: [
-        "Un visiteur ayant accepte la mesure a lance un diagnostic et son entreprise a ete retrouvee.",
+        "Un visiteur a demande un diagnostic et son entreprise a ete retrouvee.",
         "",
         ...lines,
         "",
@@ -103,11 +104,11 @@ export async function POST(request: Request) {
       ].join("\n"),
       html: `<div style="font-family:Arial,sans-serif;line-height:1.55">
         <h2 style="margin:0 0 14px">Audit commence — ${esc(data.entreprise)}</h2>
-        <p>Un visiteur ayant accepté la mesure a lancé un diagnostic et son entreprise a été retrouvée.</p>
+        <p>Un visiteur a demandé un diagnostic et son entreprise a été retrouvée.</p>
         <ul>
           ${lines.map((line) => `<li>${esc(line)}</li>`).join("")}
         </ul>
-        <p style="color:#666;font-size:12px">Aucune adresse email ni aucun numéro de téléphone n'a été collecté à cette étape.</p>
+        <p style="color:#666;font-size:12px">Aucune adresse email ni aucun numéro de téléphone n'a été demandé à cette étape. L'attribution publicitaire n'est jointe que si la mesure a été acceptée.</p>
       </div>`,
     });
 
