@@ -78,7 +78,7 @@ export function AuditHero() {
         <span className="mx-2 text-white/20">·</span>
         Gratuit
         <span className="mx-2 text-white/20">·</span>
-        Sans email
+        Premier résultat sans email
       </p>
     </div>
   );
