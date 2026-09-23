@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AuditReport } from "@/components/audit/AuditReport";
 import { Button } from "@/components/ui/Button";
-import { buildCalendlyUrl, type BookingAttribution } from "@/lib/booking";
+import type { BookingAttribution } from "@/lib/booking";
 import { trackGoogleAdsLeadConversion } from "@/lib/tracking";
 import type { Report } from "@/lib/audit-engine/types";
 
@@ -70,8 +70,6 @@ export function AuditThankYouClient() {
     );
   }
 
-  const bookingUrl = buildCalendlyUrl(stored?.lead, stored?.attribution);
-
   return (
     <div className="mx-auto max-w-xl text-center">
       <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-5xl">
@@ -79,9 +77,7 @@ export function AuditThankYouClient() {
       </h1>
       <div className="mx-auto mt-8 max-w-xl">
         <Button
-          href={bookingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+          href="/audit/rendez-vous"
           variant="primary"
           className="audit-primary-cta min-h-16 w-full px-8 text-lg sm:text-xl"
           trackEvent="booking_started"
