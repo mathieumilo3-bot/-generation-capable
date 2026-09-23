@@ -69,7 +69,7 @@ const OBJECTIVES = [
 const MAX_OBJECTIVES = 3;
 
 const COMPANY_FIELD_ID = "audit-company-name";
-const REPORT_WAIT_MS = 32_000;
+const REPORT_WAIT_MS = 56_000;
 
 function inputClass() {
   return "audit-input w-full rounded-[1.15rem] px-5 py-[17px] text-base text-[var(--color-text)] outline-none transition-all duration-200";
@@ -229,7 +229,9 @@ export function AuditFunnel() {
       });
 
       if (!res.ok) {
+        track("audit_discovery_fallback", { reason: "request_failed" });
         setPreviewStatus("failed");
+        setStage("trade");
         return;
       }
 
@@ -242,7 +244,9 @@ export function AuditFunnel() {
         null;
 
       if (!candidate) {
+        track("audit_discovery_fallback", { reason: "no_candidate" });
         setPreviewStatus("failed");
+        setStage("trade");
         return;
       }
 
@@ -278,7 +282,9 @@ export function AuditFunnel() {
           .catch(() => null);
       }
     } catch {
+      track("audit_discovery_fallback", { reason: "exception" });
       setPreviewStatus("failed");
+      setStage("trade");
     }
   }
 
@@ -561,15 +567,15 @@ export function AuditFunnel() {
             {previewStatus === "loading" ? (
               <div className="py-3">
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-xl font-semibold">Recherche de votre entreprise en cours…</p>
+                  <p className="font-display text-xl font-semibold">On construit votre diagnostic.</p>
                   <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
                 </div>
                 <p className="mt-2 text-sm text-[var(--color-muted)]">
-                  On recoupe plusieurs sources publiques pour éviter les diagnostics génériques et identifier ce qu’un vrai prospect voit avant de vous contacter.
+                  On recherche votre entreprise comme le ferait un consultant : site officiel, activité, zone, présence publique, preuves et chemin vers le devis. Cela peut prendre quelques secondes.
                 </p>
 
                 <div className="mt-7 space-y-3">
-                  {["01 · Identité, activité & site officiel", "02 · Visibilité, avis & preuves publiques", "03 · Parcours vers l’appel ou le devis"].map((label, index) => (
+                  {["01 · Retrouver la bonne entreprise", "02 · Recouper site, activité & zone", "03 · Vérifier visibilité, preuves & devis", "04 · Prioriser les opportunités commerciales"].map((label, index) => (
                     <motion.div
                       key={label}
                       initial={{ opacity: 0.3 }}
@@ -730,8 +736,11 @@ export function AuditFunnel() {
             exit={{ opacity: 0, x: -18 }}
             transition={{ duration: 0.35 }}
           >
-            <p className="text-[11px] font-medium text-[var(--color-muted)]">Étape 2 · encore 2 réponses</p>
-            <h2 className="font-display mt-2 text-2xl font-semibold">Quel est votre métier ?</h2>
+            <p className="text-[11px] font-medium text-[var(--color-muted)]">On a votre entreprise · encore 2 réponses</p>
+            <h2 className="font-display mt-2 text-2xl font-semibold">Quel est votre métier principal ?</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+              Ce choix nous aide à verrouiller la bonne société et à comparer votre présence avec ce qu’un prospect recherche vraiment.
+            </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
               {TRADE_OPTIONS.map((option) => (
                 <button
@@ -832,6 +841,39 @@ export function AuditFunnel() {
         )}
 
         {stage === "contact" && (
+          submitting ? (
+            <motion.div
+              key="analysis-loading"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-[2rem] border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6 sm:p-8"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">Analyse GC en cours</p>
+                  <h2 className="font-display mt-3 text-2xl font-semibold">On termine votre vrai audit.</h2>
+                </div>
+                <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--color-accent)]" />
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">
+                On recoupe les sources publiques, votre site quand il est disponible et vos objectifs avant de générer le PDF. On ne vous renvoie pas un diagnostic générique.
+              </p>
+              <div className="mt-6 space-y-3">
+                {["Recherche marque + activité + zone", "Lecture de la présence et des preuves", "Analyse du parcours vers le devis", "Sélection des 3 priorités", "Génération de votre PDF"].map((label, index) => (
+                  <motion.div
+                    key={label}
+                    animate={{ opacity: [0.35, 1, 0.35] }}
+                    transition={{ duration: 1.6, repeat: Infinity, delay: index * 0.22 }}
+                    className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3"
+                  >
+                    <span className="font-display text-xs text-[var(--color-accent)]">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="text-sm">{label}</span>
+                  </motion.div>
+                ))}
+              </div>
+              <p className="mt-5 text-center text-[11px] text-[var(--color-muted)]">Gardez cette page ouverte · votre résultat s’affiche automatiquement.</p>
+            </motion.div>
+          ) : (
           <motion.form
             key="contact"
             onSubmit={handleSubmit}
@@ -941,6 +983,7 @@ export function AuditFunnel() {
               PDF personnalisé · Résultat en ligne · Sans engagement
             </p>
           </motion.form>
+          )
         )}
 
         {stage === "done" && (
