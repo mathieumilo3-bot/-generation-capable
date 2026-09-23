@@ -69,7 +69,7 @@ const OBJECTIVES = [
 const MAX_OBJECTIVES = 3;
 
 const COMPANY_FIELD_ID = "audit-company-name";
-const REPORT_WAIT_MS = 14_000;
+const REPORT_WAIT_MS = 32_000;
 
 function inputClass() {
   return "audit-input w-full rounded-[1.15rem] px-5 py-[17px] text-base text-[var(--color-text)] outline-none transition-all duration-200";
@@ -87,8 +87,8 @@ function toEmailSummary(report: Report) {
             : item.pillar === "rassurer"
               ? "Être choisi"
               : "Être contacté",
-        statement: item.diagnosis,
-        recommendation: item.callQuestion,
+        statement: `${item.diagnosis} Impact : ${item.impact}`,
+        recommendation: `Décision à trancher : ${item.callQuestion}`,
       })),
       otherFindingsCount: report.otherFindings.length,
     };
@@ -385,7 +385,12 @@ export function AuditFunnel() {
           choice === "accepted" ? "GRANTED" : choice === "refused" ? "DENIED" : "UNSPECIFIED";
       } catch {}
 
-      const summaryReport = lastReport.current ?? quickReport;
+      // Wait for the real refined analysis before capturing the final lead.
+      // This intentional loading time is what turns the form into an actual
+      // audit: the visitor's company + selected objectives are researched
+      // before the PDF/email is generated.
+      const report = await resolveBestReport();
+      const summaryReport = report ?? lastReport.current ?? quickReport;
       const reportSummary =
         summaryReport?.aiSynthesis
           ? toEmailSummary(summaryReport)
@@ -437,8 +442,6 @@ export function AuditFunnel() {
         secteur: data.secteur,
         objectif: data.objectif,
       });
-
-      const report = await resolveBestReport();
 
       try {
         sessionStorage.setItem(
