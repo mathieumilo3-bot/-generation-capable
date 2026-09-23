@@ -154,6 +154,7 @@ export function AuditFunnel() {
   const [siteError, setSiteError] = useState<string | null>(null);
 
   const engaged = useRef(false);
+  const intentCaptured = useRef(false);
   const lastReport = useRef<Report | null>(null);
   const refinedPromise = useRef<Promise<Report | null> | null>(null);
 
@@ -190,6 +191,58 @@ export function AuditFunnel() {
       }));
     }
   }, []);
+
+  async function captureAuditIntent(candidate?: CompanyDiscoveryCandidate | null) {
+    if (intentCaptured.current) return;
+
+    let accepted = false;
+    try {
+      accepted = window.localStorage.getItem("gc-revenue-consent-v1") === "accepted";
+    } catch {}
+    if (!accepted) return;
+
+    const companyName = (candidate?.name || data.entreprise).trim();
+    if (companyName.length < 2) return;
+
+    intentCaptured.current = true;
+    try {
+      await fetch("/api/audit/intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          entreprise: companyName,
+          siteUrl: candidate?.website || data.siteUrl,
+          secteur: candidate?.sector || data.secteur,
+          ville: candidate?.city || "",
+          utmSource: attribution.source,
+          utmMedium: attribution.medium,
+          utmCampaign: attribution.campaign,
+          utmContent: attribution.content,
+          utmTerm: attribution.term,
+          gclid: clickIds.gclid,
+          gbraid: clickIds.gbraid,
+          wbraid: clickIds.wbraid,
+          consent: "GRANTED",
+        }),
+      });
+      track("audit_intent_captured" as TrackingEvent, {
+        has_site: Boolean(candidate?.website || data.siteUrl),
+        has_sector: Boolean(candidate?.sector || data.secteur),
+      });
+    } catch {
+      intentCaptured.current = false;
+    }
+  }
+
+  useEffect(() => {
+    const onConsent = (event: Event) => {
+      const detail = (event as CustomEvent<{ choice?: string }>).detail;
+      if (detail?.choice === "accepted" && discovery) void captureAuditIntent(discovery);
+    };
+    window.addEventListener("gc:consent-changed", onConsent);
+    return () => window.removeEventListener("gc:consent-changed", onConsent);
+  }, [discovery]);
 
   function markEngaged() {
     if (engaged.current) return;
@@ -259,6 +312,7 @@ export function AuditFunnel() {
       }));
       setPreviewStatus("ready");
       track("audit_analysis_completed");
+      void captureAuditIntent(candidate);
 
       // If an official site was found, run the deterministic page scan in the
       // background too. It enriches the email/report without delaying the
