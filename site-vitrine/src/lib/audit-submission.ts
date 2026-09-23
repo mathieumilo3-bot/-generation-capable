@@ -31,7 +31,7 @@ export type ParseResult =
 export const FIELD_LIMITS: Record<keyof AuditSubmission, number> = {
   siteUrl: 300,
   secteur: 80,
-  objectif: 80,
+  objectif: 240,
   nom: 120,
   entreprise: 160,
   email: 254,
