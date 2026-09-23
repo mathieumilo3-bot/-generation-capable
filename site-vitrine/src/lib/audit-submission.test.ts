@@ -45,26 +45,32 @@ describe("parseAuditSubmission", () => {
 
   it("reports every missing required field", () => {
     const result = parseAuditSubmission(
-      validPayload({ siteUrl: "", secteur: "", objectif: "", email: "" })
+      validPayload({ entreprise: "", siteUrl: "", secteur: "", objectif: "", email: "" })
     );
     expect(result.ok).toBe(false);
     if (!result.ok && result.error === "missing_fields") {
-      expect(result.missing.sort()).toEqual(["email", "objectif", "secteur", "siteUrl"].sort());
+      expect(result.missing.sort()).toEqual(["email", "entreprise", "objectif", "secteur"].sort());
     }
   });
 
-  it("treats whitespace-only values as missing", () => {
+  it("accepts a company name when no website is known", () => {
     const result = parseAuditSubmission(validPayload({ siteUrl: "    " }));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.entreprise).toBe("Le Bistrot");
+      expect(result.value.siteUrl).toBe("");
+    }
+  });
+
+  it("does not let a non-string site value pass as the only company identity", () => {
+    // An object must not become "[object Object]" and satisfy identity validation.
+    const result = parseAuditSubmission(
+      validPayload({ entreprise: "", siteUrl: { toString: () => "x" } })
+    );
     expect(result.ok).toBe(false);
     if (!result.ok && result.error === "missing_fields") {
-      expect(result.missing).toContain("siteUrl");
+      expect(result.missing).toContain("entreprise");
     }
-  });
-
-  it("does not let a non-string value pass validation via toString()", () => {
-    // An object used to become "[object Object]" and sail through.
-    const result = parseAuditSubmission(validPayload({ siteUrl: { toString: () => "x" } }));
-    expect(result.ok).toBe(false);
   });
 
   it.each(["not-an-email", "a@b", "a@b.", "@exemple.fr", "marie@", "marie exemple.fr"])(
