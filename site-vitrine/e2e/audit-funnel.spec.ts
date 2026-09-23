@@ -179,6 +179,52 @@ test.describe("Audit funnel — nom → diagnostic", () => {
     });
   });
 
+  test("lets the visitor request an email notification without opting into marketing", async ({ page }) => {
+    await mockApis(page);
+    const contactCalls: Record<string, unknown>[] = [];
+    await page.route("**/api/audit/contact", async (route) => {
+      const payload = JSON.parse(route.request().postData() ?? "{}") as Record<string, unknown>;
+      contactCalls.push(payload);
+      if (payload.action === "register") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            status: "registered",
+            id: "11111111-1111-4111-8111-111111111111",
+            token: "22222222-2222-4222-8222-222222222222",
+          }),
+        });
+      }
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "ok" }) });
+    });
+
+    await page.unroute("**/api/audit/analyze");
+    let polls = 0;
+    await page.route("**/api/audit/analyze", (route) => {
+      polls += 1;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(polls < 4 ? { status: "pending" } : { status: "done", report: REPORT }),
+      });
+    });
+
+    await start(page);
+    await expect(page.getByText("Vous n’avez pas besoin d’attendre.")).toBeVisible({ timeout: 15_000 });
+    await page.getByLabel("Votre email").fill("artisan@example.com");
+    await page.getByRole("button", { name: /Me prévenir quand c’est prêt/ }).click();
+    await expect(page.getByText("C’est bon. Vous pouvez fermer cette page.")).toBeVisible();
+
+    const registration = contactCalls.find((call) => call.action === "register");
+    expect(registration).toMatchObject({
+      email: "artisan@example.com",
+      marketingConsent: false,
+      phone: "",
+    });
+    expect(contactCalls.some((call) => call.action === "attach")).toBe(true);
+  });
+
   test("the final button opens the booking page with attribution", async ({ page }) => {
     await mockApis(page);
     await page.goto("/audit?utm_source=google&utm_medium=cpc&utm_campaign=gc_search_btp");
