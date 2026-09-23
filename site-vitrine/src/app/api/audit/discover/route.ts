@@ -46,6 +46,7 @@ export async function POST(request: Request) {
   const source = payload as Record<string, unknown>;
   const companyName = readString(source, "companyName", 160);
   const cityHint = readString(source, "cityHint", 120);
+  const rescue = source.rescue === true;
 
   // --- poll an existing job ---
   if (source.jobId !== undefined) {
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
   if (companyName.length < 2) return NextResponse.json({ error: "missing_company_name" }, { status: 422 });
 
   try {
-    const jobId = await startCompanyDiscovery(companyName, { cityHint });
+    const jobId = await startCompanyDiscovery(companyName, { cityHint, rescue });
     if (jobId) return NextResponse.json({ status: "started", jobId, token: signJob(STAGE, jobId) }, { status: 200 });
 
     // Background mode unavailable: one bounded attempt in this request
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
     const direct = await discoverCompany(companyName, {
       cityHint,
       firstTimeoutMs: SYNC_FALLBACK_TIMEOUT_MS,
-      skipRescue: true,
+      skipRescue: !rescue,
     });
     return NextResponse.json({ status: "done", candidates: direct.candidates }, { status: 200 });
   } catch (error) {
