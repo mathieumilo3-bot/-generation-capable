@@ -92,10 +92,9 @@ export function AuditFunnel() {
   const [attribution, setAttribution] = useState<BookingAttribution>({});
   const [clickIds, setClickIds] = useState({ gclid: "", gbraid: "", wbraid: "" });
   const [notifyEmail, setNotifyEmail] = useState("");
-  const [marketingConsent, setMarketingConsent] = useState(false);
-  const [marketingPhone, setMarketingPhone] = useState("");
   const [notifyStatus, setNotifyStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [canLeave, setCanLeave] = useState(false);
+  const [leaveReady, setLeaveReady] = useState(false);
 
   useEffect(() => {
     track("audit_started");
@@ -130,8 +129,8 @@ export function AuditFunnel() {
   const researchRef = useRef<ResearchResponse | null>(null);
 
   async function attachLeadToResearch(handle: AuditLeadHandle, research: ResearchResponse) {
-    if (!research.jobId || !research.token) return;
-    await postJson("/api/audit/contact", {
+    if (!research.jobId || !research.token) return false;
+    const attached = await postJson<{ status?: string }>("/api/audit/contact", {
       action: "attach",
       id: handle.id,
       token: handle.token,
@@ -140,6 +139,9 @@ export function AuditFunnel() {
       jobId: research.jobId,
       jobToken: research.token,
     });
+    const ok = attached?.status === "attached";
+    if (ok) setLeaveReady(true);
+    return ok;
   }
 
   async function registerNotification(event: FormEvent) {
@@ -164,8 +166,8 @@ export function AuditFunnel() {
       companyCity: discovery?.city || cityHint.trim(),
       siteUrl: discovery?.website || siteHint.trim(),
       email,
-      phone: marketingConsent ? marketingPhone.trim() : "",
-      marketingConsent,
+      phone: "",
+      marketingConsent: false,
       attribution: measurementConsent
         ? {
             ...attribution,
@@ -191,7 +193,7 @@ export function AuditFunnel() {
       await attachLeadToResearch(handle, researchRef.current);
     }
     setNotifyStatus("saved");
-    track("audit_ready_notification_requested", { marketing_opt_in: marketingConsent });
+    track("audit_ready_notification_requested", { marketing_opt_in: false });
   }
 
   function advance(value: number, label: string) {
