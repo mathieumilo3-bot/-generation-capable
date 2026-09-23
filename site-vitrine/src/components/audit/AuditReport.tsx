@@ -39,34 +39,9 @@ const PILLARS: {
   },
 ];
 
-function sourceLabel(title: string, url: string) {
-  if (title && title !== url) return title;
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return title || url;
-  }
-}
-
 function pillarForFinding(finding: Finding): PillarId {
   return PILLARS.find((pillar) => pillar.dimensions.includes(finding.dimension))?.id ?? "rassurer";
 }
-
-function pillarState(report: Report, pillarId: PillarId) {
-  const pillar = PILLARS.find((item) => item.id === pillarId)!;
-  const leaks = report.topLeaks.filter((finding) => pillar.dimensions.includes(finding.dimension));
-  const strengths = report.worksWell.filter((finding) => pillar.dimensions.includes(finding.dimension));
-
-  if (leaks.length > 0) return { label: "Potentiel à développer", tone: "text-[var(--color-accent)]" };
-  if (strengths.length > 0) return { label: "Base présente", tone: "text-[var(--color-text)]" };
-  return { label: "À explorer", tone: "text-[var(--color-muted)]" };
-}
-
-const CONFIDENCE_LABEL = {
-  observed: "Observé sur votre site",
-  inferred: "Déduit",
-  unknown: "À vérifier ensemble",
-} as const;
 
 function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: number; ai?: AiAuditOpportunity }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -94,41 +69,81 @@ function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: numbe
     return () => observer.disconnect();
   }, [finding?.id, finding?.dimension, ai?.id, ai?.pillar]);
 
+  const title = ai?.title || finding?.title;
+  const diagnosis = ai?.diagnosis || finding?.statement;
+  const impact = ai?.impact || pillar.impact;
+  const score = ai?.score;
+  const evidence = ai?.evidence?.[0] || finding?.evidence?.[0];
+  const loss =
+    ai?.loss ||
+    (finding?.polarity === "negative"
+      ? "Ce point crée une friction dans le parcours entre intérêt et prise de contact."
+      : "");
+  const potential = ai?.potential;
+
   return (
-    <div ref={ref} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 sm:p-7">
-      <div className="flex items-center justify-between gap-4">
-        <span className="font-display text-sm text-[var(--color-accent)]">{String(rank).padStart(2, "0")}</span>
-        <div className="text-right">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-            {pillar.label.replace(/^\d+ — /, "")}
-          </span>
-          <span className="mt-1 block text-[10px] text-[var(--color-muted)]">
-            {ai ? (ai.confidence === "observed" ? "Observé sur votre site" : "Déduit des éléments visibles") : finding ? CONFIDENCE_LABEL[finding.confidence] : "Analyse"}
-          </span>
+    <div ref={ref} className="rounded-[1.6rem] border border-[var(--color-border)] bg-[var(--color-bg)] p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-5">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+            {String(rank).padStart(2, "0")} · {pillar.label.replace(/^\d+ — /, "")}
+          </p>
+          <h3 className="font-display mt-2 text-xl font-semibold tracking-tight text-[var(--color-text)]">
+            {title}
+          </h3>
+        </div>
+
+        {score ? (
+          <div className="shrink-0 text-right">
+            <div className="font-display text-[2.15rem] font-semibold leading-none tracking-[-0.06em] text-[var(--color-text)]">
+              {score}<span className="ml-1 text-sm font-medium tracking-normal text-[var(--color-muted)]">/10</span>
+            </div>
+            <p className="mt-1 text-[9px] uppercase tracking-[0.16em] text-[var(--color-muted)]">qualité actuelle</p>
+          </div>
+        ) : null}
+      </div>
+
+      <p className="mt-4 text-[15px] leading-relaxed text-[var(--color-muted)]">
+        {diagnosis}
+      </p>
+
+      {evidence ? (
+        <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">
+          <span className="font-semibold text-[var(--color-text)]">Vu :</span> {evidence}
+        </p>
+      ) : null}
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Ce que vous perdez</p>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-[var(--color-text)]">
+            {loss || "Une partie du potentiel commercial de ce point reste sous-exploitée."}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Potentiel</p>
+            {potential ? (
+              <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
+                {potential}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-[var(--color-text)]">{impact}</p>
         </div>
       </div>
-      <h3 className="font-display mt-4 text-xl font-semibold tracking-tight text-[var(--color-text)]">
-        {ai?.title || finding?.title}
-      </h3>
-      <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
-        {ai?.diagnosis || finding?.statement}
-      </p>
-      {ai?.evidence?.length ? (
-        <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-            Preuves concrètes
+
+      {ai?.firstAction ? (
+        <div className="mt-3 rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+            À corriger
           </p>
-          <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[var(--color-text)]">
-            {ai.evidence.map((item, index) => <li key={index}>• {item}</li>)}
-          </ul>
+          <p className="mt-2 text-sm font-semibold leading-relaxed text-[var(--color-text)]">
+            {ai.firstAction}
+          </p>
         </div>
       ) : null}
-      <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-          Pourquoi ça compte
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{ai?.impact || pillar.impact}</p>
-      </div>
     </div>
   );
 }
@@ -154,28 +169,52 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
   const viewedTracked = useRef(false);
   const bookingUrl = buildCalendlyUrl(lead, attribution);
   const synthesis = report.aiSynthesis;
-  const discoveryOpportunities: AiAuditOpportunity[] = (discovery?.insights ?? []).slice(0, 3).map((item, index) => ({
-    id: `discovery_${index + 1}`,
-    pillar: index === 0 ? "attirer" : index === 1 ? "rassurer" : "convertir",
-    title: item.title,
-    diagnosis: item.insight,
-    evidence: item.evidence,
-    confidence: "inferred",
-    impact:
-      index === 0
-        ? "Améliorer la capacité à être découvert par des prospects qui ne connaissent pas encore l’entreprise."
-        : index === 1
-          ? "Renforcer la confiance au moment où un prospect compare plusieurs entreprises."
-          : "Réduire les frictions entre l’intérêt du prospect et sa demande de devis ou son appel.",
-    callQuestion:
-      index === 0
-        ? "Quelles recherches et zones doivent devenir prioritaires ?"
-        : index === 1
-          ? "Quelles preuves doivent être mises en avant en premier ?"
-          : "Quel parcours de contact doit être simplifié en priorité ?",
-  }));
+  const discoveryOpportunities: AiAuditOpportunity[] = (discovery?.insights ?? []).slice(0, 3).map((item, index) => {
+    const pillar: PillarId = index === 0 ? "attirer" : index === 1 ? "rassurer" : "convertir";
+    return {
+      id: `discovery_${index + 1}`,
+      pillar,
+      title: item.title,
+      diagnosis: item.insight,
+      evidence: item.evidence,
+      confidence: "inferred",
+      loss:
+        pillar === "attirer"
+          ? "Des prospects qui cherchent vos services sans connaître votre nom peuvent ne jamais arriver jusqu’à vous."
+          : pillar === "rassurer"
+            ? "Une partie des visiteurs peut hésiter au moment de vous comparer à une autre entreprise."
+            : "Une partie de l’intérêt peut se perdre avant l’appel ou la demande de devis.",
+      potential: pillar === "rassurer" ? "fort" : "très fort",
+      impact:
+        pillar === "attirer"
+          ? "Être découvert plus souvent au moment où un prospect cherche déjà ce type de service."
+          : pillar === "rassurer"
+            ? "Donner plus vite les raisons de vous choisir et de vous faire confiance."
+            : "Transformer plus clairement l’intérêt en demande exploitable.",
+      firstAction:
+        pillar === "attirer"
+          ? "Clarifier une entrée dédiée au service principal et à la zone réellement desservie."
+          : pillar === "rassurer"
+            ? "Rapprocher une preuve réelle — réalisation, avis ou référence — du moment où le prospect doit décider."
+            : "Rendre une seule action principale immédiatement visible : appeler ou demander un devis.",
+      callQuestion:
+        pillar === "attirer"
+          ? "Quelles recherches et zones doivent devenir prioritaires ?"
+          : pillar === "rassurer"
+            ? "Quelles preuves doivent être mises en avant en premier ?"
+            : "Quel parcours de contact doit être simplifié en priorité ?",
+    };
+  });
   const aiOpportunities = synthesis?.opportunities?.length
-    ? synthesis.opportunities
+    ? [
+        ...synthesis.opportunities,
+        ...discoveryOpportunities.filter(
+          (candidate) =>
+            !synthesis.opportunities.some(
+              (existing) => existing.title.trim().toLowerCase() === candidate.title.trim().toLowerCase()
+            )
+        ),
+      ].slice(0, 3)
     : discoveryOpportunities;
   const hasUsefulResearch = aiOpportunities.length > 0;
 
@@ -203,7 +242,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
         <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
           Votre diagnostic
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Les 3 priorités qui peuvent vous faire gagner plus de demandes</h2>
+        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Voilà ce qu’on a réellement trouvé.</h2>
         <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)]">
           {synthesis?.executiveSummary ||
             "On a analysé votre présence comme le ferait un futur client : est-ce qu’il vous trouve, vous choisit et vous contacte facilement ?"}
@@ -214,6 +253,12 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
             <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">{synthesis?.companySnapshot || discovery?.summary}</p>
           </div>
         )}
+        {synthesis?.worksWell && synthesis.worksWell !== "À confirmer pendant le bilan." ? (
+          <div className="mx-auto mt-3 max-w-xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 text-left">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Ce qui fonctionne déjà</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{synthesis.worksWell}</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
@@ -233,80 +278,22 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
         </div>
       )}
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-3">
-        {PILLARS.map((pillar) => {
-          const state = pillarState(report, pillar.id);
-          return (
-            <div key={pillar.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">{pillar.label}</p>
-              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-                {pillar.id === "attirer"
-                  ? synthesis?.attirer || pillar.question
-                  : pillar.id === "rassurer"
-                    ? synthesis?.rassurer || pillar.question
-                    : synthesis?.convertir || pillar.question}
-              </p>
-              <p className={`mt-4 text-xs font-semibold ${state.tone}`}>
-                {hasUsefulResearch
-                  ? aiOpportunities.some((item) => item.pillar === pillar.id)
-                    ? "Potentiel à développer"
-                    : "Point secondaire"
-                  : state.label}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      {synthesis?.webQueries?.length ? (
-        <div className="mt-6 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-            Visibilité web · recherches testées
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">
-            Nous avons testé des recherches proches de celles qu’un prospect pourrait faire sans connaître votre nom.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {synthesis.webQueries.map((query) => (
-              <span key={query} className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-muted)]">
-                {query}
-              </span>
-            ))}
-          </div>
-          {synthesis.webSources?.length ? (
-            <div className="mt-4 border-t border-[var(--color-border)] pt-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Sources consultées</p>
-              <div className="mt-2 flex flex-col gap-1.5">
-                {synthesis.webSources.slice(0, 4).map((source) => (
-                  <a
-                    key={source.url}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-[var(--color-text)] underline decoration-[var(--color-border-strong)] underline-offset-4"
-                  >
-                    {sourceLabel(source.title, source.url)}
-                  </a>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <p className="mt-4 text-[11px] leading-relaxed text-[var(--color-muted)]">
-            Ce signal vérifie la découvrabilité sur le web. Il ne prétend pas mesurer une position Google Maps exacte ni un classement personnalisé.
-          </p>
-        </div>
-      ) : null}
 
       {hasUsefulResearch && (
-        <div className="mt-12">
+        <div className="mt-10">
+          {synthesis?.webQueries?.length || synthesis?.webSources?.length ? (
+            <p className="mb-6 text-center text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-muted)]">
+              Analyse croisée · {synthesis?.webQueries?.length ?? 0} recherches · {synthesis?.webSources?.length ?? 0} sources publiques
+            </p>
+          ) : null}
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
             {aiOpportunities.length} constat{aiOpportunities.length > 1 ? "s" : ""} concret{aiOpportunities.length > 1 ? "s" : ""}
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-            Commencez par ces priorités.
+            Les points qui vous font perdre le plus d’opportunités.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Chaque priorité part d’un élément observé ou clairement identifié dans votre présence en ligne.
+            Trois constats. Une note. Ce qui vous coûte des opportunités, ce que vous pouvez récupérer et quoi corriger.
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {aiOpportunities.map((item, index) => (

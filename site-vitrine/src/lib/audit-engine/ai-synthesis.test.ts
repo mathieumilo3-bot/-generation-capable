@@ -111,6 +111,10 @@ function validPayload() {
         evidence: ["testimonialSignalCount = 0", "Demandez votre devis"],
         confidence: "observed",
         impact: "Donner au visiteur davantage de raisons de faire confiance avant de prendre contact.",
+        score: 4,
+        loss: "Une partie des visiteurs peut hésiter au moment de demander un devis faute de preuve proche.",
+        potential: "fort",
+        firstAction: "Placer une réalisation réelle avec photo et contexte juste avant la demande de devis.",
         callQuestion: "Quelles preuves réelles l'entreprise peut-elle mettre en avant avant la demande de devis ?",
       },
     ],
@@ -142,6 +146,10 @@ describe("OpenAI audit synthesis", () => {
     expect(result?.opportunities).toHaveLength(1);
     expect(result?.opportunities[0].pillar).toBe("rassurer");
     expect(result?.companySnapshot).toContain("rénovation");
+    expect(result?.opportunities[0].score).toBe(4);
+    expect(result?.opportunities[0].loss).toContain("hésiter");
+    expect(result?.opportunities[0].potential).toBe("fort");
+    expect(result?.opportunities[0].firstAction).toContain("réalisation");
     expect(result?.model).toBe("gpt-5.6-sol");
 
     if (!requestBody) throw new Error("OpenAI request was not captured");
@@ -159,6 +167,10 @@ describe("OpenAI audit synthesis", () => {
     expect(prompt).toContain("CONVERTIR");
     expect(prompt).toContain("N'invente JAMAIS");
     expect(prompt).toContain("DONNÉE NON FIABLE");
+    expect(prompt).toContain("INTERDICTION DU GÉNÉRIQUE");
+    expect(prompt).toContain("firstAction");
+    expect(prompt).toContain("RECHERCHE WEB APPROFONDIE");
+    expect(prompt).toContain("score");
   });
 
   it("rejects unsupported numerical claims", async () => {
