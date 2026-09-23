@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 30_000;
+const OPENAI_TIMEOUT_MS = 42_000;
 const MAX_SITE_EXCERPT = 8_000;
 
 type FetchLike = typeof fetch;
