@@ -94,55 +94,77 @@ function OpportunityCard({ finding, rank, ai }: { finding?: Finding; rank: numbe
     return () => observer.disconnect();
   }, [finding?.id, finding?.dimension, ai?.id, ai?.pillar]);
 
+  const title = ai?.title || finding?.title;
+  const diagnosis = ai?.diagnosis || finding?.statement;
+  const impact = ai?.impact || pillar.impact;
+  const score = ai?.score;
+  const evidence = ai?.evidence?.[0] || finding?.evidence?.[0];
+  const loss =
+    ai?.loss ||
+    (finding?.polarity === "negative"
+      ? "Ce point crée une friction dans le parcours entre intérêt et prise de contact."
+      : "");
+  const potential = ai?.potential;
+
   return (
-    <div ref={ref} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-6 sm:p-7">
-      <div className="flex items-center justify-between gap-4">
-        <span className="font-display text-sm text-[var(--color-accent)]">{String(rank).padStart(2, "0")}</span>
-        <div className="text-right">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-            {pillar.label.replace(/^\d+ — /, "")}
-          </span>
-          <span className="mt-1 block text-[10px] text-[var(--color-muted)]">
-            {ai ? (ai.confidence === "observed" ? "Observé sur votre site" : "Déduit des éléments visibles") : finding ? CONFIDENCE_LABEL[finding.confidence] : "Analyse"}
-          </span>
+    <div ref={ref} className="rounded-[1.6rem] border border-[var(--color-border)] bg-[var(--color-bg)] p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-5">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+            {String(rank).padStart(2, "0")} · {pillar.label.replace(/^\d+ — /, "")}
+          </p>
+          <h3 className="font-display mt-2 text-xl font-semibold tracking-tight text-[var(--color-text)]">
+            {title}
+          </h3>
         </div>
-      </div>
-      <div className="mt-4 flex items-start justify-between gap-4">
-        <h3 className="font-display text-xl font-semibold tracking-tight text-[var(--color-text)]">
-          {ai?.title || finding?.title}
-        </h3>
-        {ai?.score ? (
-          <div className="shrink-0 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-center">
-            <span className="font-display text-2xl font-semibold leading-none text-[var(--color-text)]">{ai.score}</span>
-            <span className="ml-1 text-xs text-[var(--color-muted)]">/10</span>
+
+        {score ? (
+          <div className="shrink-0 text-right">
+            <div className="font-display text-[2.15rem] font-semibold leading-none tracking-[-0.06em] text-[var(--color-text)]">
+              {score}<span className="ml-1 text-sm font-medium tracking-normal text-[var(--color-muted)]">/10</span>
+            </div>
+            <p className="mt-1 text-[9px] uppercase tracking-[0.16em] text-[var(--color-muted)]">qualité actuelle</p>
           </div>
         ) : null}
       </div>
-      <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-muted)]">
-        {ai?.diagnosis || finding?.statement}
+
+      <p className="mt-4 text-[15px] leading-relaxed text-[var(--color-muted)]">
+        {diagnosis}
       </p>
-      {ai?.evidence?.length ? (
-        <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">
-            Preuves concrètes
-          </p>
-          <ul className="mt-2 space-y-1 text-sm leading-relaxed text-[var(--color-text)]">
-            {ai.evidence.map((item, index) => <li key={index}>• {item}</li>)}
-          </ul>
-        </div>
-      ) : null}
-      <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-          Pourquoi ça compte
+
+      {evidence ? (
+        <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">
+          <span className="font-semibold text-[var(--color-text)]">Vu :</span> {evidence}
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{ai?.impact || pillar.impact}</p>
-      </div>
-      {ai?.firstAction ? (
-        <div className="mt-4 rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-4 py-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-            À faire maintenant
-          </p>
+      ) : null}
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Ce que vous perdez</p>
           <p className="mt-2 text-sm font-medium leading-relaxed text-[var(--color-text)]">
+            {loss || "Une partie du potentiel commercial de ce point reste sous-exploitée."}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Potentiel</p>
+            {potential ? (
+              <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
+                {potential}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-[var(--color-text)]">{impact}</p>
+        </div>
+      </div>
+
+      {ai?.firstAction ? (
+        <div className="mt-3 rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] p-4">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+            À corriger
+          </p>
+          <p className="mt-2 text-sm font-semibold leading-relaxed text-[var(--color-text)]">
             {ai.firstAction}
           </p>
         </div>
@@ -330,7 +352,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
             Les points qui vous font perdre le plus d’opportunités.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Pour chaque point : ce qu’on a vu, la preuve, une note sur 10 fondée sur les éléments observés, pourquoi ça compte et une première action immédiatement exploitable.
+            Trois constats. Une note. Ce qui vous coûte des opportunités, ce que vous pouvez récupérer et quoi corriger.
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {aiOpportunities.map((item, index) => (
