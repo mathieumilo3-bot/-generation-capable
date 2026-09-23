@@ -13,12 +13,12 @@ const CHECKS = [
 ];
 
 export function InstantCheck() {
-  const [url, setUrl] = useState("");
+  const [company, setCompany] = useState("");
   const [started, setStarted] = useState(false);
 
   function start(event: FormEvent) {
     event.preventDefault();
-    if (url.trim().length < 4) return;
+    if (company.trim().length < 2) return;
     setStarted(true);
     track("instant_check_started", { source: "homepage" });
   }
@@ -36,8 +36,8 @@ export function InstantCheck() {
             <span className="text-[var(--color-muted)]">plus de demandes de devis.</span>
           </h2>
           <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-base">
-            Donnez-nous votre site. On regarde ce qu&apos;un prospect voit avant de vous appeler :
-            présence Google, clarté du métier, preuves, zone d&apos;intervention et prise de contact.
+            Donnez-nous simplement le nom de votre entreprise. On retrouve sa présence publique puis on regarde ce qu&apos;un prospect voit avant de vous appeler :
+            visibilité, clarté du métier, preuves, zone d&apos;intervention et prise de contact.
           </p>
         </div>
 
@@ -57,29 +57,28 @@ export function InstantCheck() {
           <div className="p-5 sm:p-8">
             {!started ? (
               <form onSubmit={start} className="flex flex-col gap-3 sm:flex-row">
-                <label htmlFor="instant-check-url" className="sr-only">Adresse de votre site</label>
+                <label htmlFor="instant-check-company" className="sr-only">Nom de votre entreprise</label>
                 <input
-                  id="instant-check-url"
-                  name="site"
+                  id="instant-check-company"
+                  name="entreprise"
                   type="text"
-                  inputMode="url"
-                  autoComplete="url"
-                  maxLength={300}
-                  placeholder="https://votre-entreprise.fr"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  autoComplete="organization"
+                  maxLength={160}
+                  placeholder="Ex : Dupont Couverture"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
                   className="w-full flex-1 rounded-xl border border-[var(--color-border-strong)] bg-transparent px-5 py-4 text-base text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-muted)] focus:border-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40"
                 />
-                <button type="submit" disabled={url.trim().length < 4} className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[var(--color-text)] px-7 py-4 text-sm font-medium text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40">
-                  Vérifier mon site →
+                <button type="submit" disabled={company.trim().length < 2} className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[var(--color-text)] px-7 py-4 text-sm font-medium text-[var(--color-bg)] transition-all duration-300 hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40">
+                  Retrouver mon entreprise →
                 </button>
               </form>
             ) : (
               <div>
                 <div className="rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-5 py-4">
                   <p className="text-sm">
-                    <span className="font-semibold">On regarde ce qui compte avant le devis.</span>{" "}
-                    Pas un score décoratif : les leviers qui peuvent réellement augmenter la prise de contact.
+                    <span className="font-semibold">On retrouve d’abord votre entreprise.</span>{" "}
+                    Puis on vérifie les signaux publics qui comptent vraiment avant le devis.
                   </p>
                 </div>
 
@@ -96,13 +95,13 @@ export function InstantCheck() {
                 </div>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Button href={`/audit?site=${encodeURIComponent(url.trim())}`} variant="primary" trackEvent="cta_clicked" trackPayload={{ location: "instant_check_result" }}>
-                    Recevoir mon audit →
+                  <Button href={`/audit?entreprise=${encodeURIComponent(company.trim())}`} variant="primary" trackEvent="cta_clicked" trackPayload={{ location: "instant_check_result" }}>
+                    Lancer mon diagnostic →
                   </Button>
                   <button type="button" onClick={() => setStarted(false)} className="inline-flex items-center justify-center rounded-xl border border-[var(--color-border-strong)] px-5 py-3 text-sm font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40">
                     Recommencer
                   </button>
-                  <span className="text-xs text-[var(--color-muted)]">Adresse préremplie · Sans engagement</span>
+                  <span className="text-xs text-[var(--color-muted)]">Nom prérempli · Sans engagement</span>
                 </div>
               </div>
             )}
