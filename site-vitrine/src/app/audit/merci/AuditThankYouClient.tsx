@@ -81,11 +81,11 @@ export function AuditThankYouClient() {
         Demande reçue
       </p>
       <h1 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
-        Votre audit est en préparation.
+        Votre analyse est bien lancée.
       </h1>
       <p className="mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-[var(--color-muted)]">
         Nous avons bien reçu les informations pour {stored?.entreprise || "votre entreprise"}.
-        Vous pouvez déjà réserver un créneau pendant que nous préparons les priorités.
+        Pendant que les priorités se finalisent, vous pouvez déjà choisir un créneau pour les transformer en plan d’action.
       </p>
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
         <Button
@@ -97,14 +97,14 @@ export function AuditThankYouClient() {
           trackEvent="booking_started"
           trackPayload={{ location: "audit_thank_you", source: "capable_audit" }}
         >
-          Construire mon plan avec GC →
+          Choisir mon créneau →
         </Button>
         <Button href="/" variant="secondary">
           Retour à l’accueil
         </Button>
       </div>
       <p className="mt-5 text-xs text-[var(--color-muted)]">
-        30 min · On part de votre audit · Sans engagement
+        On part directement de votre audit · Actions prioritaires · Sans engagement
       </p>
     </div>
   );
