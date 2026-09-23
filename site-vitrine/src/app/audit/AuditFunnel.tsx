@@ -547,7 +547,7 @@ export function AuditFunnel() {
               type="submit"
               className="audit-primary-cta mt-3 inline-flex min-h-[58px] w-full items-center justify-center rounded-[1.15rem] px-6 text-[15px] font-semibold transition-all duration-300"
             >
-              Analyser mon entreprise →
+              Voir ce qui me fait perdre des devis →
             </button>
 
             <p className="mt-3 text-center text-[11px] leading-relaxed text-[var(--color-muted)]">
@@ -697,10 +697,10 @@ export function AuditFunnel() {
                   }}
                   className="audit-primary-cta mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300"
                 >
-                  Personnaliser mon diagnostic →
+                  Voir mes priorités →
                 </button>
                 <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-                  {data.secteur.trim() ? "Encore 1 étape · audit complet + PDF" : "Encore 2 étapes · audit complet + PDF"}
+                  {data.secteur.trim() ? "1 dernière étape · audit complet + PDF" : "2 réponses · puis votre audit complet"}
                 </p>
               </div>
             ) : (
@@ -780,9 +780,9 @@ export function AuditFunnel() {
             transition={{ duration: 0.35 }}
           >
             <p className="text-[11px] font-medium text-[var(--color-muted)]">Étape finale · personnalisation</p>
-            <h2 className="font-display mt-2 text-2xl font-semibold">Qu’est-ce que vous voulez améliorer en priorité ?</h2>
+            <h2 className="font-display mt-2 text-2xl font-semibold">Quel résultat compte le plus pour vous ?</h2>
             <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
-              Choisissez jusqu’à 3 objectifs. Le moteur va orienter ses recherches et ses recommandations exactement autour de ces priorités.
+              Choisissez vos priorités. On adapte ensuite l’analyse autour de ce qui compte vraiment pour votre activité.
             </p>
 
             <div className="mt-4 flex items-center justify-between text-[11px] text-[var(--color-muted)]">
@@ -831,7 +831,7 @@ export function AuditFunnel() {
               onClick={confirmGoals}
               className="audit-primary-cta mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Lancer mon audit complet →
+              Voir mon audit complet →
             </button>
 
             <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
@@ -851,7 +851,7 @@ export function AuditFunnel() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">Analyse GC en cours</p>
-                  <h2 className="font-display mt-3 text-2xl font-semibold">On termine votre vrai audit.</h2>
+                  <h2 className="font-display mt-3 text-2xl font-semibold">On finalise vos 3 priorités.</h2>
                 </div>
                 <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--color-accent)]" />
               </div>
@@ -871,7 +871,7 @@ export function AuditFunnel() {
                   </motion.div>
                 ))}
               </div>
-              <p className="mt-5 text-center text-[11px] text-[var(--color-muted)]">Gardez cette page ouverte · votre résultat s’affiche automatiquement.</p>
+              <p className="mt-5 text-center text-[11px] text-[var(--color-muted)]">Encore quelques secondes · vos priorités s’affichent automatiquement.</p>
             </motion.div>
           ) : (
           <motion.form
@@ -899,7 +899,7 @@ export function AuditFunnel() {
                   Votre audit personnalisé
                 </p>
                 <h2 className="font-display mt-2 text-2xl font-semibold">
-                  {refinedLoading ? "Recherche approfondie en cours…" : "Tout est prêt pour générer votre audit."}
+                  {refinedLoading ? "Recherche approfondie en cours…" : "Votre analyse est prête."}
                 </h2>
               </div>
               <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
@@ -912,7 +912,7 @@ export function AuditFunnel() {
             </div>
 
             <p className="mt-5 text-sm text-[var(--color-muted)]">
-              Dernière étape : indiquez où recevoir votre audit PDF personnalisé.
+              Votre audit est prêt à être généré. Indiquez simplement où vous l’envoyer.
             </p>
 
             <div className="mt-4 space-y-3">
@@ -976,11 +976,11 @@ export function AuditFunnel() {
               disabled={submitting || !data.email.includes("@")}
               className="audit-primary-cta mt-4 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed"
             >
-              {submitting ? "Analyse des sources et génération du PDF…" : "Générer mon audit PDF →"}
+              {submitting ? "Analyse des sources et génération du PDF…" : "Afficher mon audit →"}
             </button>
 
             <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
-              PDF personnalisé · Résultat en ligne · Sans engagement
+              Résultat immédiat à l’écran · PDF envoyé par email · Sans engagement
             </p>
           </motion.form>
           )
