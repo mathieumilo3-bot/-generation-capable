@@ -88,7 +88,13 @@ function buildPrompt(context: ReturnType<typeof buildAuditContext>) {
 
 Tu dois raisonner comme un consultant acquisition senior qui vient réellement d'ouvrir le site du prospect, puis de chercher l'entreprise comme le ferait un client potentiel. Ton rôle n'est pas de "noter un site" : tu dois comprendre le système commercial complet qui transforme une recherche en prospect qualifié.
 
-Le rendu public doit être très court, très concret et immédiatement compréhensible par un dirigeant. Architecture mentale : une liste militaire de priorités. Zéro blabla, zéro jargon décoratif. Chaque point doit répondre à : CE QUI SE PASSE → CE QUI BLOQUE → POURQUOI ÇA COÛTE DES OPPORTUNITÉS → CE QU'IL FAUT DÉCIDER.
+Le rendu public doit provoquer une réaction simple : "ils ont vraiment regardé MA boîte". Il doit être très court, très concret et immédiatement compréhensible par un dirigeant. Architecture mentale : une liste militaire de priorités. Zéro blabla, zéro jargon décoratif. Chaque point doit répondre à : CE QUI SE PASSE → PREUVE EXACTE → CE QUI BLOQUE → POURQUOI ÇA COÛTE DES OPPORTUNITÉS → UNE PREMIÈRE ACTION CONCRÈTE.
+
+INTERDICTION DU GÉNÉRIQUE
+- Un constat comme "améliorer le SEO", "renforcer la confiance", "optimiser le site" ou "mettre plus de CTA" est insuffisant s'il n'est pas relié à un élément précis de cette entreprise.
+- Préfère : "la page d'accueil parle de X mais ne nomme pas Y", "aucun lien téléphone n'a été détecté", "la recherche [requête] fait ressortir telle source plutôt que le site", "les réalisations sont visibles mais pas près du devis".
+- Quand une preuve exacte n'est pas disponible, formule prudemment "à confirmer" au lieu d'inventer.
+- Chaque opportunité doit contenir au moins un détail impossible à copier-coller tel quel chez n'importe quel concurrent.
 
 Tu dois chercher les forces ET les faiblesses, mais n'afficher publiquement que les éléments les plus utiles commercialement. Le diagnostic doit montrer ce qui freine la découverte, la confiance, la qualification ou la prise de contact, sans donner gratuitement tout le plan d'implémentation.
 
@@ -146,6 +152,7 @@ CE QUE TU DOIS PRODUIRE
   * evidence : 1 à 3 preuves précises tirées du site ou de la recherche web
   * confidence : observed si directement visible, inferred si c'est une déduction prudente
   * impact : le résultat commercial recherché : plus de visibilité utile, plus de confiance, plus de demandes ou de demandes mieux qualifiées, sans chiffre inventé
+  * firstAction : UNE action simple, concrète et crédible que l'entreprise peut commencer immédiatement. Elle doit être spécifique au constat et ne doit pas nécessiter tout le plan d'implémentation. Exemple de niveau attendu : créer une page dédiée au service exact absent, rapprocher une preuve existante du CTA, ajouter un appel direct au-dessus de la ligne de flottaison si aucun lien téléphone n'est détecté.
   * callQuestion : la décision stratégique à trancher pendant l'appel
 - "worksWell" : une chose réellement positive à conserver si tu en vois une ; sinon "À confirmer pendant le bilan".
 - "callBridge" : une phrase simple qui explique ce qu'on décidera pendant le bilan de 30 minutes.
@@ -195,7 +202,7 @@ function schema() {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["id", "pillar", "title", "diagnosis", "evidence", "confidence", "impact", "callQuestion"],
+          required: ["id", "pillar", "title", "diagnosis", "evidence", "confidence", "impact", "firstAction", "callQuestion"],
           properties: {
             id: { type: "string" },
             pillar: { type: "string", enum: ["attirer", "rassurer", "convertir"] },
@@ -204,6 +211,7 @@ function schema() {
             evidence: { type: "array", items: { type: "string" } },
             confidence: { type: "string", enum: ["observed", "inferred"] },
             impact: { type: "string" },
+            firstAction: { type: "string" },
             callQuestion: { type: "string" },
           },
         },
@@ -301,6 +309,7 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
   const title = cleanText(raw.title, 180);
   const diagnosis = cleanText(raw.diagnosis, 600);
   const impact = cleanText(raw.impact, 320);
+  const firstAction = cleanText(raw.firstAction, 360);
   const callQuestion = cleanText(raw.callQuestion, 320);
   const pillar = raw.pillar;
   const confidence = raw.confidence;
@@ -312,6 +321,7 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     !title ||
     !diagnosis ||
     !impact ||
+    !firstAction ||
     !callQuestion ||
     evidence.length === 0 ||
     !["attirer", "rassurer", "convertir"].includes(String(pillar)) ||
@@ -320,7 +330,7 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     return null;
   }
 
-  const combined = [title, diagnosis, impact].join(" ");
+  const combined = [title, diagnosis, impact, firstAction].join(" ");
   if (UNSUPPORTED_METRIC.test(combined)) return null;
 
   return {
@@ -331,6 +341,7 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     evidence,
     confidence: confidence as AiAuditOpportunity["confidence"],
     impact,
+    firstAction,
     callQuestion,
   };
 }
