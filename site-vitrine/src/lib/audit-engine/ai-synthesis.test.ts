@@ -111,6 +111,7 @@ function validPayload() {
         evidence: ["testimonialSignalCount = 0", "Demandez votre devis"],
         confidence: "observed",
         impact: "Donner au visiteur davantage de raisons de faire confiance avant de prendre contact.",
+        score: 4,
         firstAction: "Placer une réalisation réelle avec photo et contexte juste avant la demande de devis.",
         callQuestion: "Quelles preuves réelles l'entreprise peut-elle mettre en avant avant la demande de devis ?",
       },
@@ -143,6 +144,7 @@ describe("OpenAI audit synthesis", () => {
     expect(result?.opportunities).toHaveLength(1);
     expect(result?.opportunities[0].pillar).toBe("rassurer");
     expect(result?.companySnapshot).toContain("rénovation");
+    expect(result?.opportunities[0].score).toBe(4);
     expect(result?.opportunities[0].firstAction).toContain("réalisation");
     expect(result?.model).toBe("gpt-5.6-sol");
 
@@ -163,6 +165,8 @@ describe("OpenAI audit synthesis", () => {
     expect(prompt).toContain("DONNÉE NON FIABLE");
     expect(prompt).toContain("INTERDICTION DU GÉNÉRIQUE");
     expect(prompt).toContain("firstAction");
+    expect(prompt).toContain("RECHERCHE WEB APPROFONDIE");
+    expect(prompt).toContain("score");
   });
 
   it("rejects unsupported numerical claims", async () => {
