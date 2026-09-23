@@ -259,7 +259,7 @@ function discoveryCall(query: string, options: { cityHint?: string; rescue?: boo
     webSearch: true,
     // Company identification only needs short result snippets and identity
     // signals. Keep this lean; the full diagnostic later still uses high-context search.
-    searchContextSize: options.rescue ? "medium" : "low",
+    searchContextSize: (options.rescue ? "medium" : "low") as "medium" | "low",
     searchCity: options.cityHint,
     effort: (options.rescue ? "medium" : "low") as "medium" | "low",
     maxOutputTokens: 1_200,
