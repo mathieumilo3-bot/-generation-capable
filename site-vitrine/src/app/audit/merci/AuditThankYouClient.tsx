@@ -22,7 +22,11 @@ export function AuditThankYouClient() {
     try {
       const raw = sessionStorage.getItem("gc_audit_result");
       const parsed = raw ? (JSON.parse(raw) as StoredAudit) : null;
-      if (parsed) setStored(parsed);
+      if (parsed) {
+        // Session storage exists only after hydration.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setStored(parsed);
+      }
 
       if (sessionStorage.getItem("gc_google_ads_conversion_pending") === "1") {
         trackGoogleAdsLeadConversion(parsed?.lead);
@@ -31,6 +35,7 @@ export function AuditThankYouClient() {
     } catch {
       // Fallback below if browser storage is unavailable or malformed.
     } finally {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoaded(true);
     }
   }, []);

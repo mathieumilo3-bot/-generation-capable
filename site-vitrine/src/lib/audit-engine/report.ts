@@ -33,7 +33,7 @@ export function buildReport(
 
   return {
     header: {
-      entreprise: input.siteUrl,
+      entreprise: input.entreprise || input.siteUrl || "Entreprise analysée",
       secteur: input.secteur || sector.label,
       sectorProfile: sector.id,
       objectif: input.objectif,
@@ -48,7 +48,7 @@ export function buildReport(
     degraded: !site.reachable,
     degradedReason: site.reachable
       ? undefined
-      : `Nous n'avons pas pu analyser directement votre site (${UNREACHABLE_REASON_LABELS[site.unreachableReason ?? "network_error"]}). Les recommandations ci-dessous s'appuient sur les priorités connues de votre secteur, pas sur une lecture de votre page.`,
+      : `Nous n'avons pas pu analyser directement votre site (${UNREACHABLE_REASON_LABELS[site.unreachableReason ?? "network_error"]}). Le diagnostic peut être complété avec les sources web publiques retrouvées pour ${input.entreprise || "votre entreprise"} ; les éléments non vérifiables restent signalés comme tels.`,
     sectorNote: sector.limits,
     engineVersion: ENGINE_VERSION,
   };

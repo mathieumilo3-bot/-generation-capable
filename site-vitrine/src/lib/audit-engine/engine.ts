@@ -5,7 +5,7 @@ import { buildReport } from "./report";
 import { synthesizeAuditWithOpenAI } from "./ai-synthesis";
 import type { DeclaredInput, Report } from "./types";
 
-const INPUT_LIMITS = { siteUrl: 300, secteur: 120, objectif: 120 };
+const INPUT_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 120 };
 
 export type RunAuditOptions = {
   /** Injectable for tests — defaults to the real network probe. */
@@ -14,6 +14,7 @@ export type RunAuditOptions = {
 
 function clampInput(input: DeclaredInput): DeclaredInput {
   return {
+    entreprise: input.entreprise?.trim().slice(0, INPUT_LIMITS.entreprise) ?? "",
     siteUrl: input.siteUrl.trim().slice(0, INPUT_LIMITS.siteUrl),
     secteur: input.secteur.trim().slice(0, INPUT_LIMITS.secteur),
     objectif: input.objectif.trim().slice(0, INPUT_LIMITS.objectif),

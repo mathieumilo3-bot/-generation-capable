@@ -50,7 +50,7 @@ export const FIELD_LIMITS: Record<keyof AuditSubmission, number> = {
 /** Name of the hidden field real visitors never fill — bots usually do. */
 export const HONEYPOT_FIELD = "site_web_confirmation";
 
-const REQUIRED_FIELDS: (keyof AuditSubmission)[] = ["siteUrl", "secteur", "objectif", "email"];
+const REQUIRED_FIELDS: (keyof AuditSubmission)[] = ["secteur", "objectif", "email"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 export function escapeHtml(value: string): string {
@@ -125,6 +125,7 @@ export function parseAuditSubmission(raw: unknown): ParseResult {
   }
 
   const missing = REQUIRED_FIELDS.filter((field) => (candidate[field] ?? "").length === 0);
+  if (!candidate.entreprise && !candidate.siteUrl) missing.unshift("entreprise");
   if (missing.length > 0) {
     return { ok: false, error: "missing_fields", missing };
   }
@@ -197,7 +198,7 @@ export function parseReportEmailSummary(raw: unknown): ReportEmailSummary | null
 
 export function buildNotificationEmail(data: AuditSubmission, reportSummary?: ReportEmailSummary | null) {
   const rows: [string, string][] = [
-    ["Site", data.siteUrl],
+    ["Site", data.siteUrl || "Non identifié automatiquement"],
     ["Secteur", data.secteur],
     ["Objectif", data.objectif],
     ["Nom", data.nom || "—"],
@@ -220,7 +221,11 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
           reportSummary.degraded
             ? "Diagnostic Capable Audit (analyse partielle — site non joignable) :"
             : "Diagnostic Capable Audit — principales fuites détectées :",
-          ...reportSummary.topLeaks.map((leak, i) => `${i + 1}. ${leak.title}${leak.dimension ? ` (${leak.dimension})` : ""}`),
+          ...reportSummary.topLeaks.flatMap((leak, i) => [
+            `${i + 1}. ${leak.title}${leak.dimension ? ` (${leak.dimension})` : ""}`,
+            leak.statement ? `   Constat : ${leak.statement}` : "",
+            leak.recommendation ? `   À trancher : ${leak.recommendation}` : "",
+          ]).filter(Boolean),
           reportSummary.otherFindingsCount > 0
             ? `+ ${reportSummary.otherFindingsCount} autre(s) observation(s) non retenue(s) dans le résumé.`
             : "",
@@ -248,7 +253,7 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
       ${reportSummary.topLeaks
         .map(
           (leak) =>
-            `<li>${escapeHtml(leak.title)}${leak.dimension ? ` <span style="color:#666;">(${escapeHtml(leak.dimension)})</span>` : ""}</li>`
+            `<li style="margin-bottom:14px;"><strong>${escapeHtml(leak.title)}</strong>${leak.dimension ? ` <span style="color:#666;">(${escapeHtml(leak.dimension)})</span>` : ""}${leak.statement ? `<div style="margin-top:4px;color:#333;">${escapeHtml(leak.statement)}</div>` : ""}${leak.recommendation ? `<div style="margin-top:5px;color:#666;"><strong>À trancher :</strong> ${escapeHtml(leak.recommendation)}</div>` : ""}</li>`
         )
         .join("")}
     </ol>
@@ -286,6 +291,7 @@ export function buildNotificationEmail(data: AuditSubmission, reportSummary?: Re
 
 export function buildConfirmationEmail(data: AuditSubmission, reportSummary?: ReportEmailSummary | null) {
   const greeting = data.nom ? `Bonjour ${data.nom},` : "Bonjour,";
+  const companyLabel = data.entreprise || data.siteUrl || "votre entreprise";
   const priorities = reportSummary?.topLeaks.slice(0, 3) ?? [];
   const diagnosticReady = priorities.length > 0;
   const bookingUrl = buildCalendlyUrl(
@@ -321,8 +327,8 @@ export function buildConfirmationEmail(data: AuditSubmission, reportSummary?: Re
     : "";
 
   const statusText = diagnosticReady
-    ? `Votre diagnostic pour ${data.siteUrl} est prêt.`
-    : `Votre demande d'audit pour ${data.siteUrl} a bien été reçue. Nous préparons votre diagnostic.`;
+    ? `Votre diagnostic pour ${companyLabel} est prêt.`
+    : `Votre demande d'audit pour ${companyLabel} a bien été reçue. Nous préparons votre diagnostic.`;
 
   const nextStepText = diagnosticReady
     ? "Vous pouvez maintenant choisir un créneau pour transformer ces constats en plan d'action. Nous repartirons directement de votre audit."
@@ -342,8 +348,8 @@ GC`;
 <p>${escapeHtml(greeting)}</p>
 <h2 style="margin:12px 0;">${diagnosticReady ? "Votre diagnostic est prêt." : "Votre demande d'audit est bien reçue."}</h2>
 <p>${diagnosticReady
-  ? `Nous avons analysé <strong>${escapeHtml(data.siteUrl)}</strong> afin d'identifier les points de friction les plus importants.`
-  : `Nous préparons le diagnostic de <strong>${escapeHtml(data.siteUrl)}</strong> à partir des informations que vous venez de transmettre.`}</p>
+  ? `Nous avons analysé <strong>${escapeHtml(companyLabel)}</strong> afin d'identifier les points de friction les plus importants.`
+  : `Nous préparons le diagnostic de <strong>${escapeHtml(companyLabel)}</strong> à partir des informations que vous venez de transmettre.`}</p>
 ${prioritiesHtml}
 <p>${escapeHtml(nextStepText)}</p>
 <p style="margin:26px 0;"><a href="${escapeHtml(bookingUrl)}" style="background:#111;color:#fff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:700;">Choisir mon créneau</a></p>

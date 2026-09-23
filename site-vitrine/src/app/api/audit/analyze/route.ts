@@ -12,10 +12,10 @@ import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
  * email) since it runs before or independently of the coordonnées step.
  */
 
-const MAX_BODY_BYTES = 2 * 1024; // siteUrl + secteur + objectif, generously.
+const MAX_BODY_BYTES = 3 * 1024; // entreprise + siteUrl + secteur + objectif, generously.
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const FIELD_LIMITS = { siteUrl: 300, secteur: 120, objectif: 120 };
+const FIELD_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 120 };
 // The engine can spend up to ~5s probing the site, then up to 30s on the
 // structured OpenAI synthesis. Keep the outer guard above both stages while
 // staying below Netlify's 60s synchronous execution limit.
@@ -61,16 +61,17 @@ export async function POST(request: Request) {
   }
 
   const source = payload as Record<string, unknown>;
+  const entreprise = readString(source, "entreprise", FIELD_LIMITS.entreprise);
   const siteUrl = readString(source, "siteUrl", FIELD_LIMITS.siteUrl);
   const secteur = readString(source, "secteur", FIELD_LIMITS.secteur);
   const objectif = readString(source, "objectif", FIELD_LIMITS.objectif);
 
-  if (!siteUrl) {
-    return NextResponse.json({ error: "missing_fields", missing: ["siteUrl"] }, { status: 422 });
+  if (!entreprise && !siteUrl) {
+    return NextResponse.json({ error: "missing_fields", missing: ["entreprise"] }, { status: 422 });
   }
 
   try {
-    const report = await withTimeout(runAudit({ siteUrl, secteur, objectif }), ANALYZE_TIMEOUT_MS);
+    const report = await withTimeout(runAudit({ entreprise, siteUrl, secteur, objectif }), ANALYZE_TIMEOUT_MS);
     return NextResponse.json({ report }, { status: 200 });
   } catch (error) {
     // The engine itself never throws for a probe failure (it degrades the

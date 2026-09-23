@@ -131,6 +131,9 @@ export type SocialNetwork =
 
 /** What the visitor told us — always OBSERVED (self-reported, not measured). */
 export type DeclaredInput = {
+  /** Nom public de l'entreprise quand il est fourni par le visiteur. */
+  entreprise?: string;
+  /** Site officiel résolu automatiquement quand il est trouvé. Peut rester vide. */
   siteUrl: string;
   secteur: string;
   objectif: string;

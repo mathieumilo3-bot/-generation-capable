@@ -1,214 +1,170 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function fillStepOne(page: Page, url = "https://exemple-restaurant.fr") {
-  await page.getByLabel("Votre site").fill(url);
+const COMPANY = {
+  name: "Dupont Couverture",
+  website: "https://dupont-couverture.fr/",
+  sector: "Couvreur / toiture",
+  city: "Rennes",
+  summary: "Entreprise de couverture retrouvée à Rennes.",
+  confidence: "high",
+  insights: [
+    {
+      title: "Vos preuves doivent être visibles avant le premier appel",
+      insight: "Les éléments publics retrouvés permettent d’identifier l’activité, mais les preuves doivent être immédiatement reliées à la demande de devis.",
+      evidence: ["Site officiel retrouvé", "Activité de couverture identifiable"],
+    },
+    {
+      title: "Votre zone d’intervention doit être évidente",
+      insight: "La présence locale doit relier clairement le métier aux zones réellement couvertes.",
+      evidence: ["Rennes est identifiable dans les sources publiques"],
+    },
+    {
+      title: "Le chemin vers le devis doit rester direct",
+      insight: "Un prospect prêt à agir doit pouvoir comprendre la prochaine étape sans chercher.",
+      evidence: ["Parcours de contact visible sur le site"],
+    },
+  ],
+};
+
+async function startDiscovery(page: Page, name = "Dupont Couverture") {
+  await page.getByLabel("Nom de votre entreprise").fill(name);
+  await page.getByRole("button", { name: /Retrouver mon entreprise/ }).click();
+  await expect(page.getByText(COMPANY.name, { exact: true })).toBeVisible();
+  await expect(page.getByText(COMPANY.insights[0].title, { exact: true })).toBeVisible();
 }
 
-async function completeToStepFour(page: Page) {
-  await fillStepOne(page);
-  await page.getByRole("button", { name: /Continuer/ }).click();
-  await page.getByRole("button", { name: "Restaurants", exact: true }).click();
-  await page.getByRole("button", { name: /Continuer/ }).click();
-  await page.getByRole("button", { name: "Plus de rendez-vous" }).click();
-  await page.getByRole("button", { name: /Continuer/ }).click();
-  await expect(page.getByRole("heading", { name: "Vos coordonnées" })).toBeVisible();
+async function reachContact(page: Page) {
+  await startDiscovery(page);
+  await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+  await expect(page.getByRole("heading", { name: "Votre priorité aujourd’hui ?" })).toBeVisible();
+  await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
+  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
 }
 
 test.describe("Capable Audit funnel", () => {
   test.beforeEach(async ({ page }) => {
-    // These tests cover the funnel's behaviour, so the endpoint is stubbed:
-    // hitting the real one would consume its rate-limit budget and make the
-    // suite order-dependent. The endpoint itself is covered in audit-api.spec.
+    await page.route("**/api/audit/discover", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ candidates: [COMPANY], webSources: [] }),
+      })
+    );
+    await page.route("**/api/audit/quick", (route) => route.abort());
+    await page.route("**/api/audit/analyze", (route) => route.abort());
     await page.route("**/api/audit", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ status: "received", emailed: true }),
+        body: JSON.stringify({ status: "received", accepted: true, emailed: true }),
       })
     );
-    // The diagnostic engine is covered on its own in audit-report.spec and
-    // audit-analyze-api.spec. Aborted here so these funnel-behaviour tests
-    // fall back to the plain confirmation message immediately instead of
-    // waiting out the real analysis (or a real, unmocked network call).
-    await page.route("**/api/audit/analyze", (route) => route.abort());
     await page.goto("/audit");
   });
 
-  test("walks through all four steps and confirms", async ({ page }) => {
+  test("starts from a company name and submits the resolved company", async ({ page }) => {
     const requests: string[] = [];
     page.on("request", (req) => {
-      // Exact match: "/api/audit" is also a prefix of "/api/audit/analyze",
-      // whose own (aborted, per beforeEach) request must not count here.
       if (req.url().endsWith("/api/audit")) requests.push(req.postData() ?? "");
     });
 
-    await completeToStepFour(page);
-    await page.getByLabel("Nom complet").fill("Marie Dupont");
-    await page.getByLabel("Entreprise").fill("Le Bistrot");
+    await reachContact(page);
     await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByLabel("Téléphone").fill("0600000000");
+    await page.getByRole("button", { name: /Afficher mon plan complet/ }).click();
 
-    await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
+    await expect(page).toHaveURL(/\/audit\/merci$/);
+    await expect(page.getByRole("heading", { name: "Votre audit est en préparation." })).toBeVisible();
 
-    await expect(
-      page.getByRole("heading", { name: "Votre analyse est en préparation." })
-    ).toBeVisible();
-
-    // Exactly one submission, carrying every answer.
     expect(requests).toHaveLength(1);
     const payload = JSON.parse(requests[0]);
     expect(payload).toMatchObject({
-      siteUrl: "https://exemple-restaurant.fr",
-      secteur: "Restaurants",
-      objectif: "Plus de rendez-vous",
-      nom: "Marie Dupont",
+      entreprise: "Dupont Couverture",
+      siteUrl: "https://dupont-couverture.fr/",
+      secteur: "Couvreur / toiture",
+      objectif: "Plus de chantiers",
       email: "marie@exemple.fr",
     });
   });
 
-  test("does not submit while advancing between steps", async ({ page }) => {
-    // Regression: the Continuer button used to reuse the submit button's DOM
-    // node, firing a submit with empty fields on the way to step 4.
-    const requests: string[] = [];
-    page.on("request", (req) => {
-      // Exact match — see the identical comment above. The step 3→4
-      // transition legitimately calls /api/audit/analyze in the background;
-      // this test is only about the lead-capture endpoint staying silent.
-      if (req.url().endsWith("/api/audit")) requests.push(req.url());
-    });
-
-    await completeToStepFour(page);
-    expect(requests).toHaveLength(0);
+  test("does not ask for a website URL", async ({ page }) => {
+    await expect(page.getByLabel("Nom de votre entreprise")).toBeVisible();
+    await expect(page.getByLabel("Votre site")).toHaveCount(0);
+    await expect(page.getByText(/Pas besoin de connaître l’adresse de votre site/)).toBeVisible();
   });
 
-  test("Enter on the first step advances instead of submitting", async ({ page }) => {
-    // Regression: a single-field form submits implicitly on Enter.
-    const requests: string[] = [];
+  test("Enter launches company discovery without submitting a lead", async ({ page }) => {
+    const leads: string[] = [];
     page.on("request", (req) => {
-      if (req.url().endsWith("/api/audit")) requests.push(req.url());
+      if (req.url().endsWith("/api/audit")) leads.push(req.url());
     });
 
-    await fillStepOne(page);
-    await page.getByLabel("Votre site").press("Enter");
+    await page.getByLabel("Nom de votre entreprise").fill("Dupont Couverture");
+    await page.getByLabel("Nom de votre entreprise").press("Enter");
 
-    await expect(page.getByRole("heading", { name: "Votre activité" })).toBeVisible();
-    expect(requests).toHaveLength(0);
+    await expect(page.getByText(COMPANY.name, { exact: true })).toBeVisible();
+    expect(leads).toHaveLength(0);
   });
 
-  test("asks what \"Autre\" means and sends it with the answer", async ({ page }) => {
+  test("skips the trade question when the company sector is identified", async ({ page }) => {
+    await startDiscovery(page);
+    await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+    await expect(page.getByRole("heading", { name: "Votre priorité aujourd’hui ?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Quel est votre métier ?" })).toHaveCount(0);
+  });
+
+  test("falls back to manual qualification when no company match is safe", async ({ page }) => {
+    await page.unroute("**/api/audit/discover");
+    await page.route("**/api/audit/discover", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ candidates: [], webSources: [] }),
+      })
+    );
+
+    await page.getByLabel("Nom de votre entreprise").fill("Nom ambigu");
+    await page.getByRole("button", { name: /Retrouver mon entreprise/ }).click();
+    await expect(page.getByRole("heading", { name: /correspondance assez sûre/ })).toBeVisible();
+    await page.getByRole("button", { name: /Continuer/ }).click();
+    await expect(page.getByRole("heading", { name: "Quel est votre métier ?" })).toBeVisible();
+  });
+
+  test("preserves Google Ads attribution on the lead", async ({ page }) => {
+    await page.goto(
+      "/audit?utm_source=google&utm_medium=cpc&utm_campaign=gc_search_btp&utm_content=chantiers&gclid=test-click-id"
+    );
+
     const requests: string[] = [];
     page.on("request", (req) => {
-      // Exact match — the step 3→4 transition also calls
-      // /api/audit/analyze in the background with the same field names,
-      // which would otherwise land in requests[0] and mask a real bug here.
       if (req.url().endsWith("/api/audit")) requests.push(req.postData() ?? "");
     });
 
-    await fillStepOne(page);
-    await page.getByRole("button", { name: /Continuer/ }).click();
-
-    await page.getByRole("button", { name: "Autre", exact: true }).click();
-    // "Autre" alone says nothing, so the step stays blocked until specified.
-    await expect(page.getByRole("button", { name: /Continuer/ })).toBeDisabled();
-    await page.getByLabel("Précisez votre secteur").fill("Toiletteur canin");
-    await expect(page.getByRole("button", { name: /Continuer/ })).toBeEnabled();
-    await page.getByRole("button", { name: /Continuer/ }).click();
-
-    await page.getByRole("button", { name: "Autre", exact: true }).click();
-    await expect(page.getByRole("button", { name: /Continuer/ })).toBeDisabled();
-    await page.getByLabel("Précisez votre objectif").fill("Recruter des franchisés");
-    await page.getByRole("button", { name: /Continuer/ }).click();
-
-    await page.getByLabel("Nom complet").fill("Marie");
+    await reachContact(page);
     await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-
-    await expect(
-      page.getByRole("heading", { name: "Votre analyse est en préparation." })
-    ).toBeVisible();
+    await page.getByRole("button", { name: /Afficher mon plan complet/ }).click();
+    await expect(page).toHaveURL(/\/audit\/merci$/);
 
     const payload = JSON.parse(requests[0]);
-    expect(payload.secteur).toBe("Autre — Toiletteur canin");
-    expect(payload.objectif).toBe("Autre — Recruter des franchisés");
+    expect(payload).toMatchObject({
+      utmSource: "google",
+      utmMedium: "cpc",
+      utmCampaign: "gc_search_btp",
+      utmContent: "chantiers",
+      gclid: "test-click-id",
+    });
   });
 
-  test("blocks advancing until the step is answered", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /Continuer/ })).toBeDisabled();
-    await fillStepOne(page);
-    await expect(page.getByRole("button", { name: /Continuer/ })).toBeEnabled();
-  });
-
-  test("keeps answers when navigating back", async ({ page }) => {
-    await fillStepOne(page, "https://mon-site.fr");
-    await page.getByRole("button", { name: /Continuer/ }).click();
-    await page.getByRole("button", { name: "Restaurants", exact: true }).click();
-    await page.getByRole("button", { name: /Retour/ }).click();
-
-    await expect(page.getByLabel("Votre site")).toHaveValue("https://mon-site.fr");
-  });
-
-  test("reports the step in an accessible progress bar", async ({ page }) => {
-    const progress = page.getByRole("progressbar");
-    await expect(progress).toHaveAttribute("aria-valuenow", "1");
-    await fillStepOne(page);
-    await page.getByRole("button", { name: /Continuer/ }).click();
-    await expect(progress).toHaveAttribute("aria-valuenow", "2");
-  });
-
-  test("shows an actionable error when the submission fails", async ({ page }) => {
+  test("shows an actionable submission error and keeps the email", async ({ page }) => {
+    await page.unroute("**/api/audit");
     await page.route("**/api/audit", (route) =>
-      route.fulfill({ status: 502, body: JSON.stringify({ error: "email_failed" }) })
+      route.fulfill({ status: 502, body: JSON.stringify({ error: "lead_capture_failed" }) })
     );
 
-    await completeToStepFour(page);
-    await page.getByLabel("Nom complet").fill("Marie");
+    await reachContact(page);
     await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
+    await page.getByRole("button", { name: /Afficher mon plan complet/ }).click();
 
     await expect(page.locator('form [role="alert"]')).toContainText("n'a pas pu être envoyée");
-    // The visitor keeps their answers and can retry.
-    await expect(page.getByLabel("Nom complet")).toHaveValue("Marie");
-    await expect(page.getByRole("button", { name: /Obtenir mon audit/ })).toBeEnabled();
-  });
-
-  test("explains a rate-limited submission differently", async ({ page }) => {
-    await page.route("**/api/audit", (route) =>
-      route.fulfill({ status: 429, body: JSON.stringify({ error: "rate_limited" }) })
-    );
-
-    await completeToStepFour(page);
-    await page.getByLabel("Nom complet").fill("Marie");
-    await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Obtenir mon audit/ }).click();
-
-    await expect(page.locator('form [role="alert"]')).toContainText("Trop de demandes");
-  });
-
-  test("submits only once when the button is clicked repeatedly", async ({ page }) => {
-    let calls = 0;
-    await page.route("**/api/audit", async (route) => {
-      calls += 1;
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      await route.fulfill({ status: 200, body: JSON.stringify({ status: "received" }) });
-    });
-
-    await completeToStepFour(page);
-    await page.getByLabel("Nom complet").fill("Marie");
-    await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-
-    // Fire the clicks together, the way an impatient visitor double-clicks.
-    // The follow-ups are capped and allowed to fail: once the first submit
-    // lands, the button is disabled and then replaced by the confirmation.
-    const submit = page.getByRole("button", { name: /Obtenir mon audit/ });
-    await Promise.allSettled([
-      submit.click({ timeout: 5000 }),
-      submit.click({ force: true, timeout: 1000 }),
-      submit.click({ force: true, timeout: 1000 }),
-    ]);
-
-    await expect(
-      page.getByRole("heading", { name: "Votre analyse est en préparation." })
-    ).toBeVisible();
-    expect(calls).toBe(1);
+    await expect(page.getByLabel("Email", { exact: true })).toHaveValue("marie@exemple.fr");
   });
 });
