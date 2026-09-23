@@ -155,7 +155,6 @@ const RESEARCH_SCHEMA = {
     identityCheck: { type: "string" },
     observations: {
       type: "array",
-      maxItems: 14,
       items: {
         type: "object",
         additionalProperties: false,
@@ -170,7 +169,6 @@ const RESEARCH_SCHEMA = {
     },
     profiles: {
       type: "array",
-      maxItems: 10,
       items: {
         type: "object",
         additionalProperties: false,
@@ -179,8 +177,8 @@ const RESEARCH_SCHEMA = {
       },
     },
     reviews: { type: "string" },
-    servicesOutsideSite: { type: "array", maxItems: 6, items: { type: "string" } },
-    inconsistencies: { type: "array", maxItems: 6, items: { type: "string" } },
+    servicesOutsideSite: { type: "array", items: { type: "string" } },
+    inconsistencies: { type: "array", items: { type: "string" } },
   },
 };
 
@@ -452,7 +450,7 @@ const CARD_SCHEMA = {
   properties: {
     axis: { type: "string", enum: ["trouve", "choisi", "contacte"] },
     title: { type: "string" },
-    score: { type: "integer", minimum: 1, maximum: 10 },
+    score: { type: "integer" },
     finding: { type: "string" },
     seen: { type: "string" },
     loss: { type: "string" },
@@ -469,7 +467,7 @@ const INVESTIGATION_SCHEMA = {
   properties: {
     research: RESEARCH_SCHEMA,
     summary: { type: "string" },
-    cards: { type: "array", maxItems: 5, items: CARD_SCHEMA },
+    cards: { type: "array", items: CARD_SCHEMA },
   },
 };
 

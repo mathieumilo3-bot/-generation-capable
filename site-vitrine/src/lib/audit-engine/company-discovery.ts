@@ -40,7 +40,6 @@ function schema() {
     properties: {
       candidates: {
         type: "array",
-        maxItems: 3,
         items: {
           type: "object",
           additionalProperties: false,
