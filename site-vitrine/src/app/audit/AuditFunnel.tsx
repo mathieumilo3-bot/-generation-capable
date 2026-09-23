@@ -93,6 +93,7 @@ export function AuditFunnel() {
   const [clickIds, setClickIds] = useState({ gclid: "", gbraid: "", wbraid: "" });
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifyStatus, setNotifyStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [notifyError, setNotifyError] = useState("");
   const [canLeave, setCanLeave] = useState(false);
   const [leaveReady, setLeaveReady] = useState(false);
 
@@ -156,10 +157,12 @@ export function AuditFunnel() {
 
     const email = notifyEmail.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setNotifyError("Vérifiez l’adresse email.");
       setNotifyStatus("error");
       return;
     }
 
+    setNotifyError("");
     setNotifyStatus("saving");
     let measurementConsent = false;
     try {
@@ -185,6 +188,7 @@ export function AuditFunnel() {
     });
 
     if (!registered?.id || !registered.token) {
+      setNotifyError("Impossible d’enregistrer pour l’instant. Réessayez dans quelques secondes.");
       setNotifyStatus("error");
       return;
     }
@@ -198,6 +202,7 @@ export function AuditFunnel() {
     if (researchRef.current) {
       const attached = await attachLeadToResearch(handle, researchRef.current);
       if (!attached) {
+        setNotifyError("Le traitement démarre encore. Réessayez dans quelques secondes.");
         setNotifyStatus("error");
         return;
       }
@@ -527,7 +532,13 @@ export function AuditFunnel() {
             break;
           }
           if (!poll) break;
-          advance(Math.min(92, progressRef.current + 2), "Recoupement des sources et sélection des priorités");
+          const nextProgress = Math.min(97, progressRef.current + (progressRef.current < 82 ? 3 : 1));
+          advance(
+            nextProgress,
+            nextProgress >= 90
+              ? "Finalisation de vos 3 leviers prioritaires"
+              : "Croisement des sources et sélection des meilleures opportunités"
+          );
         }
       }
 
@@ -783,7 +794,10 @@ export function AuditFunnel() {
                   value={notifyEmail}
                   onChange={(event) => {
                     setNotifyEmail(event.target.value);
-                    if (notifyStatus === "error") setNotifyStatus("idle");
+                    if (notifyStatus === "error") {
+                      setNotifyStatus("idle");
+                      setNotifyError("");
+                    }
                   }}
                   className={`${inputClass()} flex-1`}
                   required
@@ -798,7 +812,7 @@ export function AuditFunnel() {
               </div>
 
               {notifyStatus === "error" && (
-                <p className="mt-2 text-[11px] text-[#e7c872]">Vérifiez votre email puis réessayez.</p>
+                <p className="mt-2 text-[11px] text-[#e7c872]">{notifyError || "Réessayez dans quelques secondes."}</p>
               )}
 
               <p className="mt-3 text-[10px] leading-relaxed text-[var(--color-muted)]">

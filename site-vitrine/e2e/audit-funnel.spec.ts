@@ -165,10 +165,10 @@ test.describe("Audit funnel — nom → diagnostic", () => {
     await expect(cards.first()).toContainText("Visibilité du service isolation extérieure");
     await expect(cards.first()).toContainText("4/10");
     await expect(cards.first()).toContainText("Vu :");
-    await expect(cards.first()).toContainText("Ce que vous perdez");
+    await expect(cards.first()).toContainText("L’opportunité à débloquer");
     await expect(cards.first()).toContainText(/Potentiel\s*:\s*fort/i);
-    await expect(cards.first()).toContainText("À corriger");
-    await expect(page.getByRole("heading", { name: "Votre diagnostic est prêt." })).toBeVisible();
+    await expect(cards.first()).toContainText("Première action");
+    await expect(page.getByRole("heading", { name: "Votre potentiel est clair. Passons au plan." })).toBeVisible();
 
     expect(JSON.parse(calls.research[0])).toMatchObject({ entreprise: "Martin Couverture", siteUrl: COMPANY.website, ville: "Vannes" });
     // Stage 2 polls the signed job, it never re-sends a bare company name.
