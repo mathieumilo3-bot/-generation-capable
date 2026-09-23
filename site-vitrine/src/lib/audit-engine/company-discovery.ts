@@ -206,8 +206,8 @@ function candidateFromSources(query: string, sources: AiAuditWebSource[]): Compa
   return null;
 }
 
-function discoveryPrompt(query: string, cityHint: string, rescue: boolean): string {
-  return `Retrouve l'entreprise correspondant au nom suivant : "${query}".${cityHint ? ` La ville ou le code postal fourni par l'utilisateur est : "${cityHint}". Utilise-le comme contrainte forte d'identification.` : ""}
+function discoveryPrompt(query: string, cityHint: string, rescue: boolean, identityHint = ""): string {
+  return `Retrouve l'entreprise correspondant au nom suivant : "${query}".${cityHint ? ` La ville ou le code postal de référence est : "${cityHint}". Utilise-le comme contrainte forte d'identification.` : ""}${identityHint ? ` Le registre public français a déjà identifié cette entité : "${identityHint}". Utilise surtout le SIREN, la raison sociale et le siège comme ancres pour retrouver très vite son site officiel ; ne recommence pas une recherche générale d'homonymes sauf contradiction.` : ""}
 
 MISSION
 Tu dois faire comme un consultant humain qui cherche vraiment cette société sur le web avant un audit commercial.
@@ -249,11 +249,11 @@ ${rescue ? "C'est une tentative de récupération : la première recherche n'a p
 Renvoie uniquement le JSON demandé.`;
 }
 
-function discoveryCall(query: string, options: { cityHint?: string; rescue?: boolean; timeoutMs: number; fetchFn?: FetchLike; apiKey?: string; model?: string }) {
+function discoveryCall(query: string, options: { cityHint?: string; identityHint?: string; rescue?: boolean; timeoutMs: number; fetchFn?: FetchLike; apiKey?: string; model?: string }) {
   return {
     system:
       "Tu es l'analyste GC chargé d'identifier une entreprise réelle à partir de sources web publiques. Tu dois chercher activement, recouper plusieurs sources et ne jamais inventer.",
-    user: discoveryPrompt(query, options.cityHint ?? "", Boolean(options.rescue)),
+    user: discoveryPrompt(query, options.cityHint ?? "", Boolean(options.rescue), options.identityHint ?? ""),
     schemaName: "gc_company_discovery_v3",
     schema: schema(),
     webSearch: true,
@@ -284,7 +284,7 @@ function toDiscoveryResult(data: { candidates?: unknown[] }, webSources: AiAudit
  */
 export async function startCompanyDiscovery(
   companyName: string,
-  options: { cityHint?: string; rescue?: boolean; fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
+  options: { cityHint?: string; identityHint?: string; rescue?: boolean; fetchFn?: FetchLike; apiKey?: string; model?: string } = {}
 ): Promise<string | null> {
   const query = companyName.trim().slice(0, 160);
   if (query.length < 2) return null;
@@ -329,6 +329,7 @@ async function runDiscoveryAttempt(
     rescue?: boolean;
     timeoutMs?: number;
     cityHint?: string;
+    identityHint?: string;
   }
 ): Promise<CompanyDiscoveryResult> {
   const result = await callResponses<{ candidates?: unknown[] }>(
@@ -365,6 +366,7 @@ async function discoverCompanyUnverified(
     model,
     timeoutMs: options.firstTimeoutMs ?? 18_000,
     cityHint,
+    identityHint: options.identityHint,
   });
 
   const strongFirst = first.candidates.find((candidate) => candidate.confidence === "high" && candidate.website);
