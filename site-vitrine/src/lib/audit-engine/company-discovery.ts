@@ -348,6 +348,7 @@ async function discoverCompanyUnverified(
     firstTimeoutMs?: number;
     skipRescue?: boolean;
     cityHint?: string;
+    identityHint?: string;
   } = {}
 ): Promise<CompanyDiscoveryResult> {
   const query = companyName.trim().slice(0, 160);
@@ -391,6 +392,7 @@ async function discoverCompanyUnverified(
     rescue: true,
     timeoutMs: 14_000,
     cityHint,
+    identityHint: options.identityHint,
   });
 
   const combinedSources = [...first.webSources, ...rescue.webSources].filter(
