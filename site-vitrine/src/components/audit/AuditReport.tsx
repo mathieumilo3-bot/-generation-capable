@@ -204,7 +204,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
         <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
           Votre diagnostic
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Vos priorités pour gagner plus de clients</h2>
+        <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Les 3 priorités qui peuvent vous faire gagner plus de demandes</h2>
         <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)]">
           {synthesis?.executiveSummary ||
             "On a analysé votre présence comme le ferait un futur client : est-ce qu’il vous trouve, vous choisit et vous contacte facilement ?"}
@@ -316,9 +316,9 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
           </div>
 
           <div className="mt-6 rounded-2xl border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] p-5 text-center">
-            <p className="font-display text-lg font-semibold">Vous savez maintenant où agir.</p>
+            <p className="font-display text-lg font-semibold">Vous voyez maintenant où se trouvent les leviers.</p>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--color-muted)]">
-              On peut partir directement de ces points et vous montrer l’ordre dans lequel les améliorer.
+              Le plus utile maintenant : reprendre ces points avec vous, les classer par impact et vous montrer quoi mettre en place en premier.
             </p>
             <div className="mt-4">
               <Button
@@ -330,7 +330,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
                 trackEvent="booking_started"
                 trackPayload={{ location: "audit_priorities", source: "capable_audit" }}
               >
-                Réserver 30 min pour les améliorer →
+                Construire mon plan d’action →
               </Button>
             </div>
           </div>
@@ -342,7 +342,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
           Prochaine étape
         </p>
         <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Transformons ces priorités en gains concrets.
+          Passez du diagnostic au plan d’action.
         </h3>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[var(--color-muted)]">
           {synthesis?.callBridge ||
@@ -367,11 +367,11 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
             trackPayload={{ location: "audit_report", source: "capable_audit" }}
             onClick={() => track("audit_cta_clicked", { location: "audit_report", intent: "book_strategy_call" })}
           >
-            Réserver 30 min pour activer mes priorités →
+            Choisir mon créneau →
           </Button>
         </div>
         <p className="mt-4 text-xs text-[var(--color-muted)]">
-          30 min · Votre diagnostic est déjà prêt · Sans engagement
+          Votre diagnostic sert de base · On va directement aux actions prioritaires · Sans engagement
         </p>
       </div>
 
