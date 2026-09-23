@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { track } from "@/lib/tracking";
-import { buildCalendlyUrl, type BookingAttribution } from "@/lib/booking";
+import type { BookingAttribution } from "@/lib/booking";
 import type { AiAuditOpportunity, Dimension, Finding, Report } from "@/lib/audit-engine/types";
 
 type PillarId = "attirer" | "rassurer" | "convertir";
@@ -167,7 +167,6 @@ type AuditReportProps = {
 
 export function AuditReport({ report, lead, attribution, discovery }: AuditReportProps) {
   const viewedTracked = useRef(false);
-  const bookingUrl = buildCalendlyUrl(lead, attribution);
   const synthesis = report.aiSynthesis;
   const discoveryOpportunities: AiAuditOpportunity[] = (discovery?.insights ?? []).slice(0, 3).map((item, index) => {
     const pillar: PillarId = index === 0 ? "attirer" : index === 1 ? "rassurer" : "convertir";
@@ -310,9 +309,7 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
         </h3>
         <div className="mx-auto mt-7 max-w-xl">
           <Button
-            href={bookingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/audit/rendez-vous"
             variant="primary"
             className="audit-primary-cta min-h-16 w-full px-8 text-lg sm:text-xl"
             trackEvent="booking_started"
