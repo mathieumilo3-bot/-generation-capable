@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const DEFAULT_MODEL = "gpt-5.6-sol";
-const OPENAI_TIMEOUT_MS = 42_000;
+const OPENAI_TIMEOUT_MS = 48_000;
 const MAX_SITE_EXCERPT = 8_000;
 
 type FetchLike = typeof fetch;
@@ -373,11 +373,11 @@ export async function synthesizeAuditWithOpenAI(
       },
       body: JSON.stringify({
         model,
-        reasoning: { effort: "medium" },
+        reasoning: { effort: "high" },
         tools: [{ type: "web_search", search_context_size: "medium" }],
         tool_choice: "auto",
         include: ["web_search_call.action.sources"],
-        max_output_tokens: 1_800,
+        max_output_tokens: 2_600,
         input: [
           { role: "system", content: "Tu es un analyste commercial GC. Respecte strictement les données fournies." },
           { role: "user", content: buildPrompt(context) },
