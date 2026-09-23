@@ -270,10 +270,10 @@ export function AuditReport({ report, lead, attribution }: AuditReportProps) {
             {aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length} constat{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""} concret{(aiOpportunities.length > 0 ? aiOpportunities.length : priorities.length) > 1 ? "s" : ""}
           </p>
           <h3 className="font-display mt-3 text-2xl font-semibold tracking-tight">
-            Commencez par ces opportunités.
+            Commencez par ces priorités.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-            Chaque opportunité part d’un élément observé ou clairement identifié dans votre présence en ligne.
+            Chaque priorité part d’un élément observé ou clairement identifié dans votre présence en ligne.
           </p>
           <div className="mt-6 flex flex-col gap-4">
             {aiOpportunities.length > 0
