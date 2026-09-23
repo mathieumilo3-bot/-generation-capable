@@ -351,7 +351,7 @@ export function AuditFunnel() {
     update("objectif", value);
     startRefinedAnalysis(data.secteur, value);
     setStage("contact");
-    track("audit_step_4", { objectifs: goals, objectifs_count: goals.length });
+    track("audit_step_4", { objectifs: goals.join(" | "), objectifs_count: goals.length });
   }
 
   async function resolveBestReport(): Promise<Report | null> {
