@@ -196,7 +196,11 @@ test.describe("Audit funnel — nom → diagnostic", () => {
           }),
         });
       }
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "ok" }) });
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: payload.action === "attach" ? "attached" : "ok" }),
+      });
     });
 
     await page.unroute("**/api/audit/analyze");
