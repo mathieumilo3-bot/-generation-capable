@@ -36,8 +36,9 @@ async function startDiscovery(page: Page, name = "Dupont Couverture") {
 async function reachContact(page: Page) {
   await startDiscovery(page);
   await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
-  await expect(page.getByRole("heading", { name: "Votre priorité aujourd’hui ?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pourquoi faites-vous ce diagnostic ?" })).toBeVisible();
   await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
+  await page.getByRole("button", { name: /Analyser selon mes objectifs/ }).click();
   await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
 }
 
@@ -92,6 +93,21 @@ test.describe("Capable Audit funnel", () => {
     await expect(page.getByText(/Pas besoin de connaître l’adresse de votre site/)).toBeVisible();
   });
 
+  test("lets a prospect select up to three qualification objectives", async ({ page }) => {
+    await startDiscovery(page);
+    await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
+
+    await page.getByRole("button", { name: "Plus de chantiers", exact: true }).click();
+    await page.getByRole("button", { name: "Plus de visibilité", exact: true }).click();
+    await page.getByRole("button", { name: "Recevoir plus de demandes de devis", exact: true }).click();
+
+    await expect(page.getByText("3 / 3 sélectionnés")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Être mieux trouvé sur Google", exact: true })).toBeDisabled();
+
+    await page.getByRole("button", { name: /Analyser selon mes objectifs/ }).click();
+    await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+  });
+
   test("Enter launches company discovery without submitting a lead", async ({ page }) => {
     const leads: string[] = [];
     page.on("request", (req) => {
@@ -108,7 +124,7 @@ test.describe("Capable Audit funnel", () => {
   test("skips the trade question when the company sector is identified", async ({ page }) => {
     await startDiscovery(page);
     await page.getByRole("button", { name: /Continuer vers mes priorités/ }).click();
-    await expect(page.getByRole("heading", { name: "Votre priorité aujourd’hui ?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pourquoi faites-vous ce diagnostic ?" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Quel est votre métier ?" })).toHaveCount(0);
   });
 

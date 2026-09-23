@@ -58,11 +58,15 @@ const TRADE_OPTIONS = [
 
 const OBJECTIVES = [
   "Plus de chantiers",
-  "Plus de clients locaux",
+  "Plus de visibilité",
   "Être mieux trouvé sur Google",
+  "Recevoir plus de demandes de devis",
   "Recevoir plus d'appels qualifiés",
+  "Améliorer mon site pour convertir plus",
   "Autre",
 ];
+
+const MAX_OBJECTIVES = 3;
 
 const COMPANY_FIELD_ID = "audit-company-name";
 const REPORT_WAIT_MS = 14_000;
@@ -145,6 +149,7 @@ export function AuditFunnel() {
   const [clickIds, setClickIds] = useState({ gclid: "", gbraid: "", wbraid: "" });
   const [otherTrade, setOtherTrade] = useState("");
   const [otherGoal, setOtherGoal] = useState("");
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [showCallbackFields, setShowCallbackFields] = useState(false);
   const [siteError, setSiteError] = useState<string | null>(null);
 
@@ -318,24 +323,35 @@ export function AuditFunnel() {
     track("audit_step_3");
   }
 
-  function chooseGoal(option: string) {
-    if (option === "Autre") {
-      update("objectif", option);
-      return;
-    }
-    update("objectif", option);
-    startRefinedAnalysis(data.secteur, option);
-    setStage("contact");
-    track("audit_step_4");
+  function toggleGoal(option: string) {
+    markEngaged();
+
+    setSelectedGoals((current) => {
+      if (current.includes(option)) {
+        const next = current.filter((item) => item !== option);
+        if (option === "Autre") setOtherGoal("");
+        return next;
+      }
+
+      if (current.length >= MAX_OBJECTIVES) return current;
+      return [...current, option];
+    });
   }
 
-  function confirmOtherGoal() {
-    if (otherGoal.trim().length < 2) return;
-    const value = `Autre — ${otherGoal.trim()}`;
+  function confirmGoals() {
+    if (selectedGoals.length === 0) return;
+
+    const goals = selectedGoals.map((goal) => {
+      if (goal !== "Autre") return goal;
+      const custom = otherGoal.trim();
+      return custom.length >= 2 ? `Autre — ${custom}` : "Autre";
+    });
+
+    const value = goals.join(" · ");
     update("objectif", value);
     startRefinedAnalysis(data.secteur, value);
     setStage("contact");
-    track("audit_step_4");
+    track("audit_step_4", { objectifs: goals.join(" | "), objectifs_count: goals.length });
   }
 
   async function resolveBestReport(): Promise<Report | null> {
@@ -738,35 +754,64 @@ export function AuditFunnel() {
             exit={{ opacity: 0, x: -18 }}
             transition={{ duration: 0.35 }}
           >
-            <p className="text-[11px] font-medium text-[var(--color-muted)]">Dernière question</p>
-            <h2 className="font-display mt-2 text-2xl font-semibold">Votre priorité aujourd’hui ?</h2>
-            <div className="mt-5 flex flex-col gap-2">
-              {OBJECTIVES.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => chooseGoal(option)}
-                  className={`audit-choice rounded-xl px-4 py-4 text-left text-sm transition-all ${data.objectif === option ? "audit-choice--selected" : ""}`}
-                >
-                  {option}
-                </button>
-              ))}
+            <p className="text-[11px] font-medium text-[var(--color-muted)]">Dernière question · qualification</p>
+            <h2 className="font-display mt-2 text-2xl font-semibold">Pourquoi faites-vous ce diagnostic ?</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+              Sélectionnez jusqu’à 3 objectifs. Ça nous permet d’analyser votre entreprise selon ce que vous cherchez réellement à améliorer, pas de vous envoyer un audit générique.
+            </p>
+
+            <div className="mt-4 flex items-center justify-between text-[11px] text-[var(--color-muted)]">
+              <span>{selectedGoals.length} / {MAX_OBJECTIVES} sélectionné{selectedGoals.length > 1 ? "s" : ""}</span>
+              <span>Maximum 3</span>
             </div>
 
-            {data.objectif === "Autre" && (
-              <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-col gap-2">
+              {OBJECTIVES.map((option) => {
+                const selected = selectedGoals.includes(option);
+                const disabled = !selected && selectedGoals.length >= MAX_OBJECTIVES;
+
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={selected}
+                    disabled={disabled}
+                    onClick={() => toggleGoal(option)}
+                    className={`audit-choice rounded-xl px-4 py-4 text-left text-sm transition-all ${selected ? "audit-choice--selected" : ""} ${disabled ? "cursor-not-allowed opacity-40" : ""}`}
+                  >
+                    <span className="flex items-center justify-between gap-3">
+                      <span>{option}</span>
+                      <span className="text-xs">{selected ? "✓" : ""}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedGoals.includes("Autre") && (
+              <div className="mt-3">
                 <input
                   type="text"
                   value={otherGoal}
                   onChange={(e) => setOtherGoal(e.target.value)}
-                  placeholder="Votre objectif"
+                  placeholder="Précisez votre objectif"
                   className={inputClass()}
                 />
-                <button type="button" onClick={confirmOtherGoal} className="rounded-xl bg-[var(--color-text)] px-4 text-sm font-semibold text-[var(--color-bg)]">
-                  OK
-                </button>
               </div>
             )}
+
+            <button
+              type="button"
+              disabled={selectedGoals.length === 0 || (selectedGoals.includes("Autre") && otherGoal.trim().length < 2)}
+              onClick={confirmGoals}
+              className="audit-primary-cta mt-5 inline-flex min-h-14 w-full items-center justify-center rounded-2xl px-7 text-base font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Analyser selon mes objectifs →
+            </button>
+
+            <p className="mt-3 text-center text-[11px] text-[var(--color-muted)]">
+              Vos choix servent à personnaliser le diagnostic et à préparer un échange utile si vous souhaitez aller plus loin.
+            </p>
           </motion.div>
         )}
 

@@ -36,8 +36,7 @@ export function InstantCheck() {
             <span className="text-[var(--color-muted)]">plus de demandes de devis.</span>
           </h2>
           <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-base">
-            Donnez-nous simplement le nom de votre entreprise. On retrouve sa présence publique puis on regarde ce qu&apos;un prospect voit avant de vous appeler :
-            visibilité, clarté du métier, preuves, zone d&apos;intervention et prise de contact.
+            Donnez-nous simplement le nom de votre entreprise. On retrouve sa présence publique, puis vous choisissez ce que vous voulez améliorer : chantiers, visibilité, devis ou appels. Le diagnostic se construit ensuite autour de vos vraies priorités.
           </p>
         </div>
 
@@ -78,7 +77,7 @@ export function InstantCheck() {
                 <div className="rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-5 py-4">
                   <p className="text-sm">
                     <span className="font-semibold">On retrouve d’abord votre entreprise.</span>{" "}
-                    Puis on vérifie les signaux publics qui comptent vraiment avant le devis.
+                    Ensuite vous choisissez jusqu’à 3 objectifs pour que le diagnostic soit réellement adapté à votre situation.
                   </p>
                 </div>
 
@@ -101,7 +100,7 @@ export function InstantCheck() {
                   <button type="button" onClick={() => setStarted(false)} className="inline-flex items-center justify-center rounded-xl border border-[var(--color-border-strong)] px-5 py-3 text-sm font-medium text-[var(--color-text)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40">
                     Recommencer
                   </button>
-                  <span className="text-xs text-[var(--color-muted)]">Nom prérempli · Sans engagement</span>
+                  <span className="text-xs text-[var(--color-muted)]">Nom prérempli · Aucun URL à chercher · Sans engagement</span>
                 </div>
               </div>
             )}
