@@ -28,7 +28,7 @@ const COMPANY = {
 
 async function startDiscovery(page: Page, name = "Dupont Couverture") {
   await page.getByLabel("Nom de votre entreprise").fill(name);
-  await page.getByRole("button", { name: /Retrouver mon entreprise/ }).click();
+  await page.getByRole("button", { name: /Analyser mon entreprise/ }).click();
   await expect(page.getByText(COMPANY.name, { exact: true })).toBeVisible();
   await expect(page.getByText(COMPANY.insights[0].title, { exact: true })).toBeVisible();
 }
@@ -71,7 +71,7 @@ test.describe("Capable Audit funnel", () => {
 
     await reachContact(page);
     await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Afficher mon plan complet/ }).click();
+    await page.getByRole("button", { name: /Générer mon audit PDF/ }).click();
 
     await expect(page).toHaveURL(/\/audit\/merci$/);
     await expect(page.getByRole("heading", { name: "Votre audit est en préparation." })).toBeVisible();
@@ -139,8 +139,8 @@ test.describe("Capable Audit funnel", () => {
     );
 
     await page.getByLabel("Nom de votre entreprise").fill("Nom ambigu");
-    await page.getByRole("button", { name: /Retrouver mon entreprise/ }).click();
-    await expect(page.getByRole("heading", { name: /correspondance assez sûre/ })).toBeVisible();
+    await page.getByRole("button", { name: /Analyser mon entreprise/ }).click();
+    await expect(page.getByRole("heading", { name: /continue l’analyse avec votre activité/ })).toBeVisible();
     await page.getByRole("button", { name: /Continuer/ }).click();
     await expect(page.getByRole("heading", { name: "Quel est votre métier ?" })).toBeVisible();
   });
@@ -157,7 +157,7 @@ test.describe("Capable Audit funnel", () => {
 
     await reachContact(page);
     await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Afficher mon plan complet/ }).click();
+    await page.getByRole("button", { name: /Générer mon audit PDF/ }).click();
     await expect(page).toHaveURL(/\/audit\/merci$/);
 
     const payload = JSON.parse(requests[0]);
@@ -178,7 +178,7 @@ test.describe("Capable Audit funnel", () => {
 
     await reachContact(page);
     await page.getByLabel("Email", { exact: true }).fill("marie@exemple.fr");
-    await page.getByRole("button", { name: /Afficher mon plan complet/ }).click();
+    await page.getByRole("button", { name: /Générer mon audit PDF/ }).click();
 
     await expect(page.locator('form [role="alert"]')).toContainText("n'a pas pu être envoyée");
     await expect(page.getByLabel("Email", { exact: true })).toHaveValue("marie@exemple.fr");
