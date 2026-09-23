@@ -15,7 +15,7 @@ import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 const MAX_BODY_BYTES = 3 * 1024; // entreprise + siteUrl + secteur + objectif, generously.
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const FIELD_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 120 };
+const FIELD_LIMITS = { entreprise: 160, siteUrl: 300, secteur: 120, objectif: 240 };
 // The engine can spend up to ~5s probing the site, then up to 30s on the
 // structured OpenAI synthesis. Keep the outer guard above both stages while
 // staying below Netlify's 60s synchronous execution limit.
