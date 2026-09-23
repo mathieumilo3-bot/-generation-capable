@@ -358,6 +358,9 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
   const combined = [title, diagnosis, impact, loss, firstAction].join(" ");
   if (UNSUPPORTED_METRIC.test(combined)) return null;
 
+  const normalizedPotential: NonNullable<AiAuditOpportunity["potential"]> =
+    score <= 3 ? "très fort" : score <= 5 ? "fort" : score <= 7 ? "moyen" : "faible";
+
   return {
     id: cleanText(raw.id, 80) || `ai_opportunity_${index + 1}`,
     pillar: pillar as AiAuditOpportunity["pillar"],
@@ -368,7 +371,7 @@ function sanitizeOpportunity(value: unknown, index: number): AiAuditOpportunity 
     impact,
     score,
     loss,
-    potential: potential as AiAuditOpportunity["potential"],
+    potential: normalizedPotential,
     firstAction,
     callQuestion,
   };
