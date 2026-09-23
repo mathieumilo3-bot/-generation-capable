@@ -64,6 +64,14 @@ jobs:
           done
           echo "--- Diagnostic rendu en $(( $(date +%s) - START ))s ---"
           jq . poll.json || cat poll.json
+
+          # Un échec de facturation n'est pas un bug du moteur : le dire
+          # clairement plutôt que de laisser chercher dans le code.
+          if jq -e '.reason // "" | test("credit_balance_exhausted|insufficient_quota")' poll.json > /dev/null; then
+            echo "::error::Le compte OpenAI n'a plus de crédits : la recherche web et la rédaction IA sont indisponibles. Le diagnostic continue en mode site seul. Recharger sur https://platform.openai.com/settings/organization/billing/"
+            exit 1
+          fi
+
           jq -e '.status == "done"' poll.json > /dev/null
           jq -e '.cards | length >= 1' poll.json > /dev/null
 
