@@ -39,15 +39,6 @@ const PILLARS: {
   },
 ];
 
-function sourceLabel(title: string, url: string) {
-  if (title && title !== url) return title;
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return title || url;
-  }
-}
-
 function pillarForFinding(finding: Finding): PillarId {
   return PILLARS.find((pillar) => pillar.dimensions.includes(finding.dimension))?.id ?? "rassurer";
 }
@@ -194,26 +185,43 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
   const viewedTracked = useRef(false);
   const bookingUrl = buildCalendlyUrl(lead, attribution);
   const synthesis = report.aiSynthesis;
-  const discoveryOpportunities: AiAuditOpportunity[] = (discovery?.insights ?? []).slice(0, 3).map((item, index) => ({
-    id: `discovery_${index + 1}`,
-    pillar: index === 0 ? "attirer" : index === 1 ? "rassurer" : "convertir",
-    title: item.title,
-    diagnosis: item.insight,
-    evidence: item.evidence,
-    confidence: "inferred",
-    impact:
-      index === 0
-        ? "Améliorer la capacité à être découvert par des prospects qui ne connaissent pas encore l’entreprise."
-        : index === 1
-          ? "Renforcer la confiance au moment où un prospect compare plusieurs entreprises."
-          : "Réduire les frictions entre l’intérêt du prospect et sa demande de devis ou son appel.",
-    callQuestion:
-      index === 0
-        ? "Quelles recherches et zones doivent devenir prioritaires ?"
-        : index === 1
-          ? "Quelles preuves doivent être mises en avant en premier ?"
-          : "Quel parcours de contact doit être simplifié en priorité ?",
-  }));
+  const discoveryOpportunities: AiAuditOpportunity[] = (discovery?.insights ?? []).slice(0, 3).map((item, index) => {
+    const pillar: PillarId = index === 0 ? "attirer" : index === 1 ? "rassurer" : "convertir";
+    return {
+      id: `discovery_${index + 1}`,
+      pillar,
+      title: item.title,
+      diagnosis: item.insight,
+      evidence: item.evidence,
+      confidence: "inferred",
+      score: pillar === "rassurer" ? 5 : 4,
+      loss:
+        pillar === "attirer"
+          ? "Des prospects qui cherchent vos services sans connaître votre nom peuvent ne jamais arriver jusqu’à vous."
+          : pillar === "rassurer"
+            ? "Une partie des visiteurs peut hésiter au moment de vous comparer à une autre entreprise."
+            : "Une partie de l’intérêt peut se perdre avant l’appel ou la demande de devis.",
+      potential: pillar === "rassurer" ? "fort" : "très fort",
+      impact:
+        pillar === "attirer"
+          ? "Être découvert plus souvent au moment où un prospect cherche déjà ce type de service."
+          : pillar === "rassurer"
+            ? "Donner plus vite les raisons de vous choisir et de vous faire confiance."
+            : "Transformer plus clairement l’intérêt en demande exploitable.",
+      firstAction:
+        pillar === "attirer"
+          ? "Clarifier une entrée dédiée au service principal et à la zone réellement desservie."
+          : pillar === "rassurer"
+            ? "Rapprocher une preuve réelle — réalisation, avis ou référence — du moment où le prospect doit décider."
+            : "Rendre une seule action principale immédiatement visible : appeler ou demander un devis.",
+      callQuestion:
+        pillar === "attirer"
+          ? "Quelles recherches et zones doivent devenir prioritaires ?"
+          : pillar === "rassurer"
+            ? "Quelles preuves doivent être mises en avant en premier ?"
+            : "Quel parcours de contact doit être simplifié en priorité ?",
+    };
+  });
   const aiOpportunities = synthesis?.opportunities?.length
     ? synthesis.opportunities
     : discoveryOpportunities;
@@ -279,72 +287,14 @@ export function AuditReport({ report, lead, attribution, discovery }: AuditRepor
         </div>
       )}
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-3">
-        {PILLARS.map((pillar) => {
-          const state = pillarState(report, pillar.id);
-          return (
-            <div key={pillar.id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">{pillar.label}</p>
-              <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-                {pillar.id === "attirer"
-                  ? synthesis?.attirer || pillar.question
-                  : pillar.id === "rassurer"
-                    ? synthesis?.rassurer || pillar.question
-                    : synthesis?.convertir || pillar.question}
-              </p>
-              <p className={`mt-4 text-xs font-semibold ${state.tone}`}>
-                {hasUsefulResearch
-                  ? aiOpportunities.some((item) => item.pillar === pillar.id)
-                    ? "Potentiel à développer"
-                    : "Point secondaire"
-                  : state.label}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      {synthesis?.webQueries?.length ? (
-        <div className="mt-6 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-            Visibilité web · recherches testées
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--color-text)]">
-            Nous avons testé des recherches proches de celles qu’un prospect pourrait faire sans connaître votre nom.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {synthesis.webQueries.map((query) => (
-              <span key={query} className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs text-[var(--color-muted)]">
-                {query}
-              </span>
-            ))}
-          </div>
-          {synthesis.webSources?.length ? (
-            <div className="mt-4 border-t border-[var(--color-border)] pt-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Sources consultées</p>
-              <div className="mt-2 flex flex-col gap-1.5">
-                {synthesis.webSources.slice(0, 4).map((source) => (
-                  <a
-                    key={source.url}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-[var(--color-text)] underline decoration-[var(--color-border-strong)] underline-offset-4"
-                  >
-                    {sourceLabel(source.title, source.url)}
-                  </a>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <p className="mt-4 text-[11px] leading-relaxed text-[var(--color-muted)]">
-            Ce signal vérifie la découvrabilité sur le web. Il ne prétend pas mesurer une position Google Maps exacte ni un classement personnalisé.
-          </p>
-        </div>
-      ) : null}
 
       {hasUsefulResearch && (
-        <div className="mt-12">
+        <div className="mt-10">
+          {synthesis?.webQueries?.length || synthesis?.webSources?.length ? (
+            <p className="mb-6 text-center text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--color-muted)]">
+              Analyse croisée · {synthesis?.webQueries?.length ?? 0} recherches · {synthesis?.webSources?.length ?? 0} sources publiques
+            </p>
+          ) : null}
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-accent)]">
             {aiOpportunities.length} constat{aiOpportunities.length > 1 ? "s" : ""} concret{aiOpportunities.length > 1 ? "s" : ""}
           </p>
