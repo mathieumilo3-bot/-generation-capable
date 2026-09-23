@@ -9,6 +9,7 @@ import {
   type ReportEmailSummary,
 } from "@/lib/audit-submission";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
+import { buildAuditPdf } from "@/lib/audit-pdf";
 import {
   buildLeadActionLinks,
   createLeadMeta,
@@ -47,6 +48,13 @@ async function sendEmails(
   const resend = new Resend(apiKey);
   const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
   const baseNotification = buildNotificationEmail(submission, reportSummary);
+
+  let pdfAttachment: { filename: string; content: Buffer } | null = null;
+  try {
+    pdfAttachment = buildAuditPdf(submission, reportSummary);
+  } catch (error) {
+    console.error("[audit] PDF generation failed (non-blocking):", error);
+  }
 
   // Lead-status actions are useful enrichment, but they must never be able to
   // break the core notification path. A missing/invalid signing secret should
@@ -88,6 +96,7 @@ async function sendEmails(
       subject: notification.subject,
       text: notification.text,
       html: notification.html,
+      ...(pdfAttachment ? { attachments: [pdfAttachment] } : {}),
     }),
     SEND_TIMEOUT_MS,
     "notification"
@@ -106,6 +115,7 @@ async function sendEmails(
         subject: confirmation.subject,
         text: confirmation.text,
         html: confirmation.html,
+        ...(pdfAttachment ? { attachments: [pdfAttachment] } : {}),
       }),
       SEND_TIMEOUT_MS,
       "confirmation"
