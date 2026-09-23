@@ -69,7 +69,7 @@ const OBJECTIVES = [
 const MAX_OBJECTIVES = 3;
 
 const COMPANY_FIELD_ID = "audit-company-name";
-const REPORT_WAIT_MS = 56_000;
+const REPORT_WAIT_MS = 42_000;
 
 function inputClass() {
   return "audit-input w-full rounded-[1.15rem] px-5 py-[17px] text-base text-[var(--color-text)] outline-none transition-all duration-200";
