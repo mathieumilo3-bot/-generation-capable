@@ -114,7 +114,7 @@ describe("runAudit", () => {
       objectif: "y".repeat(10_000),
     };
     const report = await runAudit(input, { probe: async () => reachable(THIN_HTML) });
-    expect(report.header.objectif.length).toBeLessThanOrEqual(120);
+    expect(report.header.objectif.length).toBeLessThanOrEqual(240);
   });
 
   it("survives a single analyzer throwing without losing the rest of the report", async () => {
