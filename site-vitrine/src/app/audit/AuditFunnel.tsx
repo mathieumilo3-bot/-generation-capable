@@ -153,6 +153,8 @@ export function AuditFunnel() {
     const fromHomepageCompany = params.get("entreprise")?.trim().slice(0, FIELD_LIMITS.entreprise) ?? "";
     const fromHomepageSite = params.get("site")?.trim().slice(0, FIELD_LIMITS.siteUrl) ?? "";
 
+    // URL-derived state is intentionally initialized after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAttribution({
       source: params.get("utm_source")?.trim().slice(0, 120) || undefined,
       medium: params.get("utm_medium")?.trim().slice(0, 120) || undefined,
@@ -161,6 +163,7 @@ export function AuditFunnel() {
       term: params.get("utm_term")?.trim().slice(0, 120) || undefined,
     });
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setClickIds({
       gclid: params.get("gclid")?.trim().slice(0, 220) || "",
       gbraid: params.get("gbraid")?.trim().slice(0, 220) || "",
@@ -168,6 +171,7 @@ export function AuditFunnel() {
     });
 
     if (fromHomepageCompany || fromHomepageSite) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setData((prev) => ({
         ...prev,
         entreprise: fromHomepageCompany || prev.entreprise,
