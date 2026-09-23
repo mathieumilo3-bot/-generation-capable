@@ -7,16 +7,30 @@ const COMPANY = {
   city: "Rennes",
   summary: "Entreprise de couverture retrouvée à Rennes.",
   confidence: "high",
-  insightTitle: "Vos preuves doivent être visibles avant le premier appel",
-  insight: "Les éléments publics retrouvés permettent d’identifier l’activité, mais les preuves doivent être immédiatement reliées à la demande de devis.",
-  evidence: ["Site officiel retrouvé", "Activité de couverture identifiable"],
+  insights: [
+    {
+      title: "Vos preuves doivent être visibles avant le premier appel",
+      insight: "Les éléments publics retrouvés permettent d’identifier l’activité, mais les preuves doivent être immédiatement reliées à la demande de devis.",
+      evidence: ["Site officiel retrouvé", "Activité de couverture identifiable"],
+    },
+    {
+      title: "Votre zone d’intervention doit être évidente",
+      insight: "La présence locale doit relier clairement le métier aux zones réellement couvertes.",
+      evidence: ["Rennes est identifiable dans les sources publiques"],
+    },
+    {
+      title: "Le chemin vers le devis doit rester direct",
+      insight: "Un prospect prêt à agir doit pouvoir comprendre la prochaine étape sans chercher.",
+      evidence: ["Parcours de contact visible sur le site"],
+    },
+  ],
 };
 
 async function startDiscovery(page: Page, name = "Dupont Couverture") {
   await page.getByLabel("Nom de votre entreprise").fill(name);
   await page.getByRole("button", { name: /Retrouver mon entreprise/ }).click();
   await expect(page.getByText(COMPANY.name, { exact: true })).toBeVisible();
-  await expect(page.getByText(COMPANY.insightTitle, { exact: true })).toBeVisible();
+  await expect(page.getByText(COMPANY.insights[0].title, { exact: true })).toBeVisible();
 }
 
 async function reachContact(page: Page) {
