@@ -14,6 +14,14 @@ export default defineConfig({
   expect: { timeout: 20_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // Standard GitHub-hosted runners have 2 cores. Letting Playwright's default
+  // (CPU count) spawn workers there starves CPU-throttled/timing-sensitive
+  // specs (the CLS budget, the preview funnel's polling loop) of real CPU and
+  // makes them flaky under load — not because the feature is broken, but
+  // because 6+ browser workers were fighting over 2 cores. Capped explicitly;
+  // the CI workflow also shards by project so each shard gets this budget
+  // to itself rather than sharing it with the other project's run.
+  workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI ? "line" : "list",
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",

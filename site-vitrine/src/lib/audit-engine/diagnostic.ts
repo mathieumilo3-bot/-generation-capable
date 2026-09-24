@@ -1,13 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { crawlSite, normalize, type CrawledPage, type HomeLayout, type SiteCrawl } from "./crawl";
 import { buildEvidenceCards, extractFacts, pickTopCards, potentialForScore, tradeWord, type Axis, type DiagnosticCard, type SiteFacts } from "./facts";
-import {
-  callResponses,
-  isResponseId,
-  openAiKey,
-  pollBackgroundResponse,
-  startBackgroundResponse,
-} from "./openai";
+import { callResponses, isResponseId, pollBackgroundResponse, startBackgroundResponse } from "./openai";
 import type { AiAuditWebSource } from "./types";
 
 /**

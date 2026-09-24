@@ -38,8 +38,16 @@ jobs:
       - run: npm run build
 
   e2e:
-    name: Tests end-to-end
+    name: Tests end-to-end (${{ matrix.project }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Sharded by project: the full suite (chromium + mobile, ~150 specs
+        # each) fighting over one 2-core runner is what made the CLS budget
+        # and the preview funnel's polling loop flaky, not a product bug —
+        # each shard now gets a runner to itself.
+        project: [chromium, mobile]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,10 +57,10 @@ jobs:
           cache-dependency-path: site-vitrine/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npx playwright test --project=${{ matrix.project }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}
           path: site-vitrine/playwright-report/
           retention-days: 7
