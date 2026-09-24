@@ -1,7 +1,7 @@
 import { callResponses, pollBackgroundResponse, startBackgroundResponse, type ResponsesCall } from "@/lib/audit-engine/openai";
 import { BLUEPRINT_JSON_SCHEMA, type PreviewBlueprint } from "./blueprint-schema";
 import { usableAssets } from "./blueprint-base";
-import { TRADE_FAMILIES } from "./trades";
+import { getBusinessUi, TRADE_FAMILIES } from "./trades";
 import type { VerifiedCompanyProfile } from "./types";
 
 /**
@@ -17,6 +17,7 @@ type FetchLike = typeof fetch;
 /** What the model is allowed to know: identifiers and verified values only. */
 export function promptPayload(profile: VerifiedCompanyProfile, base: PreviewBlueprint) {
   const family = TRADE_FAMILIES[profile.identity.tradeFamily];
+  const ui = getBusinessUi(profile.identity.tradeFamily);
   return {
     entreprise: {
       nomPublic: profile.identity.publicName.value,
@@ -36,13 +37,13 @@ export function promptPayload(profile: VerifiedCompanyProfile, base: PreviewBlue
     photos: usableAssets(profile).map((a) => ({ id: a.id, type: a.type, alt: a.alt || null, page: a.pagePath })),
     leviers: profile.audit.levers.map((l) => ({ id: l.id, axe: l.axis, titre: l.title, constat: l.finding, action: l.fix })),
     referencesAutorisees: ["quote", "phone", "city", "founded", "experience", "zone"],
-    reglesMetier: { preuvesPrioritaires: family.proofOrder, heroSiPhoto: family.heroWithPhoto },
+    reglesMetier: { preuvesPrioritaires: family.proofOrder, heroSiPhoto: family.heroWithPhoto, actionPrincipale: ui.primaryCta, afficherZone: ui.showArea },
     blueprintDeReference: base,
   };
 }
 
 export function blueprintPrompt(profile: VerifiedCompanyProfile, base: PreviewBlueprint): string {
-  return `Tu conçois la page d'accueil d'un NOUVEAU site pour l'entreprise décrite dans <gc_profil>. Le dirigeant doit se dire : « c'est ma boîte, en mieux ».
+  return `Tu conçois la page d’accueil d’un NOUVEAU site pour l’entreprise décrite dans <gc_profil>. Le dirigeant doit se dire : « c’est ma boîte, en mieux ». Le secteur peut être bâtiment, restauration, santé, e-commerce, logiciel, agence, immobilier, hôtellerie, événementiel, conseil ou commerce : adapte la logique commerciale au modèle business, jamais à un template artisan par défaut.
 
 Tu produis uniquement un PreviewBlueprint JSON. Notre moteur de rendu construit la page avec nos propres composants : tu ne choisis QUE parmi les sections, variantes et identifiants fournis.
 
@@ -61,7 +62,8 @@ CE QUE TU AMÉLIORES PAR RAPPORT AU blueprintDeReference
 - why.points : 1 à 4 raisons, chacune avec factRef = un identifiant réel (label, service, avis) ou une référence autorisée.
 - sections : 6 à 8 sections maximum, dans l'ordre qui convainc le mieux pour ce métier (reglesMetier), la section "cta" en dernier. Variantes autorisées : trust=TrustStrip ; services=ServicesGrid|ServicesEditorial|ServiceSpotlight ; portfolio=PortfolioGrid|PortfolioFeature ; why=WhyCompany ; area=AreaLocal ; about=AboutCompany ; cta=CtaQuote.
 - rationale : pour chacun des leviers (ids existants), un titre court orienté croissance et UNE phrase qui explique comment cette nouvelle page répond au levier. Ton positif, jamais « votre site est nul ».
-- primaryCta.label : une action de devis (ex. « Demander un devis »). secondaryCta : « Appeler » seulement si telephoneVerifie existe, sinon null.
+- primaryCta.label : reprends l’actionPrincipale fournie dans reglesMetier ou une variante sémantiquement équivalente adaptée au secteur (devis, réservation, rendez-vous, démo, estimation, découverte). secondaryCta : « Appeler » seulement si telephoneVerifie existe, sinon null.
+- area : n’utilise cette section que si reglesMetier.afficherZone = true et qu’une ville/zone vérifiée existe.
 
 STYLE
 Français, vouvoiement côté visiteur, première personne du pluriel côté entreprise (« nos prestations »). Phrases courtes, concrètes, sobres. Rien de gratuit, aucun remplissage.
@@ -74,13 +76,13 @@ ${JSON.stringify(promptPayload(profile, base))}
 function call(profile: VerifiedCompanyProfile, base: PreviewBlueprint, options: { timeoutMs: number; fetchFn?: FetchLike; apiKey?: string; model?: string }): ResponsesCall {
   return {
     system:
-      "Tu es le directeur artistique et le rédacteur de GC. Tu composes des pages d'artisans sobres, premium et strictement factuelles. Tu réponds uniquement avec le JSON demandé.",
+      "Tu es le directeur artistique et le rédacteur de GC. Tu composes des pages premium pour des entreprises de secteurs variés, en adaptant l’architecture au modèle business et en restant strictement factuel. Tu réponds uniquement avec le JSON demandé.",
     user: blueprintPrompt(profile, base),
     schemaName: "gc_preview_blueprint_v1",
     schema: BLUEPRINT_JSON_SCHEMA as unknown as Record<string, unknown>,
     webSearch: false,
     effort: (process.env.OPENAI_PREVIEW_EFFORT as "low" | "medium" | "high" | undefined) ?? "low",
-    maxOutputTokens: 4_000,
+    maxOutputTokens: 1_800,
     timeoutMs: options.timeoutMs,
     fetchFn: options.fetchFn,
     apiKey: options.apiKey,
@@ -93,6 +95,9 @@ export async function startBlueprintJob(
   base: PreviewBlueprint,
   options: { fetchFn?: FetchLike; apiKey?: string; model?: string; timeoutMs?: number } = {}
 ): Promise<string | null> {
+  // Separate preview spend switch: a preview always has a deterministic premium
+  // fallback, so model spend is opt-in rather than required for rendering.
+  if (!options.apiKey && process.env.GC_PREVIEW_AI_ENABLED !== "true") return null;
   return startBackgroundResponse(call(profile, base, { ...options, timeoutMs: options.timeoutMs ?? 3_500 }));
 }
 
