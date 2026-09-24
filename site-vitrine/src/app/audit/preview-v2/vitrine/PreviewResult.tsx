@@ -156,7 +156,7 @@ export function PreviewResult() {
       </div>
 
       <div className="mx-auto mt-6 max-w-[1240px] px-2 sm:px-6">
-        <div className="rounded-[20px] border border-white/10 bg-[#fbfaf7] shadow-[0_30px_80px_rgba(0,0,0,0.45)]" style={{ overflow: "clip" }}>
+        <div className="rounded-[28px] border border-white/10 bg-[#fbfaf7] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.6)]" style={{ overflow: "clip" }}>
           <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] bg-[#f1efe9] px-4 py-2.5 text-[11px] text-[#5d5a52]">
             <span className="flex items-center gap-1.5" aria-hidden="true">
               <span className="h-2.5 w-2.5 rounded-full bg-black/10" />

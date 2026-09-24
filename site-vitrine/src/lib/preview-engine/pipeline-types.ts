@@ -35,6 +35,9 @@ export type JobRef = { id: string; startedAt: string; rescue?: boolean };
 /** Intermediate data. Server-side only: never sent to the browser. */
 export type PreviewWork = {
   registry?: RegistryCandidate | null;
+  registryRetried?: boolean;
+  /** SIREN of a name-only registry match the official site did not confirm. */
+  registryDropped?: string;
   userCity?: string;
   userSite?: string;
   noSite?: boolean;
@@ -53,6 +56,8 @@ export type PreviewWork = {
   } | null;
   observedColors?: string[];
   investigationJob?: JobRef;
+  investigationRetried?: boolean;
+  investigationFailure?: string;
   diagnostic?: DiagnosticResult;
   research?: ResearchNotes | null;
   blueprintJob?: JobRef;

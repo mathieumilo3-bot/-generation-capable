@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeAll, describe, expect, it } from "vitest";
 import { fixtureDeps } from "@/lib/preview-engine/fixtures";
-import { advancePreview, defaultDeps, initialPipeline } from "@/lib/preview-engine/pipeline";
+import { advancePreview, clarifyPreview, defaultDeps, initialPipeline } from "@/lib/preview-engine/pipeline";
 import { toPreviewDocument, type PreviewDocument } from "@/lib/preview-engine/public-view";
 import { checkRenderable } from "@/lib/preview-engine/render-check";
 import { MemoryPreviewStore } from "@/lib/preview-engine/store";
@@ -26,7 +26,11 @@ async function build(name: string, city = "") {
     stage: "identity",
     engineVersion: "t",
   });
-  for (let i = 0; i < 30; i += 1) if ((await advancePreview(row!.id, deps))!.row.status !== "running") break;
+  for (let i = 0; i < 30; i += 1) {
+    const status = (await advancePreview(row!.id, deps))!.row;
+    if (status.status === "needs_input" && status.needs === "site") await clarifyPreview(row!.id, { noSite: true }, deps);
+    else if (status.status !== "running") break;
+  }
   const done = (await store.get(row!.id))!;
   return toPreviewDocument(done.id, done.company_profile!, done.preview_blueprint!);
 }

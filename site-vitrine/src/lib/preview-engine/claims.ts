@@ -130,6 +130,18 @@ export function checkCopy(raw: string, truth: TruthContext): CopyCheck {
     if (!truth.text.includes(normalize(match[1]).replace(/[….]+$/, ""))) return { ok: false, reason: "citation introuvable" };
   }
 
+  // Every proper noun (a capitalised word that does not open a sentence) must
+  // exist in the truth: places, brands, labels, people are never invented.
+  for (const sentence of value.split(/(?<=[.!?:;])\s+|\s[—–-]\s|[«“"(]\s*/)) {
+    const words = sentence.trim().split(/\s+/).slice(1);
+    for (const raw of words) {
+      const word = raw.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}.'’-]+$/gu, "");
+      if (!/^\p{Lu}/u.test(word) || word.length < 3) continue;
+      const key = normalize(word).replace(/[.'’]+$/, "");
+      if (key.length >= 3 && !truth.text.includes(key)) return { ok: false, reason: `nom propre non vérifié (${word})` };
+    }
+  }
+
   const accentless = value.normalize("NFD").replace(/[̀-ͯ]/g, "");
   for (const match of accentless.matchAll(new RegExp(LOCATIVE.source, "gu"))) {
     const place = normalize(match[1]);

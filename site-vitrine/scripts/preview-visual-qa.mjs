@@ -40,8 +40,17 @@ for (const c of cases) {
         emptySections: [...document.querySelectorAll(".gcp section")].filter((s) => s.innerText.trim().length < 3).length,
         clipped: [...document.querySelectorAll(".gcp h2, .gcp h3, .gcp h4, .gcp .gcp-btn")].filter((el) => el.scrollWidth > el.clientWidth + 1).map((el) => el.textContent.slice(0, 40)),
         h1: document.querySelectorAll("h1").length,
+      escaping: (() => {
+        const root = document.querySelector(".gcp");
+        if (!root) return 0;
+        const edge = root.getBoundingClientRect();
+        return [...root.querySelectorAll("*")].filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && (r.right > edge.right + 1 || r.left < edge.left - 1);
+        }).length;
+      })(),
       }));
-      const bad = r.overflow > 0 || r.emptySections > 0 || r.clipped.length > 0 || r.h1 !== 1;
+      const bad = r.overflow > 0 || r.emptySections > 0 || r.clipped.length > 0 || r.h1 !== 1 || r.escaping > 0;
       if (bad) defects += 1;
       row.widths[width] = r;
       if (width === 390 || width === 1440) await page.screenshot({ path: `${shots}/${c.id}-${width}.png`, fullPage: true });

@@ -4,8 +4,8 @@ import {
   verifyOfficialSite,
   type CompanyDiscoveryCandidate,
 } from "@/lib/audit-engine/company-discovery";
-import { lookupFrenchRegistry, registryIdentityHint, type RegistryCandidate, type RegistryPreflight } from "@/lib/audit-engine/company-registry";
-import { crawlSite, type SiteCrawl } from "@/lib/audit-engine/crawl";
+import { lookupFrenchRegistry, lookupRegistryBySiren, registryIdentityHint, type RegistryCandidate, type RegistryPreflight } from "@/lib/audit-engine/company-registry";
+import { crawlSite, normalize, type SiteCrawl } from "@/lib/audit-engine/crawl";
 import {
   buildDossier,
   collectInvestigationDetailed,
@@ -64,7 +64,8 @@ type FetchLike = typeof fetch;
 export type PipelineDeps = {
   now: () => number;
   store: PreviewStore;
-  lookupRegistry: (name: string, city?: string) => Promise<RegistryPreflight>;
+  lookupRegistry: (name: string, city?: string, timeoutMs?: number) => Promise<RegistryPreflight>;
+  lookupRegistryBySiren: (siren: string) => Promise<RegistryCandidate | null>;
   startDiscovery: (name: string, options: { cityHint?: string; identityHint?: string; rescue?: boolean }) => Promise<string | null>;
   collectDiscovery: typeof collectCompanyDiscovery;
   verifySite: (candidate: CompanyDiscoveryCandidate, opts: { cityHint?: string }) => Promise<CompanyDiscoveryCandidate>;
@@ -84,7 +85,8 @@ export function defaultDeps(store: PreviewStore, overrides: Partial<PipelineDeps
   return {
     now: () => Date.now(),
     store,
-    lookupRegistry: (name, city) => lookupFrenchRegistry(name, city ?? ""),
+    lookupRegistry: (name, city, timeoutMs) => lookupFrenchRegistry(name, city ?? "", timeoutMs ? { timeoutMs } : {}),
+    lookupRegistryBySiren: (siren) => lookupRegistryBySiren(siren),
     startDiscovery: (name, options) => startCompanyDiscovery(name, options),
     collectDiscovery: (jobId, name, options) => collectCompanyDiscovery(jobId, name, options),
     verifySite: (candidate, opts) => verifyOfficialSite(candidate, opts),
@@ -236,9 +238,14 @@ async function stageIdentity(ctx: Ctx): Promise<StageResult> {
   // The registry pre-check normally happens in the start request (it decides
   // whether to ask for the city before anything is created). This covers a
   // clarification that changed the city.
-  if (ctx.work.registry === undefined) {
-    const registry = await ctx.deps.lookupRegistry(ctx.row.input.companyName, ctx.work.userCity ?? ctx.row.input.cityHint);
-    if (registry.status === "ambiguous" && !ctx.work.userCity) return { kind: "needs", needs: "city" };
+  // The start request keeps its registry call short (1.8 s) so the city
+  // question stays instant; an empty answer there may just be a slow
+  // registry, so it is asked once more here with more patience.
+  if (ctx.work.registry === undefined || (ctx.work.registry === null && !ctx.work.registryRetried)) {
+    const patient = ctx.work.registry === null;
+    ctx.work.registryRetried = true;
+    const registry = await ctx.deps.lookupRegistry(ctx.row.input.companyName, ctx.work.userCity ?? ctx.row.input.cityHint, patient ? 4_000 : undefined);
+    if (registry.status === "ambiguous" && !ctx.work.userCity && !ctx.row.input.cityHint) return { kind: "needs", needs: "city" };
     ctx.work.registry = registry.status === "unique" ? registry.candidates[0] : null;
   }
   if (ctx.work.registry) {
@@ -320,8 +327,10 @@ async function stageDiscovery(ctx: Ctx): Promise<StageResult> {
     return stageDiscovery(ctx);
   }
 
-  if (!candidate && !registry) return { kind: "needs", needs: work.userCity || row.input.cityHint ? "site" : "city" };
-  if (candidate && !candidate.website && !registry && candidate.confidence === "low") return { kind: "needs", needs: "site" };
+  if (!candidate && !registry && !work.userCity && !row.input.cityHint) return { kind: "needs", needs: "city" };
+  // No official site found: ask for it (one tap for "no site") rather than
+  // telling a company that has a site that it starts from a blank page.
+  if (!candidate?.website) return { kind: "needs", needs: "site" };
 
   work.discovery = candidate ?? (registry ? registryCandidateAsDiscovery(registry) : null);
   const domain = work.discovery?.website ? new URL(work.discovery.website).hostname.replace(/^www\./, "") : null;
@@ -404,6 +413,14 @@ async function stageResearch(ctx: Ctx): Promise<StageResult> {
   const outcome = await deps.collectInvestigation(work.investigationJob.id, dossier);
   if (outcome.status === "pending") return { kind: "wait" };
   if (outcome.status === "failed") {
+    work.investigationFailure = outcome.reason.slice(0, 300);
+    console.warn("[preview/pipeline] investigation failed:", outcome.reason);
+    // One fresh attempt before degrading to the site-only diagnostic.
+    if (!work.investigationRetried) {
+      work.investigationRetried = true;
+      delete work.investigationJob;
+      return { kind: "wait" };
+    }
     work.diagnostic = siteOnlyDiagnostic(toAuditContext(dossier));
     work.research = null;
     ctx.patch.error_code = "investigation_failed";
@@ -414,8 +431,40 @@ async function stageResearch(ctx: Ctx): Promise<StageResult> {
   return { kind: "done" };
 }
 
+/**
+ * The legal notice of the official site is the strongest identity anchor:
+ * its SIREN replaces a registry match made on the name alone, and a name
+ * match the site does not confirm (other city, no SIREN) is dropped.
+ */
+async function reconcileRegistry(ctx: Ctx): Promise<void> {
+  const { work, deps } = ctx;
+  const dossier = work.dossier;
+  if (!dossier?.site.reachable) return;
+  const siteSiren = (dossier.facts?.legal.siret ?? "").replace(/\D/g, "").slice(0, 9);
+  if (/^\d{9}$/.test(siteSiren)) {
+    if (work.registry?.siren === siteSiren) return;
+    const bySiren = await deps.lookupRegistryBySiren(siteSiren);
+    if (bySiren) {
+      work.registry = bySiren;
+      ctx.patch.siren = bySiren.siren;
+      return;
+    }
+  }
+  if (work.registry) {
+    const text = dossierHaystack(dossier);
+    const city = normalize(work.registry.city);
+    const confirmed = text.includes(work.registry.siren) || (city.length > 1 && text.includes(city)) || (work.registry.postalCode && text.includes(work.registry.postalCode));
+    if (!confirmed) {
+      work.registryDropped = work.registry.siren;
+      work.registry = null;
+      ctx.patch.siren = null;
+    }
+  }
+}
+
 async function stageTruthBundle(ctx: Ctx): Promise<StageResult> {
   const { work, row, deps } = ctx;
+  await reconcileRegistry(ctx);
   const dossier = work.dossier!;
   const profile = buildVerifiedProfile({
     typedName: row.input.companyName,
@@ -577,8 +626,12 @@ function stageCost(stage: StageName, work: PreviewWork): number {
   switch (stage) {
     case "discovery":
       return work.discoveryJob ? 9_000 : 4_000; // poll + domain verification, or job start
+    case "identity":
+      return work.registry === null && !work.registryRetried ? 4_500 : 500;
     case "crawl":
       return 7_500; // bounded crawl + one stylesheet
+    case "truth_bundle":
+      return 4_000; // may look the SIREN up
     case "research":
       return work.investigationJob ? 5_500 : 4_000;
     case "blueprint":

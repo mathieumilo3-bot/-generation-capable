@@ -215,3 +215,44 @@ export function registryIdentityHint(candidate: RegistryCandidate): string {
     .join(" · ")
     .slice(0, 360);
 }
+
+/**
+ * Looks a company up by its SIREN (e.g. read in the legal notice of its own
+ * site). The strongest identity anchor there is: no name matching involved.
+ */
+export async function lookupRegistryBySiren(
+  siren: string,
+  options: { fetchFn?: FetchLike; timeoutMs?: number } = {}
+): Promise<RegistryCandidate | null> {
+  const wanted = siren.replace(/\D/g, "").slice(0, 9);
+  if (!/^\d{9}$/.test(wanted)) return null;
+  const fetchFn = options.fetchFn ?? fetch;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 3_500);
+  try {
+    const url = new URL("https://recherche-entreprises.api.gouv.fr/search");
+    url.searchParams.set("q", wanted);
+    url.searchParams.set("page", "1");
+    url.searchParams.set("per_page", "5");
+    url.searchParams.set("minimal", "true");
+    url.searchParams.set("include", "siege");
+    const response = await fetchFn(url, { headers: { Accept: "application/json" }, signal: controller.signal, cache: "no-store" });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as { results?: unknown };
+    const results = Array.isArray(payload.results) ? (payload.results as RegistryRawCompany[]) : [];
+    const company = results.find((r) => clean(r?.siren, 20) === wanted);
+    if (!company || clean(company.etat_administratif, 8).toUpperCase() === "F") return null;
+    const siege = company.siege ?? {};
+    return {
+      name: clean(company.nom_complet) || clean(company.nom_raison_sociale) || clean(company.sigle),
+      siren: wanted,
+      city: clean(siege.libelle_commune) || clean(siege.commune),
+      postalCode: clean(siege.code_postal, 10),
+      ...registryDetails(company),
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}

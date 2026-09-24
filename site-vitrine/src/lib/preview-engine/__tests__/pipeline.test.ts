@@ -111,6 +111,10 @@ describe("preview pipeline (offline fixtures, real engine)", () => {
   it("builds a from-scratch preview when there is no site (level C), without inventing", async () => {
     const d = deps();
     const row = (await start("Atelier Sans Site", d)) as PreviewRow;
+    const asked = await runToRest(row.id, d);
+    // No site found: ask once instead of assuming a blank page.
+    expect(asked).toMatchObject({ status: "needs_input", needs: "site" });
+    await clarifyPreview(row.id, { noSite: true }, d);
     const done = await runToRest(row.id, d);
     expect(done.status).toBe("ready");
     const profile = done.company_profile!;
@@ -210,6 +214,8 @@ describe("preview pipeline (offline fixtures, real engine)", () => {
     const row = (await start("Atelier Sans Site", d)) as PreviewRow;
     await store.setEmail(row.id, "artisan@example.com", null);
     await runToRest(row.id, d);
+    await clarifyPreview(row.id, { noSite: true }, d);
+    await runToRest(row.id, d);
     await advancePreview(row.id, d);
     await advancePreview(row.id, d);
     expect(sendReadyEmail).toHaveBeenCalledTimes(1);
@@ -233,6 +239,27 @@ describe("preview pipeline (offline fixtures, real engine)", () => {
     const after = await advancePreview(row.id, d); // slow discovery poll
     expect(after!.row.stage).toBe("crawl");
     expect(crawl).not.toHaveBeenCalled(); // left for the next request
+  });
+
+  it("anchors identity on the SIREN of the site's legal notice, and drops an unconfirmed name match", async () => {
+    // Name-only registry match elsewhere (Lyon); the site's legal notice says 111 111 111 (Vannes).
+    const base = deps();
+    const d = deps({ lookupRegistry: async () => ({ status: "unique", candidates: [{ name: "TOITURE MARTIN", siren: "111111112", city: "LYON", postalCode: "69003" }] }) });
+    const row = (await start("Toiture Martin", d, "Vannes")) as PreviewRow;
+    void base;
+    const done = await runToRest(row.id, d);
+    expect(done.status).toBe("ready");
+    expect(done.company_profile!.identity.siren?.value).toBe("111111111");
+    expect(done.company_profile!.identity.city?.value).toBe("Vannes");
+
+    const noSirenLookup = deps({
+      lookupRegistry: async () => ({ status: "unique", candidates: [{ name: "TOITURE MARTIN", siren: "999999999", city: "DOMEYROT", postalCode: "23140" }] }),
+      lookupRegistryBySiren: async () => null,
+    });
+    const other = (await start("Toiture Martin", noSirenLookup, "Vannes")) as PreviewRow;
+    const second = await runToRest(other.id, noSirenLookup);
+    expect(second.company_profile!.identity.siren).toBeUndefined();
+    expect(second.work.registryDropped).toBe("999999999");
   });
 
   it("reads the fixture site through the real crawler", async () => {

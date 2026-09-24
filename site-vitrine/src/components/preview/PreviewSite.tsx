@@ -70,10 +70,7 @@ export function PreviewSite({
               // eslint-disable-next-line @next/next/no-img-element -- the company's own logo, through the signed proxy
               <img className="gcp-brand__logo" src={doc.site.logo.src} alt={doc.site.logo.alt} loading="eager" decoding="async" />
             ) : (
-              <span className="gcp-brand__name">
-                {doc.site.name}
-                <span className="gcp-brand__trade">{doc.site.trade}</span>
-              </span>
+              <span className="gcp-brand__name">{doc.site.name}</span>
             )}
           </a>
           <nav className="gcp-nav" aria-label="Navigation de l’aperçu">
@@ -101,9 +98,7 @@ export function PreviewSite({
         <div className="gcp-wrap">
           <div className="gcp-footer__grid">
             <div>
-              <p className="gcp-display" style={{ fontSize: 20, opacity: 1, margin: 0 }}>
-                {doc.site.name}
-              </p>
+              <p className="gcp-footer__name">{doc.site.name}</p>
               <p>{doc.site.trade}</p>
             </div>
             <div>

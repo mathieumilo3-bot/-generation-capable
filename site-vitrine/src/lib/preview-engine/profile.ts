@@ -49,12 +49,23 @@ export function displayCase(value: string): string {
   });
 }
 
-function cleanName(value: string): string {
-  return value
-    .replace(/\s*[|–—-]\s*(accueil|home|site officiel)\s*$/i, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 80);
+const LEGAL_FORM_RE = /\b(?:sarl|sas|sasu|eurl|sa|sci|eirl|ei|snc)\b\.?/gi;
+const SEO_TAIL_RE = /\b(?:accueil|home|site officiel|artisan|entreprise|électricien|electricien|plombier|couvreur|menuisier|maçon|macon|peintre|carreleur|paysagiste|chauffagiste|toiture|rénovation|renovation)\b/i;
+
+/**
+ * "A A T P SARL — Trojani.P" → "Trojani.P"; "CEGRI SAS - Electricien Paris,
+ * Montataire, Oise" → "CEGRI". Keeps the brand, drops legal forms and SEO
+ * tails; a spaced-out acronym gives way to a real brand when there is one.
+ */
+export function cleanName(value: string): string {
+  const parts = value
+    .split(/\s+[|–—-]\s+|\s*[|–—]\s*/)
+    .map((part) => part.replace(LEGAL_FORM_RE, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const keep = parts.filter((part, index) => index === 0 || (!part.includes(",") && !SEO_TAIL_RE.test(part)));
+  const isSpacedAcronym = (part: string) => /^(?:[A-Z]\.?\s){2,}[A-Z]\.?$/.test(part);
+  const brand = keep.find((part) => !isSpacedAcronym(part)) ?? keep[0] ?? value;
+  return brand.replace(/[\s,;:–-]+$/, "").slice(0, 80);
 }
 
 function hostOf(url: string): string {
@@ -76,12 +87,12 @@ function pickPublicName(input: ProfileInputs, officialDomain: string): Fact<stri
   if (siteName && verifiedSite && !isGenericSiteName(siteName, officialDomain)) {
     return observedFact(displayCase(siteName), `nom publié sur ${officialDomain} (og:site_name)`);
   }
-  if (input.registry?.commercialName) return observedFact(displayCase(input.registry.commercialName), `${REGISTRY_SOURCE} — nom commercial`);
+  if (input.registry?.commercialName) return observedFact(displayCase(cleanName(input.registry.commercialName)), `${REGISTRY_SOURCE} — nom commercial`);
   if (input.discovery?.name && input.discovery.confidence !== "low") {
     return inferredFact(displayCase(cleanName(input.discovery.name)), "identification sur sources publiques");
   }
-  if (input.registry?.name) return observedFact(displayCase(input.registry.name), `${REGISTRY_SOURCE} — dénomination`);
-  return { value: displayCase(input.typedName.trim().slice(0, 80)), source: "nom saisi", confidence: "inferred" };
+  if (input.registry?.name) return observedFact(displayCase(cleanName(input.registry.name)), `${REGISTRY_SOURCE} — dénomination`);
+  return { value: displayCase(cleanName(input.typedName.trim().slice(0, 80))), source: "nom saisi", confidence: "inferred" };
 }
 
 function tradeLabel(sector: string): string {
@@ -152,21 +163,44 @@ function sentencesOf(text: string): string[] {
  * paragraph (its dedicated page first), never from the navigation. Returns ""
  * when no clean sentence exists — the service then shows no description.
  */
-function serviceSentence(label: string, dedicatedPage: string | undefined, paragraphs: SiteParagraph[], fallback: string): string {
+function serviceSentence(
+  label: string,
+  dedicatedPage: string | undefined,
+  paragraphs: SiteParagraph[],
+  fallback: string,
+  used: Set<string>
+): string {
   const def = SERVICES.find((s) => s.label === label);
+  const take = (sentence: string) => {
+    used.add(sentence);
+    return sentence;
+  };
   if (def) {
-    const ordered = [...paragraphs].sort((a, b) => Number(b.pagePath === dedicatedPage) - Number(a.pagePath === dedicatedPage));
-    for (const paragraph of ordered) {
-      const sentence = sentencesOf(paragraph.text).find((s) => def.re.test(s) && isCleanSentence(s, 30, 220));
-      if (sentence) return sentence;
+    // Best first: a sentence of the service's own page, then one where the
+    // service is the subject (named early), never a sentence already used.
+    const candidates: { sentence: string; score: number }[] = [];
+    for (const paragraph of paragraphs) {
+      for (const sentence of sentencesOf(paragraph.text)) {
+        const match = sentence.search(def.re);
+        if (match < 0 || used.has(sentence) || !isCleanSentence(sentence, 30, 220)) continue;
+        // A sentence listing several services describes the company, not this service.
+        if (SERVICES.filter((other) => other.re.test(sentence)).length >= 3) continue;
+        candidates.push({ sentence, score: (paragraph.pagePath === dedicatedPage ? 100 : 0) - match });
+      }
     }
+    candidates.sort((a, b) => b.score - a.score);
+    if (candidates[0]) return take(candidates[0].sentence);
   }
-  const cleaned = fallback.replace(/^…|…$/g, "").trim();
-  return isCleanSentence(cleaned, 30, 220) ? cleaned : "";
+  if (/^…|…$/.test(fallback.trim())) return "";
+  const cleaned = fallback.trim();
+  const listing = SERVICES.filter((other) => other.re.test(cleaned)).length >= 3;
+  return isCleanSentence(cleaned, 30, 220) && !used.has(cleaned) && !listing ? take(cleaned) : "";
 }
 
 function cleanQuote(value: string): string {
-  const cleaned = value.replace(/^…|…$/g, "").trim();
+  // "…" marks an excerpt cut by the extractor: never quote half a sentence.
+  if (/^…|…$/.test(value.trim())) return "";
+  const cleaned = value.trim();
   return isCleanSentence(cleaned, 20, 260) ? cleaned : "";
 }
 
@@ -241,10 +275,14 @@ export function buildVerifiedProfile(input: ProfileInputs): VerifiedCompanyProfi
   }
 
   // --- services ------------------------------------------------------------
+  const usedSentences = new Set<string>();
+  // Our vocabulary must not promise more than the site: "urgent" only if the site says so.
+  const serviceName = (label: string) =>
+    label === "dépannage urgent" && !/urgen|24\s?h|24\s?\/\s?24/.test(haystack) ? "Dépannage" : capitalize(label);
   const services: ServiceFact[] = (facts?.services ?? []).slice(0, 8).map((service, index) => ({
     id: `svc_${index + 1}`,
-    name: capitalize(service.label),
-    quote: serviceSentence(service.label, service.dedicatedPage, assets?.paragraphs ?? [], service.quote),
+    name: serviceName(service.label),
+    quote: serviceSentence(service.label, service.dedicatedPage, assets?.paragraphs ?? [], service.quote, usedSentences),
     ...(service.dedicatedPage ? { dedicatedPage: service.dedicatedPage } : {}),
     source: `mentionné sur ${officialDomain}${service.mentionedOn[0] && service.mentionedOn[0] !== "/" ? service.mentionedOn[0] : ""}`,
     confidence: "observed",

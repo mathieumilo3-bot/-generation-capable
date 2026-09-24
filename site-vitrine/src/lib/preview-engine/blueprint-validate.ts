@@ -7,6 +7,7 @@ import {
   type PreviewBlueprint,
   type SectionType,
 } from "./blueprint-schema";
+import { normalize } from "@/lib/audit-engine/crawl";
 import { checkAllCopy, checkCopy, type TruthContext } from "./claims";
 import type { VerifiedCompanyProfile } from "./types";
 
@@ -108,7 +109,20 @@ function validateField(
     case "why": {
       const why = value as PreviewBlueprint["why"];
       const refs = factRefs(profile);
-      const points = why.points.filter((p) => refs.has(p.factRef) && copy(p, ["factRef"]).ok);
+      const labels = profile.trust.items.filter((t) => t.kind !== "registry").map((t) => ({ id: t.id, key: normalize(t.label) }));
+      const seenTitles = new Set<string>();
+      const points = why.points.filter((p) => {
+        if (!refs.has(p.factRef) || !copy(p, ["factRef"]).ok) return false;
+        const text = normalize(`${p.title} ${p.body}`);
+        // A point about a label must name THAT label, and no other one.
+        const own = labels.find((l) => l.id === p.factRef);
+        if (own && !text.includes(own.key.split(" ")[0]) && !(own.key.includes("decennale") && text.includes("decennale"))) return false;
+        if (labels.some((l) => l.id !== p.factRef && l.key.length >= 3 && text.includes(l.key))) return false;
+        const title = normalize(p.title);
+        if (seenTitles.has(title)) return false;
+        seenTitles.add(title);
+        return true;
+      });
       if (points.length === 0) return { ok: false, reason: "aucun point prouvé" };
       const c = checkCopy(why.heading, truth);
       return c.ok ? { ok: true, value: { ...why, points } } : { ok: false, reason: c.reason };

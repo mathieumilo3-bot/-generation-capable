@@ -96,6 +96,9 @@ test("no site: a from-scratch storefront built only on verified identity", async
   await acceptNothing(page);
   await page.fill("#preview-company", "Atelier Sans Site");
   await page.getByRole("button", { name: /Voir ce qu’on construirait/ }).click();
+  // No site found: one precision instead of an assumption.
+  await expect(page.getByRole("heading", { name: "Quelle est l’adresse de votre site ?" })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Je n’ai pas encore de site" }).click();
   await page.waitForURL(/vitrine#id=/, { timeout: 60_000 });
   await expect(page.getByText("Vous partez d’une page blanche. Voilà la base que nous construirions.")).toBeVisible();
   const site = page.getByTestId("preview-site");
@@ -127,8 +130,17 @@ for (const width of [375, 390, 430, 768, 1440]) {
       broken: [...document.querySelectorAll<HTMLImageElement>(".gcp img")].filter((i) => i.complete && i.naturalWidth === 0).length,
       emptySections: [...document.querySelectorAll(".gcp section")].filter((s) => (s as HTMLElement).innerText.trim().length < 3).length,
       clipped: [...document.querySelectorAll(".gcp h2, .gcp h3, .gcp h4, .gcp .gcp-btn")].filter((el) => el.scrollWidth > el.clientWidth + 1).length,
+      escaping: (() => {
+        const root = document.querySelector(".gcp");
+        if (!root) return 0;
+        const edge = root.getBoundingClientRect();
+        return [...root.querySelectorAll("*")].filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && (r.right > edge.right + 1 || r.left < edge.left - 1);
+        }).length;
+      })(),
     }));
-    expect(report).toEqual({ overflow: 0, broken: 0, emptySections: 0, clipped: 0 });
+    expect(report).toEqual({ overflow: 0, broken: 0, emptySections: 0, clipped: 0, escaping: 0 });
     await info.attach(`preview-${width}`, { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
   });
 }

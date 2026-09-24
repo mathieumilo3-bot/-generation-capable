@@ -1,41 +1,292 @@
 [
-  { "id": "aatp", "name": "AATP", "trade": "plomberie/climatisation — sigle, raison sociale ≠ enseigne (Trojani.P)", "city": "Bastelicaccia", "expectCity": "Bastelicaccia", "expectSiren": "451619258", "expectDomain": "plomberie-climatisation-ajaccio.fr", "email": true },
-  { "id": "artisan-plombier", "name": "L'ARTISAN PLOMBIER", "trade": "plomberie — nom générique, homonymes probables", "city": "Strasbourg", "expectCity": "Strasbourg", "expectDomain": "lartisanplombier.com" },
-  { "id": "artisao", "name": "ARTISAO", "trade": "plomberie/chauffage", "city": "La Chevallerais", "expectCity": "La Chevallerais", "expectDomain": "artisao.fr" },
-  { "id": "artisan-ciret", "name": "Artisan Ciret", "trade": "chauffage/rénovation énergétique", "city": "Le Malesherbois", "expectDomain": "artisanciret.com" },
-  { "id": "jb-couverture", "name": "Jean Baptiste F couverture", "trade": "couverture", "city": "Cormeilles-en-Parisis", "expectDomain": "artisan-couvreur.fr" },
-  { "id": "pertet-toiture", "name": "Romain Pertet Toiture", "trade": "charpente/couverture", "city": "Branges", "expectCity": "Branges", "expectDomain": "charpentier-couvreur-71.com" },
-  { "id": "baron-charpente", "name": "Baron Charpente", "trade": "charpente", "city": "L'Union", "expectDomain": "baroncharpente.fr", "email": true },
-  { "id": "acc-charpentier", "name": "A.C.C", "trade": "charpente/couverture — sigle", "city": "Parentis-en-Born", "expectCity": "Parentis-en-Born", "expectSiren": "842284424" },
-  { "id": "brp-maconnerie", "name": "BRP Maconnerie", "trade": "maçonnerie — sigle", "city": "La Broque", "expectDomain": "brp-maconnerie.com" },
-  { "id": "pmc-maconnerie", "name": "PMC Maçonnerie", "trade": "maçonnerie", "city": "Sarrola-Carcopino", "expectDomain": "pmcmaconnerie.com" },
-  { "id": "camus-maconnerie", "name": "Camus Maçonnerie", "trade": "maçonnerie — domaine ≠ nom", "city": "Saint-Herblain", "expectDomain": "macon-44.fr" },
-  { "id": "fj-maconnerie", "name": "FJ MACONNERIE", "trade": "maçonnerie/carrelage/toiture", "city": "Béziers", "expectCity": "Béziers", "expectDomain": "fjmaconnerie.fr" },
-  { "id": "cegri", "name": "CEGRI SAS", "trade": "électricité", "city": "Montataire", "expectCity": "Montataire", "expectDomain": "cegrisas.fr" },
-  { "id": "menuiserie-chevrier", "name": "Menuiserie Chevrier", "trade": "menuiserie", "city": "Grigny-sur-Rhône", "expectDomain": "menuiseriechevrier.fr" },
-  { "id": "mbm-menuiserie", "name": "MBM Menuiserie", "trade": "menuiserie", "city": "La Garnache", "expectDomain": "menuiserie-mbm.fr" },
-  { "id": "menuiserie-saint-georges", "name": "Menuiserie Saint-Georges", "trade": "menuiserie", "city": "Chaneins", "expectDomain": "menuiserie-saint-georges.com" },
-  { "id": "amr86", "name": "ARTISAN MENUISERIE RENOVATION", "trade": "menuiserie/rénovation", "city": "Saint-Martin-la-Pallu", "expectDomain": "artisanmenuiserierenovation86.fr" },
-  { "id": "m3-menuiserie", "name": "M3 Menuiserie", "trade": "menuiserie", "city": "Luscan", "expectDomain": "m3-menuiserie.fr" },
-  { "id": "cj-menuiserie", "name": "CJ MENUISERIE", "trade": "menuiserie", "city": "Saint-Germain", "expectDomain": "cjm-menuiserie.fr" },
-  { "id": "afc-menuiserie", "name": "A.F.C. MENUISERIE", "trade": "menuiserie — sigle", "city": "Saint-Christophe-du-Ligneron", "expectDomain": "afcmenuiserie.com" },
-  { "id": "lemaitre-menuiserie", "name": "LEMAITRE MENUISERIE", "trade": "menuiserie", "city": "Saint-Germain-sur-Ay", "expectDomain": "lemaitremenuiserie.fr" },
-  { "id": "menuiseries-aa", "name": "MENUISERIES DE L'AA", "trade": "menuiserie", "city": "Lumbres", "expectDomain": "menuiserieaa.com" },
-  { "id": "le-franc", "name": "SAS LE FRANC", "trade": "menuiserie — raison sociale ≠ enseigne", "city": "Saint-Nazaire", "expectDomain": "menuiserie-lefranc.fr" },
-  { "id": "menuiserie-piau", "name": "MENUISERIE PIAU", "trade": "menuiserie", "city": "Nantes", "expectDomain": "menuiseriepiau.fr" },
-  { "id": "martin-carrelage", "name": "Martin Concept Carrelage", "trade": "carrelage", "city": "Beaulieu-sous-la-Roche", "expectDomain": "martinconceptcarrelage.fr" },
-  { "id": "antunes-peinture", "name": "Antunes Peinture", "trade": "peinture/plâtrerie", "city": "Beynost", "expectDomain": "antunes-peinture.com" },
-  { "id": "domi-deco", "name": "Domi Déco", "trade": "peinture/décoration", "city": "Lyon", "expectDomain": "domi-decoration.fr" },
-  { "id": "peinture-generale", "name": "Peinture Générale", "trade": "peinture — nom générique", "city": "Lyon", "expectDomain": "peinture-generale.fr" },
-  { "id": "cattant", "name": "CATTANT PLATRERIE PEINTURE", "trade": "peinture/plâtrerie — site incertain", "city": "Lyon", "expectCity": "Lyon", "expectSiren": "790795041" },
-  { "id": "a-plus-isolation", "name": "A + ISOLATION", "trade": "isolation — sigle", "city": "La Teste-de-Buch", "expectDomain": "aplusisolation.fr" },
-  { "id": "issaly-isolation", "name": "ISSALY isolation", "trade": "isolation", "city": "Carcassonne", "expectDomain": "issaly-isolation.com" },
-  { "id": "climecopac", "name": "Clim Eco PAC", "trade": "climatisation/PAC", "expectDomain": "climecopac.fr", "email": true },
-  { "id": "clim-compagnie", "name": "Clim & Compagnie", "trade": "climatisation", "expectDomain": "climetcompagnie.fr" },
-  { "id": "le-paysagiste", "name": "Le Paysagiste", "trade": "paysagiste — nom très générique", "city": "Saint-Hubert", "expectDomain": "lepaysagiste-artisan.fr" },
-  { "id": "alain-renovation", "name": "Alain Rénovation", "trade": "rénovation générale", "expectDomain": "alainrenovation.fr" },
-  { "id": "abl-lyon", "name": "ARTISAN BATIMENT LYONNAIS", "trade": "rénovation générale — sigle ABL, site incertain", "city": "Lyon", "expectCity": "Lyon", "expectSiren": "538066820" },
-  { "id": "rtce", "name": "RTCE", "trade": "rénovation tous corps d'état — sigle", "city": "Montpellier", "expectCity": "Montpellier", "expectSiren": "428678346" },
-  { "id": "homonyms-martin", "name": "Martin Couverture", "trade": "sonde homonymes (registre)", "probeHomonym": true },
-  { "id": "homonyms-dupont", "name": "Plomberie Dupont", "trade": "sonde homonymes (registre)", "probeHomonym": true }
+  {
+    "id": "aatp",
+    "name": "AATP",
+    "trade": "plomberie/climatisation — sigle, raison sociale ≠ enseigne (Trojani.P)",
+    "city": "Bastelicaccia",
+    "expectCity": "Bastelicaccia",
+    "expectSiren": "451619258",
+    "expectDomain": "plomberie-climatisation-ajaccio.fr",
+    "email": true,
+    "expectNameIncludes": "Trojani"
+  },
+  {
+    "id": "artisan-plombier",
+    "name": "L'ARTISAN PLOMBIER",
+    "trade": "plomberie — nom générique, homonymes probables",
+    "city": "Strasbourg",
+    "expectCity": "Strasbourg",
+    "expectDomain": "lartisanplombier.com"
+  },
+  {
+    "id": "artisao",
+    "name": "ARTISAO",
+    "trade": "plomberie/chauffage",
+    "city": "La Chevallerais",
+    "expectCity": "La Chevallerais",
+    "expectDomain": "artisao.fr"
+  },
+  {
+    "id": "artisan-ciret",
+    "name": "Artisan Ciret",
+    "trade": "chauffage/rénovation énergétique",
+    "city": "Le Malesherbois",
+    "expectDomain": "artisanciret.com"
+  },
+  {
+    "id": "jb-couverture",
+    "name": "Jean Baptiste F couverture",
+    "trade": "couverture",
+    "city": "Cormeilles-en-Parisis",
+    "expectDomain": "artisan-couvreur.fr",
+    "acceptDomains": [
+      "jeanbaptistef.com"
+    ],
+    "note": "jeanbaptistef.com retenu par le moteur avec nom, ville, téléphone et mentions légales concordants ; artisan-couvreur.fr était le domaine du burn-in V1 — à confirmer."
+  },
+  {
+    "id": "pertet-toiture",
+    "name": "Romain Pertet Toiture",
+    "trade": "charpente/couverture",
+    "city": "Branges",
+    "expectCity": "Branges",
+    "expectDomain": "charpentier-couvreur-71.com"
+  },
+  {
+    "id": "baron-charpente",
+    "name": "Baron Charpente",
+    "trade": "charpente",
+    "city": "L'Union",
+    "expectDomain": "baroncharpente.fr",
+    "email": true
+  },
+  {
+    "id": "acc-charpentier",
+    "name": "A.C.C",
+    "trade": "charpente/couverture — sigle",
+    "city": "Parentis-en-Born",
+    "expectCity": "Parentis-en-Born",
+    "expectSiren": "842284424"
+  },
+  {
+    "id": "brp-maconnerie",
+    "name": "BRP Maconnerie",
+    "trade": "maçonnerie — sigle",
+    "city": "La Broque",
+    "expectDomain": "brp-maconnerie.com"
+  },
+  {
+    "id": "pmc-maconnerie",
+    "name": "PMC Maçonnerie",
+    "trade": "maçonnerie",
+    "city": "Sarrola-Carcopino",
+    "expectDomain": "pmcmaconnerie.com"
+  },
+  {
+    "id": "camus-maconnerie",
+    "name": "Camus Maçonnerie",
+    "trade": "maçonnerie — domaine ≠ nom",
+    "city": "Saint-Herblain",
+    "expectDomain": "macon-44.fr"
+  },
+  {
+    "id": "fj-maconnerie",
+    "name": "FJ MACONNERIE",
+    "trade": "maçonnerie/carrelage/toiture",
+    "city": "Béziers",
+    "expectCity": "Béziers",
+    "expectDomain": "fjmaconnerie.fr"
+  },
+  {
+    "id": "cegri",
+    "name": "CEGRI SAS",
+    "trade": "électricité",
+    "city": "Montataire",
+    "expectCity": "Montataire",
+    "expectDomain": "cegrisas.fr"
+  },
+  {
+    "id": "menuiserie-chevrier",
+    "name": "Menuiserie Chevrier",
+    "trade": "menuiserie",
+    "city": "Grigny-sur-Rhône",
+    "expectDomain": "menuiseriechevrier.fr"
+  },
+  {
+    "id": "mbm-menuiserie",
+    "name": "MBM Menuiserie",
+    "trade": "menuiserie",
+    "city": "La Garnache",
+    "expectDomain": "menuiserie-mbm.fr"
+  },
+  {
+    "id": "menuiserie-saint-georges",
+    "name": "Menuiserie Saint-Georges",
+    "trade": "menuiserie",
+    "city": "Chaneins",
+    "expectDomain": "menuiserie-saint-georges.com"
+  },
+  {
+    "id": "amr86",
+    "name": "ARTISAN MENUISERIE RENOVATION",
+    "trade": "menuiserie/rénovation",
+    "city": "Saint-Martin-la-Pallu",
+    "expectDomain": "artisanmenuiserierenovation86.fr"
+  },
+  {
+    "id": "m3-menuiserie",
+    "name": "M3 Menuiserie",
+    "trade": "menuiserie",
+    "city": "Luscan",
+    "expectDomain": "m3-menuiserie.fr"
+  },
+  {
+    "id": "cj-menuiserie",
+    "name": "CJ MENUISERIE",
+    "trade": "menuiserie",
+    "city": "Saint-Germain",
+    "expectDomain": "cjm-menuiserie.fr"
+  },
+  {
+    "id": "afc-menuiserie",
+    "name": "A.F.C. MENUISERIE",
+    "trade": "menuiserie — sigle",
+    "city": "Saint-Christophe-du-Ligneron",
+    "expectDomain": "afcmenuiserie.com"
+  },
+  {
+    "id": "lemaitre-menuiserie",
+    "name": "LEMAITRE MENUISERIE",
+    "trade": "menuiserie",
+    "city": "Saint-Germain-sur-Ay",
+    "expectDomain": "lemaitremenuiserie.fr"
+  },
+  {
+    "id": "menuiseries-aa",
+    "name": "MENUISERIES DE L'AA",
+    "trade": "menuiserie",
+    "city": "Lumbres",
+    "expectDomain": "menuiserieaa.com"
+  },
+  {
+    "id": "le-franc",
+    "name": "SAS LE FRANC",
+    "trade": "menuiserie — raison sociale ≠ enseigne",
+    "city": "Saint-Nazaire",
+    "expectDomain": "menuiserie-lefranc.fr"
+  },
+  {
+    "id": "menuiserie-piau",
+    "name": "MENUISERIE PIAU",
+    "trade": "menuiserie",
+    "city": "Nantes",
+    "expectDomain": "menuiseriepiau.fr"
+  },
+  {
+    "id": "martin-carrelage",
+    "name": "Martin Concept Carrelage",
+    "trade": "carrelage",
+    "city": "Beaulieu-sous-la-Roche",
+    "expectDomain": "martinconceptcarrelage.fr"
+  },
+  {
+    "id": "antunes-peinture",
+    "name": "Antunes Peinture",
+    "trade": "peinture/plâtrerie",
+    "city": "Beynost",
+    "expectDomain": "antunes-peinture.com"
+  },
+  {
+    "id": "domi-deco",
+    "name": "Domi Déco",
+    "trade": "peinture/décoration",
+    "city": "Lyon",
+    "expectDomain": "domi-decoration.fr"
+  },
+  {
+    "id": "peinture-generale",
+    "name": "Peinture Générale",
+    "trade": "peinture — nom générique",
+    "city": "Lyon",
+    "expectDomain": "peinture-generale.fr"
+  },
+  {
+    "id": "cattant",
+    "name": "CATTANT PLATRERIE PEINTURE",
+    "trade": "peinture/plâtrerie — site incertain",
+    "city": "Lyon",
+    "expectCity": "Lyon",
+    "expectSiren": "790795041"
+  },
+  {
+    "id": "a-plus-isolation",
+    "name": "A + ISOLATION",
+    "trade": "isolation — sigle",
+    "city": "La Teste-de-Buch",
+    "expectDomain": "aplusisolation.fr"
+  },
+  {
+    "id": "issaly-isolation",
+    "name": "ISSALY isolation",
+    "trade": "isolation",
+    "city": "Carcassonne",
+    "expectDomain": "issaly-isolation.com"
+  },
+  {
+    "id": "climecopac",
+    "name": "Clim Eco PAC",
+    "trade": "climatisation/PAC",
+    "expectDomain": "climecopac.fr",
+    "email": true
+  },
+  {
+    "id": "clim-compagnie",
+    "name": "Clim & Compagnie",
+    "trade": "climatisation",
+    "expectDomain": "climetcompagnie.fr"
+  },
+  {
+    "id": "le-paysagiste",
+    "name": "Le Paysagiste",
+    "trade": "paysagiste — nom très générique",
+    "city": "Saint-Hubert",
+    "expectDomain": "lepaysagiste-artisan.fr"
+  },
+  {
+    "id": "alain-renovation",
+    "name": "Alain Rénovation",
+    "trade": "rénovation générale",
+    "expectDomain": "alainrenovation.fr",
+    "city": "Villeurbanne",
+    "expectCity": "Villeurbanne",
+    "expectSiren": "840673156"
+  },
+  {
+    "id": "abl-lyon",
+    "name": "ARTISAN BATIMENT LYONNAIS",
+    "trade": "rénovation générale — sigle ABL, site incertain",
+    "city": "Lyon",
+    "expectCity": "Lyon",
+    "expectSiren": "538066820"
+  },
+  {
+    "id": "rtce",
+    "name": "RTCE",
+    "trade": "rénovation tous corps d'état — sigle",
+    "city": "Montpellier",
+    "expectCity": "Montpellier",
+    "expectSiren": "428678346"
+  },
+  {
+    "id": "homonyms-martin",
+    "name": "Martin Couverture",
+    "trade": "sonde homonymes (registre)",
+    "probeHomonym": true
+  },
+  {
+    "id": "homonyms-dupont",
+    "name": "Plomberie Dupont",
+    "trade": "sonde homonymes (registre)",
+    "probeHomonym": true
+  }
 ]

@@ -114,6 +114,7 @@ function discoveryFor(name: string, city: string): CompanyDiscoveryCandidate[] {
 export function fixtureDeps(delays = { discovery: 1_200, investigation: 3_500, blueprint: 1_500 }): Partial<PipelineDeps> {
   return {
     lookupRegistry: async (name, city) => registry(name, city),
+    lookupRegistryBySiren: async (siren) => [MARTIN_VANNES, MARTIN_LYON, SANS_SITE].find((r) => r.siren === siren) ?? null,
     startDiscovery: async (name, options) => job("discovery", delays.discovery, discoveryFor(name, options.cityHint ?? "")),
     collectDiscovery: async (jobId, _name, options) => {
       const found = jobs.get(jobId);

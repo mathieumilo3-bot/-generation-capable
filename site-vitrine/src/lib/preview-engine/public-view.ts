@@ -48,6 +48,8 @@ export type PreviewDocument = {
   reviews: Pick<ReviewFact, "id" | "platform" | "rating" | "count" | "source">[];
   assets: Record<string, PreviewAssetView>;
   zoneQuote?: string;
+  /** Verbatim sentence of the site about experience, when the page relies on it. */
+  experienceQuote?: string;
   blueprint: PreviewBlueprint;
   levers: AuditLever[];
   auditSummary: string;
@@ -81,6 +83,7 @@ export function toPreviewDocument(id: string, profile: VerifiedCompanyProfile, b
     ...(profile.services.length ? [{ label: "Prestations", value: `${profile.services.length}`, source: profile.services[0].source }] : []),
     ...(profile.portfolioAssets.length ? [{ label: "Photos", value: `${profile.portfolioAssets.length}`, source: "publiées sur votre site actuel" }] : []),
     ...profile.trust.items.filter((t) => t.kind !== "registry").map((t) => ({ label: "Label", value: t.label, source: t.source })),
+    ...(profile.trust.experienceQuote ? [{ label: "Expérience", value: profile.trust.experienceQuote.value, source: profile.trust.experienceQuote.source }] : []),
   ];
 
   return {
@@ -111,6 +114,7 @@ export function toPreviewDocument(id: string, profile: VerifiedCompanyProfile, b
     reviews: profile.reviews.map((r) => ({ id: r.id, platform: r.platform, rating: r.rating, count: r.count, source: r.source })),
     assets,
     ...(profile.areas.zoneQuote ? { zoneQuote: profile.areas.zoneQuote.value } : {}),
+    ...(profile.trust.experienceQuote ? { experienceQuote: profile.trust.experienceQuote.value } : {}),
     blueprint,
     levers: profile.audit.levers,
     auditSummary: profile.audit.summary,

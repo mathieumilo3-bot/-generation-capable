@@ -141,7 +141,13 @@ function reviewMentionsIn(text: string, pagePath: string): SiteReviewMention[] {
  */
 export function isCleanSentence(text: string, min = 20, max = 260): boolean {
   if (text.length < min || text.length > max) return false;
-  if (/[|•»«<>{}]|https?:\/\/|www\.|@|©/.test(text)) return false;
+  if (/[|•»«<>{}/]|https?:\/\/|www\.|@|©/.test(text)) return false;
+  // A real sentence ends like one (a menu or a cut excerpt does not).
+  if (!/[.!?…]["»”)]?$/.test(text)) return false;
+  // Mostly capitalised words = a list of links or labels, not prose.
+  const words = text.split(/\s+/).slice(1);
+  const capitalised = words.filter((w) => /^[A-ZÀ-ÖØ-Ý]/.test(w)).length;
+  if (words.length >= 5 && capitalised / words.length > 0.34) return false;
   if (/(?:(?:\+|00)33[\s.-]?|\b0)[1-9](?:[\s.-]?\d{2}){4}/.test(text)) return false;
   if (!/^[«"“(]?[A-ZÀ-ÖØ-Ý0-9]/.test(text)) return false;
   // Four capitalised words in a row is a navigation bar, not a sentence.

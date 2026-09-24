@@ -36,6 +36,21 @@ export function usableAssets(profile: VerifiedCompanyProfile): PortfolioAsset[] 
   return profile.portfolioAssets.filter((asset) => !asset.width || asset.width >= 480);
 }
 
+/** What a label means — general, verifiable definitions, never a claim beyond holding it. */
+function labelExplanation(label: string): string {
+  const l = label.toLowerCase();
+  if (l === "rge") return "Reconnu Garant de l’Environnement : le signe de qualité exigé pour certaines aides à la rénovation énergétique.";
+  if (l.includes("qualibat")) return "Qualification délivrée aux entreprises du bâtiment après examen de leurs compétences et de leurs références.";
+  if (l.includes("qualipac")) return "Qualification des installateurs de pompes à chaleur.";
+  if (l.includes("qualifelec")) return "Qualification des entreprises d’électricité.";
+  if (l.includes("qualipv")) return "Qualification des installateurs photovoltaïques.";
+  if (l.includes("qualibois")) return "Qualification des installateurs d’appareils de chauffage au bois.";
+  if (l.includes("qualigaz") || l.includes("pgn")) return "Qualification des professionnels des installations gaz.";
+  if (l.includes("handibat")) return "Savoir-faire reconnu pour l’adaptation des logements à l’accessibilité.";
+  if (l.includes("maître artisan") || l.includes("maitre artisan")) return "Titre attribué par la Chambre de Métiers pour un savoir-faire reconnu.";
+  return `${label} : qualification indiquée par l’entreprise.`;
+}
+
 export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlueprint {
   const family = TRADE_FAMILIES[profile.identity.tradeFamily];
   const name = profile.identity.publicName.value;
@@ -71,8 +86,8 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
   const why: PreviewBlueprint["why"]["points"] = [];
   for (const item of profile.trust.items) {
     if (why.length >= 3) break;
-    if (item.kind === "certification") why.push({ title: fit(item.label, 48), body: `Qualification ${item.label} mentionnée par l’entreprise.`, factRef: item.id });
-    if (item.kind === "insurance") why.push({ title: "Assurance décennale", body: "Assurance décennale mentionnée par l’entreprise.", factRef: item.id });
+    if (item.kind === "certification") why.push({ title: fit(item.label, 48), body: labelExplanation(item.label), factRef: item.id });
+    if (item.kind === "insurance") why.push({ title: "Assurance décennale", body: "Les ouvrages sont couverts dix ans après réception, selon l’assurance indiquée par l’entreprise.", factRef: item.id });
   }
   if (profile.trust.experienceQuote && why.length < 4) {
     why.push({ title: "Savoir-faire", body: `« ${firstSentence(profile.trust.experienceQuote.value, 170)} »`, factRef: "experience" });
@@ -146,7 +161,7 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
     about: { heading: name.length <= 55 ? `À propos de ${name}` : "À propos", body: fit(aboutParts.join(" "), 420) },
     finalCta: {
       heading: "Un projet ? Parlons-en.",
-      body: phone ? `Décrivez vos travaux en quelques lignes ou appelez le ${phone}.` : "Décrivez vos travaux en quelques lignes : c’est le point de départ de votre devis.",
+      body: "Décrivez vos travaux en quelques lignes : c’est le point de départ de votre devis.",
     },
     rationale: profile.audit.levers.map((lever) => ({
       leverId: lever.id,

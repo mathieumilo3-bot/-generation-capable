@@ -40,7 +40,7 @@ describe("anti-invention guard", () => {
     ["Le meilleur couvreur du Morbihan", "superlatif"],
     ["Toiture à partir de 90 € le m²", "nombre non vérifié (90)"],
     ["Depuis 1985 à votre service", "nombre non vérifié (1985)"],
-    ["Couvreur à Lorient et Quimper", "lieu non vérifié (Lorient)"],
+    ["Couvreur à Lorient et Quimper", "nom propre non vérifié (Lorient)"],
     ["« La plus belle toiture de Bretagne depuis toujours »", "citation introuvable"],
     ["Voir <script>alert(1)</script>", "balisage ou lien"],
     ["Rendez-vous sur https://evil.test", "balisage ou lien"],
@@ -70,5 +70,13 @@ describe("anti-invention guard", () => {
     );
     expect(checkCopy("Les avis de nos clients", withReviews).ok).toBe(true);
     expect(checkCopy("4,9/5 sur Google, 37 avis", withReviews).ok).toBe(true);
+  });
+});
+
+describe("proper nouns and brand names", () => {
+  it("refuses a place or brand the truth does not contain, anywhere in the sentence", () => {
+    expect(checkCopy("Nous intervenons à Vannes, Auray et Lorient.", truth)).toMatchObject({ ok: false, reason: "nom propre non vérifié (Lorient.)" });
+    expect(checkCopy("Partenaire Velux et Somfy.", truth).ok).toBe(false);
+    expect(checkCopy("Nous intervenons à Vannes et Auray.", truth)).toEqual({ ok: true });
   });
 });

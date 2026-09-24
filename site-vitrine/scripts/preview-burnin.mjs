@@ -117,9 +117,10 @@ while (Date.now() < deadline) {
       answer = { city: c.city };
       clarified.city = true;
     } else if (status.needs === "site" && !clarified.site) {
-      answer = c.site ? { siteUrl: c.site } : { noSite: true };
+      const known = c.site || (c.expectDomain ? `https://${c.expectDomain}/` : "");
+      answer = known ? { siteUrl: known } : { noSite: true };
       clarified.site = true;
-      if (!c.expectNoSite) warnings.push("adresse du site demandée (identification web non concluante)");
+      if (known) warnings.push("site non retrouvé automatiquement : adresse demandée au visiteur");
     }
     if (!answer) {
       failures.push(`précision « ${status.needs} » demandée sans réponse possible`);
@@ -156,10 +157,16 @@ if (c.expectCity && !norm(doc.site.city).includes(norm(c.expectCity)) && !norm(c
 }
 if (c.expectDomain) {
   const got = (doc.site.currentDomain || "").replace(/^www\./, "");
+  const accepted = [c.expectDomain, ...(c.acceptDomains || [])].map((d) => d.replace(/^www\./, ""));
   if (!got) failures.push(`site officiel non retrouvé (attendu ${c.expectDomain})`);
-  else if (got !== c.expectDomain.replace(/^www\./, "")) failures.push(`site ${got} ≠ ${c.expectDomain}`);
+  else if (!accepted.includes(got)) failures.push(`site ${got} ≠ ${c.expectDomain}`);
+  else if (got !== accepted[0]) warnings.push(`site ${got} retenu (autre domaine vérifié de l’entreprise) — à revoir`);
 }
 if (c.expectNoSite && doc.presenceLevel !== "C") warnings.push(`attendu sans site, niveau ${doc.presenceLevel} (${doc.site.currentDomain})`);
+
+if (c.expectNameIncludes && !norm(doc.site.name).includes(norm(c.expectNameIncludes))) {
+  failures.push(`nom affiché « ${doc.site.name} » ne contient pas « ${c.expectNameIncludes} »`);
+}
 
 // Structure
 if (!Array.isArray(bp.sections) || bp.sections.length > 8 || bp.sections.at(-1)?.type !== "cta") failures.push("structure de sections invalide");
@@ -168,7 +175,7 @@ if (!bp.hero?.headline) failures.push("hero vide");
 // Anti-invention: everything the page says must be backed by the document.
 const copy = JSON.stringify({ hero: bp.hero, services: bp.services, why: bp.why, area: bp.area, about: bp.about, finalCta: bp.finalCta, portfolio: bp.portfolio.heading, cta: [bp.primaryCta, bp.secondaryCta] });
 const facts = norm(
-  JSON.stringify({ site: doc.site, services: doc.services, trust: doc.trust, reviews: doc.reviews, zone: doc.zoneQuote, levers: doc.levers, provenance: doc.provenance })
+  JSON.stringify({ site: doc.site, services: doc.services, trust: doc.trust, reviews: doc.reviews, zone: doc.zoneQuote, experience: doc.experienceQuote, levers: doc.levers, provenance: doc.provenance })
 );
 const factDigits = new Set(facts.match(/\d+/g) ?? []);
 for (const d of norm(copy.replace(/"(?:serviceId|factRef|leverId|imageAssetId|variant|type)":"[^"]*"/g, "")).match(/\d+/g) ?? []) {

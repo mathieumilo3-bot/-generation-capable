@@ -1,7 +1,7 @@
 /** Bumped when the pipeline's behaviour changes. Stored on every preview. */
 export const PREVIEW_ENGINE_VERSION = "preview-2.0.0";
 /** Bumped when the truth bundle changes shape or meaning: invalidates cached company data. */
-export const PREVIEW_DATA_VERSION = "data-2";
+export const PREVIEW_DATA_VERSION = "data-5";
 /** Bumped when the blueprint/renderer contract changes: cached data is reused, only the blueprint is rebuilt. */
 export const PREVIEW_BLUEPRINT_VERSION = "bp-1";
 
