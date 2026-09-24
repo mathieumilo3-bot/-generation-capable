@@ -40,4 +40,4 @@ Pour chaque famille : CTA principal cohérent, ordre des preuves cohérent, form
 - `GC_PREVIEW_AI_ENABLED=false` par défaut : le moteur rend le plancher déterministe sans dépense OpenAI.
 - L'activation de l'IA Preview est volontaire et indépendante du tunnel public.
 - 3 démarrages maximum par IP / 10 min, avec coupe-circuit global additionnel.
-- Recherche web bornée et blueprint IA limité ; aucun burn-in massif ne doit être déclenché automatiquement.
+- Recherche web bornée et blueprint IA limité ; le burn-in réel est uniquement manuel et exige une confirmation explicite.
