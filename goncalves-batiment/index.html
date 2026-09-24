@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GONCALVES BÂTIMENT | Maçonnerie, gros œuvre et construction à Nîmes</title>
+<meta name="description" content="Goncalves Bâtiment réalise vos travaux de maçonnerie générale, de gros œuvre et de construction de maisons à Nîmes et dans le Gard. Parlons de votre projet.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#FAF7F1">
+<link rel="canonical" href="/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Goncalves Bâtiment">
+<meta property="og:title" content="Goncalves Bâtiment | Maçonnerie, gros œuvre et construction à Nîmes">
+<meta property="og:description" content="Construction de maisons, maçonnerie générale et gros œuvre à Nîmes et dans le Gard.">
+<meta property="og:locale" content="fr_FR">
+
+<!-- Favicon : monogramme GB en SVG inline, aucun fichier externe requis -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2314120F'/%3E%3Ctext x='32' y='40' font-family='Georgia,serif' font-size='24' fill='%23F5EFE4' text-anchor='middle'%3EGB%3C/text%3E%3C/svg%3E">
+
+<!-- JSON-LD : informations confirmées uniquement (nom, téléphone, zone d'intervention) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "GeneralContractor",
+  "name": "Goncalves Bâtiment",
+  "telephone": "+33626419563",
+  "areaServed": [
+    { "@type": "City", "name": "Nîmes" },
+    { "@type": "AdministrativeArea", "name": "Gard" }
+  ],
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Nîmes",
+    "addressRegion": "Gard",
+    "addressCountry": "FR"
+  }
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+
+<!-- ===================== HEADER ===================== -->
+<header class="site-header" id="site-header">
+  <div class="container site-header__inner">
+    <a class="logo" href="#accueil" aria-label="Goncalves Bâtiment — Accueil">
+      <span class="logo__line">GONCALVES</span>
+      <span class="logo__line logo__line--accent">BÂTIMENT</span>
+    </a>
+
+    <nav class="main-nav" id="main-nav" aria-label="Navigation principale">
+      <ul>
+        <li><a href="#accueil">Accueil</a></li>
+        <li><a href="#construction">Construction</a></li>
+        <li><a href="#gros-oeuvre">Gros œuvre</a></li>
+        <li><a href="#realisations">Réalisations</a></li>
+        <li><a href="#entreprise">L'entreprise</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <div class="site-header__actions">
+      <a class="btn btn--primary btn--compact" href="#contact">Demander un devis</a>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav">
+        <span class="nav-toggle__box">
+          <span class="nav-toggle__bar"></span>
+          <span class="nav-toggle__bar"></span>
+        </span>
+        <span class="visually-hidden">Ouvrir le menu</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Menu mobile plein écran — hors du header : le backdrop-filter du header
+     crée un containing block pour ses descendants position:fixed, ce qui
+     écraserait ce panneau dans la hauteur du header (64px) au lieu du
+     viewport entier. -->
+<div class="mobile-nav" id="mobile-nav" hidden>
+  <ul>
+    <li><a href="#accueil">Accueil</a></li>
+    <li><a href="#construction">Construction</a></li>
+    <li><a href="#gros-oeuvre">Gros œuvre</a></li>
+    <li><a href="#realisations">Réalisations</a></li>
+    <li><a href="#entreprise">L'entreprise</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="mobile-nav__footer">
+    <a class="btn btn--primary btn--block" href="#contact">Demander un devis</a>
+    <a class="btn btn--ghost btn--block" href="tel:+33626419563">Appeler — 06 26 41 95 63</a>
+  </div>
+</div>
+
+<main id="contenu">
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero" id="accueil">
+    <figure class="photo photo--hero" data-caption="Maison réalisée — architecture du sud de la France">
+      <!-- Remplacer par : assets/img/hero-maison-nimes.jpg (maison terminée, réaliste, style architecture du sud de la France) -->
+      <img src="assets/img/hero-maison-nimes.jpg" alt="Maison réalisée dans le style architectural du sud de la France" loading="eager" onerror="this.closest('.photo').classList.add('is-placeholder')">
+      <span class="photo__icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg>
+      </span>
+      <span class="photo__caption">Maison réalisée — architecture du sud de la France</span>
+    </figure>
+    <div class="hero__scrim" aria-hidden="true"></div>
+
+    <div class="container hero__content">
+      <p class="eyebrow eyebrow--on-dark">Nîmes · Gard</p>
+      <h1 class="hero__title">Construire solide.<br>Bâtir pour durer.</h1>
+      <p class="hero__subtitle">Construction de maisons, maçonnerie générale et gros œuvre à Nîmes et dans le Gard.</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary btn--lg" href="#contact">Parler de mon projet</a>
+        <a class="btn btn--outline-light btn--lg" href="tel:+33626419563">
+          <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8Z"/></svg>
+          Appeler
+        </a>
+      </div>
+    </div>
+
+    <a class="hero__scroll-cue" href="#gros-oeuvre" aria-label="Découvrir la suite">
+      <span></span>
+    </a>
+  </section>
+
+  <!-- ===================== SAVOIR-FAIRE ===================== -->
+  <section class="section savoir-faire" id="gros-oeuvre">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="eyebrow">Savoir-faire</p>
+        <h2 class="section-title">De la première pierre<br>à votre maison.</h2>
+        <p class="section-intro">Trois savoir-faire complémentaires, réunis autour d'un même objectif : la solidité de votre construction.</p>
+      </div>
+
+      <div class="pillars">
+        <article class="pillar reveal">
+          <figure class="photo photo--tone-a" data-caption="Construction de maison">
+            <!-- Remplacer par : assets/img/savoir-faire-construction-maison.jpg -->
+            <img src="assets/img/savoir-faire-construction-maison.jpg" alt="Construction de maison en cours" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg>
+            </span>
+            <span class="photo__caption">Construction de maison</span>
+          </figure>
+          <p class="pillar__number">01</p>
+          <h3 class="pillar__title">Construction de maisons</h3>
+          <p class="pillar__text">Un accompagnement sur l'ensemble du projet de construction, du terrain à la maison.</p>
+        </article>
+
+        <article class="pillar reveal">
+          <figure class="photo photo--tone-b" data-caption="Gros œuvre — structure">
+            <!-- Remplacer par : assets/img/savoir-faire-gros-oeuvre.jpg -->
+            <img src="assets/img/savoir-faire-gros-oeuvre.jpg" alt="Structure de gros œuvre en cours de construction" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg>
+            </span>
+            <span class="photo__caption">Gros œuvre — structure</span>
+          </figure>
+          <p class="pillar__number">02</p>
+          <h3 class="pillar__title">Gros œuvre</h3>
+          <p class="pillar__text">Fondations, structure, élévations : les travaux qui assurent la solidité et la durabilité du bâtiment.</p>
+        </article>
+
+        <article class="pillar reveal">
+          <figure class="photo photo--tone-c" data-caption="Maçonnerie générale">
+            <!-- Remplacer par : assets/img/savoir-faire-maconnerie.jpg -->
+            <img src="assets/img/savoir-faire-maconnerie.jpg" alt="Travaux de maçonnerie générale" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg>
+            </span>
+            <span class="photo__caption">Maçonnerie générale</span>
+          </figure>
+          <p class="pillar__number">03</p>
+          <h3 class="pillar__title">Maçonnerie générale</h3>
+          <p class="pillar__text">Travaux de maçonnerie pour différents projets de construction et de structure.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CONSTRUCTION — ÉTAPES ===================== -->
+  <section class="section construction" id="construction">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="eyebrow">Construction</p>
+        <h2 class="section-title">Un projet qui prend forme,<br>étape par étape.</h2>
+        <p class="section-intro">Chaque maison suit le même chemin : celui d'une structure construite avec rigueur, jusqu'à la maison achevée.</p>
+      </div>
+    </div>
+
+    <div class="steps-rail-wrap reveal">
+      <ul class="steps-rail" id="steps-rail">
+        <li class="step-card">
+          <figure class="photo photo--tone-a" data-caption="Projet">
+            <!-- Remplacer par : assets/img/etape-01-projet.jpg -->
+            <img src="assets/img/etape-01-projet.jpg" alt="Étude et préparation d'un projet de construction" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+            <span class="photo__caption">Projet</span>
+          </figure>
+          <p class="step-card__number">01</p>
+          <h3 class="step-card__title">Projet</h3>
+          <p class="step-card__text">Étude du projet et des besoins avant le démarrage des travaux.</p>
+        </li>
+        <li class="step-card">
+          <figure class="photo photo--tone-b" data-caption="Fondations">
+            <!-- Remplacer par : assets/img/etape-02-fondations.jpg -->
+            <img src="assets/img/etape-02-fondations.jpg" alt="Réalisation des fondations d'une maison" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+            <span class="photo__caption">Fondations</span>
+          </figure>
+          <p class="step-card__number">02</p>
+          <h3 class="step-card__title">Fondations</h3>
+          <p class="step-card__text">Réalisation des fondations, base indispensable à la solidité de l'ouvrage.</p>
+        </li>
+        <li class="step-card">
+          <figure class="photo photo--tone-c" data-caption="Structure">
+            <!-- Remplacer par : assets/img/etape-03-structure.jpg -->
+            <img src="assets/img/etape-03-structure.jpg" alt="Mise en place de la structure porteuse du bâtiment" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+            <span class="photo__caption">Structure</span>
+          </figure>
+          <p class="step-card__number">03</p>
+          <h3 class="step-card__title">Structure</h3>
+          <p class="step-card__text">Mise en place de la structure porteuse du bâtiment.</p>
+        </li>
+        <li class="step-card">
+          <figure class="photo photo--tone-d" data-caption="Élévation">
+            <!-- Remplacer par : assets/img/etape-04-elevation.jpg -->
+            <img src="assets/img/etape-04-elevation.jpg" alt="Montage des murs et élévations" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+            <span class="photo__caption">Élévation</span>
+          </figure>
+          <p class="step-card__number">04</p>
+          <h3 class="step-card__title">Élévation</h3>
+          <p class="step-card__text">Montage des murs et des élévations du bâtiment.</p>
+        </li>
+        <li class="step-card">
+          <figure class="photo photo--tone-e" data-caption="Construction">
+            <!-- Remplacer par : assets/img/etape-05-construction.jpg -->
+            <img src="assets/img/etape-05-construction.jpg" alt="Poursuite des travaux de gros œuvre" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+            <span class="photo__caption">Construction</span>
+          </figure>
+          <p class="step-card__number">05</p>
+          <h3 class="step-card__title">Construction</h3>
+          <p class="step-card__text">Poursuite des travaux de gros œuvre jusqu'à la fermeture du bâtiment.</p>
+        </li>
+        <li class="step-card">
+          <figure class="photo photo--tone-a" data-caption="Maison">
+            <!-- Remplacer par : assets/img/etape-06-maison.jpg -->
+            <img src="assets/img/etape-06-maison.jpg" alt="Maison achevée" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+            <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+            <span class="photo__caption">Maison</span>
+          </figure>
+          <p class="step-card__number">06</p>
+          <h3 class="step-card__title">Maison</h3>
+          <p class="step-card__text">La maison prend sa forme définitive.</p>
+        </li>
+      </ul>
+      <div class="steps-rail__nav">
+        <button type="button" class="rail-btn" id="rail-prev" aria-label="Étape précédente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5 8 12l7 7"/></svg>
+        </button>
+        <div class="steps-rail__dots" id="steps-dots" role="tablist" aria-label="Progression des étapes"></div>
+        <button type="button" class="rail-btn" id="rail-next" aria-label="Étape suivante">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== RÉALISATIONS ===================== -->
+  <section class="section realisations" id="realisations">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="eyebrow">Réalisations</p>
+        <h2 class="section-title">Chantiers et constructions.</h2>
+        <p class="section-intro">Photographies illustratives, en attente des visuels des réalisations de Goncalves Bâtiment.</p>
+      </div>
+
+      <div class="gallery">
+        <figure class="photo gallery__item gallery__item--a photo--tone-a reveal" data-caption="Maison contemporaine">
+          <!-- Remplacer par : assets/img/realisation-maison-contemporaine.jpg -->
+          <img src="assets/img/realisation-maison-contemporaine.jpg" alt="Maison contemporaine" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+          <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+          <span class="photo__caption">Maison contemporaine</span>
+        </figure>
+        <figure class="photo gallery__item gallery__item--b photo--tone-b reveal" data-caption="Chantier en cours">
+          <!-- Remplacer par : assets/img/realisation-chantier-en-cours.jpg -->
+          <img src="assets/img/realisation-chantier-en-cours.jpg" alt="Chantier de construction en cours" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+          <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+          <span class="photo__caption">Chantier en cours</span>
+        </figure>
+        <figure class="photo gallery__item gallery__item--c photo--tone-c reveal" data-caption="Gros œuvre">
+          <!-- Remplacer par : assets/img/realisation-gros-oeuvre.jpg -->
+          <img src="assets/img/realisation-gros-oeuvre.jpg" alt="Travaux de gros œuvre" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+          <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+          <span class="photo__caption">Gros œuvre</span>
+        </figure>
+        <figure class="photo gallery__item gallery__item--d photo--tone-d reveal" data-caption="Maison traditionnelle du sud">
+          <!-- Remplacer par : assets/img/realisation-maison-traditionnelle.jpg -->
+          <img src="assets/img/realisation-maison-traditionnelle.jpg" alt="Maison traditionnelle du sud de la France" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+          <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+          <span class="photo__caption">Maison traditionnelle du sud</span>
+        </figure>
+        <figure class="photo gallery__item gallery__item--e photo--tone-e reveal" data-caption="Mur maçonné">
+          <!-- Remplacer par : assets/img/realisation-mur-maconne.jpg -->
+          <img src="assets/img/realisation-mur-maconne.jpg" alt="Détail d'un mur maçonné" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+          <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+          <span class="photo__caption">Mur maçonné</span>
+        </figure>
+        <figure class="photo gallery__item gallery__item--f photo--tone-a reveal" data-caption="Fondations">
+          <!-- Remplacer par : assets/img/realisation-fondations.jpg -->
+          <img src="assets/img/realisation-fondations.jpg" alt="Fondations d'une construction" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+          <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+          <span class="photo__caption">Fondations</span>
+        </figure>
+        <figure class="photo gallery__item gallery__item--g photo--tone-b reveal" data-caption="Détail d'exécution">
+          <!-- Remplacer par : assets/img/realisation-detail-execution.jpg -->
+          <img src="assets/img/realisation-detail-execution.jpg" alt="Détail d'exécution d'un ouvrage de maçonnerie" loading="lazy" onerror="this.closest('.photo').classList.add('is-placeholder')">
+          <span class="photo__icon" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 30 32 10l24 20"/><path d="M14 26v28h36V26"/><path d="M26 54V38h12v16"/></svg></span>
+          <span class="photo__caption">Détail d'exécution</span>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== POURQUOI GONCALVES ===================== -->
+  <section class="section entreprise" id="entreprise">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="eyebrow">L'entreprise</p>
+        <h2 class="section-title">Une entreprise.<br>Un interlocuteur.<br>Un projet suivi.</h2>
+      </div>
+
+      <div class="values">
+        <article class="value reveal">
+          <span class="value__index">01</span>
+          <div class="value__body">
+            <h3 class="value__title">Solidité</h3>
+            <p class="value__text">Chaque réalisation commence par une structure pensée pour durer.</p>
+          </div>
+        </article>
+        <article class="value reveal">
+          <span class="value__index">02</span>
+          <div class="value__body">
+            <h3 class="value__title">Clarté</h3>
+            <p class="value__text">Un échange direct tout au long du projet.</p>
+          </div>
+        </article>
+        <article class="value reveal">
+          <span class="value__index">03</span>
+          <div class="value__body">
+            <h3 class="value__title">Savoir-faire</h3>
+            <p class="value__text">La maçonnerie et le gros œuvre au cœur du métier.</p>
+          </div>
+        </article>
+        <article class="value reveal">
+          <span class="value__index">04</span>
+          <div class="value__body">
+            <h3 class="value__title">Proximité</h3>
+            <p class="value__text">Intervention à Nîmes et dans le Gard.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CONTACT — FORMULAIRE ===================== -->
+  <section class="section contact" id="contact">
+    <div class="container">
+      <div class="contact__grid">
+
+        <div class="contact__intro reveal">
+          <p class="eyebrow">Contact</p>
+          <h2 class="section-title">Parlez-nous<br>de votre projet.</h2>
+          <p class="section-intro">Quelques informations suffisent pour commencer.</p>
+
+          <div class="contact__direct">
+            <a class="contact__direct-link" href="tel:+33626419563">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8Z"/></svg>
+              <span>06 26 41 95 63</span>
+            </a>
+            <p class="contact__direct-place">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.2"/></svg>
+              <span>Nîmes · Gard</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="contact__form-wrap reveal">
+          <form class="project-form" id="project-form" name="contact-projet" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
+            <input type="hidden" name="form-name" value="contact-projet">
+            <p class="visually-hidden">
+              <label>Ne pas remplir si vous êtes humain : <input name="bot-field" tabindex="-1" autocomplete="off"></label>
+            </p>
+
+            <div class="form-progress">
+              <div class="form-progress__bar"><span id="form-progress-fill"></span></div>
+              <p class="form-progress__label" id="form-progress-label" aria-live="polite">Étape 1 sur 5</p>
+            </div>
+
+            <!-- ÉTAPE 1 -->
+            <fieldset class="form-step is-active" data-step="1">
+              <legend class="form-step__title" id="step1-heading">Quel est votre projet ?</legend>
+              <div class="choice-grid" role="radiogroup" aria-labelledby="step1-heading">
+                <button type="button" class="choice-card" role="radio" aria-checked="false" data-field="projet" data-value="Construction d'une maison">Construction d'une maison</button>
+                <button type="button" class="choice-card" role="radio" aria-checked="false" data-field="projet" data-value="Gros œuvre">Gros œuvre</button>
+                <button type="button" class="choice-card" role="radio" aria-checked="false" data-field="projet" data-value="Maçonnerie">Maçonnerie</button>
+                <button type="button" class="choice-card" role="radio" aria-checked="false" data-field="projet" data-value="Autre projet">Autre projet</button>
+              </div>
+              <input type="hidden" name="projet" id="field-projet">
+              <p class="form-error" data-error-for="1" hidden>Merci de sélectionner une option.</p>
+            </fieldset>
+
+            <!-- ÉTAPE 2 -->
+            <fieldset class="form-step" data-step="2">
+              <legend class="form-step__title">Où se situe votre projet ?</legend>
+              <label class="field">
+                <span class="field__label">Ville / code postal</span>
+                <input type="text" name="ville" id="field-ville" placeholder="Ex. Nîmes, 30000" autocomplete="address-level2">
+              </label>
+              <p class="form-error" data-error-for="2" hidden>Merci d'indiquer une ville ou un code postal.</p>
+            </fieldset>
+
+            <!-- ÉTAPE 3 -->
+            <fieldset class="form-step" data-step="3">
+              <legend class="form-step__title" id="step3-heading">Quand souhaitez-vous commencer ?</legend>
+              <div class="choice-grid" role="radiogroup" aria-labelledby="step3-heading">
+                <button type="button" class="choice-card" role="radio" aria-checked="false" data-field="delai" data-value="Dès que possible">Dès que possible</button>
+                <button type="button" class="choice-card" role="radio" aria-checked="false" data-field="delai" data-value="Dans 1 à 3 mois">Dans 1 à 3 mois</button>
+                <button type="button" class="choice-card" role="radio" aria-checked="false" data-field="delai" data-value="Dans 3 à 6 mois">Dans 3 à 6 mois</button>
+                <button type="button" class="choice-card" role="radio" aria-checked="false" data-field="delai" data-value="Plus tard">Plus tard</button>
+              </div>
+              <input type="hidden" name="delai" id="field-delai">
+              <p class="form-error" data-error-for="3" hidden>Merci de sélectionner une option.</p>
+            </fieldset>
+
+            <!-- ÉTAPE 4 -->
+            <fieldset class="form-step" data-step="4">
+              <legend class="form-step__title">Parlez-nous rapidement du projet.</legend>
+              <label class="field">
+                <span class="field__label">Description <em>(facultatif)</em></span>
+                <textarea name="message" id="field-message" rows="4" placeholder="Quelques précisions sur votre projet…"></textarea>
+              </label>
+            </fieldset>
+
+            <!-- ÉTAPE 5 -->
+            <fieldset class="form-step" data-step="5">
+              <legend class="form-step__title">Comment pouvons-nous vous rappeler ?</legend>
+              <label class="field">
+                <span class="field__label">Prénom</span>
+                <input type="text" name="prenom" id="field-prenom" autocomplete="given-name">
+              </label>
+              <label class="field">
+                <span class="field__label">Téléphone</span>
+                <input type="tel" name="telephone" id="field-telephone" autocomplete="tel" inputmode="tel">
+              </label>
+              <label class="field">
+                <span class="field__label">Email <em>(facultatif)</em></span>
+                <input type="email" name="email" id="field-email" autocomplete="email" inputmode="email">
+              </label>
+              <p class="form-error" data-error-for="5" hidden>Merci de vérifier les champs renseignés.</p>
+            </fieldset>
+
+            <!-- SUCCÈS -->
+            <div class="form-step form-success" data-step="success">
+              <svg class="form-success__icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="32" cy="32" r="27"/><path d="M21 33l7 7 15-16"/></svg>
+              <h3 class="form-step__title">Votre demande a bien été transmise.</h3>
+              <p class="form-success__text">Nous revenons vers vous rapidement.</p>
+            </div>
+
+            <!-- ERREUR D'ENVOI -->
+            <div class="form-step form-submit-error" data-step="submit-error">
+              <h3 class="form-step__title">L'envoi n'a pas pu aboutir.</h3>
+              <p class="form-submit-error__text">Vous pouvez réessayer, ou nous appeler directement au <a href="tel:+33626419563">06 26 41 95 63</a>.</p>
+              <button type="button" class="btn btn--primary" id="retry-submit">Réessayer</button>
+            </div>
+
+            <div class="form-nav">
+              <button type="button" class="btn btn--ghost" id="form-back" hidden>Retour</button>
+              <button type="button" class="btn btn--primary" id="form-next">Continuer</button>
+              <button type="submit" class="btn btn--primary" id="form-submit" hidden>Envoyer ma demande</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <a class="logo logo--footer" href="#accueil" aria-label="Goncalves Bâtiment — Accueil">
+      <span class="logo__line">GONCALVES</span>
+      <span class="logo__line logo__line--accent">BÂTIMENT</span>
+    </a>
+
+    <nav class="footer-nav" aria-label="Navigation de pied de page">
+      <a href="#accueil">Accueil</a>
+      <a href="#construction">Construction</a>
+      <a href="#gros-oeuvre">Gros œuvre</a>
+      <a href="#realisations">Réalisations</a>
+      <a href="#entreprise">L'entreprise</a>
+      <a href="#contact">Contact</a>
+    </nav>
+
+    <div class="footer-contact">
+      <a href="tel:+33626419563">06 26 41 95 63</a>
+      <span>Nîmes · Gard</span>
+    </div>
+  </div>
+  <div class="container site-footer__legal">
+    <p>© <span id="year"></span> Goncalves Bâtiment</p>
+  </div>
+</footer>
+
+<!-- Barre d'action fixe mobile -->
+<div class="mobile-bar" id="mobile-bar">
+  <a class="mobile-bar__btn mobile-bar__btn--call" href="tel:+33626419563">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8Z"/></svg>
+    Appeler
+  </a>
+  <a class="mobile-bar__btn mobile-bar__btn--quote" href="#contact">Demander un devis</a>
+</div>
+
+<script src="assets/js/main.js" defer></script>
+</body>
+</html>
