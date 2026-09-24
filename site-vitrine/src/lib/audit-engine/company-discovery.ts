@@ -1,5 +1,5 @@
 import { htmlToText, normalize, normalizePhone } from "./crawl";
-import { callResponses, pollBackgroundResponse, startBackgroundResponse } from "./openai";
+import { callResponses, openAiKey, pollBackgroundResponse, startBackgroundResponse } from "./openai";
 import { fetchPublicHtml, type FetchHtmlResult } from "./probe";
 import type { AiAuditWebSource } from "./types";
 
@@ -215,7 +215,7 @@ Tu dois faire comme un consultant humain qui cherche vraiment cette société su
 
 METHODE OBLIGATOIRE
 1. Recherche le nom exact entre guillemets, puis le nom + ville/code postal si une ville est fournie.
-2. Recherche ensuite plusieurs variantes : nom + entreprise, nom + métier probable, nom + bâtiment/BTP/artisan, puis nom + ville + métier.
+2. Recherche ensuite plusieurs variantes : nom + entreprise, nom + activité ou produit probable, nom + secteur, puis nom + ville + activité. Ne suppose jamais que la société est un artisan ou une entreprise du bâtiment.
 3. Cherche explicitement le SITE OFFICIEL : nom + "site officiel", nom + domaine, puis recoupe le domaine trouvé avec les mentions légales, le nom, l'adresse, le téléphone, la ville ou les réseaux sociaux.
 4. Si le nom saisi est un sigle, une raison sociale ou un ancien nom, IDENTIFIE D'ABORD les passerelles d'identité publiques : enseigne/marque commerciale, dirigeant, adresse, code postal, téléphone, SIREN/SIRET/RCS. Recherche ensuite ces identifiants exacts entre guillemets pour retrouver le domaine utilisé publiquement. Exemple de cas à traiter : une SARL appelée "AATP" peut communiquer sous une enseigne totalement différente sur son site.
 5. Utilise les annuaires, Google Business, PagesJaunes, Pappers/Societe, annuaire-entreprises.data.gouv.fr, Facebook, Instagram ou LinkedIn comme SOURCES DE RECOUPEMENT, jamais comme website officiel.
@@ -227,9 +227,9 @@ METHODE OBLIGATOIRE
 11. Avant de conclure qu'aucun site n'existe, essaie AU MINIMUM les variantes suivantes quand les données existent : raison sociale + ville, enseigne + ville, téléphone exact, SIREN/SIRET exact, adresse + métier, dirigeant + métier + ville, puis domaine/mentions légales.
 
 CRITERES DE L'AUDIT GC
-- ATTIRER : présence sur des recherches métier/service/zone sans connaître la marque.
-- RASSURER : clarté de l'offre, réalisations, avis, garanties, photos, références, cohérence de la présence publique.
-- CONVERTIR : facilité pour appeler, demander un devis ou comprendre la prochaine action.
+- ATTIRER : présence sur des recherches liées à l'activité, aux produits/services et, quand c'est pertinent, à la zone, sans connaître la marque.
+- RASSURER : clarté de l'offre, preuves adaptées au secteur (avis, références, produits, cas, réalisations, équipe, labels, photos), cohérence de la présence publique.
+- CONVERTIR : facilité pour accomplir l'action commerciale logique du secteur : devis, réservation, rendez-vous, démonstration, estimation, achat, candidature ou prise de contact.
 - Retenir seulement 1 à 3 opportunités réellement utiles commercialement.
 - Toujours relier chaque constat à une preuve publique précise.
 - Jamais de classement Google inventé, de trafic estimé, de taux de conversion ou de chiffre non vérifié.
@@ -237,7 +237,7 @@ CRITERES DE L'AUDIT GC
 SORTIE
 - name : nom le plus probable.
 - website : uniquement le site officiel vérifié, sinon chaîne vide.
-- sector : métier réel ; utilise si possible Couvreur / toiture, Plombier / chauffagiste, Électricien, Menuisier, Peintre / façadier, Maçon, Paysagiste, Entreprise générale BTP ; sinon Autre — <métier>.
+- sector : activité réelle, courte et exploitable. Exemples possibles : Couvreur / toiture, Restaurant, Cabinet dentaire, Marque e-commerce, Logiciel SaaS, Agence marketing, Immobilier, Hôtel, Événementiel, Conseil / coaching, Cabinet juridique. N'enferme jamais une société dans le BTP par défaut.
 - city : ville/zone la plus solide, sinon chaîne vide.
 - summary : activité + zone + élément qui permet l'identification.
 - confidence :
@@ -360,7 +360,7 @@ async function discoverCompanyUnverified(
   const cityHint = options.cityHint?.trim().slice(0, 120) || "";
   if (query.length < 2) return { candidates: [], webSources: [] };
 
-  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
+  const apiKey = openAiKey(options.apiKey);
   if (!apiKey) return { candidates: [], webSources: [] };
 
   const fastModel = options.model ?? process.env.OPENAI_DISCOVERY_MODEL ?? FAST_DISCOVERY_MODEL;

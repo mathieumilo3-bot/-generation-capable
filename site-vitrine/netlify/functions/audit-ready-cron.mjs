@@ -124,8 +124,32 @@ export default async () => {
     }
   }
 
+  await advancePreviews();
   return new Response("ok", { status: 200 });
 };
+
+/**
+ * GC Preview Engine V2: moves forward the previews whose visitor left the
+ * page and delivers the "ready" e-mails still owed. Opt-in (GC_PREVIEW_V2_WORKER=1)
+ * so enabling the V2 never changes the audit flow above. Never throws.
+ */
+async function advancePreviews() {
+  if (env("GC_PREVIEW_V2_WORKER") !== "1") return;
+  const secret = env("PREVIEW_WORKER_SECRET") || env("GC_AUDIT_RPC_SECRET");
+  const base = env("GC_PREVIEW_WORKER_URL") || "https://gc-agence.com";
+  if (!secret) return;
+  try {
+    const response = await fetch(`${base}/api/preview/worker`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+      body: "{}",
+      signal: AbortSignal.timeout(9_500),
+    });
+    if (!response.ok) console.error("[audit-ready-cron] preview worker", response.status);
+  } catch (error) {
+    console.error("[audit-ready-cron] preview worker failed", error);
+  }
+}
 
 export const config = {
   schedule: "* * * * *",

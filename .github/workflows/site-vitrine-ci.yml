@@ -1,5 +1,7 @@
 name: Site vitrine — CI
 
+# Preview V2 final validation
+
 on:
   push:
     branches: [main]
@@ -10,6 +12,10 @@ on:
     paths:
       - "site-vitrine/**"
       - ".github/workflows/site-vitrine-ci.yml"
+
+concurrency:
+  group: site-vitrine-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:

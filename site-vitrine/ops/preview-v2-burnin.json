@@ -1,0 +1,5 @@
+{
+  "baseUrl": "https://deploy-preview-127--gc-agence.netlify.app",
+  "note": "Burn-in V2 : uniquement contre ce déploiement isolé. Modifier ce fichier relance la batterie.",
+  "run": 4
+}

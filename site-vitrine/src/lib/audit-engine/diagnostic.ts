@@ -127,6 +127,18 @@ function toDossierPage(page: CrawledPage): DossierPage {
   };
 }
 
+function commercialIntentWord(trade: string): string {
+  const t = normalize(trade);
+  if (/restaurant|brasserie|bistrot|pizzeria|traiteur/.test(t)) return "réservation";
+  if (/hotel|hôtel|hebergement|hébergement|gite|gîte|camping/.test(t)) return "réservation";
+  if (/clinique|dent|medec|médec|kine|kiné|osteop|ostéop|therap|thérap|naturopath|spa|massage|esthet|esthét|coiff/.test(t)) return "rendez-vous";
+  if (/saas|logiciel|software|plateforme|application/.test(t)) return "démo";
+  if (/immobilier|agence immobiliere|agence immobilière|promoteur/.test(t)) return "estimation";
+  if (/e-?commerce|boutique|marque|collection|mode|cosmetique|cosmétique/.test(t)) return "acheter";
+  if (/coach|consult|conseil|avocat|comptable|notaire|agence|marketing|communication/.test(t)) return "rendez-vous";
+  return "devis";
+}
+
 export function researchQueries(company: Dossier["company"], facts: SiteFacts | null): string[] {
   const { name, city, trade, domain } = company;
   const trade1 = tradeWord(trade);
@@ -134,17 +146,17 @@ export function researchQueries(company: Dossier["company"], facts: SiteFacts | 
     ...(facts?.servicesWithoutPage ?? []).map((s) => s.label),
     ...(facts?.services ?? []).map((s) => s.label),
   ].filter((v, i, all) => all.indexOf(v) === i);
+  // Keep the research plan deliberately small: five high-signal queries
+  // cover local intent, the main offer, commercial intent, indexed pages and
+  // reviews. This is enough for the diagnostic without multiplying paid web searches.
   const queries = [
-    `"${name}"${city ? ` ${city}` : ""}`,
-    trade1 && city ? `${trade1} ${city}` : "",
+    trade1 && city ? `${trade1} ${city}` : `"${name}"${city ? ` ${city}` : ""}`,
     services[0] && city ? `${services[0]} ${city}` : "",
-    services[0] && city ? `devis ${services[0]} ${city}` : trade1 && city ? `devis ${trade1} ${city}` : "",
-    services[1] && city ? `${services[1]} ${city}` : "",
+    services[0] && city ? `${commercialIntentWord(trade)} ${services[0]} ${city}` : trade1 && city ? `${commercialIntentWord(trade)} ${trade1} ${city}` : "",
     domain ? `site:${domain}` : "",
     `${name} avis`,
-    `${name}${city ? ` ${city}` : ""} facebook OR instagram OR pagesjaunes`,
   ];
-  return queries.filter(Boolean).slice(0, 5);
+  return [...new Set(queries.filter(Boolean))].slice(0, 5);
 }
 
 const RESEARCH_SCHEMA = {
@@ -187,7 +199,7 @@ function researchInstructions(queries: string[]): string {
 
 Fais la recherche web qu'un consultant ferait avant un rendez-vous commercial, pour trouver ce que le site seul ne montre pas.
 
-Lance CES recherches. N'ajoute une variante que si elle est indispensable pour identifier l'entreprise :
+Lance CES recherches (et d'autres variantes utiles si elles apportent quelque chose) :
 ${queries.map((q, i) => `${i + 1}. ${q}`).join("\n")}
 
 Pour chaque recherche, note ce qui ressort RÉELLEMENT dans les résultats consultés :
@@ -304,7 +316,7 @@ export async function buildDossier(input: DossierInput, options: BuildDossierOpt
 // Signature — nothing that comes back from the browser is trusted
 
 function signingKey(): string {
-  // The spend circuit breaker must never weaken request signing.
+  // Signing must remain stable even when paid AI is disabled by the cost breaker.
   return (
     process.env.AUDIT_SIGNING_SECRET ||
     process.env.OPENAI_API_KEY ||
@@ -515,7 +527,7 @@ SÉLECTION
 - Retiens les 3 LEVIERS les plus capables d'améliorer la visibilité qualifiée, la confiance ou la prise de contact de CETTE entreprise (maximum 3, idéalement 3).
 - Pars d'abord de ce que l'entreprise a DÉJÀ : services, réalisations, avis, labels, zone, réputation, ancienneté, présence locale. Montre comment mieux exploiter ces actifs pour créer plus d'opportunités.
 - Le dirigeant doit apprendre quelque chose d'utile qu'il n'aurait probablement pas vu en regardant seulement sa page d'accueil.
-- Priorité absolue aux leviers à intention commerciale forte : service déjà proposé mais sans porte d'entrée dédiée ; coordonnées à harmoniser ; parcours de devis à simplifier ; preuves/avis/chantiers déjà disponibles mais sous-exploités ; concurrent observé avec une réponse plus claire au même besoin ; service rentable déjà visible publiquement mais pas encore relié à un vrai parcours de devis.
+- Priorité absolue aux leviers à intention commerciale forte : offre déjà proposée mais sans porte d'entrée dédiée ; coordonnées à harmoniser ; parcours de conversion à simplifier ; preuves/avis/références déjà disponibles mais sous-exploités ; concurrent observé avec une réponse plus claire au même besoin ; offre déjà visible publiquement mais pas encore reliée à une action claire (devis, réservation, rendez-vous, démo, estimation, achat ou contact selon le secteur).
 - Couvre si possible ÊTRE TROUVÉ (trouve), ÊTRE CHOISI (choisi), ÊTRE CONTACTÉ (contacte) — mais si deux problèmes majeurs sont sur le même axe, garde-les : on veut les 3 plus gros problèmes, pas 3 cases remplies.
 - Privilégie les constats qui croisent site + recherche web (ex : un service montré sur Instagram mais absent du site ; une requête "service + ville" où ressortent des concurrents avec une page dédiée alors que le site n'en a pas ; une incohérence de téléphone entre annuaire et site ; des avis visibles ailleurs mais absents du site).
 - Un simple détail de balise, de titre ou de formulation ne mérite PAS une carte à lui seul. Il ne devient prioritaire que si la recherche externe montre clairement l'opportunité commerciale correspondante.
@@ -524,13 +536,13 @@ SÉLECTION
 - Évite les titres accusateurs ou négatifs ("invisible", "mauvais", "vous perdez", "aucun", "problème") quand une formulation orientée solution est possible.
 
 FORMAT DE CHAQUE CARTE
-- title : titre court, spécifique et orienté action/croissance. Exemples : "Faire de l'isolation extérieure une porte d'entrée de devis", "Unifier vos numéros pour sécuriser chaque appel", "Mettre vos réalisations au cœur de la décision". Jamais "SEO", "Optimisation" seul, ni un titre qui rabaisse l'entreprise.
+- title : titre court, spécifique et orienté action/croissance. Adapte le vocabulaire au secteur : devis pour le bâtiment, réservation pour restauration/hôtellerie, rendez-vous pour santé/conseil, démo pour SaaS, estimation pour immobilier, achat/découverte pour e-commerce. Jamais "SEO", "Optimisation" seul, ni un titre qui rabaisse l'entreprise.
 - score : note /10 heuristique cohérente avec la preuve. 1–3 gros frein visible ; 4–5 faible ou incomplet ; 6–7 correct mais améliorable ; 8–10 solide.
 - finding : 1 ou 2 phrases MAXIMUM. Commence si possible par l'actif déjà présent ("Vous proposez déjà...", "Vous avez déjà...", "Votre site montre déjà..."), puis montre ce qui reste à activer pour en tirer plus de valeur commerciale. Garde un détail propre à cette entreprise (service, page, ville, texte exact, requête, profil).
 - seen : UNE preuve concrète observée, commençant directement par le fait (pas par "Vu :"). Ex : l'URL/la page, le texte exact entre « », la requête et ce qui ressort, le nombre de champs du formulaire.
 - loss : UNE phrase sur l'OPPORTUNITÉ immédiate qui n'est pas encore pleinement captée. Formule-la positivement : quel type de prospect ou de demande pourrait être mieux capté, rassuré ou converti. Aucun chiffre.
 - potentialText : UNE phrase qui explique le MÉCANISME commercial précis du levier : pourquoi cette amélioration peut faire progresser la visibilité, la confiance ou la prise de contact. Aucun chiffre ni promesse.
-- fix : UNE PREMIÈRE ACTION exécutable sans rendez-vous. Elle doit préciser OÙ agir + QUOI mettre/changer + l'élément de conversion à ajouter. Ex : "Créer /isolation-exterieure-vannes avec un H1 dédié, 3 chantiers locaux, les aides réellement proposées et un bouton « Demander un devis » visible dès le premier écran".
+- fix : UNE PREMIÈRE ACTION exécutable. Elle doit préciser OÙ agir + QUOI mettre/changer + l'élément de conversion adapté au secteur à ajouter. Ne propose jamais par réflexe un devis ou des chantiers à une entreprise dont le modèle commercial est différent.
 - basis : "site", "recherche" ou "site + recherche".
 - summary : UNE phrase d'identification factuelle (métier, ville, ce qui a été analysé). Ex : "Couvreur à Vannes — 11 pages du site et 8 recherches analysées."
 
@@ -637,7 +649,7 @@ type InvestigationOutput = { research?: Record<string, unknown>; summary?: unkno
 
 const INVESTIGATION_CALL = {
   system:
-    "Tu es le consultant senior de GC. Tu cherches vraiment sur le web, tu recoupes, tu n'utilises que ce que tu as observé, et tu écris un diagnostic court, spécifique et prouvé. Réponds uniquement avec le JSON demandé.",
+    "Tu es le consultant senior de GC. Tu analyses des entreprises de tous secteurs, tu recoupes, tu n'utilises que ce que tu as observé et tu écris un diagnostic court, spécifique et prouvé. Réponds uniquement avec le JSON demandé.",
   schemaName: "gc_investigation_v1",
   schema: INVESTIGATION_SCHEMA,
   webSearch: true,
@@ -654,8 +666,6 @@ export async function startInvestigation(
     ...INVESTIGATION_CALL,
     user: investigationPrompt(dossier),
     searchCity: dossier.company.city,
-    // Cost-first default. Raise deliberately with OPENAI_AUDIT_EFFORT only
-    // after a budget has been set and verified in the OpenAI billing console.
     effort: (process.env.OPENAI_AUDIT_EFFORT as "low" | "medium" | "high" | undefined) ?? "low",
     timeoutMs: options.timeoutMs ?? 7_000,
     fetchFn: options.fetchFn,
@@ -669,6 +679,14 @@ function assemble(
   output: InvestigationOutput,
   meta: { webQueries: string[]; webSources: AiAuditWebSource[] }
 ): DiagnosticResult {
+  return assembleDetailed(context, output, meta).diagnostic;
+}
+
+function assembleDetailed(
+  context: AuditContext,
+  output: InvestigationOutput,
+  meta: { webQueries: string[]; webSources: AiAuditWebSource[] }
+): { diagnostic: DiagnosticResult; research: ResearchNotes | null } {
   const research = output.research ? sanitizeResearch(output.research, meta.webQueries, meta.webSources) : null;
   const researchText = research
     ? normalize(
@@ -710,7 +728,7 @@ function assemble(
 
   const queriesRun = research?.webQueries.length ?? 0;
   const modelSummary = cleanStr(output.summary, 200);
-  return {
+  const diagnostic: DiagnosticResult = {
     company: context.company,
     summary:
       modelSummary && !INVENTED_METRIC.test(modelSummary)
@@ -722,6 +740,7 @@ function assemble(
     sourcesConsulted: research?.webSources.length ?? 0,
     mode: aiCards.length > 0 ? "ai" : "site",
   };
+  return { diagnostic, research };
 }
 
 /** The diagnostic built from site evidence alone — what ships if the AI layer never lands. */
@@ -752,6 +771,28 @@ export async function collectInvestigation(
   if (outcome.status === "pending") return { status: "pending" };
   if (outcome.status === "failed") return { status: "failed", reason: outcome.reason };
   return { status: "done", diagnostic: assemble(context, outcome.result.data, outcome.result) };
+}
+
+export type DetailedCollectOutcome =
+  | { status: "pending" }
+  | { status: "done"; diagnostic: DiagnosticResult; research: ResearchNotes | null }
+  | { status: "failed"; reason: string };
+
+/**
+ * Same poll as `collectInvestigation`, but also hands back the sanitised
+ * research notes (reviews, public profiles, services seen elsewhere) instead
+ * of discarding them — the preview engine builds its truth bundle from them
+ * rather than paying for the same searches twice.
+ */
+export async function collectInvestigationDetailed(
+  jobId: string,
+  context: AuditContext,
+  options: { fetchFn?: FetchLike; apiKey?: string; timeoutMs?: number } = {}
+): Promise<DetailedCollectOutcome> {
+  const outcome = await pollBackgroundResponse<InvestigationOutput>(jobId, { timeoutMs: 5_000, ...options });
+  if (outcome.status === "pending") return { status: "pending" };
+  if (outcome.status === "failed") return { status: "failed", reason: outcome.reason };
+  return { status: "done", ...assembleDetailed(context, outcome.result.data, outcome.result) };
 }
 
 /**

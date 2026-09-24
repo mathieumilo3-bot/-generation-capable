@@ -5,6 +5,15 @@ export type RegistryCandidate = {
   siren: string;
   city: string;
   postalCode: string;
+  /** Optional registry details, only set when the registry returned them. */
+  legalName?: string;
+  commercialName?: string;
+  /** Street address of the head office, as registered. */
+  address?: string;
+  /** NAF/APE code of the main activity, e.g. "43.22A". */
+  naf?: string;
+  /** Registration date, ISO yyyy-mm-dd. */
+  createdOn?: string;
 };
 
 export type RegistryPreflight =
@@ -18,6 +27,8 @@ type RegistryRawCompany = {
   nom_raison_sociale?: unknown;
   sigle?: unknown;
   etat_administratif?: unknown;
+  date_creation?: unknown;
+  activite_principale?: unknown;
   siege?: {
     libelle_commune?: unknown;
     commune?: unknown;
@@ -25,6 +36,8 @@ type RegistryRawCompany = {
     nom_commercial?: unknown;
     liste_enseignes?: unknown;
     etat_administratif?: unknown;
+    adresse?: unknown;
+    activite_principale?: unknown;
   } | null;
 };
 
@@ -76,6 +89,24 @@ function locationMatches(candidate: RegistryCandidate, cityHint: string): boolea
   return Boolean(wanted && city && (city === wanted || city.includes(wanted) || wanted.includes(city)));
 }
 
+function registryDetails(company: RegistryRawCompany): Partial<RegistryCandidate> {
+  const siege = company.siege ?? {};
+  const details: Partial<RegistryCandidate> = {};
+  const legalName = clean(company.nom_raison_sociale);
+  const commercialName =
+    clean(siege.nom_commercial) ||
+    (Array.isArray(siege.liste_enseignes) ? siege.liste_enseignes.map((item) => clean(item)).find(Boolean) ?? "" : "");
+  const address = clean(siege.adresse, 240);
+  const naf = clean(siege.activite_principale, 10) || clean(company.activite_principale, 10);
+  const createdOn = clean(company.date_creation, 10);
+  if (legalName) details.legalName = legalName;
+  if (commercialName) details.commercialName = commercialName;
+  if (address) details.address = address;
+  if (/^\d{2}\.\d{2}[A-Z]$/.test(naf)) details.naf = naf;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(createdOn)) details.createdOn = createdOn;
+  return details;
+}
+
 export function classifyRegistryResults(
   companyName: string,
   rawResults: unknown,
@@ -112,6 +143,7 @@ export function classifyRegistryResults(
       siren,
       city: clean(siege.libelle_commune) || clean(siege.commune),
       postalCode: clean(siege.code_postal, 10),
+      ...registryDetails(company),
     };
 
     if (!locationMatches(candidate, cityHint)) continue;
@@ -182,4 +214,45 @@ export function registryIdentityHint(candidate: RegistryCandidate): string {
     .filter(Boolean)
     .join(" · ")
     .slice(0, 360);
+}
+
+/**
+ * Looks a company up by its SIREN (e.g. read in the legal notice of its own
+ * site). The strongest identity anchor there is: no name matching involved.
+ */
+export async function lookupRegistryBySiren(
+  siren: string,
+  options: { fetchFn?: FetchLike; timeoutMs?: number } = {}
+): Promise<RegistryCandidate | null> {
+  const wanted = siren.replace(/\D/g, "").slice(0, 9);
+  if (!/^\d{9}$/.test(wanted)) return null;
+  const fetchFn = options.fetchFn ?? fetch;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 3_500);
+  try {
+    const url = new URL("https://recherche-entreprises.api.gouv.fr/search");
+    url.searchParams.set("q", wanted);
+    url.searchParams.set("page", "1");
+    url.searchParams.set("per_page", "5");
+    url.searchParams.set("minimal", "true");
+    url.searchParams.set("include", "siege");
+    const response = await fetchFn(url, { headers: { Accept: "application/json" }, signal: controller.signal, cache: "no-store" });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as { results?: unknown };
+    const results = Array.isArray(payload.results) ? (payload.results as RegistryRawCompany[]) : [];
+    const company = results.find((r) => clean(r?.siren, 20) === wanted);
+    if (!company || clean(company.etat_administratif, 8).toUpperCase() === "F") return null;
+    const siege = company.siege ?? {};
+    return {
+      name: clean(company.nom_complet) || clean(company.nom_raison_sociale) || clean(company.sigle),
+      siren: wanted,
+      city: clean(siege.libelle_commune) || clean(siege.commune),
+      postalCode: clean(siege.code_postal, 10),
+      ...registryDetails(company),
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }

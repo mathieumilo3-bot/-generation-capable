@@ -23,6 +23,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Lets /api/preview/health report which commit is deployed (burn-in waits for it).
+  env: { GC_BUILD_COMMIT: process.env.COMMIT_REF ?? "" },
   turbopack: {
     root: path.join(__dirname),
   },
@@ -61,6 +63,20 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "no-store, max-age=0" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
+      },
+      {
+        // Signed, immutable image proxy of the preview engine: cacheable.
+        source: "/api/preview/image",
+        headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
+      },
+      {
+        // Private previews of real companies: never indexed, never followed.
+        source: "/audit/preview-v2/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
+      },
+      {
+        source: "/audit/preview-v2",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
       },
     ];
   },

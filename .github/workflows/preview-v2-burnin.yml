@@ -1,0 +1,126 @@
+name: Preview V2 — burn-in réel (34+ entreprises)
+
+# Runs the GC Preview Engine V2 on REAL companies against an ISOLATED
+# deployment (Netlify deploy preview of the V2 branch) — never against the
+# production /audit funnel. Triggered by editing ops/preview-v2-burnin.json
+# on a preview-engine branch, or manually.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_paid_run:
+        description: "Je confirme vouloir lancer la batterie réelle potentiellement payante"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-v2-burnin-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    name: Déploiement isolé prêt
+    runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.base.outputs.base }}
+      cases: ${{ steps.cases.outputs.cases }}
+    steps:
+      - name: Confirmation explicite du burn-in réel
+        run: |
+          if [ "${{ inputs.confirm_paid_run }}" != "true" ]; then
+            echo "::error::Burn-in réel non confirmé — aucun appel n'est lancé."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - id: base
+        run: echo "base=$(jq -r .baseUrl site-vitrine/ops/preview-v2-burnin.json)" >> "$GITHUB_OUTPUT"
+      - id: cases
+        run: echo "cases=$(jq -c . site-vitrine/ops/preview-v2-cases.json)" >> "$GITHUB_OUTPUT"
+      - name: Attendre le déploiement de ce commit
+        env:
+          BASE: ${{ steps.base.outputs.base }}
+        run: |
+          set -u
+          for i in $(seq 1 60); do
+            H=$(curl -sS --max-time 20 "$BASE/api/preview/health" || true)
+            echo "health: $H"
+            COMMIT=$(echo "$H" | jq -r '.commit // empty' 2>/dev/null || true)
+            if [ -n "$COMMIT" ]; then case "$GITHUB_SHA" in "$COMMIT"*) break ;; esac; fi
+            sleep 20
+          done
+          echo "$H" | jq -e '.store == "supabase" and .ai == true' || { echo "::error::déploiement non configuré (store/IA)"; exit 1; }
+          curl -sSI "$BASE/audit/preview-v2" | grep -i "x-robots-tag: noindex"
+
+  case:
+    name: ${{ matrix.case.id }}
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        case: ${{ fromJSON(needs.setup.outputs.cases) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Vitrine réelle — ${{ matrix.case.name }}
+        env:
+          CASE: ${{ toJSON(matrix.case) }}
+        run: node site-vitrine/scripts/preview-burnin.mjs --base "${{ needs.setup.outputs.base }}" --case "$CASE" --out burnin-out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: burnin-${{ matrix.case.id }}
+          path: burnin-out/
+          retention-days: 14
+
+  visual:
+    name: QA visuelle 375 → 1440 px
+    needs: [setup, case]
+    if: always() && needs.setup.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: site-vitrine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site-vitrine/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: burnin-*
+          path: site-vitrine/burnin-out
+          merge-multiple: true
+      - name: Rapport
+        run: |
+          {
+            echo "## Preview V2 — burn-in réel"
+            echo
+            echo "| Cas | OK | Niveau | Ville | Site | Prête (s) | Blueprint | Échecs / alertes |"
+            echo "|---|---|---|---|---|---|---|---|"
+            for f in burnin-out/*.json; do
+              jq -r '"| \(.id) | \(if .ok then "✅" else "❌" end) | \(.level // "-") | \(.city // "-") | \(.domain // "—") | \(.readySeconds // .seconds) | \(.blueprintSource // "-") | \((.failures + .warnings) | join("; ")) |"' "$f"
+            done
+            echo
+            echo "Total : $(ls burnin-out/*.json | wc -l) cas · OK : $(jq -s '[.[] | select(.ok)] | length' burnin-out/*.json)"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: QA visuelle
+        run: node scripts/preview-visual-qa.mjs burnin-out burnin-shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preview-v2-screenshots
+          path: site-vitrine/burnin-shots/
+          retention-days: 14
