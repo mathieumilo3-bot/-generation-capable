@@ -122,6 +122,7 @@ test.describe("navigation", () => {
     }
     await page
       .getByRole("link", { name: /Analyser mon site gratuitement/ })
+      .first()
       .click();
     await expect(page).toHaveURL(/\/audit$/);
     await expect(page.getByLabel("Nom de votre entreprise")).toBeVisible();
