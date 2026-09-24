@@ -6,6 +6,7 @@ import { buildCalendlyUrl } from "@/lib/booking";
 import { postJson, readAttribution, trackPreview } from "@/lib/preview-engine/client";
 import type { PublicStatus } from "@/lib/preview-engine/pipeline";
 import type { PreviewDocument } from "@/lib/preview-engine/public-view";
+import { getBusinessUi } from "@/lib/preview-engine/trades";
 import { track } from "@/lib/tracking";
 
 /**
@@ -87,7 +88,7 @@ export function PreviewResult() {
       setToast(
         kind === "call" && phone
           ? `Aperçu : sur votre futur site, ce bouton appelle directement le ${phone}.`
-          : "Aperçu : sur votre futur site, ce bouton ouvre la demande de devis."
+          : `Aperçu : sur votre futur site, ce bouton déclenche l’action principale prévue pour votre activité.`
       );
       window.clearTimeout(toastTimer.current);
       toastTimer.current = window.setTimeout(() => setToast(""), 3_200);
@@ -122,6 +123,7 @@ export function PreviewResult() {
   }
 
   const doc = loaded.doc;
+  const ui = getBusinessUi(doc.tradeFamily);
   const attribution = readAttribution();
   const bookingUrl = buildCalendlyUrl({}, { ...attribution, content: attribution.content || "preview_v2" });
   const hasSite = doc.presenceLevel !== "C";
@@ -137,7 +139,7 @@ export function PreviewResult() {
           {hasSite ? "Voici comment nous ferions évoluer votre présence actuelle." : "Vous partez d’une page blanche. Voilà la base que nous construirions."}
         </p>
         <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-[var(--color-muted)]">
-          Construite à partir de votre métier, votre zone, vos services et votre présence actuelle.
+          Cette base n’est pas choisie au hasard : elle reprend votre activité, vos preuves publiques et l’action commerciale la plus logique pour votre modèle.
         </p>
       </header>
 
@@ -171,6 +173,35 @@ export function PreviewResult() {
           </div>
         </div>
       </div>
+
+      <section className="mx-auto mt-16 max-w-5xl px-4" aria-labelledby="base-titre">
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 sm:p-8">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">Pourquoi cette base</p>
+          <h2 id="base-titre" className="font-display mt-3 text-balance text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+            Chaque choix sert votre parcours client.
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-sm leading-relaxed text-[var(--color-muted)]">
+            Le but n’est pas seulement d’avoir un site plus beau. La structure doit aider un prospect à comprendre, se rassurer puis agir sans chercher.
+          </p>
+          <div className="mt-7 grid gap-3 md:grid-cols-3">
+            <article className="rounded-[1.35rem] border border-white/8 bg-black/10 p-5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">01 · Comprendre</span>
+              <h3 className="mt-2 text-base font-semibold">Votre offre avant le décor.</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">On organise la page autour de votre activité réelle : {doc.site.trade}.</p>
+            </article>
+            <article className="rounded-[1.35rem] border border-white/8 bg-black/10 p-5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">02 · Rassurer</span>
+              <h3 className="mt-2 text-base font-semibold">Les preuves au bon endroit.</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">Photos, avis, labels ou références ne sont affichés que lorsqu’ils existent réellement.</p>
+            </article>
+            <article className="rounded-[1.35rem] border border-white/8 bg-black/10 p-5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">03 · Agir</span>
+              <h3 className="mt-2 text-base font-semibold">{ui.primaryCta}.</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">Le parcours finit sur l’action adaptée à votre métier, pas sur un bouton générique posé partout.</p>
+            </article>
+          </div>
+        </div>
+      </section>
 
       {doc.levers.length > 0 ? (
         <section className="mx-auto mt-20 max-w-3xl px-4" aria-labelledby="pourquoi-titre">
