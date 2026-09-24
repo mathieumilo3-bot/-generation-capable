@@ -71,7 +71,7 @@ export function toPreviewDocument(id: string, profile: VerifiedCompanyProfile, b
       ...(asset.width ? { width: asset.width } : {}),
       ...(asset.height ? { height: asset.height } : {}),
       kind: asset.type === "realisation" ? "realisation" : "site",
-      caption: asset.type === "realisation" ? `${family.id === "couverture_charpente" || family.id === "maconnerie" || family.id === "menuiserie" || family.id === "peinture" || family.id === "carrelage" || family.id === "renovation" || family.id === "entreprise_generale" ? "Réalisation" : "Visuel"} publié sur votre site` : "Photo publiée sur votre site",
+      caption: asset.type === "realisation" ? (["couverture_charpente", "maconnerie", "menuiserie", "peinture", "carrelage", "renovation", "entreprise_generale"].includes(family.id) ? "Réalisation publiée sur votre site" : "Visuel publié sur votre site") : "Photo publiée sur votre site",
     };
   }
 
