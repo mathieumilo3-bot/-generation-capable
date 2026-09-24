@@ -52,12 +52,34 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: "npm run dev -- --webpack --hostname 127.0.0.1 --port 3000",
+        // A production build instead of `next dev` for the general suite:
+        // dev mode compiles routes on demand, and two workers hitting dozens
+        // of routes for the first time right as the suite starts raced that
+        // compilation — a request could land mid-recompile and see a freshly
+        // re-evaluated module (an in-memory rate-limit counter reset to
+        // empty, mid-flood). Not a product bug, just wrong to build against.
+        // `next start` serves the same compiled output to every request, so
+        // there is no "first hit" to race.
+        //
+        // Only when Preview V2 is excluded (SKIP_PREVIEW_V2): its offline
+        // fixtures refuse to activate under `next start`, which always sets
+        // NODE_ENV=production — deliberately, so fixtures can never leak
+        // into a real deployment (see fixturesEnabled() in fixtures.ts).
+        // The "Preview V2 E2E final" job needs those fixtures, so it keeps
+        // running against `next dev`.
+        command:
+          process.env.CI && process.env.SKIP_PREVIEW_V2
+            ? "npm run build -- --webpack && npm run start -- --hostname 127.0.0.1 --port 3000"
+            : "npm run dev -- --webpack --hostname 127.0.0.1 --port 3000",
         url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
+        // The build alone can take a minute; local dev and the fixtures run
+        // keep the old, lower bound since they only ever need to boot, not
+        // compile everything.
+        timeout: process.env.CI && process.env.SKIP_PREVIEW_V2 ? 240_000 : 120_000,
         // Offline fixtures for the preview engine V2 only (registry, search,
-        // pages and model jobs at the network edge). Ignored in production.
+        // pages and model jobs at the network edge). No-op under `next
+        // start`, which is exactly the point — see the comment above.
         env: { GC_PREVIEW_FIXTURES: "1" },
       },
 });
