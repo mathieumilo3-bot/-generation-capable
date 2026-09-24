@@ -16,7 +16,13 @@ test.describe("Core Web Vitals", () => {
   // regression, so this file gets a wider retry budget than the rest of the
   // suite; the 0.1 threshold itself is untouched; a real regression (the
   // 0.21 this test was written for) still fails every retry.
-  test.describe.configure({ retries: 3 });
+  //
+  // A deliberately throttled full `load` navigation (4x CPU, 150ms latency,
+  // ~1.6 Mbps) genuinely takes longer than the suite's default 30s budget
+  // once the runner is also busy with the rest of the suite — that showed up
+  // as a hard timeout on `waitForTimeout(4000)`, not a missed CLS number.
+  // Doubled here; still well short of what a real hang would need.
+  test.describe.configure({ retries: 3, timeout: 60_000 });
 
   for (const route of ["/", "/audit", "/secteurs"]) {
     test(`${route} stays within the CLS budget on a throttled phone`, async ({

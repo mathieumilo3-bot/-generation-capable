@@ -83,7 +83,10 @@ test.describe("POST /api/audit/analyze", () => {
     expect(body.report.degraded).toBe(true);
     expect(body.report.degradedReason).toBeTruthy();
     expect(body.report.header.sectorProfile).toBe("restaurant");
-    expect(body.report.diagnostic.cards).toEqual([]);
+    // Nothing could be read from the target, but the visitor still gets a
+    // real diagnostic — the deterministic "nothing found" floor, never an
+    // empty report.
+    expect(body.report.diagnostic.cards).toHaveLength(3);
     expect(body.report.engineVersion).toBeTruthy();
   });
 
