@@ -58,6 +58,10 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --project=${{ matrix.project }}
+        env:
+          # Covered in true isolation by the "Preview V2 E2E final" job
+          # instead — see playwright.config.ts.
+          SKIP_PREVIEW_V2: "1"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

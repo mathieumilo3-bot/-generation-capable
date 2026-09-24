@@ -8,6 +8,12 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 
 export default defineConfig({
   testDir: "./e2e",
+  // The Preview V2 flow does several real navigations against a 60s
+  // deadline each; a dedicated CI job ("Preview V2 E2E final") already runs
+  // it alone, both projects, on every PR and push to main. Sharing a 2-core
+  // shard with ~150 other specs starved that budget and made it flaky —
+  // excluded here rather than given yet another timeout bump.
+  testIgnore: process.env.SKIP_PREVIEW_V2 ? ["**/preview-v2.spec.ts"] : undefined,
   fullyParallel: true,
   // The audit funnel genuinely polls a background job, so a complete run is
   // seconds, not milliseconds. Assertions wait accordingly.

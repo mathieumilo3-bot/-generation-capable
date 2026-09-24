@@ -40,14 +40,21 @@ describe("runAudit (one-shot pipeline)", () => {
     expect(report.diagnostic?.company.city).toBe("Vannes");
   });
 
-  it("degrades honestly when the site cannot be read — no card, no invention", async () => {
+  it("degrades honestly when the site cannot be read — a real diagnostic, no invention", async () => {
     const report = await runAudit(
       { entreprise: "Inconnu SARL", siteUrl: "https://ce-site-nexiste-pas.invalid", secteur: "", objectif: "" },
       { crawl: (url, opts) => crawlSite(url, { ...opts, fetchPage: fakeFetch({}) }), discover: noDiscovery }
     );
     expect(report.degraded).toBe(true);
     expect(report.degradedReason).toBeTruthy();
-    expect(report.diagnostic?.cards).toEqual([]);
+    // Nothing could be read, but the visitor still gets a real diagnostic —
+    // three cards built only from the one true fact (nothing was found),
+    // never an empty report.
+    expect(report.diagnostic?.cards).toHaveLength(3);
+    for (const c of report.diagnostic?.cards ?? []) {
+      expect(c.basis).toBe("recherche");
+      expect(c.finding).not.toMatch(/undefined|NaN/);
+    }
   });
 
   it("clamps oversized input", async () => {

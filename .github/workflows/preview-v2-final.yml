@@ -1,10 +1,19 @@
 name: Preview V2 — validation finale
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "site-vitrine/**"
+      - ".github/workflows/preview-v2-final.yml"
   pull_request:
     paths:
       - "site-vitrine/**"
       - ".github/workflows/preview-v2-final.yml"
+
+concurrency:
+  group: preview-v2-final-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

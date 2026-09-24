@@ -482,6 +482,10 @@ describe("company without a readable site", () => {
     expect(outcome.status).toBe("done");
     if (outcome.status !== "done") return;
     expect(outcome.diagnostic.mode).toBe("ai");
-    expect(outcome.diagnostic.cards).toHaveLength(1);
+    // One AI card plus the deterministic "no site found" floor filling the
+    // remaining slots — a thin AI result is padded with real content
+    // instead of leaving the visitor with a one-line report.
+    expect(outcome.diagnostic.cards).toHaveLength(3);
+    expect(outcome.diagnostic.cards[0].title).toBe("Toiture Le Gall n’a pas de site officiel retrouvé");
   });
 });
