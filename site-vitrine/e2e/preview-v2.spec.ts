@@ -50,7 +50,10 @@ test("homonyms → city → honest wait → e-mail → preview → booking, then
   await page.getByRole("button", { name: "Me l’envoyer" }).click();
   await expect(page.getByText("C’est noté. Vous pouvez fermer cette page.")).toBeVisible();
 
-  await page.waitForURL(/\/audit\/preview-v2\/vitrine#id=/, { timeout: 90_000 });
+  const openPreview = page.getByRole("link", { name: "Voir ma nouvelle vitrine →" });
+  await expect(openPreview).toBeVisible({ timeout: 90_000 });
+  await openPreview.click();
+  await page.waitForURL(/\/audit\/preview-v2\/vitrine#id=/, { timeout: 20_000 });
   const site = page.getByTestId("preview-site");
   await expect(site).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Voici ce que Toiture Martin pourrait devenir en ligne.");
@@ -92,21 +95,24 @@ test("homonyms → city → honest wait → e-mail → preview → booking, then
 });
 
 test("no site: a from-scratch storefront built only on verified identity", async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   await acceptNothing(page);
   await page.fill("#preview-company", "Atelier Sans Site");
   await page.getByRole("button", { name: /Voir ce qu’on construirait/ }).click();
   // First run asks for the missing site. A later browser/project may reuse the
-  // verified cached preview and go straight to the result — both are correct.
+  // verified cached preview and go straight to the explicit ready CTA.
   const siteQuestion = page.getByRole("heading", { name: "Quelle est l’adresse de votre site ?" });
+  const readyLink = page.getByRole("link", { name: "Voir ma nouvelle vitrine →" });
   const questionOrReady = await Promise.race([
     siteQuestion.waitFor({ state: "visible", timeout: 30_000 }).then(() => "question" as const),
-    page.waitForURL(/vitrine#id=/, { timeout: 30_000 }).then(() => "ready" as const),
+    readyLink.waitFor({ state: "visible", timeout: 30_000 }).then(() => "ready" as const),
   ]);
   if (questionOrReady === "question") {
     await page.getByRole("button", { name: "Je n’ai pas encore de site" }).click();
-    await page.waitForURL(/vitrine#id=/, { timeout: 60_000 });
+    await expect(readyLink).toBeVisible({ timeout: 90_000 });
   }
+  await readyLink.click();
+  await page.waitForURL(/vitrine#id=/, { timeout: 20_000 });
   await expect(page.getByText("Vous partez d’une page blanche. Voilà la base que nous construirions.")).toBeVisible();
   const site = page.getByTestId("preview-site");
   await expect(site.getByText("SIREN 222222222").first()).toBeVisible();
@@ -116,14 +122,17 @@ test("no site: a from-scratch storefront built only on verified identity", async
 
 for (const width of [375, 390, 430, 768, 1440]) {
   test(`visual QA at ${width}px: no overflow, no broken image, no empty section`, async ({ page }, info) => {
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
     await page.setViewportSize({ width, height: width < 800 ? 844 : 900 });
     await acceptNothing(page);
     await page.fill("#preview-company", "Toiture Martin");
     await page.getByRole("button", { name: /Voir ce qu’on construirait/ }).click();
     await page.fill("#preview-city", "56000");
     await page.getByRole("button", { name: /Continuer/ }).click();
-    await page.waitForURL(/vitrine#id=/, { timeout: 60_000 });
+    const readyLink = page.getByRole("link", { name: "Voir ma nouvelle vitrine →" });
+    await expect(readyLink).toBeVisible({ timeout: 90_000 });
+    await readyLink.click();
+    await page.waitForURL(/vitrine#id=/, { timeout: 20_000 });
     await expect(page.getByTestId("preview-site")).toBeVisible();
     await page.evaluate(async () => {
       for (let y = 0; y < document.body.scrollHeight; y += 400) {

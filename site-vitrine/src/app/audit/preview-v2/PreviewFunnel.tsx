@@ -70,6 +70,7 @@ export function PreviewFunnel() {
   const [email, setEmail] = useState("");
   const [emailState, setEmailState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [resume, setResume] = useState<PreviewHandle | null>(null);
+  const [readyHandle, setReadyHandle] = useState<PreviewHandle | null>(null);
 
   const handle = useRef<PreviewHandle | null>(null);
   const idemKey = useRef<string>("");
@@ -136,8 +137,9 @@ export function PreviewFunnel() {
       if (preview.status === "ready") {
         progressRef.current = 100;
         setProgress(100);
+        setReadyHandle(current);
+        setBusy(false);
         trackPreview("preview_ready", { company: preview.companyName });
-        window.location.assign(vitrineUrl(current.id, current.token));
         break;
       }
       if (preview.status === "needs_input") {
@@ -251,7 +253,8 @@ export function PreviewFunnel() {
   if (phase === "waiting") {
     const pct = Math.round(progress);
     return (
-      <div className="mx-auto w-full max-w-xl" aria-live="polite">
+      <div className="mx-auto w-full max-w-2xl" aria-live="polite">
+        <div className="rounded-[2rem] border border-white/12 bg-white/[0.035] p-5 shadow-[0_28px_90px_-45px_rgba(0,0,0,0.85)] sm:p-8">
         <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-accent)]">
           {status?.companyName || name}
         </p>
@@ -260,7 +263,16 @@ export function PreviewFunnel() {
         </h1>
         <p className="mt-3 text-center text-sm text-[var(--color-muted)]">≈ 2 min</p>
 
-        <div className="mt-10">
+        <div className="mt-8 grid grid-cols-3 gap-2 text-[11px] sm:text-xs" aria-label="Ce que nous préparons">
+          {["Votre activité", "Vos preuves", "Votre parcours client"].map((item, index) => (
+            <div key={item} className="rounded-xl border border-white/8 bg-black/10 px-3 py-3 text-center">
+              <span className="block text-[10px] font-semibold text-[var(--color-accent)]">0{index + 1}</span>
+              <span className="mt-1 block text-[var(--color-muted)]">{item}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8">
           <div className="h-[6px] overflow-hidden rounded-full bg-white/[0.07]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Préparation de la vitrine">
             <div className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-300 ease-out" style={{ width: `${Math.max(2, progress)}%` }} />
           </div>
@@ -270,7 +282,18 @@ export function PreviewFunnel() {
           </div>
         </div>
 
-        <div className="mt-10 rounded-[1.6rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6">
+        {readyHandle ? (
+          <div className="mt-8 rounded-[1.6rem] border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 p-5 text-center sm:p-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">Vitrine prête</p>
+            <p className="mt-2 text-lg font-semibold">Votre proposition est terminée.</p>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">Vous gardez le contrôle : ouvrez-la quand vous êtes prêt.</p>
+            <a href={vitrineUrl(readyHandle.id, readyHandle.token)} className="audit-primary-cta mt-5 inline-flex min-h-[56px] w-full items-center justify-center rounded-[1.15rem] px-6 text-sm font-semibold">
+              Voir ma nouvelle vitrine →
+            </a>
+          </div>
+        ) : null}
+
+        <div className="mt-8 rounded-[1.6rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6">
           {emailState === "saved" ? (
             <>
               <p className="text-sm font-semibold">C’est noté. Vous pouvez fermer cette page.</p>
@@ -309,6 +332,7 @@ export function PreviewFunnel() {
               <p className="mt-3 text-[11px] leading-relaxed text-[var(--color-muted)]">Utilisé uniquement pour vous envoyer cette proposition. Aucune inscription à une newsletter.</p>
             </form>
           )}
+        </div>
         </div>
       </div>
     );
@@ -397,10 +421,20 @@ export function PreviewFunnel() {
   }
 
   return (
-    <form onSubmit={(e) => start(e)} className="mx-auto w-full max-w-xl" noValidate>
-      <h1 className="font-display text-balance text-center text-[2.3rem] font-semibold leading-[1.02] tracking-[-0.045em] sm:text-[3.4rem]">
+    <form onSubmit={(e) => start(e)} className="mx-auto w-full max-w-2xl" noValidate>
+      <div className="rounded-[2rem] border border-white/12 bg-white/[0.035] p-5 shadow-[0_28px_90px_-45px_rgba(0,0,0,0.85)] sm:p-8">
+      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-accent)]">Votre plan de site, construit sur votre vraie entreprise</p>
+      <h1 className="font-display mt-4 text-balance text-center text-[2.3rem] font-semibold leading-[1.02] tracking-[-0.045em] sm:text-[3.4rem]">
         Entrez le nom de votre entreprise
       </h1>
+      <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-[var(--color-muted)]">
+        On analyse votre activité, vos offres et vos preuves publiques pour construire une base de site pensée pour votre façon de vendre — pas un template choisi au hasard.
+      </p>
+      <div className="mt-6 grid gap-2 sm:grid-cols-3">
+        <div className="rounded-xl border border-white/8 bg-black/10 p-3 text-center"><strong className="block text-sm">1. Comprendre</strong><span className="mt-1 block text-[11px] text-[var(--color-muted)]">activité, ville, offre</span></div>
+        <div className="rounded-xl border border-white/8 bg-black/10 p-3 text-center"><strong className="block text-sm">2. Choisir</strong><span className="mt-1 block text-[11px] text-[var(--color-muted)]">structure et preuves</span></div>
+        <div className="rounded-xl border border-white/8 bg-black/10 p-3 text-center"><strong className="block text-sm">3. Convertir</strong><span className="mt-1 block text-[11px] text-[var(--color-muted)]">CTA adapté au métier</span></div>
+      </div>
       <label htmlFor="preview-company" className="sr-only">
         Nom de votre entreprise
       </label>
@@ -436,6 +470,7 @@ export function PreviewFunnel() {
           </button>
         </p>
       ) : null}
+      </div>
     </form>
   );
 }
