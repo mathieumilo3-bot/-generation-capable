@@ -206,7 +206,7 @@ function phonesIn(text: string): string[] {
 }
 
 const CTA_RE =
-  /(devis|estimation|appel|appelez|contact|rappel|rendez-vous|rdv|demande|diagnostic gratuit|intervention|urgence|réserver|reserver|écrivez|ecrivez|nous joindre)/i;
+  /(devis|estimation|appel|appelez|contact|rappel|rendez-vous|rdv|demande|diagnostic gratuit|intervention|urgence|réserver|reserver|disponibilit|commander|acheter|ajouter au panier|découvrir|decouvrir|demander une démo|demander une demo|voir la démo|voir la demo|essai|s.inscrire|candidater|écrivez|ecrivez|nous joindre)/i;
 
 const PROOF_PATTERNS: [string, RegExp][] = [
   ["avis clients", /\bavis\b/i],
@@ -306,7 +306,7 @@ const KIND_RULES: [PageKind, RegExp][] = [
 
 const PRIVACY_RE = /politique[-_ ]de[-_ ]confidentialit|privacy|cookies|rgpd|donnees[-_ ]personnelles|plan[-_ ]du[-_ ]site|sitemap/i;
 
-const SERVICE_PATH_HINT = /(?:services?|prestations?|nos[-_ ]m[ée]tiers|metiers|expertises?|savoir[-_ ]faire|activit[ée]s?|travaux|solutions)(?:\/|$)/i;
+const SERVICE_PATH_HINT = /(?:services?|prestations?|nos[-_ ]m[ée]tiers|metiers|expertises?|savoir[-_ ]faire|activit[ée]s?|travaux|solutions|produits?|products?|collection|boutique|shop|carte|menus?|soins?|traitements?|consultations?|fonctionnalit[ée]s?|features?|offres?|accompagnements?|biens?|properties|chambres?|rooms?|s[ée]jours?|evenements?|events?)(?:\/|$)/i;
 
 export function classifyUrl(path: string, text: string): PageKind {
   const decodedPath = (() => {
@@ -330,7 +330,7 @@ function looksLikeServiceLink(link: Link, trades: RegExp): boolean {
 
 /** Broad trade vocabulary used only to prioritise which links to open. */
 const TRADE_LINK_RE =
-  /toiture|couverture|couvreur|zinguerie|goutti|charpent|demoussage|nettoyage|etancheit|velux|isolation|combles|facade|ravalement|enduit|plomb|chauff|chaudiere|pompe|pac|climatis|sanitaire|salle-?de-?bain|electri|borne|photovolta|solaire|menuiser|fenetre|porte|volet|portail|veranda|pergola|maconn|beton|terrassement|extension|renovation|amenagement|peinture|peintre|carrel|parquet|sol|platr|placo|cloison|plafond|cuisine|serrur|vitr|elagage|abattage|paysag|jardin|terrasse|piscine|cloture|assainissement|ramonage|poele|vmc|ventilation|desamiantage|depannage|urgence|debouchage|recherche-?de-?fuite|diagnostic|dallage|pavage|enrobe|ossature|bardage|escalier|agencement|dressing/;
+  /toiture|couverture|couvreur|zinguerie|goutti|charpent|demoussage|nettoyage|etancheit|velux|isolation|combles|facade|ravalement|enduit|plomb|chauff|chaudiere|pompe|pac|climatis|sanitaire|salle-?de-?bain|electri|borne|photovolta|solaire|menuiser|fenetre|porte|volet|portail|veranda|pergola|maconn|beton|terrassement|extension|renovation|amenagement|peinture|peintre|carrel|parquet|sol|platr|placo|cloison|plafond|cuisine|serrur|vitr|elagage|abattage|paysag|jardin|terrasse|piscine|cloture|assainissement|ramonage|poele|vmc|ventilation|desamiantage|depannage|urgence|debouchage|recherche-?de-?fuite|diagnostic|dallage|pavage|enrobe|ossature|bardage|escalier|agencement|dressing|restaurant|traiteur|reservation|carte|menu|consultation|implant|dentaire|soin|massage|produit|collection|logiciel|saas|fonctionnalite|feature|demo|agence|expertise|immobilier|estimation|bien|chambre|sejour|hotel|evenement|mariage|coaching|accompagnement|formation|boutique|showroom/;
 
 function scoreLink(link: Link, cityNorm: string): { kind: PageKind; score: number } {
   let kind = classifyUrl(link.path, link.text);
