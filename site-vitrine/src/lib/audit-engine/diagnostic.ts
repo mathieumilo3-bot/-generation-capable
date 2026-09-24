@@ -144,7 +144,7 @@ export function researchQueries(company: Dossier["company"], facts: SiteFacts | 
     `${name} avis`,
     `${name}${city ? ` ${city}` : ""} facebook OR instagram OR pagesjaunes`,
   ];
-  return queries.filter(Boolean).slice(0, 8);
+  return queries.filter(Boolean).slice(0, 5);
 }
 
 const RESEARCH_SCHEMA = {
@@ -187,7 +187,7 @@ function researchInstructions(queries: string[]): string {
 
 Fais la recherche web qu'un consultant ferait avant un rendez-vous commercial, pour trouver ce que le site seul ne montre pas.
 
-Lance CES recherches (et d'autres variantes utiles si elles apportent quelque chose) :
+Lance CES recherches. N'ajoute une variante que si elle est indispensable pour identifier l'entreprise :
 ${queries.map((q, i) => `${i + 1}. ${q}`).join("\n")}
 
 Pour chaque recherche, note ce qui ressort RÉELLEMENT dans les résultats consultés :
@@ -304,7 +304,13 @@ export async function buildDossier(input: DossierInput, options: BuildDossierOpt
 // Signature — nothing that comes back from the browser is trusted
 
 function signingKey(): string {
-  return process.env.AUDIT_SIGNING_SECRET || openAiKey() || "gc-audit-local-dev-only";
+  // The spend circuit breaker must never weaken request signing.
+  return (
+    process.env.AUDIT_SIGNING_SECRET ||
+    process.env.OPENAI_API_KEY ||
+    process.env.OPEN_API_KEY ||
+    "gc-audit-local-dev-only"
+  );
 }
 
 function sign(payload: unknown): string {
@@ -635,7 +641,8 @@ const INVESTIGATION_CALL = {
   schemaName: "gc_investigation_v1",
   schema: INVESTIGATION_SCHEMA,
   webSearch: true,
-  maxOutputTokens: 6_000,
+  searchContextSize: "low" as const,
+  maxOutputTokens: 1_800,
 };
 
 /** Hands the dossier to a background job. Returns its id, or null if unavailable. */
@@ -647,10 +654,9 @@ export async function startInvestigation(
     ...INVESTIGATION_CALL,
     user: investigationPrompt(dossier),
     searchCity: dossier.company.city,
-    // "medium" keeps a real investigation (the searches are what matter)
-    // while landing in roughly a minute rather than three. Raise it with
-    // OPENAI_AUDIT_EFFORT=high when depth matters more than the wait.
-    effort: (process.env.OPENAI_AUDIT_EFFORT as "low" | "medium" | "high" | undefined) ?? "medium",
+    // Cost-first default. Raise deliberately with OPENAI_AUDIT_EFFORT only
+    // after a budget has been set and verified in the OpenAI billing console.
+    effort: (process.env.OPENAI_AUDIT_EFFORT as "low" | "medium" | "high" | undefined) ?? "low",
     timeoutMs: options.timeoutMs ?? 7_000,
     fetchFn: options.fetchFn,
     apiKey: options.apiKey,
@@ -762,7 +768,7 @@ export async function diagnoseDossier(
     ...INVESTIGATION_CALL,
     user: investigationPrompt(dossier),
     searchCity: dossier.company.city,
-    effort: "medium",
+    effort: "low",
     timeoutMs: options.timeoutMs ?? 45_000,
     fetchFn: options.fetchFn,
     apiKey: options.apiKey,
