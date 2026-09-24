@@ -2,17 +2,29 @@ import { Section, Eyebrow } from "@/components/ui/Section";
 import { Reveal } from "@/components/ui/Reveal";
 
 const FAQS = [
-  ["Je travaille surtout au bouche-à-oreille. À quoi sert le site ?", "Le bouche-à-oreille reste précieux. Le site sert à rassurer la personne qui a entendu parler de vous, à montrer vos réalisations et à capter aussi les recherches locales que le bouche-à-oreille ne couvre pas."],
-  ["Je n'ai pas le temps de gérer du marketing tous les jours.", "Justement : le parcours doit fonctionner sans vous demander de publier en permanence. Les bases sont votre présence Google, vos pages métiers, vos réalisations et une demande de devis simple."],
-  ["Vous refaites forcément tout mon site ?", "Non. On commence par ce qui existe. Parfois il faut une refonte ; parfois quelques pages, de meilleures preuves ou un formulaire de devis mieux pensé suffisent."],
-  ["Vous travaillez seulement avec le bâtiment ?", "La priorité est donnée aux artisans, entreprises du bâtiment et activités locales, parce que le parcours client est très concret : recherche locale, confiance, devis puis rappel."],
+  [
+    "Mon site existe déjà. Est-ce qu’il faut tout refaire ?",
+    "Pas forcément. On commence par ce qui existe et on garde ce qui fonctionne. Une refonte n’a d’intérêt que si elle simplifie réellement le parcours du client.",
+  ],
+  [
+    "Vous faites seulement le design ?",
+    "Non. Le design sert la compréhension. On travaille aussi la structure, les preuves, la visibilité et l’action principale du site.",
+  ],
+  [
+    "Vous travaillez uniquement avec les artisans ?",
+    "Non. La méthode s’adapte aux artisans, PME, cabinets, commerces, agences et activités de service. Le parcours change selon la façon dont vos clients achètent.",
+  ],
+  [
+    "Comment savoir quoi améliorer en premier ?",
+    "Le diagnostic gratuit sert justement à ça : on regarde votre présence actuelle et on vous montre les priorités avant de parler de refonte ou de publicité.",
+  ],
 ];
 
 export function FAQ() {
   return (
     <Section className="py-16 sm:py-20">
       <Reveal>
-        <Eyebrow>Questions d&apos;artisans</Eyebrow>
+        <Eyebrow>Questions fréquentes</Eyebrow>
         <h2 className="font-display mt-4 max-w-2xl text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
           Du concret avant tout.
         </h2>

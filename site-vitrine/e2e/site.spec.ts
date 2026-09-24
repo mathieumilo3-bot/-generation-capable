@@ -121,7 +121,8 @@ test.describe("navigation", () => {
       await expect(consent).toBeHidden();
     }
     await page
-      .getByRole("link", { name: /Voir comment gagner plus de demandes/ })
+      .getByRole("link", { name: /Analyser mon site gratuitement/ })
+      .first()
       .click();
     await expect(page).toHaveURL(/\/audit$/);
     await expect(page.getByLabel("Nom de votre entreprise")).toBeVisible();
