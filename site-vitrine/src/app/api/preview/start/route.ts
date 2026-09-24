@@ -20,9 +20,14 @@ const WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(request: Request) {
   if (previewMode() === "off") return NextResponse.json({ error: "not_found" }, { status: 404 });
-  // Each start can trigger paid searches: 6 per IP per 10 minutes (offline fixtures excepted).
-  const limit = rateLimit(`preview-start:${clientIpFrom(request)}`, fixturesEnabled() ? 500 : 6, WINDOW_MS);
-  if (!limit.allowed) return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } });
+  // A preview can become paid only when GC_PREVIEW_AI_ENABLED=true. Keep a
+  // tight per-IP limit plus a process-level global breaker for accident bursts.
+  const limit = rateLimit(`preview-start:${clientIpFrom(request)}`, fixturesEnabled() ? 500 : 3, WINDOW_MS);
+  const globalLimit = rateLimit("preview-start:global", fixturesEnabled() ? 5_000 : 20, WINDOW_MS);
+  const blocked = !limit.allowed ? limit : !globalLimit.allowed ? globalLimit : null;
+  if (blocked) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Retry-After": String(blocked.retryAfterSeconds) } });
+  }
 
   const body = await readJson(request, 4 * 1024);
   if (!body) return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
