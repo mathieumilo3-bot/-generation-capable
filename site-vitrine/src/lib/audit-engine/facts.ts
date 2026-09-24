@@ -378,7 +378,7 @@ const RGE_SENSITIVE = /isolation|pompe|photovolta|chaudi|r[ée]novation [ée]ner
 
 /**
  * Builds every card the facts can support, ranked by commercial weight.
- * Weight ≈ (10 − score) × how directly the point sits on the path to a devis.
+ * Weight ≈ (10 − score) × how directly the point sits on the path to a commercial action.
  */
 export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string } = {}): DiagnosticCard[] {
   const cards: DiagnosticCard[] = [];
@@ -394,13 +394,13 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
       card({
         id: "found_single_page",
         axis: "trouve",
-        title: "Transformer vos services en plusieurs portes d’entrée",
+        title: "Transformer votre offre en plusieurs portes d’entrée",
         score: 3,
         finding: `Votre site tient sur une seule page alors qu’il présente plusieurs services (${names.join(", ")}). Aucun de ces services n’a sa propre page.`,
         seen: `Aucun lien interne ni sitemap exploitable n’a été retrouvé sur ${facts.domain} : ${names.length} services partagent la même URL.`,
-        loss: `Vous avez déjà plusieurs services à vendre : une page dédiée à « ${names[0]}${where} » peut mieux capter les prospects qui cherchent précisément cette prestation.`,
-        potentialText: "Chaque service peut devenir une porte d’entrée distincte vers une demande de devis, au lieu de dépendre d’une seule page généraliste.",
-        fix: `Créer d’abord une page « ${cap(names[0])}${where} » avec photos de chantiers et bouton de devis.`,
+        loss: `Vous avez déjà plusieurs offres à présenter : une page dédiée à « ${names[0]}${where} » peut mieux capter les prospects qui cherchent précisément cette prestation.`,
+        potentialText: "Chaque offre peut devenir une porte d’entrée distincte vers une action commerciale, au lieu de dépendre d’une seule page généraliste.",
+        fix: `Créer d’abord une page « ${cap(names[0])}${where} » avec preuves concrètes et une action principale claire.`,
         weight: 9,
       })
     );
@@ -414,13 +414,13 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
         card({
           id: "found_service_without_page",
           axis: "trouve",
-          title: `Faire de « ${target.label} » une porte d’entrée de devis`,
+          title: `Faire de « ${target.label} » une porte d’entrée commerciale`,
           score,
           finding: `« ${cap(target.label)} » apparaît dans le contenu de votre site${target.mentionedOn.length ? ` (${listPaths(target.mentionedOn)})` : ""}, mais aucune page dédiée à ce service n’a été retrouvée parmi les ${Math.max(facts.pagesAnalyzed, facts.discoveredUrlCount)} pages ${facts.sitemapUrlCount ? "listées par votre site" : "retrouvées"}.`,
           seen: target.quote ? `« ${target.quote.replace(/^…|…$/g, "").trim()} » — sans page propre à ce service.` : `Le service est cité mais aucune URL, titre ou H1 ne lui est consacré.`,
           loss: `Le service existe déjà chez vous : une page dédiée peut vous rendre beaucoup plus lisible pour les prospects qui cherchent exactement « ${target.label}${where} ».`,
           potentialText: "Vous partez d’une offre déjà existante : il suffit de lui donner sa propre porte d’entrée pour mieux capter une demande déjà qualifiée.",
-          fix: `Créer une page « ${cap(target.label)}${where} » : description, zone, 2–3 réalisations de ce type et demande de devis.`,
+          fix: `Créer une page « ${cap(target.label)}${where} » : proposition claire, preuves adaptées et action principale visible.`,
           weight: 8 + Math.min(2, target.mentionedOn.length),
         })
       );
@@ -438,9 +438,9 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
         seen: facts.zoneQuote
           ? `Votre zone n’est évoquée que dans le texte : « ${facts.zoneQuote.replace(/^…|…$/g, "").trim().slice(0, 150)} ».`
           : `Aucune mention claire de votre zone d’intervention n’a été retrouvée sur les ${facts.pagesAnalyzed} pages lues.`,
-        loss: `Votre zone existe déjà dans votre activité : la rendre plus visible peut vous aider à capter plus clairement les recherches locales autour de « ${trade || "votre métier"} ${city} ».`,
-        potentialText: "Une présence locale plus explicite rassure immédiatement le prospect sur votre zone d’intervention et rapproche la recherche de la prise de contact.",
-        fix: `Ajouter ${city} et vos communes principales dans le titre et le haut de la page d’accueil, puis une page « ${cap(trade || "vos services")} ${city} ».`,
+        loss: `Votre implantation existe déjà : la rendre plus visible peut aider les prospects locaux à comprendre immédiatement où vous êtes et comment vous solliciter.`,
+        potentialText: "Une présence locale plus explicite rassure immédiatement le prospect et rapproche la recherche de la prise de contact.",
+        fix: `Ajouter ${city} dans le titre et le haut de la page d’accueil, puis créer une page locale dédiée si l’activité dépend réellement d’une zone.`,
         weight: 7,
       })
     );
@@ -453,13 +453,13 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
       card({
         id: "chosen_realisations_hidden",
         axis: "choisi",
-        title: "Mettre vos réalisations au cœur de la décision",
+        title: "Mettre vos preuves visuelles au cœur de la décision",
         score: 5,
-        finding: `Vous avez une page de réalisations (${p.realisationsPage}, ${p.realisationsImages} images), mais la page d’accueil ne montre ni avis ni témoignage près de la demande de devis.`,
+        finding: `Vous avez une page de projets/galerie (${p.realisationsPage}, ${p.realisationsImages} images), mais la page d’accueil ne montre ni avis ni témoignage près de l’action principale.`,
         seen: `${p.realisationsPage} contient ${p.realisationsImages} visuels ; la page d’accueil ne contient aucun marqueur d’avis ou de témoignage.`,
-        loss: "Vous avez déjà la matière pour rassurer : vos réalisations peuvent peser davantage dans la décision si elles apparaissent juste avant la demande de devis.",
-        potentialText: "Rapprocher vos chantiers réels du bouton de devis rend votre sérieux visible au moment où le prospect décide.",
-        fix: `Afficher 3 réalisations avant/après de ${p.realisationsPage} directement au-dessus du bouton de devis de l’accueil.`,
+        loss: "Vous avez déjà la matière pour rassurer : vos preuves visuelles peuvent peser davantage dans la décision si elles apparaissent juste avant l’action principale.",
+        potentialText: "Rapprocher vos preuves réelles de l’action principale rend votre sérieux visible au moment où le prospect décide.",
+        fix: `Afficher 3 preuves visuelles issues de ${p.realisationsPage} directement au-dessus de l’action principale de l’accueil.`,
         weight: 7,
       })
     );
@@ -468,13 +468,13 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
       card({
         id: "chosen_no_proof",
         axis: "choisi",
-        title: "Transformer vos chantiers en preuves qui rassurent",
+        title: "Transformer vos références en preuves qui rassurent",
         score: 3,
-        finding: `Sur les ${facts.pagesAnalyzed} pages explorées, aucune page de réalisations ni d’avis clients n’a été retrouvée, et l’accueil ne montre aucun témoignage.`,
-        seen: `Pages lues : ${listPaths(facts.pagePaths, 5)} — aucune ne présente de chantiers ou d’avis.`,
+        finding: `Sur les ${facts.pagesAnalyzed} pages explorées, aucune page de références/galerie ni d’avis clients n’a été retrouvée, et l’accueil ne montre aucun témoignage.`,
+        seen: `Pages lues : ${listPaths(facts.pagePaths, 5)} — aucune ne présente de références visuelles ou d’avis.`,
         loss: "Des preuves concrètes peuvent aider un prospect qui ne vous connaît pas encore à se projeter plus vite et à choisir votre entreprise avec davantage de confiance.",
         potentialText: "Des preuves réelles visibles rassurent les prospects qui ne vous connaissent pas encore.",
-        fix: "Publier une page « Nos réalisations » avec 6 chantiers photographiés (ville + type de travaux) et la relier depuis l’accueil.",
+        fix: "Publier une page de références, cas, galerie ou réalisations avec des preuves réelles et la relier depuis l’accueil.",
         weight: 8,
       })
     );
@@ -483,13 +483,13 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
       card({
         id: "chosen_proof_far_from_cta",
         axis: "choisi",
-        title: "Rapprocher vos avis du bouton de devis",
+        title: "Rapprocher vos avis de l’action principale",
         score: 6,
-        finding: `Sur la page d’accueil, le premier appel à demander un devis arrive vers ${p.firstCtaPct} % de la page, mais les premiers avis seulement vers ${p.firstProofPct} %.`,
-        seen: `Ordre observé sur la page d’accueil : demande de devis (≈${p.firstCtaPct} %) → avis/témoignages (≈${p.firstProofPct} %).`,
+        finding: `Sur la page d’accueil, la première action commerciale arrive vers ${p.firstCtaPct} % de la page, mais les premiers avis seulement vers ${p.firstProofPct} %.`,
+        seen: `Ordre observé sur la page d’accueil : action principale (≈${p.firstCtaPct} %) → avis/témoignages (≈${p.firstProofPct} %).`,
         loss: "Vos avis peuvent jouer leur rôle plus tôt : les rapprocher du premier appel à l’action peut rassurer au moment exact où le prospect hésite encore.",
         potentialText: "Placer une preuve à côté du premier bouton peut lever l’hésitation au bon moment.",
-        fix: "Remonter 2 avis clients (prénom, ville, type de travaux) juste sous le premier bouton de devis.",
+        fix: "Remonter 2 avis clients vérifiables juste sous la première action principale.",
         weight: 5,
       })
     );
@@ -553,12 +553,12 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
       card({
         id: "contact_no_phone",
         axis: "contacte",
-        title: "Créer un accès direct pour les demandes urgentes",
+        title: "Créer un accès direct pour les prospects prêts à agir",
         score: 3,
         finding: `Aucun numéro de téléphone n’a été retrouvé sur les ${facts.pagesAnalyzed} pages explorées de ${facts.domain}.`,
         seen: `0 lien « tel: » et 0 numéro écrit sur : ${listPaths(facts.pagePaths, 4)}.`,
-        loss: "Un numéro visible et cliquable peut transformer plus facilement une recherche urgente en appel direct.",
-        potentialText: "Afficher un numéro direct capte les demandes les plus urgentes et les plus chaudes.",
+        loss: "Un numéro visible et cliquable peut transformer plus facilement un intérêt fort en appel direct.",
+        potentialText: "Afficher un numéro direct réduit l’effort pour les prospects prêts à prendre contact.",
         fix: "Afficher un numéro cliquable dans l’en-tête de toutes les pages.",
         weight: 9,
       })
@@ -570,11 +570,11 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
         axis: "contacte",
         title: "Mettre l’action au premier écran",
         score: 4,
-        finding: `Le haut de votre page d’accueil ne montre ni numéro ni bouton de devis${c.firstScreenText ? ` : on y lit « ${c.firstScreenText.slice(0, 90).trim()}… »` : ""}.`,
-        seen: `Premier écran sans « devis », « contact » ni numéro ; le premier appel à l’action arrive vers ${facts.proof.firstCtaPct ?? "?"} % de la page.`,
+        finding: `Le haut de votre page d’accueil ne montre ni numéro ni action commerciale claire${c.firstScreenText ? ` : on y lit « ${c.firstScreenText.slice(0, 90).trim()}… »` : ""}.`,
+        seen: `Premier écran sans action commerciale claire ni numéro ; le premier appel à l’action arrive vers ${facts.proof.firstCtaPct ?? "?"} % de la page.`,
         loss: "Vous pouvez raccourcir le chemin entre l’intérêt et la prise de contact en donnant immédiatement une action claire au prospect décidé.",
         potentialText: "Une action visible dès l’arrivée transforme plus facilement l’intérêt en demande.",
-        fix: `Ajouter en haut de l’accueil un bouton « Demander un devis » et le numéro ${c.phone || ""} cliquable.`.replace(/\s+cliquable/, " cliquable"),
+        fix: `Ajouter en haut de l’accueil une action principale explicite et le numéro ${c.phone || ""} cliquable.`.replace(/\s+cliquable/, " cliquable"),
         weight: 7,
       })
     );
@@ -585,13 +585,13 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
       card({
         id: "contact_long_form",
         axis: "contacte",
-        title: "Raccourcir le chemin jusqu’au devis",
+        title: "Raccourcir le chemin jusqu’à la conversion",
         score: 5,
         finding: `Le formulaire de ${c.mainForm.path === "/" ? "la page d’accueil" : c.mainForm.path} demande ${c.mainForm.fieldCount} champs avant de pouvoir envoyer une demande.`,
         seen: `Champs demandés : ${c.mainForm.fields.slice(0, 7).join(", ")}${c.mainForm.fields.length > 7 ? "…" : "."}`,
         loss: "Votre formulaire peut conserver la qualification tout en demandant moins d’effort au prospect au premier contact.",
         potentialText: "Un formulaire court en deux étapes garde la qualification sans décourager.",
-        fix: "Réduire à 4 champs (nom, téléphone, ville, type de travaux) puis demander le reste par téléphone.",
+        fix: "Réduire à 4 champs essentiels (nom, contact, besoin, contexte) puis demander le reste après le premier échange.",
         weight: 6,
       })
     );
@@ -602,11 +602,11 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
         axis: "contacte",
         title: "Mieux qualifier les demandes dès le départ",
         score: 6,
-        finding: `Le formulaire (${c.mainForm.path === "/" ? "accueil" : c.mainForm.path}) ne demande ni le type de travaux ni la ville : ${c.mainForm.fields.join(", ")}.`,
+        finding: `Le formulaire (${c.mainForm.path === "/" ? "accueil" : c.mainForm.path}) ne demande pas clairement le besoin ou le contexte : ${c.mainForm.fields.join(", ")}.`,
         seen: `${c.mainForm.fieldCount} champs : ${c.mainForm.fields.join(", ")}.`,
-        loss: "Deux informations simples peuvent vous aider à repérer plus vite les demandes réellement adaptées à votre zone et à votre métier.",
+        loss: "Deux informations simples peuvent vous aider à repérer plus vite les demandes réellement adaptées à votre offre.",
         potentialText: "Deux questions simples permettent de traiter en priorité les demandes vraiment intéressantes.",
-        fix: "Ajouter deux menus : « Type de travaux » et « Ville du chantier ».",
+        fix: "Ajouter deux champs courts : « Votre besoin » et « Contexte / objectif ».",
         weight: 4,
       })
     );
@@ -615,7 +615,7 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
       card({
         id: "contact_no_form",
         axis: "contacte",
-        title: "Ouvrir une deuxième porte vers le devis",
+        title: "Ouvrir une deuxième porte vers la prise de contact",
         score: 4,
         finding: `Aucun formulaire n’a été retrouvé sur les ${facts.pagesAnalyzed} pages lues${c.contactPage ? ` (y compris ${c.contactPage})` : ""} : la seule option écrite est l’e-mail.`,
         seen: `0 formulaire détecté sur : ${listPaths(facts.pagePaths, 4)}.`,
