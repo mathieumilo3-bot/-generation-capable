@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { BlueprintSection } from "@/lib/preview-engine/blueprint-schema";
 import type { PreviewDocument } from "@/lib/preview-engine/public-view";
+import { getBusinessUi } from "@/lib/preview-engine/trades";
 import { Motif } from "./Motif";
 import { PreviewImage } from "./PreviewImage";
 
@@ -59,17 +60,18 @@ function CallCta({ doc, onAction, source, tone = "ghost" }: SectionProps & { sou
 /** The short quote form the new site would carry — shown, not live. */
 function QuoteForm({ doc, onAction, source }: SectionProps & { source: string }) {
   const firstService = Object.values(doc.services)[0]?.name;
+  const ui = getBusinessUi(doc.tradeFamily);
   return (
-    <div className="gcp-form" aria-label="Formulaire de demande de devis (aperçu)">
-      <p className="gcp-display gcp-form__title">Votre projet{doc.site.city ? ` à ${doc.site.city}` : ""}</p>
+    <div className="gcp-form" aria-label={ui.formAria}>
+      <p className="gcp-display gcp-form__title">{ui.formTitle}{doc.site.city && ui.showArea ? ` · ${doc.site.city}` : ""}</p>
       <p className="gcp-note" style={{ margin: "0 0 8px" }}>
-        Quatre informations suffisent pour préparer votre devis.
+        {ui.formIntro}
       </p>
       <span className="gcp-field">Votre nom</span>
       <span className="gcp-field">Téléphone</span>
-      <span className="gcp-field">Ville du chantier</span>
+      <span className="gcp-field">{ui.locationField}</span>
       <span className="gcp-field">
-        {firstService ? `Type de travaux — ex. ${firstService.charAt(0).toLowerCase()}${firstService.slice(1)}` : "Type de travaux"}
+        {firstService ? `${ui.offerField} — ex. ${firstService.charAt(0).toLowerCase()}${firstService.slice(1)}` : ui.offerField}
       </span>
       <PrimaryCta doc={doc} onAction={onAction} source={source} />
     </div>
@@ -192,12 +194,13 @@ export function TrustStrip({ doc }: SectionProps) {
 
 export function Services({ doc, onAction, variant }: SectionProps & { variant: string }) {
   const { services } = doc.blueprint;
+  const ui = getBusinessUi(doc.tradeFamily);
   const items = services.items.filter((item) => doc.services[item.serviceId]);
   if (items.length === 0) return null;
 
   const header = (
     <div className="gcp-head gcp-reveal">
-      <p className="gcp-eyebrow">Prestations</p>
+      <p className="gcp-eyebrow">{ui.serviceEyebrow}</p>
       <h3 className="gcp-display gcp-h2">{services.heading}</h3>
       {services.intro ? <p className="gcp-lead">{services.intro}</p> : null}
     </div>
@@ -213,9 +216,9 @@ export function Services({ doc, onAction, variant }: SectionProps & { variant: s
               <li key={item.serviceId} data-gcp-service={item.serviceId} className="gcp-reveal">
                 <span className="gcp-tile__index">{String(index + 1).padStart(2, "0")}</span>
                 <h4 className="gcp-display">{item.title}</h4>
-                <p>{item.description ?? "Sur devis, selon votre projet."}</p>
+                <p>{item.description ?? ui.serviceFallback}</p>
                 <button type="button" className="gcp-link" onClick={() => onAction("quote", `service_${item.serviceId}`)}>
-                  Devis <span aria-hidden="true">›</span>
+                  {ui.serviceAction} <span aria-hidden="true">›</span>
                 </button>
               </li>
             ))}
@@ -237,7 +240,7 @@ export function Services({ doc, onAction, variant }: SectionProps & { variant: s
               <h4 className="gcp-display gcp-tile__title">{item.title}</h4>
               {item.description ? <p className="gcp-tile__desc">{item.description}</p> : null}
               <button type="button" className="gcp-link" onClick={() => onAction("quote", `service_${item.serviceId}`)}>
-                Demander un devis <span aria-hidden="true">›</span>
+                {ui.serviceAction} <span aria-hidden="true">›</span>
               </button>
             </article>
           ))}
@@ -250,12 +253,13 @@ export function Services({ doc, onAction, variant }: SectionProps & { variant: s
 // --- Portfolio --------------------------------------------------------------
 
 export function Portfolio({ doc, variant }: SectionProps & { variant: string }) {
+  const ui = getBusinessUi(doc.tradeFamily);
   const assets = doc.blueprint.portfolio.assetIds.map((id) => ({ id, asset: doc.assets[id] })).filter((a) => a.asset);
   if (assets.length < 2) return null;
   const shown = variant === "PortfolioFeature" ? assets.slice(0, 3) : assets.slice(0, 6);
   const allRealisations = shown.every((a) => a.asset.kind === "realisation");
   return (
-    <section className="gcp-section gcp-section--tint" id="gcp-realisations" aria-label="Réalisations">
+    <section className="gcp-section gcp-section--tint" id="gcp-realisations" aria-label={ui.portfolioNav}>
       <div className="gcp-wrap">
         <div className="gcp-head gcp-reveal">
           <p className="gcp-eyebrow">En images</p>
@@ -301,11 +305,12 @@ export function Why({ doc }: SectionProps) {
 // --- Area -------------------------------------------------------------------
 
 export function Area({ doc }: SectionProps) {
+  const ui = getBusinessUi(doc.tradeFamily);
   const area = doc.blueprint.area;
   if (!area) return null;
   const city = doc.site.city;
   return (
-    <section className="gcp-section" id="gcp-zone" aria-label="Zone d’intervention">
+    <section className="gcp-section" id="gcp-zone" aria-label={ui.locationNav}>
       <div className="gcp-wrap">
         <h3 className="gcp-eyebrow gcp-reveal">{area.heading}</h3>
         {city ? (
@@ -361,9 +366,10 @@ export function About({ doc }: SectionProps) {
 // --- Final CTA --------------------------------------------------------------
 
 export function FinalCta({ doc, onAction }: SectionProps) {
+  const ui = getBusinessUi(doc.tradeFamily);
   const { finalCta } = doc.blueprint;
   return (
-    <section className="gcp-section gcp-final" id="gcp-devis" aria-label="Demande de devis">
+    <section className="gcp-section gcp-final" id="gcp-devis" aria-label={ui.primaryCta}>
       <div className="gcp-wrap">
         <div className="gcp-head gcp-head--center gcp-reveal">
           <h3 className="gcp-display gcp-h2">{finalCta.heading}</h3>
