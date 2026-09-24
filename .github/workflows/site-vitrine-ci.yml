@@ -1,5 +1,7 @@
 name: Site vitrine — CI
 
+# Preview V2 final validation
+
 on:
   push:
     branches: [main]
