@@ -30,18 +30,18 @@ export function Hero() {
 
       <Section className="relative pt-20 pb-16 sm:pt-28 sm:pb-20">
         <motion.div style={{ y: contentY }} className="flex flex-col items-start">
-          <Badge>GC Agence · Acquisition pour artisans & BTP</Badge>
+          <Badge>GC Agence · Site · Visibilité · Acquisition</Badge>
 
           <h1 className="font-display text-balance mt-7 max-w-5xl text-[2.7rem] font-semibold leading-[1.02] tracking-tight text-[var(--color-text)] sm:text-6xl lg:text-[4.7rem]">
-            Votre savoir-faire mérite
+            Un site clair.
             <br />
-            <span className="gold-text">plus de demandes de devis.</span>
+            <span className="gold-text">Un parcours qui donne envie d’agir.</span>
           </h1>
 
           <p className="text-balance mt-7 max-w-2xl text-lg leading-relaxed text-[var(--color-muted)] sm:text-xl">
-            On construit une présence qui vous aide à être trouvé, à rassurer
-            rapidement et à transformer plus de recherches en demandes utiles.
-            Site, Google, preuves, devis et suivi : tout doit travailler ensemble.
+            On remet votre présence digitale dans le bon ordre : une offre comprise vite,
+            des preuves visibles, puis une action simple pour vous contacter, réserver,
+            demander un devis ou prendre rendez-vous.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -51,7 +51,7 @@ export function Hero() {
               trackEvent="hero_cta_click"
               trackPayload={{ location: "hero_primary" }}
             >
-              Voir comment gagner plus de demandes →
+              Analyser mon site gratuitement →
             </Button>
             <Button
               href="#demonstration"
@@ -59,16 +59,16 @@ export function Hero() {
               trackEvent="cta_clicked"
               trackPayload={{ location: "hero_secondary" }}
             >
-              Voir un avant / après
+              Voir un exemple avant / après
             </Button>
           </div>
 
           <div className="mt-7 flex flex-wrap gap-x-3 gap-y-2 text-xs text-[var(--color-muted)]">
-            <span>Couvreurs</span><span>·</span>
-            <span>Plombiers</span><span>·</span>
-            <span>Électriciens</span><span>·</span>
-            <span>Menuisiers</span><span>·</span>
-            <span>Artisans locaux</span>
+            <span>Artisans</span><span>·</span>
+            <span>PME</span><span>·</span>
+            <span>Cabinets</span><span>·</span>
+            <span>Commerces</span><span>·</span>
+            <span>Services</span>
           </div>
         </motion.div>
       </Section>
