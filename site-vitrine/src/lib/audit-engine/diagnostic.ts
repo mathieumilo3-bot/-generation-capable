@@ -1,13 +1,17 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { crawlSite, normalize, type CrawledPage, type HomeLayout, type SiteCrawl } from "./crawl";
-import { buildEvidenceCards, extractFacts, pickTopCards, potentialForScore, tradeWord, type Axis, type DiagnosticCard, type SiteFacts } from "./facts";
 import {
-  callResponses,
-  isResponseId,
-  openAiKey,
-  pollBackgroundResponse,
-  startBackgroundResponse,
-} from "./openai";
+  buildEvidenceCards,
+  extractFacts,
+  noSiteEvidenceCards,
+  pickTopCards,
+  potentialForScore,
+  tradeWord,
+  type Axis,
+  type DiagnosticCard,
+  type SiteFacts,
+} from "./facts";
+import { callResponses, isResponseId, pollBackgroundResponse, startBackgroundResponse } from "./openai";
 import type { AiAuditWebSource } from "./types";
 
 /**
@@ -291,7 +295,9 @@ export async function buildDossier(input: DossierInput, options: BuildDossierOpt
   }
 
   const facts = siteCrawl?.reachable ? extractFacts(siteCrawl, { city: company.city }) : null;
-  const evidenceCards = facts ? buildEvidenceCards(facts, { trade: company.trade }) : [];
+  const evidenceCards = facts
+    ? buildEvidenceCards(facts, { trade: company.trade })
+    : noSiteEvidenceCards({ name: company.name, trade: company.trade, city: company.city });
 
   return {
     v: 1,

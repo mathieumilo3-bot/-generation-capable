@@ -1,5 +1,4 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { openAiKey } from "@/lib/audit-engine/openai";
 
 /**
  * Read tokens and signed asset URLs.
@@ -10,7 +9,16 @@ import { openAiKey } from "@/lib/audit-engine/openai";
  */
 
 function secret(): string {
-  return process.env.PREVIEW_SIGNING_SECRET || process.env.AUDIT_SIGNING_SECRET || openAiKey() || "gc-preview-local-dev-only";
+  // Deliberately reads the raw env vars, not `openAiKey()`: that helper is
+  // gated by the AI spend circuit breaker (AUDIT_AI_ENABLED), and token
+  // signing must never go weaker just because AI spend was turned off.
+  return (
+    process.env.PREVIEW_SIGNING_SECRET ||
+    process.env.AUDIT_SIGNING_SECRET ||
+    process.env.OPENAI_API_KEY ||
+    process.env.OPEN_API_KEY ||
+    "gc-preview-local-dev-only"
+  );
 }
 
 function hmac(payload: string): string {

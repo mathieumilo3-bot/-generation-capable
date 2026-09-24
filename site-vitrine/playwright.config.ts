@@ -8,12 +8,26 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 
 export default defineConfig({
   testDir: "./e2e",
+  // The Preview V2 flow does several real navigations against a 60s
+  // deadline each; a dedicated CI job ("Preview V2 E2E final") already runs
+  // it alone, both projects, on every PR and push to main. Sharing a 2-core
+  // shard with ~150 other specs starved that budget and made it flaky —
+  // excluded here rather than given yet another timeout bump.
+  testIgnore: process.env.SKIP_PREVIEW_V2 ? ["**/preview-v2.spec.ts"] : undefined,
   fullyParallel: true,
   // The audit funnel genuinely polls a background job, so a complete run is
   // seconds, not milliseconds. Assertions wait accordingly.
   expect: { timeout: 20_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // Standard GitHub-hosted runners have 2 cores. Letting Playwright's default
+  // (CPU count) spawn workers there starves CPU-throttled/timing-sensitive
+  // specs (the CLS budget, the preview funnel's polling loop) of real CPU and
+  // makes them flaky under load — not because the feature is broken, but
+  // because 6+ browser workers were fighting over 2 cores. Capped explicitly;
+  // the CI workflow also shards by project so each shard gets this budget
+  // to itself rather than sharing it with the other project's run.
+  workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI ? "line" : "list",
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
@@ -38,12 +52,34 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: "npm run dev -- --webpack --hostname 127.0.0.1 --port 3000",
+        // A production build instead of `next dev` for the general suite:
+        // dev mode compiles routes on demand, and two workers hitting dozens
+        // of routes for the first time right as the suite starts raced that
+        // compilation — a request could land mid-recompile and see a freshly
+        // re-evaluated module (an in-memory rate-limit counter reset to
+        // empty, mid-flood). Not a product bug, just wrong to build against.
+        // `next start` serves the same compiled output to every request, so
+        // there is no "first hit" to race.
+        //
+        // Only when Preview V2 is excluded (SKIP_PREVIEW_V2): its offline
+        // fixtures refuse to activate under `next start`, which always sets
+        // NODE_ENV=production — deliberately, so fixtures can never leak
+        // into a real deployment (see fixturesEnabled() in fixtures.ts).
+        // The "Preview V2 E2E final" job needs those fixtures, so it keeps
+        // running against `next dev`.
+        command:
+          process.env.CI && process.env.SKIP_PREVIEW_V2
+            ? "npm run build -- --webpack && npm run start -- --hostname 127.0.0.1 --port 3000"
+            : "npm run dev -- --webpack --hostname 127.0.0.1 --port 3000",
         url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
+        // The build alone can take a minute; local dev and the fixtures run
+        // keep the old, lower bound since they only ever need to boot, not
+        // compile everything.
+        timeout: process.env.CI && process.env.SKIP_PREVIEW_V2 ? 240_000 : 120_000,
         // Offline fixtures for the preview engine V2 only (registry, search,
-        // pages and model jobs at the network edge). Ignored in production.
+        // pages and model jobs at the network edge). No-op under `next
+        // start`, which is exactly the point — see the comment above.
         env: { GC_PREVIEW_FIXTURES: "1" },
       },
 });

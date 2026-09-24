@@ -631,6 +631,62 @@ export function buildEvidenceCards(facts: SiteFacts, context: { trade?: string }
 }
 
 /**
+ * The floor when there is nothing to read at all — no site declared, or the
+ * one declared could not be reached. The single verifiable fact is the
+ * absence itself: no invented service, no invented number, just what that
+ * absence costs on each axis. Always returns exactly three cards, one per
+ * axis, so a visitor with no online presence still gets a real diagnostic
+ * instead of an empty one.
+ */
+export function noSiteEvidenceCards(company: { name?: string; trade?: string; city?: string } = {}): DiagnosticCard[] {
+  const name = company.name?.trim() || "votre entreprise";
+  const trade = tradeWord(company.trade ?? "");
+  const where = company.city ? ` à ${company.city}` : "";
+  const activity = trade ? `un(e) ${trade}${where}` : `une entreprise${where}`;
+  return [
+    card({
+      id: "absence_found",
+      axis: "trouve",
+      title: "Exister quelque part en ligne",
+      score: 2,
+      finding: `Aucun site ni page consultable n’a été retrouvé pour ${name}.`,
+      seen: `Recherche menée sur le nom « ${name} »${where ? ` (${company.city})` : ""} : aucune adresse web exploitable.`,
+      loss: `Un client qui cherche ${activity} ne peut aujourd’hui vous trouver que par le bouche-à-oreille.`,
+      potentialText: "Une page qui vous présente clairement change ce qu’un client trouve en cherchant votre activité.",
+      fix: "Mettre en ligne une page qui présente clairement votre activité et votre zone d’intervention.",
+      basis: "recherche",
+      weight: 9,
+    }),
+    card({
+      id: "absence_chosen",
+      axis: "choisi",
+      title: "Donner une raison de vous choisir",
+      score: 3,
+      finding: `Sans page à consulter, rien ne permet à un client de comparer ${name} à la concurrence avant de le contacter.`,
+      seen: "Aucune preuve (réalisation, avis, certification) n’est consultable en ligne.",
+      loss: "Le client compare sur ce qu’il peut voir : sans rien à montrer, la décision se joue ailleurs.",
+      potentialText: "Montrer une seule preuve concrète de votre travail suffit à changer cette comparaison.",
+      fix: "Présenter vos services et au moins une preuve de votre sérieux (réalisation, certification ou avis).",
+      basis: "recherche",
+      weight: 8,
+    }),
+    card({
+      id: "absence_contacted",
+      axis: "contacte",
+      title: "Ouvrir un chemin simple vers le contact",
+      score: 3,
+      finding: `Un client intéressé par ${name} n’a aujourd’hui aucun moyen retrouvé en ligne pour le contacter directement.`,
+      seen: "Aucun numéro, formulaire ou adresse n’a été retrouvé associé à cette entreprise.",
+      loss: "Une partie des clients intéressés renonce faute d’un moyen de contact immédiat.",
+      potentialText: "Un numéro ou un formulaire visible capte les demandes au moment où le client est prêt à agir.",
+      fix: "Rendre un moyen de contact direct (téléphone, formulaire) accessible en un clic.",
+      basis: "recherche",
+      weight: 8,
+    }),
+  ];
+}
+
+/**
  * Picks the three highest-impact cards, preferring distinct axes only when
  * the next-best card on another axis is close in impact — the goal is the
  * three biggest problems, not three filled boxes.
