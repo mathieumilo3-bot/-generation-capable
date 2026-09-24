@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import type { PreviewDocument } from "@/lib/preview-engine/public-view";
+import { getBusinessUi } from "@/lib/preview-engine/trades";
 import { Hero, renderSection, type PreviewAction } from "./sections";
 import "./preview.css";
 
@@ -10,13 +11,6 @@ import "./preview.css";
  * page out. No HTML from the model or from the crawled sites is ever
  * injected — every node is one of our components, every string is text.
  */
-
-const NAV: { type: string; href: string; label: string }[] = [
-  { type: "services", href: "#gcp-services", label: "Prestations" },
-  { type: "portfolio", href: "#gcp-realisations", label: "Réalisations" },
-  { type: "area", href: "#gcp-zone", label: "Zone" },
-  { type: "cta", href: "#gcp-devis", label: "Contact" },
-];
 
 export function PreviewSite({
   doc,
@@ -28,6 +22,7 @@ export function PreviewSite({
   onServiceViewed?: (serviceId: string) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const ui = getBusinessUi(doc.tradeFamily);
   const action: PreviewAction = onAction ?? (() => {});
   const style = {
     "--p-primary": doc.palette.primary,
@@ -59,7 +54,12 @@ export function PreviewSite({
   }, [doc.id, onServiceViewed]);
 
   const sectionTypes = new Set(doc.blueprint.sections.map((s) => s.type));
-  const nav = NAV.filter((item) => sectionTypes.has(item.type as never));
+  const nav = [
+    { type: "services", href: "#gcp-services", label: ui.offerNav },
+    { type: "portfolio", href: "#gcp-realisations", label: ui.portfolioNav },
+    { type: "area", href: "#gcp-zone", label: ui.locationNav },
+    { type: "cta", href: "#gcp-devis", label: "Contact" },
+  ].filter((item) => sectionTypes.has(item.type as never));
 
   return (
     <div ref={root} className="gcp" style={style} data-testid="preview-site">
@@ -83,7 +83,7 @@ export function PreviewSite({
           <div className="gcp-header__cta">
             {doc.site.phone ? <span className="gcp-header__phone">{doc.site.phone}</span> : null}
             <button type="button" className="gcp-btn gcp-btn--primary" onClick={() => action("quote", "header")}>
-              Devis
+              {ui.primaryShort}
             </button>
           </div>
         </div>
