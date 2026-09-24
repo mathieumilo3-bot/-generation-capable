@@ -663,6 +663,14 @@ function assemble(
   output: InvestigationOutput,
   meta: { webQueries: string[]; webSources: AiAuditWebSource[] }
 ): DiagnosticResult {
+  return assembleDetailed(context, output, meta).diagnostic;
+}
+
+function assembleDetailed(
+  context: AuditContext,
+  output: InvestigationOutput,
+  meta: { webQueries: string[]; webSources: AiAuditWebSource[] }
+): { diagnostic: DiagnosticResult; research: ResearchNotes | null } {
   const research = output.research ? sanitizeResearch(output.research, meta.webQueries, meta.webSources) : null;
   const researchText = research
     ? normalize(
@@ -704,7 +712,7 @@ function assemble(
 
   const queriesRun = research?.webQueries.length ?? 0;
   const modelSummary = cleanStr(output.summary, 200);
-  return {
+  const diagnostic: DiagnosticResult = {
     company: context.company,
     summary:
       modelSummary && !INVENTED_METRIC.test(modelSummary)
@@ -716,6 +724,7 @@ function assemble(
     sourcesConsulted: research?.webSources.length ?? 0,
     mode: aiCards.length > 0 ? "ai" : "site",
   };
+  return { diagnostic, research };
 }
 
 /** The diagnostic built from site evidence alone — what ships if the AI layer never lands. */
@@ -746,6 +755,28 @@ export async function collectInvestigation(
   if (outcome.status === "pending") return { status: "pending" };
   if (outcome.status === "failed") return { status: "failed", reason: outcome.reason };
   return { status: "done", diagnostic: assemble(context, outcome.result.data, outcome.result) };
+}
+
+export type DetailedCollectOutcome =
+  | { status: "pending" }
+  | { status: "done"; diagnostic: DiagnosticResult; research: ResearchNotes | null }
+  | { status: "failed"; reason: string };
+
+/**
+ * Same poll as `collectInvestigation`, but also hands back the sanitised
+ * research notes (reviews, public profiles, services seen elsewhere) instead
+ * of discarding them — the preview engine builds its truth bundle from them
+ * rather than paying for the same searches twice.
+ */
+export async function collectInvestigationDetailed(
+  jobId: string,
+  context: AuditContext,
+  options: { fetchFn?: FetchLike; apiKey?: string; timeoutMs?: number } = {}
+): Promise<DetailedCollectOutcome> {
+  const outcome = await pollBackgroundResponse<InvestigationOutput>(jobId, { timeoutMs: 5_000, ...options });
+  if (outcome.status === "pending") return { status: "pending" };
+  if (outcome.status === "failed") return { status: "failed", reason: outcome.reason };
+  return { status: "done", ...assembleDetailed(context, outcome.result.data, outcome.result) };
 }
 
 /**

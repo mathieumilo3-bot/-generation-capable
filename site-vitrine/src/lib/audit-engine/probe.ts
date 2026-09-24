@@ -379,3 +379,88 @@ export function signalsFromFetch(result: FetchHtmlResult): SiteSignals {
 export async function probeSite(rawUrl: string): Promise<SiteSignals> {
   return signalsFromFetch(await fetchPublicHtml(rawUrl));
 }
+
+export type FetchAssetResult =
+  | { ok: true; finalUrl: URL; contentType: string; bytes: Uint8Array }
+  | { ok: false; reason: NonNullable<SiteSignals["unreachableReason"]> | "unsupported_type" | "too_large"; status?: number };
+
+/**
+ * Fetches one public binary asset (an image published on a company site)
+ * with exactly the same SSRF guards as `fetchPublicHtml`: scheme, literal
+ * private IP, DNS resolution before the first request and before each
+ * redirect. Bounded on time and size; the content type must be accepted by
+ * the caller. A body larger than `maxBytes` is refused rather than truncated.
+ * Never throws.
+ */
+export async function fetchPublicAsset(
+  rawUrl: string,
+  options: { timeoutMs?: number; maxBytes: number; accept: (contentType: string) => boolean }
+): Promise<FetchAssetResult> {
+  const resolved = resolveTargetUrl(rawUrl);
+  if (!resolved.ok) return { ok: false, reason: resolved.reason };
+  if (await resolvesToBlockedIp(resolved.url.hostname)) return { ok: false, reason: "blocked_target" };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? FETCH_TIMEOUT_MS);
+
+  try {
+    let currentUrl = resolved.url;
+    let response: Response | null = null;
+
+    for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
+      response = await fetch(currentUrl, {
+        signal: controller.signal,
+        redirect: "manual",
+        headers: { "User-Agent": USER_AGENT, Accept: "image/avif,image/webp,image/*;q=0.9,*/*;q=0.5" },
+      });
+      if (![301, 302, 303, 307, 308].includes(response.status)) break;
+      const location = response.headers.get("location");
+      if (!location || redirectCount === MAX_REDIRECTS) return { ok: false, reason: "network_error" };
+      const next = await resolveSafeRedirect(location, currentUrl);
+      if (!next.ok) return { ok: false, reason: next.reason };
+      currentUrl = next.url;
+    }
+
+    if (!response) return { ok: false, reason: "network_error" };
+    if (!response.ok) return { ok: false, reason: "http_error", status: response.status };
+
+    const contentType = (response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    if (!options.accept(contentType)) {
+      await response.body?.cancel().catch(() => {});
+      return { ok: false, reason: "unsupported_type", status: response.status };
+    }
+    const declared = Number(response.headers.get("content-length") ?? "0");
+    if (declared > options.maxBytes) {
+      await response.body?.cancel().catch(() => {});
+      return { ok: false, reason: "too_large", status: response.status };
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) return { ok: false, reason: "empty_body", status: response.status };
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > options.maxBytes) {
+        await reader.cancel().catch(() => {});
+        return { ok: false, reason: "too_large", status: response.status };
+      }
+      chunks.push(value);
+    }
+    if (total === 0) return { ok: false, reason: "empty_body", status: response.status };
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return { ok: true, finalUrl: currentUrl, contentType, bytes };
+  } catch (error) {
+    const reason = error instanceof Error && error.name === "AbortError" ? "timeout" : "network_error";
+    return { ok: false, reason };
+  } finally {
+    clearTimeout(timer);
+  }
+}

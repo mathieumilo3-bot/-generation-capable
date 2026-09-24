@@ -11,6 +11,15 @@ export function AuditResumeClient() {
     async function load() {
       const raw = window.location.hash.replace(/^#/, "");
       const params = new URLSearchParams(raw);
+
+      // Links from the V2 "votre vitrine est prête" e-mail open the preview directly.
+      const previewId = params.get("preview") || "";
+      const previewToken = params.get("t") || "";
+      if (previewId && previewToken) {
+        window.location.replace(`/audit/preview-v2/vitrine#id=${encodeURIComponent(previewId)}&t=${encodeURIComponent(previewToken)}`);
+        return;
+      }
+
       const id = params.get("id") || "";
       const token = params.get("token") || "";
 

@@ -42,5 +42,8 @@ export default defineConfig({
         url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
+        // Offline fixtures for the preview engine V2 only (registry, search,
+        // pages and model jobs at the network edge). Ignored in production.
+        env: { GC_PREVIEW_FIXTURES: "1" },
       },
 });

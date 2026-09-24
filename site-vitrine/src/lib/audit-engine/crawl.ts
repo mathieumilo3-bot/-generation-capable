@@ -102,6 +102,12 @@ export type CrawlOptions = {
   budgetMs?: number;
   /** Known city of the company — pages naming it are prioritised as local pages. */
   cityHint?: string;
+  /**
+   * Called with every page actually read (homepage included), so a caller can
+   * extract more from HTML already downloaded instead of fetching it again.
+   * The HTML is untrusted data: never render or execute it.
+   */
+  onPage?: (page: { url: string; kind: PageKind; html: string }) => void;
 };
 
 // The host cuts every request at 10 s, so the crawl works to a hard budget:
@@ -594,6 +600,7 @@ export async function crawlSite(rawUrl: string, options: CrawlOptions = {}): Pro
 
   const root = homeFetch.finalUrl;
   const homePage = parsePage(homeFetch.html, root, "home");
+  options.onPage?.({ url: root.toString(), kind: "home", html: homeFetch.html });
   const links = extractLinks(homeFetch.html, root);
 
   // Sitemap: robots.txt is not needed — the conventional locations cover
@@ -632,6 +639,7 @@ export async function crawlSite(rawUrl: string, options: CrawlOptions = {}): Pro
       if (pages.some((page) => page.url.replace(/\/$/, "") === finalKey)) return;
       pages.push(parsePage(result.html, result.finalUrl, item.kind));
       htmls.push(result.html);
+      options.onPage?.({ url: result.finalUrl.toString(), kind: item.kind, html: result.html });
     },
     deadline
   );

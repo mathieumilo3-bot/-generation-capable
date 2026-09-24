@@ -5,6 +5,15 @@ export type RegistryCandidate = {
   siren: string;
   city: string;
   postalCode: string;
+  /** Optional registry details, only set when the registry returned them. */
+  legalName?: string;
+  commercialName?: string;
+  /** Street address of the head office, as registered. */
+  address?: string;
+  /** NAF/APE code of the main activity, e.g. "43.22A". */
+  naf?: string;
+  /** Registration date, ISO yyyy-mm-dd. */
+  createdOn?: string;
 };
 
 export type RegistryPreflight =
@@ -18,6 +27,8 @@ type RegistryRawCompany = {
   nom_raison_sociale?: unknown;
   sigle?: unknown;
   etat_administratif?: unknown;
+  date_creation?: unknown;
+  activite_principale?: unknown;
   siege?: {
     libelle_commune?: unknown;
     commune?: unknown;
@@ -25,6 +36,8 @@ type RegistryRawCompany = {
     nom_commercial?: unknown;
     liste_enseignes?: unknown;
     etat_administratif?: unknown;
+    adresse?: unknown;
+    activite_principale?: unknown;
   } | null;
 };
 
@@ -76,6 +89,24 @@ function locationMatches(candidate: RegistryCandidate, cityHint: string): boolea
   return Boolean(wanted && city && (city === wanted || city.includes(wanted) || wanted.includes(city)));
 }
 
+function registryDetails(company: RegistryRawCompany): Partial<RegistryCandidate> {
+  const siege = company.siege ?? {};
+  const details: Partial<RegistryCandidate> = {};
+  const legalName = clean(company.nom_raison_sociale);
+  const commercialName =
+    clean(siege.nom_commercial) ||
+    (Array.isArray(siege.liste_enseignes) ? siege.liste_enseignes.map((item) => clean(item)).find(Boolean) ?? "" : "");
+  const address = clean(siege.adresse, 240);
+  const naf = clean(siege.activite_principale, 10) || clean(company.activite_principale, 10);
+  const createdOn = clean(company.date_creation, 10);
+  if (legalName) details.legalName = legalName;
+  if (commercialName) details.commercialName = commercialName;
+  if (address) details.address = address;
+  if (/^\d{2}\.\d{2}[A-Z]$/.test(naf)) details.naf = naf;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(createdOn)) details.createdOn = createdOn;
+  return details;
+}
+
 export function classifyRegistryResults(
   companyName: string,
   rawResults: unknown,
@@ -112,6 +143,7 @@ export function classifyRegistryResults(
       siren,
       city: clean(siege.libelle_commune) || clean(siege.commune),
       postalCode: clean(siege.code_postal, 10),
+      ...registryDetails(company),
     };
 
     if (!locationMatches(candidate, cityHint)) continue;
