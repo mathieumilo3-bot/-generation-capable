@@ -50,7 +50,10 @@ test("homonyms → city → honest wait → e-mail → preview → booking, then
   await page.getByRole("button", { name: "Me l’envoyer" }).click();
   await expect(page.getByText("C’est noté. Vous pouvez fermer cette page.")).toBeVisible();
 
-  await page.waitForURL(/\/audit\/preview-v2\/vitrine#id=/, { timeout: 90_000 });
+  const openPreview = page.getByRole("link", { name: "Voir ma nouvelle vitrine →" });
+  await expect(openPreview).toBeVisible({ timeout: 90_000 });
+  await openPreview.click();
+  await page.waitForURL(/\/audit\/preview-v2\/vitrine#id=/, { timeout: 20_000 });
   const site = page.getByTestId("preview-site");
   await expect(site).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Voici ce que Toiture Martin pourrait devenir en ligne.");
