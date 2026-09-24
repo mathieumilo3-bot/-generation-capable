@@ -139,9 +139,9 @@ export function researchQueries(company: Dossier["company"], facts: SiteFacts | 
     trade1 && city ? `${trade1} ${city}` : "",
     services[0] && city ? `${services[0]} ${city}` : "",
     services[0] && city ? `devis ${services[0]} ${city}` : trade1 && city ? `devis ${trade1} ${city}` : "",
-    services[1] && city ? `${services[1]} ${city}` : "",
     domain ? `site:${domain}` : "",
     `${name} avis`,
+    services[1] && city ? `${services[1]} ${city}` : "",
     `${name}${city ? ` ${city}` : ""} facebook OR instagram OR pagesjaunes`,
   ];
   return queries.filter(Boolean).slice(0, 8);
