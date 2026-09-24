@@ -251,6 +251,27 @@ export function extractFacts(crawl: SiteCrawl, context: { city?: string } = {}):
       onHome: inNav || (home ? def.re.test(home.text) : false),
     });
   }
+
+  // Universal fallback: any page the crawler identified as a service/offer page
+  // can become an observed offer even when it is outside the historic BTP
+  // vocabulary. This keeps the engine useful for restaurants, clinics, SaaS,
+  // agencies, hotels, shops, etc. without inventing a taxonomy.
+  for (const page of pages.filter((p) => p.kind === "service")) {
+    const raw = (page.h1[0] || page.title || "").replace(/\s+/g, " ").trim();
+    const label = raw.replace(/\s*[|–—-]\s*[^|–—]{2,80}$/, "").trim();
+    const key = normalize(label);
+    if (!label || label.length < 3 || label.length > 80 || label.split(/\s+/).length > 10) continue;
+    if (/^(?:services?|prestations?|solutions?|expertises?|offres?|produits?|notre offre|nos services)$/i.test(label)) continue;
+    if (services.some((svc) => normalize(svc.label) === key)) continue;
+    const inNav = normalize(navText).includes(key);
+    services.push({
+      label,
+      mentionedOn: [page.path],
+      dedicatedPage: page.path,
+      quote: page.h1[0] || "",
+      onHome: inNav,
+    });
+  }
   services.sort((a, b) => b.mentionedOn.length + Number(b.onHome) * 2 - (a.mentionedOn.length + Number(a.onHome) * 2));
 
   // Services the site sells but gives no page to. When the whole site is a
