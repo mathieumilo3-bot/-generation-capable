@@ -568,6 +568,28 @@ const DEGRADABLE: Partial<Record<StageName, (ctx: Ctx) => void | Promise<void>>>
 // ---------------------------------------------------------------------------
 // The advancer
 
+/**
+ * Worst-case duration of one pass of a stage. A request never starts a pass
+ * it cannot finish inside the host's 10 s limit: after the first pass, the
+ * loop stops when elapsed + cost would exceed the budget (+ a 2 s margin).
+ */
+function stageCost(stage: StageName, work: PreviewWork): number {
+  switch (stage) {
+    case "discovery":
+      return work.discoveryJob ? 9_000 : 4_000; // poll + domain verification, or job start
+    case "crawl":
+      return 7_500; // bounded crawl + one stylesheet
+    case "research":
+      return work.investigationJob ? 5_500 : 4_000;
+    case "blueprint":
+      return work.blueprintJob ? 5_500 : 4_000;
+    case "notify":
+      return 5_500;
+    default:
+      return 500;
+  }
+}
+
 export type AdvanceResult = { row: PreviewRow; advanced: boolean };
 
 export async function advancePreview(id: string, deps: PipelineDeps, budgetMs = DEFAULT_BUDGET_MS): Promise<AdvanceResult | null> {
@@ -586,7 +608,10 @@ export async function advancePreview(id: string, deps: PipelineDeps, budgetMs = 
   let stage: StageName = row.stage;
   let advanced = false;
 
+  let passes = 0;
   while (deps.now() - ctx.started < budgetMs) {
+    if (passes > 0 && deps.now() - ctx.started + stageCost(stage, ctx.work) > budgetMs + 2_000) break;
+    passes += 1;
     const state = pipeline[stage];
     if (state.status === "pending") {
       state.status = "running";

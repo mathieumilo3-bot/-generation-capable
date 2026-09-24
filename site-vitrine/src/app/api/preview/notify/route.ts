@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   // Transactional capture alert for GC (same as the audit funnel), skipped for test addresses.
   const apiKey = process.env.RESEND_API_KEY;
   const notifyEmail = process.env.AUDIT_NOTIFY_EMAIL;
-  if (apiKey && notifyEmail && !/@example\.(?:com|org|net)$/.test(email)) {
+  if (apiKey && notifyEmail && !/@example\.(?:com|org|net)$|@resend\.dev$/.test(email)) {
     void new Resend(apiKey).emails
       .send({
         from: process.env.RESEND_FROM_EMAIL || "GC <audit@generationcapable.fr>",

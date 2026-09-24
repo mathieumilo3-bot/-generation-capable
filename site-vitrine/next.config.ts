@@ -23,6 +23,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Lets /api/preview/health report which commit is deployed (burn-in waits for it).
+  env: { GC_BUILD_COMMIT: process.env.COMMIT_REF ?? "" },
   turbopack: {
     root: path.join(__dirname),
   },

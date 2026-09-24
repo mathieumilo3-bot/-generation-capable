@@ -216,6 +216,25 @@ describe("preview pipeline (offline fixtures, real engine)", () => {
     expect((await store.get(row.id))!.notified_at).toBeTruthy();
   });
 
+  it("never starts a heavy stage it cannot finish inside the 10 s request limit", async () => {
+    let clock = 1_000_000;
+    const base = deps();
+    const crawl = vi.fn(base.crawl);
+    const d = deps({
+      now: () => clock,
+      crawl,
+      collectDiscovery: async (...args) => {
+        clock += 8_000; // a slow poll + domain verification
+        return base.collectDiscovery(...args);
+      },
+    });
+    const row = (await start("Toiture Martin", d, "Vannes")) as PreviewRow;
+    await advancePreview(row.id, d); // identity + discovery job start
+    const after = await advancePreview(row.id, d); // slow discovery poll
+    expect(after!.row.stage).toBe("crawl");
+    expect(crawl).not.toHaveBeenCalled(); // left for the next request
+  });
+
   it("reads the fixture site through the real crawler", async () => {
     const home = await fixtureFetch("https://toiture-martin.test/");
     expect(home.ok).toBe(true);

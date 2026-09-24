@@ -23,7 +23,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: "pending", preview: publicStatus(row) }, { status: 200 });
   }
   return NextResponse.json(
-    { status: "ready", preview: publicStatus(row), document: toPreviewDocument(row.id, row.company_profile, row.preview_blueprint) },
+    {
+      status: "ready",
+      preview: publicStatus(row),
+      document: toPreviewDocument(row.id, row.company_profile, row.preview_blueprint),
+      // Observability of the run that produced it (no personal data).
+      quality: {
+        engine: row.engine_version,
+        blueprintSource: row.work?.blueprintSource ?? null,
+        rejections: row.work?.rejections ?? [],
+        reusedFrom: row.work?.reusedFrom ?? null,
+        errorCode: row.error_code,
+        timings: row.work?.timings ?? {},
+        pipeline: row.pipeline,
+        createdAt: row.created_at,
+        readyAt: row.ready_at,
+      },
+    },
     { status: 200 }
   );
 }
