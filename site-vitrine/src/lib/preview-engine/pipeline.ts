@@ -82,12 +82,17 @@ export type PipelineDeps = {
 };
 
 export function defaultDeps(store: PreviewStore, overrides: Partial<PipelineDeps> = {}): PipelineDeps {
+  const previewApiKey =
+    process.env.GC_PREVIEW_AI_ENABLED === "true"
+      ? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY
+      : undefined;
   return {
     now: () => Date.now(),
     store,
     lookupRegistry: (name, city, timeoutMs) => lookupFrenchRegistry(name, city ?? "", timeoutMs ? { timeoutMs } : {}),
     lookupRegistryBySiren: (siren) => lookupRegistryBySiren(siren),
-    startDiscovery: (name, options) => startCompanyDiscovery(name, options),
+    startDiscovery: (name, options) =>
+      previewApiKey ? startCompanyDiscovery(name, { ...options, apiKey: previewApiKey }) : Promise.resolve(null),
     collectDiscovery: (jobId, name, options) => collectCompanyDiscovery(jobId, name, options),
     verifySite: (candidate, opts) => verifyOfficialSite(candidate, opts),
     crawl: crawlSite,
@@ -95,9 +100,11 @@ export function defaultDeps(store: PreviewStore, overrides: Partial<PipelineDeps
       const result = await fetchPublicAsset(url, { timeoutMs, maxBytes: 600_000, accept: (type) => type === "text/css" || type === "" });
       return result.ok ? new TextDecoder().decode(result.bytes) : null;
     },
-    startInvestigation: (dossier) => startInvestigation(dossier, { timeoutMs: 3_500 }),
+    startInvestigation: (dossier) =>
+      previewApiKey ? startInvestigation(dossier, { timeoutMs: 3_500, apiKey: previewApiKey }) : Promise.resolve(null),
     collectInvestigation: (jobId, dossier) => collectInvestigationDetailed(jobId, toAuditContext(dossier)),
-    startBlueprint: (profile, base) => startBlueprintJob(profile, base),
+    startBlueprint: (profile, base) =>
+      previewApiKey ? startBlueprintJob(profile, base, { apiKey: previewApiKey }) : Promise.resolve(null),
     collectBlueprint: (jobId) => collectBlueprintJob(jobId),
     renderCheck: () => ({ bytes: 0, sections: 0 }),
     sendReadyEmail: async () => false,
