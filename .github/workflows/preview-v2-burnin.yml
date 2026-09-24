@@ -5,11 +5,13 @@ name: Preview V2 — burn-in réel (34+ entreprises)
 # production /audit funnel. Triggered by editing ops/preview-v2-burnin.json
 # on a preview-engine branch, or manually.
 on:
-  push:
-    branches: ["claude/gc-preview-engine-v2-*"]
-    paths:
-      - "site-vitrine/ops/preview-v2-burnin.json"
   workflow_dispatch:
+    inputs:
+      confirm_paid_run:
+        description: "Je confirme vouloir lancer la batterie réelle potentiellement payante"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -26,6 +28,12 @@ jobs:
       base: ${{ steps.base.outputs.base }}
       cases: ${{ steps.cases.outputs.cases }}
     steps:
+      - name: Confirmation explicite du burn-in réel
+        run: |
+          if [ "${{ inputs.confirm_paid_run }}" != "true" ]; then
+            echo "::error::Burn-in réel non confirmé — aucun appel n'est lancé."
+            exit 1
+          fi
       - uses: actions/checkout@v4
       - id: base
         run: echo "base=$(jq -r .baseUrl site-vitrine/ops/preview-v2-burnin.json)" >> "$GITHUB_OUTPUT"
