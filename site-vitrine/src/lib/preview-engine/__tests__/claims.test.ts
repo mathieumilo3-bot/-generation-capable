@@ -80,3 +80,20 @@ describe("proper nouns and brand names", () => {
     expect(checkCopy("Nous intervenons à Vannes et Auray.", truth)).toEqual({ ok: true });
   });
 });
+
+describe("the company's own words", () => {
+  const site =
+    "des murs interieurs aux facades exterieures, nous utilisons des peintures de qualite superieure et eco-labellisees. nous sommes le meilleur peintre de lyon. devis gratuit sous 24h.";
+  const own = buildTruthContext(profile({ trust: { items: [], legalNotice: false } }), site);
+
+  it("accepts a sentence found word for word on the site", () => {
+    expect(checkCopy("Des murs intérieurs aux façades extérieures, nous utilisons des peintures de qualité supérieure et éco-labellisées.", own)).toEqual({ ok: true });
+  });
+  it("still refuses the same claim when it is not the site's sentence", () => {
+    expect(checkCopy("Des peintures éco-labellisées pour tous vos chantiers.", own)).toMatchObject({ ok: false, reason: "label" });
+    expect(checkCopy("Peintre labellisé à Vannes.", own)).toMatchObject({ ok: false, reason: "label" });
+  });
+  it("never lets the site's own superlatives or prices through", () => {
+    expect(checkCopy("Nous sommes le meilleur peintre de Lyon.", own)).toMatchObject({ ok: false });
+  });
+});

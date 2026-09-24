@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isCleanSentence } from "../assets";
+import { isCleanSentence, stripGluedHeading } from "../assets";
 import { cleanName, displayCase } from "../profile";
 
 describe("public names", () => {
@@ -30,5 +30,23 @@ describe("quotable sentences", () => {
 
   it("accepts real prose", () => {
     expect(isCleanSentence("La réfection complète de votre toiture en ardoise ou en tuile, de la charpente à la finition.", 20, 260)).toBe(true);
+  });
+});
+
+describe("stripGluedHeading", () => {
+  it("drops a heading glued to its paragraph", () => {
+    expect(stripGluedHeading("Peinture intérieure et extérieure Des murs intérieurs aux façades extérieures, nous utilisons des peintures durables.")).toBe(
+      "Des murs intérieurs aux façades extérieures, nous utilisons des peintures durables."
+    );
+    expect(stripGluedHeading("Nos services de plomberie L’entreprise intervient pour tous vos travaux.")).toBe("L’entreprise intervient pour tous vos travaux.");
+  });
+  it("keeps real sentences and place names whole", () => {
+    for (const sentence of [
+      "Nous intervenons au cœur de La Rochelle et dans les communes voisines.",
+      "Chez CaPP, nous savons que le choix du revêtement compte.",
+      "Artisan couvreur installé près de Le Mans depuis plusieurs années.",
+    ]) {
+      expect(stripGluedHeading(sentence)).toBe(sentence);
+    }
   });
 });

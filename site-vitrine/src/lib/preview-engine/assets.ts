@@ -155,6 +155,22 @@ export function isCleanSentence(text: string, min = 20, max = 260): boolean {
   return text.split(/\s+/).length >= 6;
 }
 
+const SENTENCE_OPENER =
+  /^(.{3,90}?\p{Ll})\s+((?:(?:Des|Les|La|Le|Nous|Vous|Pour|Chez|Grâce|Notre|Nos|Un|Une|Depuis|Avec|Dans|Chaque|Votre|Vos|Que|Il|Elle|Ils|Elles|On|Ce|Cette|Ces|Tous|Toutes|Afin|Du|Au|Aux|En|Sur|Si)\s+\p{Ll}|(?:L|Qu)[’']\p{Ll})[\s\S]*)$/u;
+
+/**
+ * "Peinture intérieure et extérieure Des murs intérieurs aux façades…" — a
+ * heading glued to its paragraph by the text extraction. A capitalised word
+ * that only ever opens a sentence, right after a lowercase word with no
+ * punctuation in between, marks where the real sentence starts — only when
+ * the next word is lowercase, so "au cœur de La Rochelle" stays whole.
+ */
+export function stripGluedHeading(text: string): string {
+  const match = text.match(SENTENCE_OPENER);
+  if (!match || /[.!?:;,]/.test(match[1])) return text;
+  return match[2].trim();
+}
+
 export function extractAssets(pages: CrawledHtml[], options: { brandName?: string } = {}): ExtractedAssets {
   const images = new Map<string, RawImage>();
   const logos: { image: RawImage; score: number }[] = [];
@@ -257,9 +273,12 @@ export function extractAssets(pages: CrawledHtml[], options: { brandName?: strin
 
     const body = html.replace(/<(header|nav|footer|aside|form|script|style)\b[\s\S]*?<\/\1>/gi, " ");
     for (const m of body.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)) {
-      if (paragraphs.length >= 80) break;
-      const text = htmlToText(m[1]).replace(/\s+/g, " ").trim();
-      if (isCleanSentence(text, 40, 420)) paragraphs.push({ pagePath, pageKind: page.kind, text });
+      // A line break inside a paragraph usually separates a heading from its text.
+      for (const part of m[1].split(/<br\s*\/?>/i)) {
+        if (paragraphs.length >= 80) break;
+        const text = stripGluedHeading(htmlToText(part).replace(/\s+/g, " ").trim());
+        if (isCleanSentence(text, 40, 420)) paragraphs.push({ pagePath, pageKind: page.kind, text });
+      }
     }
   }
 

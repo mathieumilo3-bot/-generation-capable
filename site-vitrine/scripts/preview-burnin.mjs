@@ -182,12 +182,26 @@ for (const d of norm(copy.replace(/"(?:serviceId|factRef|leverId|imageAssetId|va
   if (!factDigits.has(d)) failures.push(`nombre non justifié dans la page : ${d}`);
 }
 const text = norm(copy);
-const rule = (re, allowed, label) => {
-  if (re.test(text) && !allowed) failures.push(`affirmation non justifiée : ${label}`);
+// A sentence found word for word in the company's own texts (its service
+// quotes) is its own claim: the soft rules skip it, the strict ones do not.
+const copyStrings = [];
+(function walk(v) {
+  if (typeof v === "string") copyStrings.push(v);
+  else if (Array.isArray(v)) v.forEach(walk);
+  else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) if (!/^(serviceId|factRef|leverId|imageAssetId|variant|type)$/.test(k)) walk(x);
+})({ hero: bp.hero, services: bp.services, why: bp.why, area: bp.area, about: bp.about, finalCta: bp.finalCta, portfolio: bp.portfolio.heading, cta: [bp.primaryCta, bp.secondaryCta] });
+const ownWords = norm(JSON.stringify({ services: doc.services, zone: doc.zoneQuote, experience: doc.experienceQuote }));
+const softText = copyStrings
+  .flatMap((v) => v.split(/(?<=[.!?;])\s+/))
+  .map(norm)
+  .filter((sentence) => !(sentence.length >= 25 && ownWords.includes(sentence)))
+  .join(" | ");
+const rule = (re, allowed, label, on = text) => {
+  if (re.test(on) && !allowed) failures.push(`affirmation non justifiée : ${label}`);
 };
 rule(/\bavis\b|etoiles|temoignage/, doc.reviews.length > 0, "avis");
-rule(/decennale/, doc.trust.some((t) => t.kind === "insurance"), "décennale");
-rule(/\brge\b|qualibat|qualipac|qualifelec|qualit enr|certifie|labellise/, doc.trust.some((t) => t.kind === "certification"), "label/certification");
+rule(/decennale/, doc.trust.some((t) => t.kind === "insurance"), "décennale", softText);
+rule(/\brge\b|qualibat|qualipac|qualifelec|qualit enr|certifie|labellise/, doc.trust.some((t) => t.kind === "certification"), "label/certification", softText);
 rule(/\bn 1\b|numero un|leader|le meilleur|la meilleure|incontournable/, false, "superlatif");
 rule(/ euros? |€|\bprix\b|\btarif/, false, "prix");
 if (/gratuit|24 ?h|24 24|7 ?j|urgence/.test(text)) warnings.push("gratuit / urgence / 24-7 présent : autorisé seulement si le site le dit (vérifié par la garde serveur)");

@@ -4,7 +4,7 @@ import { normalize } from "@/lib/audit-engine/crawl";
 import { toAuditContext, type DiagnosticResult, type Dossier, type ResearchNotes } from "@/lib/audit-engine/diagnostic";
 import type { AiAuditWebSource } from "@/lib/audit-engine/types";
 import { SERVICES } from "@/lib/audit-engine/facts";
-import { isCleanSentence, type ExtractedAssets, type RawImage, type SiteParagraph } from "./assets";
+import { isCleanSentence, stripGluedHeading, type ExtractedAssets, type RawImage, type SiteParagraph } from "./assets";
 import { detectTradeFamily, NAF_LABELS, TRADE_FAMILIES } from "./trades";
 import type { Fact, PortfolioAsset, ReviewFact, ServiceFact, TrustFact, VerifiedCompanyProfile } from "./types";
 
@@ -155,7 +155,7 @@ function portfolioFrom(images: RawImage[]): PortfolioAsset[] {
 }
 
 function sentencesOf(text: string): string[] {
-  return text.match(/[^.!?]+[.!?]?/g)?.map((s) => s.trim()).filter(Boolean) ?? [];
+  return text.match(/[^.!?]+[.!?]?/g)?.map((s) => stripGluedHeading(s.trim())).filter(Boolean) ?? [];
 }
 
 /**
@@ -192,7 +192,7 @@ function serviceSentence(
     if (candidates[0]) return take(candidates[0].sentence);
   }
   if (/^…|…$/.test(fallback.trim())) return "";
-  const cleaned = fallback.trim();
+  const cleaned = stripGluedHeading(fallback.trim());
   const listing = SERVICES.filter((other) => other.re.test(cleaned)).length >= 3;
   return isCleanSentence(cleaned, 30, 220) && !used.has(cleaned) && !listing ? take(cleaned) : "";
 }

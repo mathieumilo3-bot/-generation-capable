@@ -68,19 +68,25 @@ export function buildTruthContext(profile: VerifiedCompanyProfile, siteHaystack:
   };
 }
 
-type Rule = { name: string; re: RegExp; allowed: (truth: TruthContext, text: string) => boolean };
+type Rule = {
+  name: string;
+  re: RegExp;
+  allowed: (truth: TruthContext, text: string) => boolean;
+  /** Never allowed, even when the company's own site says it word for word. */
+  strict?: boolean;
+};
 
 const has = (truth: TruthContext, re: RegExp) => re.test(truth.text);
 
 const RULES: Rule[] = [
   // Superlatives nobody can verify.
-  { name: "superlatif", re: /\b(?:n\s?°\s?1|numero un|leader|le meilleur|la meilleure|les meilleurs|incontournable|imbattable|sans egal|expert reconnu|reference (?:du|de la|en))\b/, allowed: () => false },
+  { name: "superlatif", re: /\b(?:n\s?°\s?1|numero un|leader|le meilleur|la meilleure|les meilleurs|incontournable|imbattable|sans egal|expert reconnu|reference (?:du|de la|en))\b/, allowed: () => false, strict: true },
   { name: "gratuit", re: /\b(?:gratuit|gratuite|gratuits|offert|offerte|sans frais)\b/, allowed: (t) => has(t, /\bgratuit/) },
   { name: "urgence / 24-7", re: /\b(?:24\s?h|24\s?\/\s?24|7\s?j|7\s?\/\s?7|urgence|urgences|dans l.heure|intervention rapide|depannage rapide|jour et nuit|week-end)\b/, allowed: (t) => has(t, /urgence|24\s?h|24\s?\/\s?24|7\s?j|7\s?\/\s?7|depannage/) },
   { name: "décennale", re: /decennale/, allowed: (t) => t.hasInsurance },
   {
     name: "label",
-    re: /\b(?:rge|qualibat|qualipac|qualifelec|qualit.?enr|qualibois|qualigaz|qualipv|handibat|eco artisan|maitre artisan|certifie|certifiee|certifies|labellise|labellisee|agree|agreee|qualifie|qualifiee)\b/,
+    re: /\b(?:rge|qualibat|qualipac|qualifelec|qualit.?enr|qualibois|qualigaz|qualipv|handibat|eco artisan|maitre artisan|certifiee?s?|labellisee?s?|agreee?s?|qualifiee?s?)\b/,
     allowed: (t, text) => {
       if (t.certifications.length === 0) return false;
       const named = text.match(/\b(rge|qualibat|qualipac|qualifelec|qualit.?enr|qualibois|qualigaz|qualipv|handibat|eco artisan|maitre artisan)\b/g) ?? [];
@@ -88,8 +94,8 @@ const RULES: Rule[] = [
     },
   },
   { name: "garantie", re: /\bgaranti/, allowed: (t) => has(t, /\bgaranti/) },
-  { name: "avis", re: /\b(?:avis|etoiles?|temoignages?|recommande|recommandent|clients? satisfaits?|satisfaction)\b/, allowed: (t) => t.hasReviews },
-  { name: "note", re: /\b[1-5][,.]\d\s*\/\s*5\b|\bnote(?:e|s)? (?:de|moyenne)\b/, allowed: (t) => t.hasReviewScore },
+  { name: "avis", re: /\b(?:avis|etoiles?|temoignages?|recommande|recommandent|clients? satisfaits?|satisfaction)\b/, allowed: (t) => t.hasReviews, strict: true },
+  { name: "note", re: /\b[1-5][,.]\d\s*\/\s*5\b|\bnote(?:e|s)? (?:de|moyenne)\b/, allowed: (t) => t.hasReviewScore, strict: true },
   {
     name: "expérience",
     re: /\b(?:ans d.experience|annees d.experience|d.experience|depuis (?:19|20)\d\d|generations?|familial|familiale|pere en fils|savoir-faire ancestral)\b/,
@@ -98,12 +104,17 @@ const RULES: Rule[] = [
       return t.hasExperience;
     },
   },
-  { name: "prix", re: /€|\beuros?\b|\bprix\b|\btarifs?\b|moins cher|pas cher|petit prix|remise|promotion|promo\b/, allowed: () => false },
-  { name: "délai promis", re: /\b(?:sous|en moins de|dans les) \d+\s?(?:h|heures?|jours?|min|minutes?)\b|\breponse (?:immediate|rapide|garantie)\b/, allowed: () => false },
+  { name: "prix", re: /€|\beuros?\b|\bprix\b|\btarifs?\b|moins cher|pas cher|petit prix|remise|promotion|promo\b/, allowed: () => false, strict: true },
+  { name: "délai promis", re: /\b(?:sous|en moins de|dans les) \d+\s?(?:h|heures?|jours?|min|minutes?)\b|\breponse (?:immediate|rapide|garantie)\b/, allowed: () => false, strict: true },
   { name: "partenaire / marque", re: /\b(?:partenaire officiel|installateur agree|concessionnaire|distributeur officiel)\b/, allowed: (t) => has(t, /partenaire|agree|concessionnaire|distributeur/) },
 ];
 
 const LOCATIVE = /\b(?:a|au|aux|en|sur|dans le|dans la|dans les|autour de|pres de|region|secteur de)\s+([A-ZÉÈÀÂÎÔÛÇ][\p{L}'-]+(?:[\s-][A-ZÉÈÀÂÎÔÛÇ][\p{L}'-]+)*)/gu;
+
+function isAttested(sentence: string, truth: TruthContext): boolean {
+  const core = sentence.replace(/^[\s"«“]+|[\s.!?…;:"»”]+$/g, "");
+  return core.length >= 25 && core.split(/\s+/).length >= 5 && truth.text.includes(core);
+}
 
 export type CopyCheck = { ok: true } | { ok: false; reason: string };
 
@@ -122,8 +133,15 @@ export function checkCopy(raw: string, truth: TruthContext): CopyCheck {
   const since = text.match(/depuis ((?:19|20)\d\d)/);
   if (since && since[1] !== truth.foundedYear && !truth.text.includes(`depuis ${since[1]}`)) return { ok: false, reason: "année non vérifiée" };
 
-  for (const rule of RULES) {
-    if (rule.re.test(text) && !rule.allowed(truth, text)) return { ok: false, reason: rule.name };
+  // Rules apply sentence by sentence. A sentence found word for word on the
+  // company's own site is its own claim ("peintures éco-labellisées"): only
+  // the strict rules still apply to it.
+  for (const sentence of text.split(/(?<=[.!?;])\s+/)) {
+    const attested = isAttested(sentence, truth);
+    for (const rule of RULES) {
+      if (attested && !rule.strict) continue;
+      if (rule.re.test(sentence) && !rule.allowed(truth, sentence)) return { ok: false, reason: rule.name };
+    }
   }
 
   for (const match of value.matchAll(/[«“"]\s*([^»”"]{3,240}?)\s*[»”"]/g)) {
