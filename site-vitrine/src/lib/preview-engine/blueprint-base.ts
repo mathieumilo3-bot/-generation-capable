@@ -70,11 +70,13 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
   };
   const realisationAssets = assets.filter((asset) => asset.type === "realisation");
   const portfolioAssets = realisationAssets.length >= 2 ? realisationAssets : assets;
-  const portfolioHeading = realisationAssets.length >= 2 ? "Nos réalisations" : "En images";
+  const portfolioHeading = realisationAssets.length >= 2 ? ui.portfolioNav : "En images";
 
-  const templateFamily: PreviewBlueprint["templateFamily"] = assets.length >= 3 ? "project" : city ? "local" : "editorial";
-  const heroImage = templateFamily === "project" ? assets.find((a) => a.type === "realisation") ?? assets[0] : undefined;
-  const heroVariant = heroImage ? "HeroProject" : templateFamily === "local" ? "HeroLocal" : "HeroEditorial";
+  const wantsProjectHero = family.heroWithPhoto === "HeroProject" && assets.length >= 2;
+  const wantsLocalHero = family.heroWithPhoto === "HeroLocal" && Boolean(city);
+  const templateFamily: PreviewBlueprint["templateFamily"] = wantsProjectHero ? "project" : wantsLocalHero ? "local" : "editorial";
+  const heroImage = wantsProjectHero ? assets.find((a) => a.type === "realisation") ?? assets[0] : undefined;
+  const heroVariant = heroImage ? family.heroWithPhoto : wantsLocalHero ? "HeroLocal" : "HeroEditorial";
 
   const serviceNames = services.slice(0, 3).map((s) => lowerFirst(s.name));
   const subheadline = serviceNames.length
