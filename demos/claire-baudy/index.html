@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Claire Baudy · Naturopathe à Rennes</title>
+<meta name="description" content="Naturopathie, réflexologie plantaire, drainage lymphatique et massages bien-être à Rennes. Cabinet Saint-Hélier, à 5 minutes de la gare, ou en visio.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F5EFE6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ivory:#F5EFE6;
+  --paper:#FBF8F3;
+  --sand:#EADFCF;
+  --sand-2:#DCCDB7;
+  --ink:#1F2A23;
+  --ink-2:#4B574F;
+  --ink-3:#7A847D;
+  --sage:#2E3F34;
+  --sage-2:#3E5445;
+  --moss:#8A9A7B;
+  --clay:#B06E4B;
+  --clay-2:#C98A66;
+  --line:rgba(31,42,35,.12);
+  --radius:22px;
+  --shadow:0 30px 60px -30px rgba(31,42,35,.35);
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--ivory);color:var(--ink);font-family:Manrope,system-ui,sans-serif;font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.serif{font-family:Fraunces,Georgia,serif;font-weight:300;letter-spacing:-.01em}
+em.i{font-style:italic;color:var(--clay)}
+.wrap{width:min(1200px,100% - 40px);margin-inline:auto}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--clay)}
+.eyebrow::before{content:"";width:28px;height:1px;background:currentColor}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:300;line-height:1.08;letter-spacing:-.02em}
+h2{font-size:clamp(34px,4.6vw,58px)}
+h3{font-size:26px;font-weight:400}
+p.lead{font-size:clamp(17px,1.5vw,19px);color:var(--ink-2);max-width:56ch}
+
+/* Photo frames with graceful fallback */
+.ph{position:relative;overflow:hidden;background:
+  radial-gradient(120% 90% at 20% 10%,rgba(255,255,255,.35),transparent 60%),
+  linear-gradient(150deg,#C9B79C,#8A9A7B 55%,#3E5445)}
+.ph::after{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cpath d='M80 20c-22 30-22 70 0 120 22-50 22-90 0-120zM80 40v96' fill='none' stroke='%23ffffff' stroke-opacity='.18' stroke-width='1.2'/%3E%3C/svg%3E") center/160px;pointer-events:none;z-index:0}
+.ph img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;transition:transform 1.2s var(--ease)}
+
+/* Demo ribbon */
+.demo{background:var(--sage);color:#E9E3D6;font-size:13px;text-align:center;padding:9px 16px;letter-spacing:.02em}
+.demo b{color:#fff;font-weight:600}
+.demo span{opacity:.7}
+
+/* Nav */
+header.nav{position:sticky;top:0;z-index:50;transition:background .4s,box-shadow .4s,backdrop-filter .4s}
+header.nav.scrolled{background:rgba(245,239,230,.82);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);box-shadow:0 1px 0 var(--line)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:78px;gap:20px}
+.brand{display:flex;flex-direction:column;line-height:1.1}
+.brand .n{font-family:Fraunces,serif;font-size:24px;font-weight:400;letter-spacing:-.01em}
+.brand .s{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-top:3px}
+.links{display:flex;gap:32px;font-size:15px;font-weight:500;color:var(--ink-2)}
+.links a{position:relative;padding:4px 0}
+.links a::after{content:"";position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--clay);transform:scaleX(0);transform-origin:right;transition:transform .4s var(--ease)}
+.links a:hover{color:var(--ink)}
+.links a:hover::after{transform:scaleX(1);transform-origin:left}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:52px;padding:0 26px;border-radius:999px;font-weight:600;font-size:15px;letter-spacing:.01em;transition:transform .3s var(--ease),background .3s,box-shadow .3s,color .3s;white-space:nowrap}
+.btn svg{width:16px;height:16px;transition:transform .3s var(--ease)}
+.btn:hover svg{transform:translateX(3px)}
+.btn-dark{background:var(--sage);color:#F5EFE6;box-shadow:0 12px 30px -12px rgba(46,63,52,.7)}
+.btn-dark:hover{background:var(--ink);transform:translateY(-2px)}
+.btn-clay{background:var(--clay);color:#fff;box-shadow:0 12px 30px -12px rgba(176,110,75,.8)}
+.btn-clay:hover{background:#9C5E3E;transform:translateY(-2px)}
+.btn-ghost{border:1px solid var(--line);background:rgba(255,255,255,.4)}
+.btn-ghost:hover{background:#fff}
+.btn-sm{height:44px;padding:0 20px;font-size:14px}
+.burger{display:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);align-items:center;justify-content:center}
+.burger span{display:block;width:16px;height:1.5px;background:var(--ink);position:relative}
+.burger span::before,.burger span::after{content:"";position:absolute;left:0;width:16px;height:1.5px;background:var(--ink)}
+.burger span::before{top:-5px}.burger span::after{top:5px}
+.mobile-menu{display:none}
+
+/* Hero */
+.hero{position:relative;padding:40px 0 110px;overflow-x:clip}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center}
+.hero h1{font-size:clamp(46px,6.6vw,92px);margin:22px 0 26px}
+.hero h1 em{font-style:italic;color:var(--clay)}
+.hero .lead{margin-bottom:36px}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:44px;padding-top:28px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-2)}
+.meta div{display:flex;align-items:center;gap:10px}
+.meta svg{width:18px;height:18px;color:var(--clay);flex:none}
+.hero-visual{position:relative;height:640px}
+.hero-visual .main{position:absolute;inset:0 0 0 60px;border-radius:260px 260px var(--radius) var(--radius);box-shadow:var(--shadow)}
+.hero-visual .small{position:absolute;left:0;bottom:60px;width:210px;height:260px;border-radius:var(--radius);border:8px solid var(--ivory);box-shadow:var(--shadow)}
+.float{position:absolute;right:-16px;top:70px;background:rgba(251,248,243,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:18px 20px;border-radius:18px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:center;max-width:260px;z-index:3;animation:bob 6s ease-in-out infinite}
+.float .dot{width:44px;height:44px;border-radius:50%;background:var(--sage);display:grid;place-items:center;flex:none}
+.float .dot svg{width:22px;height:22px;color:#F5EFE6}
+.float b{display:block;font-size:14px}
+.float small{font-size:12.5px;color:var(--ink-3);line-height:1.4;display:block}
+.float.f2{top:auto;bottom:36px;right:-24px;animation-delay:-3s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.leaf-bg{position:absolute;right:-60px;top:-120px;width:560px;opacity:.5;pointer-events:none;z-index:-1}
+
+/* Marquee */
+.marquee{border-block:1px solid var(--line);overflow:hidden;padding:22px 0;background:var(--paper)}
+.marquee .track{display:flex;gap:56px;width:max-content;animation:scroll 38s linear infinite}
+.marquee span{font-family:Fraunces,serif;font-size:26px;font-weight:300;font-style:italic;color:var(--ink-2);display:flex;align-items:center;gap:56px;white-space:nowrap}
+.marquee span::after{content:"✦";font-style:normal;font-size:14px;color:var(--clay)}
+@keyframes scroll{to{transform:translateX(-50%)}}
+
+section{position:relative}
+.sec{padding:130px 0}
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:40px;margin-bottom:60px;flex-wrap:wrap}
+.sec-head h2{margin-top:18px;max-width:15ch}
+.sec-head p{max-width:46ch;color:var(--ink-2)}
+
+/* Guide */
+.guide{background:var(--paper)}
+.guide-box{display:grid;grid-template-columns:1fr 1.15fr;gap:0;background:#fff;border-radius:32px;box-shadow:0 40px 80px -50px rgba(31,42,35,.45);overflow:hidden;border:1px solid var(--line)}
+.needs{padding:44px;border-right:1px solid var(--line)}
+.needs h3{font-size:22px;margin-bottom:6px}
+.needs .hint{font-size:14px;color:var(--ink-3);margin-bottom:26px}
+.need-list{display:grid;gap:10px}
+.need{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:15px 18px;border-radius:16px;border:1px solid var(--line);background:var(--paper);font-weight:500;font-size:15.5px;transition:all .3s var(--ease)}
+.need .ic{width:38px;height:38px;border-radius:12px;background:var(--sand);display:grid;place-items:center;flex:none;transition:background .3s}
+.need .ic svg{width:19px;height:19px;color:var(--sage)}
+.need .ar{margin-left:auto;opacity:0;transform:translateX(-6px);transition:all .3s var(--ease);color:var(--clay)}
+.need:hover{border-color:var(--sand-2);background:#fff}
+.need.on{background:var(--sage);color:#F5EFE6;border-color:var(--sage)}
+.need.on .ic{background:rgba(255,255,255,.12)}
+.need.on .ic svg{color:#F5EFE6}
+.need.on .ar{opacity:1;transform:none;color:var(--clay-2)}
+.result{position:relative;display:flex;flex-direction:column;min-height:620px;scroll-margin-top:80px}
+.result .ph{height:260px;flex:none}
+.result .body{padding:36px 44px 44px;display:flex;flex-direction:column;flex:1}
+.result .tag{position:absolute;top:22px;left:22px;z-index:2;background:rgba(251,248,243,.94);padding:7px 14px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--sage)}
+.result h3{font-size:34px;margin-bottom:12px}
+.result p{color:var(--ink-2)}
+.result ul{list-style:none;display:grid;gap:10px;margin:22px 0 28px}
+.result li{display:flex;gap:12px;font-size:15.5px}
+.result li::before{content:"";width:18px;height:18px;flex:none;margin-top:4px;border-radius:50%;background:var(--sand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232E3F34' stroke-width='3'%3E%3Cpath d='M6 12l4 4 8-8'/%3E%3C/svg%3E") center/11px no-repeat}
+.result .foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:24px;border-top:1px solid var(--line)}
+.price{display:flex;gap:22px}
+.price div{font-size:13px;color:var(--ink-3)}
+.price b{display:block;font-family:Fraunces,serif;font-weight:400;font-size:26px;color:var(--ink);line-height:1.1}
+.fade{animation:fade .6s var(--ease)}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.also{font-size:14px;color:var(--ink-3);margin-top:14px}
+.also a{color:var(--clay);font-weight:600;border-bottom:1px solid rgba(176,110,75,.3)}
+
+/* Services */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.card{background:var(--paper);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+.card:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+.card:hover .ph img{transform:scale(1.06)}
+.card .ph{aspect-ratio:4/3.1}
+.card .b{padding:28px 28px 26px;display:flex;flex-direction:column;flex:1}
+.card .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--clay);font-weight:600;margin-bottom:10px}
+.card h3{margin-bottom:10px}
+.card p{font-size:15.5px;color:var(--ink-2);margin-bottom:22px}
+.card .f{margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:18px;border-top:1px solid var(--line);font-size:14px}
+.card .f span{color:var(--ink-3)}
+.card .f strong{font-family:Fraunces,serif;font-weight:400;font-size:20px;color:var(--ink)}
+.card .f a{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--sage)}
+.card .f a svg{width:14px;height:14px;transition:transform .3s}
+.card .f a:hover svg{transform:translateX(3px)}
+.card.feature{grid-column:span 2;flex-direction:row}
+.card.feature .ph{aspect-ratio:auto;width:50%;flex:none}
+.card.feature .b{padding:40px}
+.card.feature h3{font-size:34px}
+.pill{display:inline-block;background:var(--sage);color:#F5EFE6;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin-bottom:16px;align-self:flex-start}
+
+/* Psoriasis signature */
+.signature{background:var(--sage);color:#EDE6D9;overflow:hidden}
+.signature .eyebrow{color:var(--clay-2)}
+.signature h2{color:#FBF8F3}
+.sig-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:80px;align-items:center}
+.sig-grid p{color:#CFD6CB;max-width:52ch}
+.big-stat{display:flex;gap:48px;margin:40px 0;flex-wrap:wrap}
+.big-stat div{border-left:1px solid rgba(255,255,255,.2);padding-left:20px}
+.big-stat b{display:block;font-family:Fraunces,serif;font-weight:300;font-size:56px;color:#FBF8F3;line-height:1}
+.big-stat span{font-size:14px;color:#AEB9AB}
+.quote{font-family:Fraunces,serif;font-style:italic;font-weight:300;font-size:24px;line-height:1.45;color:#FBF8F3;border-left:2px solid var(--clay-2);padding-left:24px;margin:36px 0}
+.book-stage{position:relative;display:flex;justify-content:center;perspective:1600px;padding:40px 0}
+.book-stage::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(201,138,102,.35),transparent 65%);top:50%;left:50%;transform:translate(-50%,-50%)}
+.book{position:relative;width:290px;height:420px;transform:rotateY(-22deg) rotateX(4deg);transform-style:preserve-3d;transition:transform 1s var(--ease)}
+.book:hover{transform:rotateY(-6deg) rotateX(2deg)}
+.book .cover{position:absolute;inset:0;border-radius:4px 10px 10px 4px;background:linear-gradient(160deg,#F3ECE0,#E7DCCB);box-shadow:30px 40px 60px -20px rgba(0,0,0,.55),inset 6px 0 10px -4px rgba(0,0,0,.18);padding:36px 30px;display:flex;flex-direction:column;color:var(--ink);overflow:hidden}
+.book .cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;background:linear-gradient(90deg,rgba(0,0,0,.14),transparent)}
+.book .pages{position:absolute;top:6px;bottom:6px;right:-14px;width:16px;background:repeating-linear-gradient(90deg,#fff,#fff 1px,#e9e2d6 2px);transform:rotateY(90deg);transform-origin:left}
+.book .au{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3)}
+.book .ti{font-family:Fraunces,serif;font-size:46px;font-weight:300;line-height:1;margin-top:auto;letter-spacing:-.02em}
+.book .st{font-family:Fraunces,serif;font-style:italic;color:var(--clay);font-size:19px;margin-top:10px}
+.book .ed{margin-top:28px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);display:flex;justify-content:space-between}
+.book svg.deco{position:absolute;right:-40px;top:40px;width:220px;opacity:.55}
+.podcast{display:flex;align-items:center;gap:16px;margin-top:28px;padding:16px 20px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);max-width:460px}
+.podcast .pi{width:44px;height:44px;border-radius:50%;background:var(--clay);display:grid;place-items:center;flex:none}
+.podcast svg{width:18px;height:18px;color:#fff}
+.podcast small{display:block;color:#AEB9AB;font-size:12.5px}
+.podcast b{font-weight:500;font-size:14.5px;color:#FBF8F3}
+
+/* Steps */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;counter-reset:s}
+.step{position:relative;padding:34px 28px;border-radius:var(--radius);background:var(--paper);border:1px solid var(--line)}
+.step::before{counter-increment:s;content:"0" counter(s);font-family:Fraunces,serif;font-size:54px;font-weight:300;color:var(--sand-2);line-height:1;display:block;margin-bottom:26px}
+.step h3{font-size:22px;margin-bottom:10px}
+.step p{font-size:15px;color:var(--ink-2)}
+.step .t{display:inline-block;margin-top:18px;font-size:12.5px;font-weight:600;color:var(--sage);background:var(--sand);padding:6px 12px;border-radius:999px}
+
+/* About */
+.about-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:90px;align-items:center}
+.about-vis{position:relative;height:640px}
+.about-vis .a1{position:absolute;inset:0 90px 70px 0;border-radius:var(--radius)}
+.about-vis .a2{position:absolute;right:0;bottom:0;width:260px;height:300px;border-radius:var(--radius);border:8px solid var(--ivory)}
+.stamp{position:absolute;left:-30px;bottom:110px;width:130px;height:130px;border-radius:50%;background:var(--clay);color:#fff;display:grid;place-items:center;text-align:center;z-index:3;box-shadow:var(--shadow)}
+.stamp svg{position:absolute;inset:0;width:100%;height:100%;animation:spin 24s linear infinite}
+.stamp b{font-family:Fraunces,serif;font-size:36px;font-weight:300;line-height:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+.creds{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:36px 0}
+.cred{display:flex;gap:14px;align-items:flex-start;padding:18px;border-radius:16px;background:var(--paper);border:1px solid var(--line)}
+.cred .ci{width:40px;height:40px;border-radius:12px;background:var(--sand);display:grid;place-items:center;flex:none}
+.cred .ci svg{width:20px;height:20px;color:var(--sage)}
+.cred b{display:block;font-size:15px;line-height:1.35}
+.cred span{font-size:13.5px;color:var(--ink-3);line-height:1.4;display:block;margin-top:2px}
+.sign{font-family:Fraunces,serif;font-style:italic;font-size:34px;font-weight:300;color:var(--sage)}
+
+/* Audience */
+.aud{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+.aud span{padding:12px 20px;border-radius:999px;border:1px solid var(--line);background:var(--paper);font-size:15px;font-weight:500}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.panel{border-radius:28px;padding:48px;position:relative;overflow:hidden}
+.panel.light{background:var(--sand)}
+.panel.img{color:#fff;min-height:420px;display:flex;flex-direction:column;justify-content:flex-end}
+.panel.img .ph{position:absolute;inset:0}
+.panel.img .ph::before{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(31,42,35,.05) 20%,rgba(31,42,35,.85))}
+.panel.img > *:not(.ph){position:relative;z-index:3}
+.panel h3{font-size:34px;margin:14px 0 14px}
+.panel p{color:inherit;opacity:.85;max-width:44ch}
+.panel.img .eyebrow{color:#F1C8AE}
+
+/* FAQ */
+.faq-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:80px}
+details{border-bottom:1px solid var(--line)}
+summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:20px;padding:26px 0;font-family:Fraunces,serif;font-size:22px;font-weight:400}
+summary::-webkit-details-marker{display:none}
+summary i{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);flex:none;position:relative;transition:transform .4s var(--ease),background .3s}
+summary i::before,summary i::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:1.5px;background:var(--ink);transform:translate(-50%,-50%)}
+summary i::after{transform:translate(-50%,-50%) rotate(90deg)}
+details[open] summary i{transform:rotate(45deg);background:var(--sand)}
+details p{padding:0 50px 26px 0;color:var(--ink-2)}
+
+/* Contact */
+.contact{background:var(--paper)}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.map{border-radius:28px;overflow:hidden;min-height:460px;border:1px solid var(--line);background:var(--sand)}
+.map iframe{width:100%;height:100%;min-height:460px;border:0;filter:saturate(.6) sepia(.15)}
+.info{background:#fff;border-radius:28px;padding:48px;border:1px solid var(--line);display:flex;flex-direction:column}
+.info-row{display:flex;gap:16px;padding:20px 0;border-bottom:1px solid var(--line)}
+.info-row:last-of-type{border:0}
+.info-row svg{width:22px;height:22px;color:var(--clay);flex:none;margin-top:3px}
+.info-row b{display:block;font-weight:600}
+.info-row span{color:var(--ink-2);font-size:15.5px}
+
+/* Final CTA */
+.final{padding:0 0 130px;background:var(--paper)}
+.final-box{position:relative;border-radius:36px;overflow:hidden;padding:110px 40px;text-align:center;color:#FBF8F3}
+.final-box .ph{position:absolute;inset:0}
+.final-box .ph::before{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(0deg,rgba(31,42,35,.82),rgba(46,63,52,.6))}
+.final-box > *:not(.ph){position:relative;z-index:3}
+.final-box h2{font-size:clamp(40px,5.6vw,76px);max-width:16ch;margin:20px auto 22px}
+.final-box h2 em{color:#F1C8AE;font-style:italic}
+.final-box p{max-width:52ch;margin:0 auto 38px;color:#DCE2D8}
+.final-box .eyebrow{color:#F1C8AE}
+.final-box .btn-ghost{color:#fff;border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.08)}
+.final-box .btn-ghost:hover{background:rgba(255,255,255,.18)}
+
+footer{background:var(--ink);color:#B7BFB6;padding:70px 0 40px;font-size:14.5px}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;padding-bottom:50px;border-bottom:1px solid rgba(255,255,255,.1)}
+footer .brand .n{color:#FBF8F3}
+footer h4{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#FBF8F3;margin-bottom:18px;font-weight:600}
+footer ul{list-style:none;display:grid;gap:10px}
+footer a:hover{color:#fff}
+.legal{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:28px;font-size:13px;color:#7F8A80}
+
+/* Sticky mobile CTA */
+.sticky{position:fixed;left:12px;right:12px;bottom:12px;z-index:60;display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 20px;border-radius:999px;background:rgba(31,42,35,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#F5EFE6;box-shadow:0 20px 40px -10px rgba(0,0,0,.5);transform:translateY(140%);transition:transform .5s var(--ease)}
+.sticky.show{transform:none}
+.sticky small{display:block;font-size:11.5px;opacity:.7;line-height:1.2}
+.sticky b{font-size:14px;font-weight:600}
+.sticky .btn{height:44px;padding:0 18px;font-size:14px}
+
+/* Reveal */
+.rv{opacity:0;transform:translateY(28px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
+.rv.in{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+
+/* Responsive */
+@media (max-width:1080px){
+  .links{display:none}
+  .burger{display:inline-flex}
+  .nav .btn{display:none}
+  .mobile-menu{position:fixed;inset:0;z-index:70;background:var(--ivory);padding:24px 20px;flex-direction:column}
+  .mobile-menu.open{display:flex}
+  .mobile-menu .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}
+  .mobile-menu a.l{font-family:Fraunces,serif;font-size:36px;font-weight:300;padding:10px 0;border-bottom:1px solid var(--line)}
+  .mobile-menu .btn{margin-top:auto}
+  .hero-grid,.sig-grid,.about-grid,.faq-grid,.contact-grid,.split,.guide-box{grid-template-columns:1fr}
+  .hero-grid{gap:40px}
+  .hero-visual{height:520px}
+  .cards{grid-template-columns:1fr 1fr}
+  .steps{grid-template-columns:1fr 1fr}
+  .needs{border-right:0;border-bottom:1px solid var(--line)}
+  .about-grid{gap:60px}
+  .foot-grid{grid-template-columns:1fr 1fr}
+  .sig-grid{gap:30px}
+}
+@media (max-width:720px){
+  body{font-size:16px}
+  .wrap{width:calc(100% - 32px)}
+  .demo{font-size:12px}
+  .nav .wrap{height:68px}
+  .brand .n{font-size:21px}
+  .hero{padding:16px 0 80px}
+  .hero h1{margin:16px 0 20px}
+  .hero-visual{height:430px}
+  .hero-visual .main{left:36px;border-radius:200px 200px var(--radius) var(--radius)}
+  .hero-visual .small{width:140px;height:180px;bottom:30px}
+  .float{right:-4px;top:30px;max-width:220px;padding:14px 16px}
+  .float.f2{display:none}
+  .leaf-bg{display:none}
+  .cta-row .btn{flex:1 1 100%}
+  .sec{padding:90px 0}
+  .sec-head{margin-bottom:40px}
+  .needs,.result .body{padding:28px 22px}
+  .result{min-height:0}
+  .result .ph{height:200px}
+  .result h3{font-size:28px}
+  .cards,.steps,.creds{grid-template-columns:1fr}
+  .card.feature{grid-column:auto;flex-direction:column}
+  .card.feature .ph{width:100%;aspect-ratio:4/3}
+  .card.feature .b{padding:28px}
+  .card.feature h3{font-size:28px}
+  .big-stat{gap:26px}
+  .big-stat b{font-size:44px}
+  .quote{font-size:20px}
+  .book{width:230px;height:340px}
+  .book .ti{font-size:36px}
+  .about-vis{height:460px}
+  .about-vis .a1{inset:0 50px 60px 0}
+  .about-vis .a2{width:170px;height:200px}
+  .stamp{left:-6px;width:106px;height:106px;bottom:80px}
+  .stamp b{font-size:28px}
+  .panel{padding:32px 26px}
+  .panel h3{font-size:28px}
+  .info{padding:30px 24px}
+  .map,.map iframe{min-height:320px}
+  summary{font-size:19px}
+  details p{padding-right:0}
+  .final{padding-bottom:90px}
+  .final-box{padding:80px 22px;border-radius:28px}
+  .foot-grid{grid-template-columns:1fr}
+  .sticky{display:flex}
+  footer{padding-bottom:110px}
+}
+</style>
+</head>
+<body>
+
+<div class="demo"><b>Maquette de démonstration</b> <span>· préparée pour Claire Baudy par Génération Capable</span></div>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a href="#top" class="brand"><span class="n">Claire Baudy</span><span class="s">Naturopathe · Rennes</span></a>
+    <nav class="links">
+      <a href="#guide">Par quoi commencer ?</a>
+      <a href="#soins">Accompagnements</a>
+      <a href="#psoriasis">Psoriasis & peau</a>
+      <a href="#claire">Qui suis-je</a>
+      <a href="#cabinet">Cabinet</a>
+    </nav>
+    <a class="btn btn-dark btn-sm" href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Prendre rendez-vous <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu"><span></span></button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="menu">
+  <div class="top"><span class="brand"><span class="n">Claire Baudy</span><span class="s">Naturopathe · Rennes</span></span><button class="burger" id="close" aria-label="Fermer le menu" style="display:inline-flex;font-size:22px">×</button></div>
+  <a class="l" href="#guide">Par quoi commencer ?</a>
+  <a class="l" href="#soins">Accompagnements</a>
+  <a class="l" href="#psoriasis">Psoriasis & peau</a>
+  <a class="l" href="#claire">Qui suis-je</a>
+  <a class="l" href="#cabinet">Cabinet & accès</a>
+  <a class="btn btn-dark" href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Prendre rendez-vous</a>
+</div>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="hero">
+  <svg class="leaf-bg" viewBox="0 0 400 400" fill="none" stroke="#8A9A7B" stroke-width=".8"><path d="M200 20c-80 90-80 250 0 360 80-110 80-270 0-360z"/><path d="M200 40v330M200 110c-30-20-55-25-80-22M200 160c-35-22-65-28-95-24M200 210c-38-22-72-28-104-22M200 260c-36-18-66-22-94-16M200 110c30-20 55-25 80-22M200 160c35-22 65-28 95-24M200 210c38-22 72-28 104-22M200 260c36-18 66-22 94-16"/></svg>
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow rv">Naturopathe certifiée FENA · Réflexologue</span>
+      <h1 class="rv d1">Retrouvez votre <em>équilibre</em>, naturellement.</h1>
+      <p class="lead rv d2">Naturopathie, micronutrition, réflexologie plantaire, drainage lymphatique et massages bien-être. Un accompagnement sur-mesure, dans un cabinet apaisant au cœur de Rennes — ou en visio, partout en France.</p>
+      <div class="cta-row rv d3">
+        <a class="btn btn-clay" href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Réserver ma séance <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ghost" href="#guide">Quelle séance est faite pour moi ?</a>
+      </div>
+      <div class="meta rv d3">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Saint-Hélier · 5 min de la gare</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M17 10l4-2v8l-4-2"/></svg>En cabinet ou en visio</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V6a2 2 0 012-2h12v15H6a2 2 0 00-2 2zM8 8h6"/></svg>Auteure aux Éditions Dangles</div>
+      </div>
+    </div>
+    <div class="hero-visual rv d2">
+      <div class="ph main"><img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1100&q=80" alt="Séance de massage bien-être dans une ambiance apaisante" onerror="this.remove()" fetchpriority="high"></div>
+      <div class="ph small"><img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=500&q=80" alt="Plantes et feuillages" onerror="this.remove()"></div>
+      <div class="float">
+        <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3c-4 5-4 12 0 18 4-6 4-13 0-18zM12 7v14"/></svg></div>
+        <div><b>Bilan de vitalité</b><small>1 h · en cabinet ou visio · 110 €</small></div>
+      </div>
+      <div class="float f2">
+        <div class="dot" style="background:var(--clay)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div><b>Réservation en ligne</b><small>Choisissez votre créneau en 2 minutes</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee" aria-hidden="true"><div class="track">
+  <span>Naturopathie</span><span>Nutrition & micronutrition</span><span>Phyto-aromathérapie</span><span>Réflexologie plantaire</span><span>Drainage lymphatique</span><span>Massages bien-être</span><span>Ventouses</span><span>Gestion des émotions</span>
+  <span>Naturopathie</span><span>Nutrition & micronutrition</span><span>Phyto-aromathérapie</span><span>Réflexologie plantaire</span><span>Drainage lymphatique</span><span>Massages bien-être</span><span>Ventouses</span><span>Gestion des émotions</span>
+</div></div>
+
+<!-- GUIDE -->
+<section class="sec guide" id="guide">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow rv">Par quoi commencer ?</span><h2 class="rv d1">Dites-moi ce que vous <em class="i">ressentez</em>.</h2></div>
+      <p class="rv d2">Pas besoin de connaître la naturopathie pour venir. Choisissez ce qui vous amène : je vous indique la séance la plus adaptée pour démarrer, sa durée et son tarif.</p>
+    </div>
+
+    <div class="guide-box rv">
+      <div class="needs">
+        <h3>Ce qui m'amène</h3>
+        <p class="hint">Sélectionnez un besoin</p>
+        <div class="need-list" id="needs"></div>
+      </div>
+      <div class="result" id="result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="sec" id="soins">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow rv">Les accompagnements</span><h2 class="rv d1">Une approche <em class="i">globale</em>, des soins complémentaires.</h2></div>
+      <p class="rv d2">La naturopathie pose le cadre : comprendre votre terrain et ajuster votre hygiène de vie. Les soins manuels viennent soutenir le corps et apaiser le mental.</p>
+    </div>
+
+    <div class="cards">
+      <article class="card feature rv">
+        <div class="ph"><img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1000&q=80" alt="Alimentation vivante, légumes et graines" onerror="this.remove()" loading="lazy"></div>
+        <div class="b">
+          <span class="pill">Le point de départ</span>
+          <span class="k">Naturopathie · Micronutrition</span>
+          <h3>Bilan de vitalité naturopathique</h3>
+          <p>On prend le temps de tout regarder : alimentation, sommeil, digestion, stress, émotions, antécédents. Vous repartez avec un programme personnalisé et réaliste — alimentation, micronutrition, plantes, huiles essentielles, gestes du quotidien.</p>
+          <div class="f"><span>1 h · cabinet ou visio</span><strong>110 €</strong></div>
+          <div class="f" style="border:0;padding-top:14px"><span>Enfants & ados (3 – 15 ans) · 45 min</span><strong>80 €</strong></div>
+          <a class="btn btn-dark" style="margin-top:22px;align-self:flex-start" href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Réserver mon bilan <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </article>
+
+      <article class="card rv d1">
+        <div class="ph"><img src="https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=800&q=80" alt="Soin des pieds, réflexologie plantaire" onerror="this.remove()" loading="lazy"></div>
+        <div class="b">
+          <span class="k">Soin manuel</span>
+          <h3>Réflexologie plantaire</h3>
+          <p>Par la stimulation de zones réflexes du pied, un lâcher-prise profond qui soutient le sommeil, la digestion et la gestion du stress.</p>
+          <div class="f"><span>Détente · Équilibre</span><a href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Réserver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+      </article>
+
+      <article class="card rv">
+        <div class="ph"><img src="https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?auto=format&fit=crop&w=800&q=80" alt="Soin corporel de drainage" onerror="this.remove()" loading="lazy"></div>
+        <div class="b">
+          <span class="k">Soin manuel</span>
+          <h3>Drainage lymphatique</h3>
+          <p>Des manœuvres douces et rythmées pour relancer la circulation : jambes légères, sensation de dégonflement, corps allégé.</p>
+          <div class="f"><span>Jambes lourdes · Rétention</span><a href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Réserver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+      </article>
+
+      <article class="card rv d1">
+        <div class="ph"><img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80" alt="Massage bien-être aux huiles" onerror="this.remove()" loading="lazy"></div>
+        <div class="b">
+          <span class="k">Soin manuel</span>
+          <h3>Massages bien-être</h3>
+          <p>Un moment rien que pour vous : dénouer les tensions, relâcher le mental et retrouver la sensation d'habiter son corps.</p>
+          <div class="f"><span>Tensions · Lâcher-prise</span><a href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Réserver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+      </article>
+
+      <article class="card rv d2">
+        <div class="ph"><img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80" alt="Moment de calme et de respiration" onerror="this.remove()" loading="lazy"></div>
+        <div class="b">
+          <span class="k">Accompagnement</span>
+          <h3>Coaching & émotions</h3>
+          <p>Développement personnel et gestion des émotions : des outils concrets pour traverser une période chargée et reprendre la main.</p>
+          <div class="f"><span>Stress · Transitions de vie</span><a href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Réserver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- PSORIASIS -->
+<section class="sec signature" id="psoriasis">
+  <div class="wrap sig-grid">
+    <div>
+      <span class="eyebrow rv">Ma spécialité</span>
+      <h2 class="rv d1">Psoriasis & peau : <em class="i" style="color:var(--clay-2)">quand la peau parle</em>.</h2>
+      <p class="rv d2" style="margin-top:26px">J'ai moi-même traversé un psoriasis qui couvrait 90 % de mon corps. C'est ce chemin vers une peau apaisée qui m'a menée à la naturopathie — et qui fonde aujourd'hui une approche pionnière des problématiques de peau psycho-somatiques : alimentation, micronutrition, jeûne, hygiène de vie et gestion émotionnelle.</p>
+      <div class="big-stat rv d2">
+        <div><b>2–3 M</b><span>de personnes touchées<br>par le psoriasis en France</span></div>
+        <div><b>1</b><span>livre de référence<br>aux Éditions Dangles</span></div>
+      </div>
+      <p class="quote rv d3">« Il existe un chemin vers une rémission naturelle, pour retrouver sa vitalité et une peau sans inflammation. »</p>
+      <div class="cta-row rv d3">
+        <a class="btn btn-clay" href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Être accompagné·e pour ma peau <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+      <a class="podcast rv d3" href="https://open.spotify.com/episode/1fxTErMGm6blyigANPvhEk" target="_blank" rel="noopener">
+        <div class="pi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+        <div><small>Podcast · Les Lois Naturelles · Épisode 61</small><b>« Quand la peau parle : psoriasis, émotions et alimentation »</b></div>
+      </a>
+    </div>
+    <div class="book-stage rv d2">
+      <div class="book">
+        <div class="pages"></div>
+        <div class="cover">
+          <svg class="deco" viewBox="0 0 200 300" fill="none" stroke="#8A9A7B" stroke-width="1"><path d="M100 10c-60 70-60 190 0 280 60-90 60-210 0-280zM100 30v250M100 80c-25-16-45-20-65-18M100 130c-28-18-52-22-76-19M100 180c-30-18-56-22-82-17M100 80c25-16 45-20 65-18M100 130c28-18 52-22 76-19M100 180c30-18 56-22 82-17"/></svg>
+          <span class="au">Claire Baudy-Cavelier</span>
+          <span class="ti">Le psoriasis</span>
+          <span class="st">Les solutions naturopathiques</span>
+          <span class="ed"><span>Éditions Dangles</span><span>✦</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="sec" id="deroule">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow rv">Comment ça se passe</span><h2 class="rv d1">Un parcours <em class="i">simple</em>, du premier clic au mieux-être.</h2></div>
+      <p class="rv d2">Vous savez exactement à quoi vous attendre, avant même de franchir la porte du cabinet.</p>
+    </div>
+    <div class="steps">
+      <div class="step rv"><h3>Vous réservez en ligne</h3><p>Choisissez votre séance et votre créneau sur Planity, en cabinet ou en visio. Confirmation immédiate.</p><span class="t">2 minutes</span></div>
+      <div class="step rv d1"><h3>Le bilan de vitalité</h3><p>Un temps d'écoute complet pour comprendre votre terrain, vos habitudes et ce qui vous freine aujourd'hui.</p><span class="t">1 heure</span></div>
+      <div class="step rv d2"><h3>Votre programme</h3><p>Des recommandations claires et progressives : assiette, micronutrition, plantes, sommeil, émotions.</p><span class="t">Sur-mesure</span></div>
+      <div class="step rv d3"><h3>Suivi & soins</h3><p>On ajuste ensemble. Réflexologie, drainage ou massage viennent soutenir le corps selon vos besoins.</p><span class="t">À votre rythme</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="sec" id="claire" style="padding-top:0">
+  <div class="wrap about-grid">
+    <div class="about-vis rv">
+      <div class="ph a1"><img src="https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=900&q=80" alt="Ambiance douce du cabinet" onerror="this.remove()" loading="lazy"></div>
+      <div class="ph a2"><img src="https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&w=600&q=80" alt="Plantes et tisanes" onerror="this.remove()" loading="lazy"></div>
+      <div class="stamp">
+        <svg viewBox="0 0 100 100"><defs><path id="c" d="M50 50m-38 0a38 38 0 1176 0a38 38 0 11-76 0"/></defs><text font-size="8.6" letter-spacing="2.4" fill="#fff" font-family="Manrope"><textPath href="#c">NATUROPATHE CERTIFIÉE · FENA · RENNES ·</textPath></text></svg>
+        <b>✦</b>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow rv">Qui suis-je</span>
+      <h2 class="rv d1" style="margin:18px 0 26px">Bonjour, je suis <em class="i">Claire</em>.</h2>
+      <p class="lead rv d2">Naturopathe certifiée FENA et réflexologue, j'accompagne chacun avec une approche holistique : remettre le corps, l'assiette et les émotions dans le même élan. Mon objectif n'est pas de vous donner une liste de règles, mais de vous rendre autonome sur votre santé.</p>
+      <div class="creds">
+        <div class="cred rv"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="9" r="5"/><path d="M8.5 13l-1.5 8 5-3 5 3-1.5-8"/></svg></div><div><b>Certifiée FENA</b><span>Fédération française des écoles de naturopathie</span></div></div>
+        <div class="cred rv d1"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9l9-5 9 5-9 5-9-5zM7 11v5c3 2 7 2 10 0v-5"/></svg></div><div><b>Major de promotion</b><span>Institut Hildegardien, Vannes</span></div></div>
+        <div class="cred rv"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V6a2 2 0 012-2h12v15H6a2 2 0 00-2 2zM8 8h6"/></svg></div><div><b>Auteure publiée</b><span>« Le psoriasis », Éditions Dangles</span></div></div>
+        <div class="cred rv d1"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3c-4 5-4 12 0 18 4-6 4-13 0-18zM12 7v14"/></svg></div><div><b>Phyto-aromatologue</b><span>Nutrition, micronutrition & réflexologie</span></div></div>
+      </div>
+      <p class="sign rv">Claire Baudy</p>
+    </div>
+  </div>
+</section>
+
+<!-- AUDIENCE + ENTREPRISE -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap split">
+    <div class="panel light rv">
+      <span class="eyebrow">Pour qui ?</span>
+      <h3>À chaque âge de la vie.</h3>
+      <p style="color:var(--ink-2);margin-bottom:24px">Un accompagnement adapté à chacun, avec la même attention et la même douceur.</p>
+      <div class="aud">
+        <span>Nourrissons</span><span>Enfants</span><span>Adolescents</span><span>Adultes</span><span>Seniors</span><span>Personnes en situation de handicap</span>
+      </div>
+    </div>
+    <div class="panel img rv d1">
+      <div class="ph"><img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80" alt="Espace de travail lumineux" onerror="this.remove()" loading="lazy"></div>
+      <span class="eyebrow">Entreprises · QVCT</span>
+      <h3>Ateliers & conférences en entreprise.</h3>
+      <p style="margin-bottom:24px">Conférences participatives, ateliers naturopathie, séances de réflexologie ou de massage sur site : prendre soin de vos équipes, concrètement.</p>
+      <a class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.1);align-self:flex-start" href="#cabinet">Demander un devis</a>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap faq-grid">
+    <div>
+      <span class="eyebrow rv">Questions fréquentes</span>
+      <h2 class="rv d1" style="margin-top:18px">Avant de <em class="i">réserver</em>.</h2>
+      <p class="rv d2" style="color:var(--ink-2);margin-top:20px;max-width:36ch">Une autre question ? Écrivez-moi sur Instagram ou via Planity, je vous réponds personnellement.</p>
+    </div>
+    <div class="rv d1">
+      <details open><summary>Je ne sais pas quelle séance choisir, que faire ?<i></i></summary><p>Commencez par le bilan de vitalité : c'est lui qui permet de comprendre votre situation et de définir les soins les plus utiles ensuite. Vous pouvez aussi utiliser le guide « Par quoi commencer ? » plus haut sur cette page.</p></details>
+      <details><summary>Les consultations sont-elles possibles en visio ?<i></i></summary><p>Oui. Le bilan et le suivi naturopathique se font aussi bien en visio qu'en cabinet, partout en France et à l'étranger. Les soins manuels (réflexologie, drainage, massages, ventouses) ont lieu au cabinet à Rennes.</p></details>
+      <details><summary>Est-ce remboursé par ma mutuelle ?<i></i></summary><p>De nombreuses mutuelles prennent en charge tout ou partie des séances de naturopathie ou de réflexologie. Une facture vous est remise à chaque rendez-vous : renseignez-vous auprès de votre complémentaire.</p></details>
+      <details><summary>Combien de séances faut-il prévoir ?<i></i></summary><p>Cela dépend de votre objectif. En général : un bilan, puis un ou deux suivis espacés de quelques semaines pour ajuster le programme. Les soins manuels peuvent se faire ponctuellement ou en cure.</p></details>
+      <details><summary>La naturopathie remplace-t-elle mon médecin ?<i></i></summary><p>Non. La naturopathie est complémentaire du suivi médical : elle ne pose pas de diagnostic et ne remplace pas un traitement. Elle agit sur l'hygiène de vie pour soutenir votre vitalité.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="sec contact" id="cabinet">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow rv">Le cabinet</span><h2 class="rv d1">Au calme, à deux pas de la <em class="i">gare</em>.</h2></div>
+      <p class="rv d2">Quartier Saint-Hélier, à 5 minutes à pied de la gare de Rennes. Idéal si vous venez d'Ille-et-Vilaine ou d'un peu plus loin en train.</p>
+    </div>
+    <div class="contact-grid">
+      <div class="map rv"><iframe title="Plan d'accès au cabinet" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=6%20bis%20avenue%20Louis%20Barthou%2C%2035000%20Rennes&z=16&output=embed"></iframe></div>
+      <div class="info rv d1">
+        <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div><b>6 bis avenue Louis Barthou</b><span>35000 Rennes · Quartier Saint-Hélier</span></div></div>
+        <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M8 21l2-4M16 21l-2-4M8 13h.01M16 13h.01M5 9h14"/></svg><div><b>Gare de Rennes à 5 min à pied</b><span>Métro lignes a & b · Gares</span></div></div>
+        <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M17 10l4-2v8l-4-2"/></svg><div><b>Consultations en visio</b><span>Partout en France et à l'étranger</span></div></div>
+        <div class="info-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg><div><b>@claire.baudy</b><span>Conseils, recettes et coulisses sur Instagram</span></div></div>
+        <a class="btn btn-dark" style="margin-top:auto" href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Voir les disponibilités <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <div class="final-box rv">
+      <div class="ph"><img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1800&q=80" alt="" onerror="this.remove()" loading="lazy"></div>
+      <span class="eyebrow">Prête, prêt à commencer ?</span>
+      <h2>Offrez-vous un <em>vrai temps</em> pour vous.</h2>
+      <p>Choisissez votre séance, votre créneau, et laissez-vous guider. Le reste, on le construit ensemble.</p>
+      <div class="cta-row" style="justify-content:center">
+        <a class="btn btn-clay" href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Prendre rendez-vous <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ghost" href="#guide">M'aider à choisir</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="brand"><span class="n">Claire Baudy</span><span class="s" style="color:#7F8A80">Naturopathe · Rennes</span></div>
+        <p style="margin-top:18px;max-width:34ch">Naturopathie, micronutrition, phyto-aromathérapie, réflexologie plantaire, drainage lymphatique et massages bien-être à Rennes.</p>
+      </div>
+      <div><h4>Accompagnements</h4><ul><li><a href="#soins">Bilan de vitalité</a></li><li><a href="#soins">Réflexologie plantaire</a></li><li><a href="#soins">Drainage lymphatique</a></li><li><a href="#soins">Massages bien-être</a></li><li><a href="#psoriasis">Psoriasis & peau</a></li></ul></div>
+      <div><h4>Le cabinet</h4><ul><li>6 bis av. Louis Barthou</li><li>35000 Rennes</li><li>Saint-Hélier · Gare</li><li><a href="https://www.instagram.com/claire.baudy/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
+      <div><h4>Réserver</h4><ul><li><a href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Sur Planity</a></li><li><a href="#guide">Quelle séance choisir ?</a></li><li><a href="#cabinet">Accès & plan</a></li></ul></div>
+    </div>
+    <div class="legal">
+      <span>© Claire Baudy — La naturopathie ne se substitue pas à un avis médical.</span>
+      <span>Maquette réalisée par Génération Capable · photos d'illustration</span>
+    </div>
+  </div>
+</footer>
+
+<div class="sticky" id="sticky">
+  <div><small>Cabinet Rennes · ou visio</small><b>Réservez en 2 minutes</b></div>
+  <a class="btn btn-clay" href="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes" target="_blank" rel="noopener">Prendre RDV</a>
+</div>
+
+<script>
+(function(){
+  var BOOK="https://www.planity.com/claire-baudy-naturopathe-micronutritionniste-massages-drainage-lymphatique-35000-rennes";
+  var U=function(id,w){return "https://images.unsplash.com/"+id+"?auto=format&fit=crop&w="+(w||1000)+"&q=80"};
+  var I={
+    leaf:'<path d="M12 3c-4 5-4 12 0 18 4-6 4-13 0-18zM12 7v14"/>',
+    bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>',
+    belly:'<circle cx="12" cy="12" r="8"/><path d="M8.5 12c1.5-2 5.5-2 7 0"/>',
+    skin:'<path d="M12 3c3 4 6 7 6 11a6 6 0 01-12 0c0-4 3-7 6-11z"/>',
+    moon:'<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>',
+    drop:'<path d="M7 20c-2-5 0-9 5-16 5 7 7 11 5 16M9 12h6M8 16h8"/>',
+    hand:'<path d="M7 11V6a1.5 1.5 0 013 0v4M10 10V4.5a1.5 1.5 0 013 0V10M13 10V5.5a1.5 1.5 0 013 0V12M16 9a1.5 1.5 0 013 0v4a7 7 0 01-7 7h-1a6 6 0 01-5-3l-2.5-4a1.5 1.5 0 012.5-1.5L7 13"/>',
+    child:'<circle cx="12" cy="6" r="3"/><path d="M12 9v7M8 12h8M9 21l3-5 3 5"/>'
+  };
+  var N=[
+    {k:"Fatigue, manque d'énergie",i:"bolt",tag:"Recommandé pour démarrer",t:"Bilan de vitalité",img:"photo-1490645935967-10de6ba17061",
+      d:"Quand la fatigue s'installe, il faut d'abord en comprendre l'origine : sommeil, alimentation, carences, charge mentale. Le bilan fait le point complet et pose un plan d'action clair.",
+      l:["Analyse de votre hygiène de vie et de votre terrain","Conseils en nutrition et micronutrition","Programme personnalisé à appliquer dès le lendemain"],
+      dur:"1 h",p:"110 €",also:["Réflexologie plantaire","pour soutenir la récupération"]},
+    {k:"Digestion, ballonnements",i:"belly",tag:"Recommandé pour démarrer",t:"Bilan & micronutrition",img:"photo-1512621776951-a57141f2eefd",
+      d:"Inconfort, ballonnements, transit capricieux : la digestion est souvent la première porte d'entrée. On regarde votre assiette, vos rythmes et votre microbiote.",
+      l:["Lecture de vos habitudes alimentaires","Ajustements concrets et progressifs","Accompagnement plantes & micronutrition si besoin"],
+      dur:"1 h",p:"110 €",also:["Réflexologie plantaire","pour apaiser la sphère digestive"]},
+    {k:"Peau, psoriasis, eczéma",i:"skin",tag:"Ma spécialité",t:"Accompagnement peau",img:"photo-1570172619644-dfd03ed5d881",
+      d:"Une approche pionnière, issue de mon propre parcours avec le psoriasis. La peau exprime souvent ce que le corps et les émotions n'arrivent plus à gérer.",
+      l:["Protocole alimentaire anti-inflammatoire","Micronutrition, plantes & gestion émotionnelle","Suivi dans la durée, en cabinet ou en visio"],
+      dur:"1 h",p:"110 €",also:["Lire « Le psoriasis »","aux Éditions Dangles"],alsoHref:"#psoriasis"},
+    {k:"Stress, sommeil, émotions",i:"moon",tag:"Soin apaisant",t:"Réflexologie plantaire",img:"photo-1519823551278-64ac92734fb1",
+      d:"Quand le mental tourne en boucle, le corps a besoin d'un vrai relâchement. La réflexologie agit en profondeur sur le système nerveux.",
+      l:["Lâcher-prise profond dès la première séance","Soutien du sommeil et de la récupération","Peut être associée à un accompagnement émotionnel"],
+      dur:"Séance",p:"Voir tarif",also:["Coaching & émotions","pour aller plus loin"]},
+    {k:"Jambes lourdes, rétention",i:"drop",tag:"Soin drainant",t:"Drainage lymphatique",img:"photo-1600334089648-b0d9d3028eb2",
+      d:"Sensation de gonflement, jambes lourdes, corps engorgé : le drainage relance la circulation lymphatique en douceur.",
+      l:["Manœuvres douces et rythmées","Sensation de légèreté immédiate","Idéal en cure de quelques séances"],
+      dur:"Séance",p:"Voir tarif",also:["Bilan de vitalité","pour agir aussi sur l'assiette"]},
+    {k:"Tensions, besoin de souffler",i:"hand",tag:"Moment pour soi",t:"Massage bien-être",img:"photo-1540555700478-4be289fbecef",
+      d:"Épaules nouées, dos tendu, besoin de déconnecter : un massage enveloppant pour relâcher le corps et faire taire le mental.",
+      l:["Dénoue les tensions musculaires","Apaise le système nerveux","Possible avec ventouses selon vos besoins"],
+      dur:"Séance",p:"Voir tarif",also:["Réflexologie plantaire","pour un lâcher-prise encore plus profond"]},
+    {k:"Mon enfant ou mon ado",i:"child",tag:"3 à 15 ans",t:"Bilan enfant & ado",img:"photo-1466692476868-aef1dfb1e735",
+      d:"Troubles du sommeil, digestion, peau, concentration, émotions : un bilan adapté à l'âge, avec des conseils simples à mettre en place en famille.",
+      l:["Séance adaptée au rythme de l'enfant","Conseils pratiques pour toute la famille","Approche douce et bienveillante"],
+      dur:"45 min",p:"80 €",also:["Bilan de vitalité","pour les parents aussi"]}
+  ];
+  var needs=document.getElementById('needs'),res=document.getElementById('result');
+  var svg=function(k){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+I[k]+'</svg>'};
+  var arrow='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  N.forEach(function(n,idx){
+    var b=document.createElement('button');
+    b.className='need';b.type='button';
+    b.innerHTML='<span class="ic">'+svg(n.i)+'</span>'+n.k+'<span class="ar">→</span>';
+    b.onclick=function(){show(idx);if(window.innerWidth<1080)res.scrollIntoView({behavior:'smooth',block:'start'})};
+    needs.appendChild(b);
+  });
+  function show(idx){
+    var n=N[idx];
+    [].forEach.call(needs.children,function(c,j){c.classList.toggle('on',j===idx)});
+    res.innerHTML='<div class="fade" style="display:flex;flex-direction:column;flex:1">'+
+      '<span class="tag">'+n.tag+'</span>'+
+      '<div class="ph"><img src="'+U(n.img,1000)+'" alt="" onerror="this.remove()"></div>'+
+      '<div class="body"><span class="eyebrow" style="margin-bottom:12px">Ma recommandation</span><h3>'+n.t+'</h3><p>'+n.d+'</p>'+
+      '<ul>'+n.l.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul>'+
+      '<div class="foot"><div class="price"><div>Durée<b>'+n.dur+'</b></div><div>Tarif<b>'+n.p+'</b></div></div>'+
+      '<a class="btn btn-clay" href="'+BOOK+'" target="_blank" rel="noopener">Réserver cette séance '+arrow+'</a></div>'+
+      '<p class="also">À combiner avec : <a href="'+(n.alsoHref||'#soins')+'">'+n.also[0]+'</a> '+n.also[1]+'</p>'+
+      '</div></div>';
+  }
+  show(0);
+
+  // Nav state + sticky CTA
+  var nav=document.getElementById('nav'),st=document.getElementById('sticky');
+  function onScroll(){var y=window.scrollY;nav.classList.toggle('scrolled',y>10);st.classList.toggle('show',y>600)}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  // Mobile menu
+  var menu=document.getElementById('menu');
+  document.getElementById('burger').onclick=function(){menu.classList.add('open');document.body.style.overflow='hidden'};
+  function close(){menu.classList.remove('open');document.body.style.overflow=''}
+  document.getElementById('close').onclick=close;
+  [].forEach.call(menu.querySelectorAll('a'),function(a){a.addEventListener('click',close)});
+
+  // Reveal on scroll
+  var els=document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+    els.forEach(function(e){io.observe(e)});
+  } else els.forEach(function(e){e.classList.add('in')});
+})();
+</script>
+</body>
+</html>
