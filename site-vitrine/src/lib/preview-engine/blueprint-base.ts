@@ -1,6 +1,6 @@
 import type { BlueprintSection, PreviewBlueprint, SectionType } from "./blueprint-schema";
 import { buildTruthContext, checkCopy } from "./claims";
-import { TRADE_FAMILIES, type ProofKind } from "./trades";
+import { getBusinessUi, TRADE_FAMILIES, type ProofKind } from "./trades";
 import type { PortfolioAsset, VerifiedCompanyProfile } from "./types";
 
 /**
@@ -54,6 +54,7 @@ function labelExplanation(label: string): string {
 
 export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlueprint {
   const family = TRADE_FAMILIES[profile.identity.tradeFamily];
+  const ui = getBusinessUi(profile.identity.tradeFamily);
   const name = profile.identity.publicName.value;
   const trade = profile.identity.trade.value;
   const city = profile.identity.city?.value;
@@ -77,8 +78,8 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
 
   const serviceNames = services.slice(0, 3).map((s) => lowerFirst(s.name));
   const subheadline = serviceNames.length
-    ? `${serviceNames.length > 1 ? listOf(serviceNames) : serviceNames[0]}. Décrivez votre projet et recevez votre devis.`
-    : "Décrivez votre projet et recevez votre devis.";
+    ? `${serviceNames.length > 1 ? listOf(serviceNames) : serviceNames[0]}. ${ui.subheadline}`
+    : ui.subheadline;
 
   const trustIds = profile.trust.items.filter((t) => t.kind !== "registry").map((t) => t.id).slice(0, 4);
   const reviewIds = profile.reviews.map((r) => r.id).slice(0, 2);
@@ -105,8 +106,8 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
     why.push({ title: `Depuis ${profile.identity.foundedYear.value}`, body: `Entreprise immatriculée en ${profile.identity.foundedYear.value}.`, factRef: "founded" });
   }
   if (phone && why.length < 4) why.push({ title: "Un interlocuteur direct", body: `Un appel au ${phone} suffit pour parler de votre projet.`, factRef: "phone" });
-  if (city && why.length < 4) why.push({ title: fit(`Basée à ${city}`, 48), body: `Une entreprise locale, joignable pour vos travaux à ${city}.`, factRef: "city" });
-  if (why.length === 0) why.push({ title: "Un devis clair", body: "Chaque demande part de votre projet, décrit en quelques lignes.", factRef: "quote" });
+  if (city && why.length < 4) why.push({ title: fit(`Basée à ${city}`, 48), body: `Une entreprise implantée à ${city}.`, factRef: "city" });
+  if (why.length === 0) why.push({ title: "Une demande simple", body: "Chaque prise de contact part d’un besoin décrit en quelques lignes.", factRef: "quote" });
   // A "why" section that only repeats the registry facts of the trust strip adds nothing.
   const whyHasSubstance = why.some((p) => !["founded", "city", "quote"].includes(p.factRef));
 
@@ -118,7 +119,7 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
       : {}),
     ...(assets.length >= 2 ? { portfolio: { type: "portfolio", variant: assets.length >= 5 ? "PortfolioGrid" : "PortfolioFeature" } } : {}),
     ...(whyHasSubstance ? { why: { type: "why", variant: "WhyCompany" } } : {}),
-    ...(city || profile.areas.zoneQuote ? { area: { type: "area", variant: "AreaLocal" } } : {}),
+    ...(ui.showArea && (city || profile.areas.zoneQuote) ? { area: { type: "area", variant: "AreaLocal" } } : {}),
     ...(profile.presence.level === "C" || (!assets.length && profile.identity.foundedYear) ? { about: { type: "about", variant: "AboutCompany" } } : {}),
     cta: { type: "cta", variant: "CtaQuote" },
   };
@@ -128,7 +129,7 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
   const sections = [...new Set(order)].map((type) => available[type]).filter(Boolean) as BlueprintSection[];
 
   const aboutParts = [
-    `${name} est une entreprise ${city ? `basée à ${city}` : "du bâtiment"}${profile.identity.foundedYear ? `, immatriculée en ${profile.identity.foundedYear.value}` : ""}.`,
+    `${name} est ${city ? `basée à ${city}` : `active dans le secteur ${family.label.toLowerCase()}`}${profile.identity.foundedYear ? `, immatriculée en ${profile.identity.foundedYear.value}` : ""}.`,
     services.length ? `Activité : ${listOf(services.slice(0, 3).map((s) => lowerFirst(s.name)))}.` : "",
   ].filter(Boolean);
 
@@ -142,11 +143,11 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
       subheadline: firstSentence(subheadline.charAt(0).toUpperCase() + subheadline.slice(1), 200),
       imageAssetId: heroImage?.id ?? null,
     },
-    primaryCta: { label: "Demander un devis" },
+    primaryCta: { label: ui.primaryCta },
     secondaryCta: phone ? { label: "Appeler" } : null,
     sections,
     services: {
-      heading: observedServices.length ? "Nos prestations" : "Notre métier",
+      heading: observedServices.length ? ui.offerNav : family.label,
       intro: null,
       items: (services.length ? services : []).map((service) => ({
         serviceId: service.id,
@@ -160,26 +161,26 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
       assetIds: portfolioAssets.slice(0, 7).map((a) => a.id),
     },
     why: { heading: name.length <= 44 ? `Pourquoi choisir ${name}` : "Pourquoi nous choisir", points: why.slice(0, 4) },
-    area: city || profile.areas.zoneQuote
+    area: ui.showArea && (city || profile.areas.zoneQuote)
       ? {
-          heading: profile.areas.zoneQuote ? "Zone d’intervention" : fit(`Basée à ${city}`, 70),
+          heading: profile.areas.zoneQuote ? ui.locationNav : fit(`Basée à ${city}`, 70),
           body: profile.areas.zoneQuote
             ? `« ${firstSentence(profile.areas.zoneQuote.value, 234)} »`
-            : "Indiquez l’adresse du chantier dans votre demande : nous vous confirmons si elle est dans notre secteur.",
+            : ui.locationPrompt,
         }
       : null,
     about: { heading: name.length <= 55 ? `À propos de ${name}` : "À propos", body: fit(aboutParts.join(" "), 420) },
     finalCta: {
-      heading: "Un projet ? Parlons-en.",
-      body: "Décrivez vos travaux en quelques lignes : c’est le point de départ de votre devis.",
+      heading: ui.finalHeading,
+      body: ui.finalBody,
     },
     rationale: profile.audit.levers.map((lever) => ({
       leverId: lever.id,
       title: fit(lever.title, 100),
       body: {
-        trouve: "Cette version donne à chaque prestation et à votre zone une place claire, visible dès l’arrivée.",
-        choisi: "Vos preuves réelles sont placées là où le client hésite, juste avant la demande de devis.",
-        contacte: "Le devis et l’appel restent accessibles à chaque écran, surtout sur mobile.",
+        trouve: "Cette version donne à l’offre et aux informations clés une place claire, visible dès l’arrivée.",
+        choisi: "Vos preuves réelles sont placées là où le client hésite, juste avant l’action principale.",
+        contacte: "L’action principale et le contact restent accessibles à chaque écran, surtout sur mobile.",
       }[lever.axis],
     })),
   };
