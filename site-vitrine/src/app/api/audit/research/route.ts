@@ -13,7 +13,7 @@ import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
  */
 
 const MAX_BODY_BYTES = 2 * 1024;
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const CRAWL_BUDGET_MS = 5_000;
 const JOB_START_TIMEOUT_MS = 3_500;
