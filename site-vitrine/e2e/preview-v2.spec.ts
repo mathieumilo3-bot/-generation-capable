@@ -96,10 +96,17 @@ test("no site: a from-scratch storefront built only on verified identity", async
   await acceptNothing(page);
   await page.fill("#preview-company", "Atelier Sans Site");
   await page.getByRole("button", { name: /Voir ce qu’on construirait/ }).click();
-  // No site found: one precision instead of an assumption.
-  await expect(page.getByRole("heading", { name: "Quelle est l’adresse de votre site ?" })).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("button", { name: "Je n’ai pas encore de site" }).click();
-  await page.waitForURL(/vitrine#id=/, { timeout: 60_000 });
+  // First run asks for the missing site. A later browser/project may reuse the
+  // verified cached preview and go straight to the result — both are correct.
+  const siteQuestion = page.getByRole("heading", { name: "Quelle est l’adresse de votre site ?" });
+  const questionOrReady = await Promise.race([
+    siteQuestion.waitFor({ state: "visible", timeout: 30_000 }).then(() => "question" as const),
+    page.waitForURL(/vitrine#id=/, { timeout: 30_000 }).then(() => "ready" as const),
+  ]);
+  if (questionOrReady === "question") {
+    await page.getByRole("button", { name: "Je n’ai pas encore de site" }).click();
+    await page.waitForURL(/vitrine#id=/, { timeout: 60_000 });
+  }
   await expect(page.getByText("Vous partez d’une page blanche. Voilà la base que nous construirions.")).toBeVisible();
   const site = page.getByTestId("preview-site");
   await expect(site.getByText("SIREN 222222222").first()).toBeVisible();
