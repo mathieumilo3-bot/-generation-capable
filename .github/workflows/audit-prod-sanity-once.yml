@@ -1,0 +1,60 @@
+name: Audit — sanity production one-shot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/audit-prod-sanity-once.yml"
+
+permissions:
+  contents: read
+
+env:
+  BASE_URL: https://gc-agence.com
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier les pages critiques et le nouveau contenu
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /audit /audit/merci /audit/reprendre /politique-de-confidentialite; do
+            HTTP=$(curl -sS -L -o /tmp/page.html -w '%{http_code}' --max-time 30 "$BASE_URL$path")
+            SIZE=$(wc -c </tmp/page.html)
+            echo "$path -> HTTP $HTTP · ${SIZE} octets"
+            test "$HTTP" = "200"
+            test "$SIZE" -gt 1000
+          done
+
+          curl -sS -L --max-time 30 "$BASE_URL/audit" -o /tmp/audit.html
+          grep -q "Sites web &amp; acquisition pour artisans\\|Sites web & acquisition pour artisans" /tmp/audit.html
+          grep -q "On construit la base complète" /tmp/audit.html
+          grep -q "On transforme l’existant" /tmp/audit.html
+          echo "Nouveau contenu premium présent."
+
+      - name: Vérifier l’accès IA
+        shell: bash
+        run: |
+          set -euo pipefail
+          HTTP=$(curl -sS -o /tmp/health.json -w '%{http_code}' --max-time 30 "$BASE_URL/api/audit/ai-health")
+          echo "AI health -> HTTP $HTTP"
+          cat /tmp/health.json | jq .
+          test "$HTTP" = "200"
+
+      - name: Vérifier l’enregistrement email
+        shell: bash
+        run: |
+          set -euo pipefail
+          EMAIL="gc-sanity-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@example.com"
+          jq -n --arg email "$EMAIL" \
+            '{action:"register",companyName:"GC Sanity Production",companyCity:"Paris",siteUrl:"https://gc-agence.com",email:$email,phone:"",marketingConsent:false,attribution:{source:"github_sanity"}}' >/tmp/contact.json
+          HTTP=$(curl -sS -X POST "$BASE_URL/api/audit/contact" \
+            -H 'Content-Type: application/json' \
+            --data-binary @/tmp/contact.json \
+            -o /tmp/contact-response.json -w '%{http_code}' --max-time 30)
+          echo "contact -> HTTP $HTTP"
+          cat /tmp/contact-response.json | jq .
+          test "$HTTP" = "200"
+          jq -e '.status == "registered" and (.id|length) > 20 and (.token|length) > 20' /tmp/contact-response.json >/dev/null
