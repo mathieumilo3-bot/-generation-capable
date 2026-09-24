@@ -91,7 +91,7 @@ export function Hero({ doc, onAction }: SectionProps) {
         <div className="gcp-hero-photo__frame">
           <PreviewImage src={image.src} alt={image.alt} motif={doc.motif} id="hero" eager />
           <div className="gcp-hero-photo__shade" aria-hidden="true" />
-          {image.kind === "realisation" ? <span className="gcp-hero-photo__caption">Réalisation publiée sur votre site</span> : null}
+          {image.kind === "realisation" ? <span className="gcp-hero-photo__caption">{image.caption}</span> : null}
           <div className="gcp-hero-photo__content">
             <p className="gcp-eyebrow">{hero.eyebrow}</p>
             <h2 className="gcp-display gcp-hero__title" style={{ maxWidth: "14ch" }}>
@@ -270,7 +270,7 @@ export function Portfolio({ doc, variant }: SectionProps & { variant: string }) 
             <PreviewImage key={id} src={asset.src} alt={asset.alt} motif={doc.motif} id={id} />
           ))}
         </div>
-        <p className="gcp-legend">{allRealisations ? "Réalisations publiées sur votre site actuel." : "Photos publiées sur votre site actuel."}</p>
+        <p className="gcp-legend">{allRealisations ? `${ui.portfolioNav} · visuels publiés sur votre site actuel.` : "Photos publiées sur votre site actuel."}</p>
       </div>
     </section>
   );
