@@ -11,6 +11,10 @@ on:
       - "site-vitrine/**"
       - ".github/workflows/site-vitrine-ci.yml"
 
+concurrency:
+  group: site-vitrine-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     working-directory: site-vitrine
