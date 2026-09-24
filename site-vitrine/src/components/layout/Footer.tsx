@@ -12,7 +12,7 @@ export function Footer() {
     return (
       <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg)]">
         <div className="mx-auto flex w-full max-w-[var(--container-max)] flex-col gap-4 px-6 py-8 text-xs text-[var(--color-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
-          <p>© {new Date().getFullYear()} {SITE_NAME} · Diagnostic artisans & BTP</p>
+          <p>© {new Date().getFullYear()} {SITE_NAME} · Diagnostic GC</p>
           <div className="flex flex-wrap gap-5">
             {LEGAL_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-[var(--color-text)]">
