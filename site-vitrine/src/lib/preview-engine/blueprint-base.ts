@@ -1,4 +1,5 @@
 import type { BlueprintSection, PreviewBlueprint, SectionType } from "./blueprint-schema";
+import { buildTruthContext, checkCopy } from "./claims";
 import { TRADE_FAMILIES, type ProofKind } from "./trades";
 import type { PortfolioAsset, VerifiedCompanyProfile } from "./types";
 
@@ -60,6 +61,15 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
   const assets = usableAssets(profile);
   const services = profile.services.slice(0, 6);
   const observedServices = services.filter((s) => s.confidence === "observed");
+  const copyTruth = buildTruthContext(profile, "");
+  const safeServiceDescription = (quote: string): string | null => {
+    if (!quote) return null;
+    const sentence = firstSentence(quote, 184);
+    return checkCopy(sentence, copyTruth).ok ? `« ${sentence} »` : null;
+  };
+  const realisationAssets = assets.filter((asset) => asset.type === "realisation");
+  const portfolioAssets = realisationAssets.length >= 2 ? realisationAssets : assets;
+  const portfolioHeading = realisationAssets.length >= 2 ? "Nos réalisations" : "En images";
 
   const templateFamily: PreviewBlueprint["templateFamily"] = assets.length >= 3 ? "project" : city ? "local" : "editorial";
   const heroImage = templateFamily === "project" ? assets.find((a) => a.type === "realisation") ?? assets[0] : undefined;
@@ -141,13 +151,13 @@ export function buildBaseBlueprint(profile: VerifiedCompanyProfile): PreviewBlue
       items: (services.length ? services : []).map((service) => ({
         serviceId: service.id,
         title: fit(service.name, 60),
-        description: service.quote ? `« ${firstSentence(service.quote, 184)} »` : null,
+        description: safeServiceDescription(service.quote),
       })),
     },
     proof: { strategy: proofStrategy, trustIds, reviewIds },
     portfolio: {
-      heading: assets.some((a) => a.type === "realisation") ? "Nos réalisations" : "En images",
-      assetIds: assets.slice(0, 7).map((a) => a.id),
+      heading: portfolioHeading,
+      assetIds: portfolioAssets.slice(0, 7).map((a) => a.id),
     },
     why: { heading: name.length <= 44 ? `Pourquoi choisir ${name}` : "Pourquoi nous choisir", points: why.slice(0, 4) },
     area: city || profile.areas.zoneQuote
