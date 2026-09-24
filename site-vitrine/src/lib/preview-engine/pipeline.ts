@@ -453,10 +453,21 @@ async function reconcileRegistry(ctx: Ctx): Promise<void> {
   if (work.registry) {
     const text = dossierHaystack(dossier);
     const city = normalize(work.registry.city);
+    const typed = normalize(ctx.row.input.companyName);
+    const registryNames = [work.registry.name, work.registry.legalName, work.registry.commercialName].filter(Boolean).map((v) => normalize(String(v)));
+    const userCity = normalize(work.userCity || ctx.row.input.cityHint || "");
+    const registryCity = normalize(work.registry.city);
+    const identityBridge =
+      registryNames.includes(typed) &&
+      userCity.length > 1 &&
+      userCity === registryCity &&
+      work.discovery?.verification?.verified === true &&
+      work.discovery.verification.evidence.some((e) => /ville retrouvée/i.test(e));
     const confirmed =
       text.includes(work.registry.siren) ||
       (city.length > 1 && text.includes(city)) ||
-      Boolean(work.registry.postalCode && text.includes(work.registry.postalCode));
+      Boolean(work.registry.postalCode && text.includes(work.registry.postalCode)) ||
+      identityBridge;
     if (!confirmed) {
       work.registryDropped = work.registry.siren;
       work.registry = null;
