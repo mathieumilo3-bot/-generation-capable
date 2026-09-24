@@ -270,7 +270,7 @@ export function Portfolio({ doc, variant }: SectionProps & { variant: string }) 
             <PreviewImage key={id} src={asset.src} alt={asset.alt} motif={doc.motif} id={id} />
           ))}
         </div>
-        <p className="gcp-legend">{allRealisations ? `${ui.portfolioNav} · visuels publiés sur votre site actuel.` : "Photos publiées sur votre site actuel."}</p>
+        <p className="gcp-legend">{allRealisations ? (ui.portfolioNav === "Réalisations" ? "Réalisations publiées sur votre site actuel." : `${ui.portfolioNav} · visuels publiés sur votre site actuel.`) : "Photos publiées sur votre site actuel."}</p>
       </div>
     </section>
   );
