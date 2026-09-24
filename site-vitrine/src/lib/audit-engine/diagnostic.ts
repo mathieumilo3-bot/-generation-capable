@@ -127,6 +127,18 @@ function toDossierPage(page: CrawledPage): DossierPage {
   };
 }
 
+function commercialIntentWord(trade: string): string {
+  const t = normalize(trade);
+  if (/restaurant|brasserie|bistrot|pizzeria|traiteur/.test(t)) return "réservation";
+  if (/hotel|hôtel|hebergement|hébergement|gite|gîte|camping/.test(t)) return "réservation";
+  if (/clinique|dent|medec|médec|kine|kiné|osteop|ostéop|therap|thérap|naturopath|spa|massage|esthet|esthét|coiff/.test(t)) return "rendez-vous";
+  if (/saas|logiciel|software|plateforme|application/.test(t)) return "démo";
+  if (/immobilier|agence immobiliere|agence immobilière|promoteur/.test(t)) return "estimation";
+  if (/e-?commerce|boutique|marque|collection|mode|cosmetique|cosmétique/.test(t)) return "acheter";
+  if (/coach|consult|conseil|avocat|comptable|notaire|agence|marketing|communication/.test(t)) return "rendez-vous";
+  return "devis";
+}
+
 export function researchQueries(company: Dossier["company"], facts: SiteFacts | null): string[] {
   const { name, city, trade, domain } = company;
   const trade1 = tradeWord(trade);
@@ -140,7 +152,7 @@ export function researchQueries(company: Dossier["company"], facts: SiteFacts | 
   const queries = [
     trade1 && city ? `${trade1} ${city}` : `"${name}"${city ? ` ${city}` : ""}`,
     services[0] && city ? `${services[0]} ${city}` : "",
-    services[0] && city ? `devis ${services[0]} ${city}` : trade1 && city ? `devis ${trade1} ${city}` : "",
+    services[0] && city ? `${commercialIntentWord(trade)} ${services[0]} ${city}` : trade1 && city ? `${commercialIntentWord(trade)} ${trade1} ${city}` : "",
     domain ? `site:${domain}` : "",
     `${name} avis`,
   ];
