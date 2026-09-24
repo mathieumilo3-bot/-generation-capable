@@ -7,7 +7,7 @@ import type { AiAuditWebSource } from "./types";
  * can fall back to the deterministic, site-verified diagnostic.
  */
 
-export const DEFAULT_AUDIT_MODEL = "gpt-5.6-sol";
+export const DEFAULT_AUDIT_MODEL = "gpt-5.6-luna";
 
 type FetchLike = typeof fetch;
 
@@ -36,8 +36,16 @@ export type ResponsesResult<T> = {
   webSources: AiAuditWebSource[];
 };
 
+export function auditAiEnabled(): boolean {
+  // Cost circuit breaker: production AI spend is OFF unless explicitly enabled.
+  // Explicit keys are still accepted by tests/scripts so unit tests remain deterministic.
+  return process.env.AUDIT_AI_ENABLED === "true";
+}
+
 export function openAiKey(explicit?: string): string | undefined {
-  return explicit ?? process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
+  if (explicit) return explicit;
+  if (!auditAiEnabled()) return undefined;
+  return process.env.OPENAI_API_KEY ?? process.env.OPEN_API_KEY;
 }
 
 export function extractOutputText(body: Record<string, unknown>): string | null {
@@ -98,14 +106,14 @@ export function extractWebMetadata(body: Record<string, unknown>): { webQueries:
 function requestBody(call: ResponsesCall, model: string, background: boolean) {
   return {
     model,
-    reasoning: { effort: call.effort ?? "medium" },
+    reasoning: { effort: call.effort ?? "low" },
     ...(background ? { background: true, store: true } : {}),
     ...(call.webSearch
       ? {
           tools: [
             {
               type: "web_search",
-              search_context_size: call.searchContextSize ?? "high",
+              search_context_size: call.searchContextSize ?? "low",
               user_location: { type: "approximate", country: "FR", ...(call.searchCity ? { city: call.searchCity.slice(0, 60) } : {}) },
             },
           ],
@@ -113,7 +121,7 @@ function requestBody(call: ResponsesCall, model: string, background: boolean) {
           include: ["web_search_call.action.sources"],
         }
       : {}),
-    max_output_tokens: call.maxOutputTokens ?? 4_000,
+    max_output_tokens: call.maxOutputTokens ?? 2_000,
     input: [
       { role: "system", content: call.system },
       { role: "user", content: call.user },

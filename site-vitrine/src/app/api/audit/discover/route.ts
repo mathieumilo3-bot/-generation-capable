@@ -15,7 +15,7 @@ import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
 const MAX_BODY_BYTES = 1024;
 const WINDOW_MS = 10 * 60 * 1000;
-const START_MAX = 8;
+const START_MAX = 3;
 // Polling is a single cheap read, so it gets a much wider budget — a
 // diagnostic legitimately polls every couple of seconds for a minute.
 const POLL_MAX = 200;
