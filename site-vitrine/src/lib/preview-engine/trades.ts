@@ -194,7 +194,7 @@ export const TRADE_FAMILIES: Record<TradeFamilyId, TradeFamily> = {
     id: "sante_bien_etre",
     label: "Santé et bien-être",
     workNoun: "prestations et rendez-vous",
-    words: /clinique|cabinet|dent|medec|sante|kine|osteop|naturopath|therap|coiff|beaute|spa|massage|esthet/,
+    words: /clinique|cabinet (?:medical|médical|dentaire|de sante|de santé|de kine|de kiné|d.osteop)|dent|medec|sante|kine|osteop|naturopath|therap|coiff|beaute|spa|massage|esthet/,
     naf: ["86.", "96.02", "96.04"],
     accent: "#315f63",
     heroWithPhoto: "HeroLocal",
