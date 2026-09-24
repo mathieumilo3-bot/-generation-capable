@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { clientIpFrom, rateLimit } from "@/lib/rate-limit";
 
-const MODEL = process.env.OPENAI_AUDIT_MODEL || "gpt-5.6-sol";
+const MODEL = process.env.OPENAI_AUDIT_MODEL || "gpt-5.6-luna";
 const PROJECT_ID = process.env.OPENAI_PROJECT_ID;
 
 export async function GET(request: Request) {
@@ -12,8 +12,15 @@ export async function GET(request: Request) {
   }
 
   const apiKey = process.env.OPENAI_API_KEY || process.env.OPEN_API_KEY;
+  const enabled = process.env.AUDIT_AI_ENABLED === "true";
+  if (!enabled) {
+    return NextResponse.json(
+      { ok: true, configured: Boolean(apiKey), enabled: false, model: MODEL, upstreamStatus: null },
+      { status: 200 }
+    );
+  }
   if (!apiKey) {
-    return NextResponse.json({ ok: false, configured: false, model: MODEL }, { status: 503 });
+    return NextResponse.json({ ok: false, configured: false, enabled: true, model: MODEL }, { status: 503 });
   }
 
   try {
