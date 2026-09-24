@@ -10,6 +10,7 @@ import {
 import { normalize } from "@/lib/audit-engine/crawl";
 import { checkAllCopy, checkCopy, type TruthContext } from "./claims";
 import type { VerifiedCompanyProfile } from "./types";
+import { getBusinessUi } from "./trades";
 
 export type BlueprintRejection = { field: string; reason: string };
 
@@ -62,7 +63,9 @@ function validateField(
     }
     case "primaryCta": {
       const cta = value as PreviewBlueprint["primaryCta"];
-      if (!/devis|projet|estimation|contact/i.test(cta.label)) return { ok: false, reason: "action principale hors devis" };
+      if (!/devis|projet|estimation|contact|réserv|reserv|rendez-vous|rdv|démo|demo|disponibilit|collection|offre|découvrir|decouvrir|acheter|commander|essai/i.test(cta.label)) {
+        return { ok: false, reason: "action principale incohérente" };
+      }
       const c = checkCopy(cta.label, truth);
       return c.ok ? { ok: true, value: cta } : { ok: false, reason: c.reason };
     }
@@ -130,6 +133,7 @@ function validateField(
     case "area": {
       const area = value as PreviewBlueprint["area"];
       if (area === null) return { ok: true, value: null };
+      if (!getBusinessUi(profile.identity.tradeFamily).showArea) return { ok: false, reason: "zone non pertinente pour ce modèle business" };
       if (!profile.identity.city && !profile.areas.zoneQuote) return { ok: false, reason: "zone sans donnée vérifiée" };
       const c = copy(area);
       return c.ok ? { ok: true, value: area } : { ok: false, reason: c.reason };
