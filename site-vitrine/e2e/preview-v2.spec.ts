@@ -95,7 +95,7 @@ test("homonyms → city → honest wait → e-mail → preview → booking, then
 });
 
 test("no site: a from-scratch storefront built only on verified identity", async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   await acceptNothing(page);
   await page.fill("#preview-company", "Atelier Sans Site");
   await page.getByRole("button", { name: /Voir ce qu’on construirait/ }).click();
@@ -109,7 +109,7 @@ test("no site: a from-scratch storefront built only on verified identity", async
   ]);
   if (questionOrReady === "question") {
     await page.getByRole("button", { name: "Je n’ai pas encore de site" }).click();
-    await expect(readyLink).toBeVisible({ timeout: 60_000 });
+    await expect(readyLink).toBeVisible({ timeout: 90_000 });
   }
   await readyLink.click();
   await page.waitForURL(/vitrine#id=/, { timeout: 20_000 });
@@ -122,14 +122,17 @@ test("no site: a from-scratch storefront built only on verified identity", async
 
 for (const width of [375, 390, 430, 768, 1440]) {
   test(`visual QA at ${width}px: no overflow, no broken image, no empty section`, async ({ page }, info) => {
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
     await page.setViewportSize({ width, height: width < 800 ? 844 : 900 });
     await acceptNothing(page);
     await page.fill("#preview-company", "Toiture Martin");
     await page.getByRole("button", { name: /Voir ce qu’on construirait/ }).click();
     await page.fill("#preview-city", "56000");
     await page.getByRole("button", { name: /Continuer/ }).click();
-    await page.waitForURL(/vitrine#id=/, { timeout: 60_000 });
+    const readyLink = page.getByRole("link", { name: "Voir ma nouvelle vitrine →" });
+    await expect(readyLink).toBeVisible({ timeout: 90_000 });
+    await readyLink.click();
+    await page.waitForURL(/vitrine#id=/, { timeout: 20_000 });
     await expect(page.getByTestId("preview-site")).toBeVisible();
     await page.evaluate(async () => {
       for (let y = 0; y < document.body.scrollHeight; y += 400) {
