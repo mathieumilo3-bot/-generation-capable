@@ -68,6 +68,7 @@ if (c.probeHomonym) {
   );
   const cities = [...new Set(exact.map((r) => r.siege?.libelle_commune).filter(Boolean))];
   c.expectCityQuestion = cities.length > 1;
+  c.probeCanStopAtCity = exact.length === 0;
   c.city = c.city || cities[0] || "";
   timeline.push({ t: since(), event: `registre : ${exact.length} homonyme(s) exact(s) dans ${cities.length} ville(s)` });
 }
@@ -78,6 +79,10 @@ let start = await post("/api/preview/start", { companyName: c.name, idempotencyK
 timeline.push({ t: since(), event: `start ${start.status} ${start.data?.status ?? start.data?.error ?? ""}` });
 if (start.data?.status === "needs_city") {
   askedCity = true;
+  if (c.probeHomonym && c.probeCanStopAtCity && !c.city) {
+    timeline.push({ t: since(), event: "nom générique : demande de ville correcte" });
+    finish({ askedCity: true, probeOnly: true });
+  }
   if (!c.city) {
     failures.push("ville demandée alors qu’aucune ville n’est connue pour ce cas");
     finish();
@@ -112,6 +117,11 @@ while (Date.now() < deadline) {
   if (status?.status === "ready" || status?.status === "failed") break;
   if (status?.status === "needs_input") {
     timeline.push({ t: since(), event: `needs ${status.needs}` });
+    if (status.needs === "city" && c.probeHomonym && c.probeCanStopAtCity && !c.city) {
+      askedCity = true;
+      timeline.push({ t: since(), event: "nom générique : demande de ville correcte" });
+      finish({ askedCity: true, probeOnly: true });
+    }
     let answer = null;
     if (status.needs === "city" && c.city && !clarified.city) {
       answer = { city: c.city };
