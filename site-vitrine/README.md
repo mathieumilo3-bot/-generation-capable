@@ -122,6 +122,36 @@ le tunnel de bout en bout (`audit-report.spec.ts`).
   (nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP,
   HSTS) et `no-store` / `noindex` sur `/api/*`.
 
+## Démonstrations sectorielles
+
+Sites complets conçus pour une entreprise **fictive** d'un secteur, montrés à
+un prospect de ce secteur. Chaque démonstration a son étude de cas côté GC.
+
+- `src/app/(gc)/` — les pages de Génération Capable (navbar, footer). Le
+  layout racine ne porte plus que `<html>`, polices, mesure et consentement :
+  chaque groupe fournit sa propre enveloppe.
+- `src/app/demonstrations/clos-et-cadre/` — démonstration construction
+  (entreprise générale de rénovation, Ouest parisien) : accueil, réalisations
+  et fiches chantier, expertises, entreprise, demande de projet. Thème propre
+  (`clos-et-cadre.css`, scopé sur `.cc-root`), `noindex`, bandeau
+  « Site de démonstration », et interrupteur « Lire la stratégie » qui révèle
+  les annotations GC section par section.
+- `src/lib/demos/clos-et-cadre/` — le brief (métier, zone, client idéal,
+  hésitations, preuves), les chantiers, services, méthode, et
+  `request.ts` : validation du pré-diagnostic et qualification en fiche
+  projet priorisée (zone, cohérence de l'enveloppe, autorisation d'urbanisme
+  probable, points de visite). Testé dans `request.test.ts`.
+- `src/app/api/demonstrations/clos-et-cadre/route.ts` — valide et qualifie la
+  demande, **sans rien stocker, journaliser ni envoyer**.
+- `src/app/(gc)/etudes-de-cas/` — index et étude de cas (« Concept
+  stratégique et design — Génération Capable »).
+
+Règle : aucune preuve n'est inventée. Avis, assurance, qualifications,
+témoignages, adresse, chiffres de l'entreprise sont des emplacements
+`toFill(...)` rendus visiblement « À compléter ». Les visuels sont des
+planches d'architecte en SVG (`Drawing.tsx`), pas de fausses photos ; le
+téléphone est dans la plage ARCEP réservée à la fiction (01 99 00 xx xx).
+
 ## Variables d'environnement
 
 Copier `.env.example` en `.env.local` et renseigner :

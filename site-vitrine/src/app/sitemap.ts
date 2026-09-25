@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/constants";
 import { SECTORS } from "@/lib/data/sectors";
 import { ARTICLES } from "@/lib/data/articles";
+import { DEMONSTRATIONS } from "@/lib/data/demonstrations";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -9,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/audit`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/secteurs`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/applications`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/etudes-de-cas`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/ressources`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/creation-site-internet`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/agence-web`, changeFrequency: "monthly", priority: 0.6 },
@@ -30,5 +32,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
 
-  return [...staticRoutes, ...sectorRoutes, ...articleRoutes];
+  // Case studies only: the demonstration sites themselves are fictional
+  // companies and stay out of the index (noindex in their layout).
+  const caseStudyRoutes: MetadataRoute.Sitemap = DEMONSTRATIONS.map((demo) => ({
+    url: `${SITE_URL}${demo.caseStudyPath}`,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  return [...staticRoutes, ...sectorRoutes, ...articleRoutes, ...caseStudyRoutes];
 }

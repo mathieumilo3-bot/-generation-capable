@@ -2,9 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter_Tight, Manrope } from "next/font/google";
 import { MotionConfig } from "framer-motion";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/schema/JsonLd";
 import { Analytics, AnalyticsNoScript } from "@/components/Analytics";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/constants";
@@ -73,19 +70,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
         <AnalyticsNoScript />
         <MotionConfig reducedMotion="user">
-          <OrganizationJsonLd />
-          <WebSiteJsonLd />
-          <a
-            href="#contenu"
-            className="sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-6 focus:z-[60] focus:rounded-full focus:bg-[var(--color-text)] focus:px-6 focus:py-3 focus:text-sm focus:font-medium focus:text-[var(--color-bg)]"
-          >
-            Aller au contenu principal
-          </a>
-          <Navbar />
-          <main id="contenu" className="flex-1">
-            {children}
-          </main>
-          <Footer />
+          {/*
+            The site chrome (navbar, footer, skip link, <main>) lives in each
+            route group's layout: (gc) for Génération Capable itself, and the
+            client demonstrations under /demonstrations, which must look like
+            the client's own site, not like ours.
+          */}
+          {children}
           <ConsentBanner />
         </MotionConfig>
       </body>

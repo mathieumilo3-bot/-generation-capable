@@ -34,6 +34,8 @@ const nextConfig: NextConfig = {
       // same <title>. One canonical page, the old URLs still resolve.
       { source: "/cas-clients", destination: "/applications", permanent: true },
       { source: "/cas-clients/:slug", destination: "/applications", permanent: true },
+      // Demonstrations live under their own path; the bare prefix has no page.
+      { source: "/demonstrations", destination: "/etudes-de-cas", permanent: false },
     ];
   },
   async headers() {

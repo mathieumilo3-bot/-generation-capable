@@ -3,7 +3,9 @@ import { Section, Eyebrow } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { BreadcrumbJsonLd } from "@/components/schema/JsonLd";
 import { PRIMARY_CTA_LABEL, SITE_URL } from "@/lib/constants";
+import Link from "next/link";
 import { APPLICATIONS } from "@/lib/data/applications";
+import { CONCEPT_CREDIT, DEMONSTRATIONS } from "@/lib/data/demonstrations";
 
 export const metadata: Metadata = {
   title: "Applications",
@@ -81,6 +83,22 @@ export default function ApplicationsPage() {
             </div>
           </article>
         ))}
+      </div>
+
+      <div className="mt-14 border-t border-[var(--color-border)] pt-10">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-muted)]">
+          Voir un système en situation
+        </h2>
+        <ul className="mt-5 space-y-3">
+          {DEMONSTRATIONS.map((demo) => (
+            <li key={demo.slug} className="text-[15px] leading-relaxed text-[var(--color-muted)]">
+              <Link href={demo.caseStudyPath} className="text-[var(--color-text)] underline decoration-[var(--color-accent)] underline-offset-4">
+                {demo.company} — {demo.sector.toLowerCase()}
+              </Link>{" "}
+              <span className="text-xs">· {CONCEPT_CREDIT}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="mt-14 border-t border-[var(--color-border)] pt-10">

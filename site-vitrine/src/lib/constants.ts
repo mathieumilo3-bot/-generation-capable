@@ -15,12 +15,14 @@ export const NAV_LINKS = [
   { label: "Systèmes", href: "/#systemes" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Applications", href: "/applications" },
+  { label: "Études de cas", href: "/etudes-de-cas" },
 ] as const;
 
 export const FOOTER_LINKS = [
   { label: "Systèmes", href: "/#systemes" },
   { label: "Secteurs", href: "/secteurs" },
   { label: "Applications", href: "/applications" },
+  { label: "Études de cas", href: "/etudes-de-cas" },
   { label: "Ressources", href: "/ressources" },
   { label: "Audit", href: "/audit" },
 ] as const;

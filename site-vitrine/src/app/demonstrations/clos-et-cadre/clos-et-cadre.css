@@ -1,0 +1,118 @@
+/*
+ * Clos & Cadre — demonstration theme. Scoped to .cc-root so nothing leaks
+ * into Génération Capable's own pages, which share the root layout.
+ */
+.cc-root {
+  --cc-bg: #f6f3ee;
+  --cc-paper: #ede7de;
+  --cc-stone: #d9cfbf;
+  --cc-ink: #1d1b19;
+  --cc-muted: #5c554d;
+  --cc-line: rgba(29, 27, 25, 0.14);
+  --cc-line-strong: rgba(29, 27, 25, 0.32);
+  --cc-accent: #8a4b2f;
+  --cc-accent-soft: rgba(138, 75, 47, 0.08);
+  --cc-dark: #1d1b19;
+  --cc-on-dark: #f3efe8;
+  --cc-on-dark-muted: #b5ada2;
+  --cc-ok: #3f6b4a;
+  --cc-warn: #9a5b13;
+  --cc-error: #a23a2a;
+  --cc-ease: cubic-bezier(0.2, 0.7, 0.1, 1);
+
+  color-scheme: light;
+  background: var(--cc-bg);
+  color: var(--cc-ink);
+  font-family: var(--font-cc-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.cc-root ::selection {
+  background: var(--cc-ink);
+  color: var(--cc-bg);
+}
+
+.cc-serif {
+  font-family: var(--font-cc-serif), ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+.cc-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.cc-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: var(--cc-line-strong);
+  transition: text-decoration-color 0.2s var(--cc-ease);
+}
+.cc-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.cc-root :focus-visible {
+  outline: 2px solid var(--cc-accent);
+  outline-offset: 3px;
+}
+
+/* Strategy notes: Génération Capable's voice, hidden until asked for. */
+.cc-note {
+  display: none;
+}
+html[data-cc-notes="on"] .cc-note {
+  display: block;
+}
+
+/* Placeholder slots: information the real company has to provide. */
+.cc-slot {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 7px,
+    rgba(138, 75, 47, 0.06) 7px 8px
+  );
+}
+
+/* Before/after range input: full-surface, invisible thumb, keyboard-friendly. */
+.cc-compare-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+.cc-compare-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 48px;
+  height: 100vh;
+  background: transparent;
+}
+.cc-compare-range::-moz-range-thumb {
+  width: 48px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+.cc-compare-range:focus-visible + .cc-compare-handle .cc-compare-knob {
+  outline: 2px solid var(--cc-accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-root * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* The root layout paints GC's dark body; under the demo, overscroll must stay light. */
+html:has(.cc-root) {
+  color-scheme: light;
+}
+html:has(.cc-root) body {
+  background: #f6f3ee;
+}
