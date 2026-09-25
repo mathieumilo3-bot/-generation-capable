@@ -23,7 +23,7 @@ export type SpreadsheetKind = "xlsx" | "xls" | "csv";
  */
 export function readWorkbook(buffer: Buffer, kind: SpreadsheetKind): Workbook {
   if (kind === "csv") return { sheets: [readCsv(buffer)] };
-  const wb = XLSX.read(buffer, { type: "buffer", cellDates: true, cellFormula: false, cellHTML: false });
+  const wb = XLSX.read(buffer, { type: "buffer", cellDates: true, cellFormula: false, cellHTML: false, cellStyles: true });
   const sheets: Sheet[] = [];
   wb.SheetNames.forEach((name, index) => {
     const ws = wb.Sheets[name];
