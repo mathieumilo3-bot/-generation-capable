@@ -6,8 +6,8 @@
   --color-surface-raised: #111111;
   --color-text: #f5f5f0;
   --color-muted: #a3a39c;
-  --color-accent: #e5b94a;
-  --color-accent-soft: rgba(229, 185, 74, 0.12);
+  --color-accent: #cfc7b8;
+  --color-accent-soft: rgba(207, 199, 184, 0.12);
   --color-border: rgba(245, 245, 240, 0.1);
   --color-border-strong: rgba(245, 245, 240, 0.2);
 
@@ -96,7 +96,7 @@ body {
 /* Premium surface treatment */
 body {
   background:
-    radial-gradient(circle at 50% -10%, rgba(214, 183, 122, 0.055), transparent 32rem),
+    radial-gradient(circle at 50% -10%, rgba(207, 199, 184, 0.035), transparent 32rem),
     var(--color-bg);
 }
 

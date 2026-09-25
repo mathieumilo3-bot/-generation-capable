@@ -79,8 +79,8 @@ export function SlotBlock({ title, need, children, className = "" }: { title: st
  */
 export function StrategyNote({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <aside className={`cc-note border-l-2 border-[#e5b94a] bg-[#0b0b0b] px-5 py-4 text-[14px] leading-relaxed text-[#e9e6df] ${className}`}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#e5b94a]">GC · {title}</p>
+    <aside className={`cc-note border-l-2 border-[#cfc7b8] bg-[#0b0b0b] px-5 py-4 text-[14px] leading-relaxed text-[#e9e6df] ${className}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#cfc7b8]">GC · {title}</p>
       <div className="mt-2 text-[#c9c5bc]">{children}</div>
     </aside>
   );

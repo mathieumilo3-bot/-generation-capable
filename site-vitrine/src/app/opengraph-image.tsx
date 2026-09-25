@@ -32,7 +32,7 @@ export default function Image() {
             color: "#A3A39C",
           }}
         >
-          <div style={{ width: 10, height: 10, borderRadius: 999, background: "#C9A876" }} />
+          <div style={{ width: 10, height: 10, borderRadius: 999, background: "#CFC7B8" }} />
           Digital Revenue Systems
         </div>
         <div

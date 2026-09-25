@@ -50,7 +50,7 @@ export function DemoRibbon() {
         <p>
           <span className="text-[#e9e6df]">Site de démonstration.</span>{" "}
           <span className="hidden sm:inline">Clos &amp; Cadre est une entreprise fictive — </span>
-          <Link href={CASE_STUDY_PATH} className="underline decoration-[#e5b94a]/60 underline-offset-4 hover:text-white">
+          <Link href={CASE_STUDY_PATH} className="underline decoration-[#cfc7b8]/60 underline-offset-4 hover:text-white">
             concept stratégique et design Génération Capable
           </Link>
         </p>
@@ -62,7 +62,7 @@ export function DemoRibbon() {
         >
           <span
             aria-hidden="true"
-            className={`relative inline-block h-4 w-7 rounded-full transition-colors ${notes ? "bg-[#e5b94a]" : "bg-[#3a3a38]"}`}
+            className={`relative inline-block h-4 w-7 rounded-full transition-colors ${notes ? "bg-[#cfc7b8]" : "bg-[#3a3a38]"}`}
           >
             <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-[#0b0b0b] transition-all ${notes ? "left-3.5" : "left-0.5"}`} />
           </span>

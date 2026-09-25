@@ -699,7 +699,7 @@ function Success({ brief, request, photos, resultRef }: { brief: ProjectBrief; r
 
       {/* GC demonstration layer: what the company would receive. */}
       <section aria-labelledby="fiche-titre" className="mt-14 bg-[#0b0b0b] p-6 text-[#e9e6df] sm:p-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#e5b94a]">Démonstration GC · côté entreprise</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#cfc7b8]">Démonstration GC · côté entreprise</p>
         <h2 id="fiche-titre" className="mt-3 text-[22px] font-medium leading-snug sm:text-[26px]">
           La fiche projet que reçoit {COMPANY.name}, avant de décrocher son téléphone.
         </h2>
@@ -710,7 +710,7 @@ function Success({ brief, request, photos, resultRef }: { brief: ProjectBrief; r
               <p className="mt-1 text-[17px] font-medium">{brief.headline}</p>
             </div>
             <p className="flex items-center gap-2 border border-white/15 px-3 py-1.5 text-[14px]">
-              <span className="text-[20px] font-semibold leading-none text-[#e5b94a]">{brief.priority}</span>
+              <span className="text-[20px] font-semibold leading-none text-[#cfc7b8]">{brief.priority}</span>
               <span className="text-[#c9c5bc]">{brief.priorityLabel}</span>
             </p>
           </div>
@@ -731,7 +731,7 @@ function Success({ brief, request, photos, resultRef }: { brief: ProjectBrief; r
               <ul className="mt-2 space-y-1.5 text-[14.5px]">
                 {brief.checklist.map((item) => (
                   <li key={item} className="flex gap-2">
-                    <span aria-hidden="true" className="text-[#e5b94a]">—</span>
+                    <span aria-hidden="true" className="text-[#cfc7b8]">—</span>
                     {item}
                   </li>
                 ))}
@@ -746,7 +746,7 @@ function Success({ brief, request, photos, resultRef }: { brief: ProjectBrief; r
         <p className="mt-5 text-[14px] leading-relaxed text-[#9a968e]">
           Rien n&apos;a été transmis ni conservé. Sur un déploiement réel, cette fiche arrive par email et dans le CRM de l&apos;entreprise,
           avec les photos.{" "}
-          <Link href={CASE_STUDY_PATH} className="text-[#e9e6df] underline decoration-[#e5b94a]/60 underline-offset-4">
+          <Link href={CASE_STUDY_PATH} className="text-[#e9e6df] underline decoration-[#cfc7b8]/60 underline-offset-4">
             Lire l&apos;étude de cas
           </Link>
         </p>

@@ -39,7 +39,7 @@ export default function GlobalError({
               fontWeight: 600,
               letterSpacing: "0.28em",
               textTransform: "uppercase",
-              color: "#e5b94a",
+              color: "#cfc7b8",
               margin: 0,
             }}
           >
