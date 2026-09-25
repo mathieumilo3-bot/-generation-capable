@@ -37,7 +37,7 @@ export function env(): Env {
     const fields = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Configuration serveur invalide — ${fields}`);
   }
-  if (parsed.data.ENABLE_TEST_MAILBOX === "1" && process.env.NODE_ENV === "production" && !process.env.E2E) {
+  if (parsed.data.ENABLE_TEST_MAILBOX === "1" && process.env.NODE_ENV === "production" && process.env.PRIXCHANTIER_E2E !== "1") {
     throw new Error("ENABLE_TEST_MAILBOX est interdit en production.");
   }
   cached = parsed.data;

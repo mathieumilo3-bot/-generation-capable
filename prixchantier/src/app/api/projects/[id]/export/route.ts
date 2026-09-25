@@ -11,6 +11,15 @@ export const maxDuration = 60;
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+/** Nom de fichier ASCII (accents retirés), accepté par tous les navigateurs. */
+function asciiName(name: string) {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7e]/g, "_")
+    .replace(/"/g, "'");
+}
+
 /** Export XLSX du comparatif. Les données sont lues sous la session de l'utilisateur (RLS). */
 export async function GET(_: NextRequest, ctx: RouteContext<"/api/projects/[id]/export">) {
   const { id } = await ctx.params;
@@ -43,7 +52,8 @@ export async function GET(_: NextRequest, ctx: RouteContext<"/api/projects/[id]/
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": XLSX,
-      "Content-Disposition": `attachment; filename="comparatif-${date}.xlsx"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+      // Nom ASCII seul : certains navigateurs rejettent un filename* UTF-8 accentué.
+      "Content-Disposition": `attachment; filename="${asciiName(filename)}"`,
       "Cache-Control": "no-store",
     },
   });

@@ -79,7 +79,7 @@ export function ComparisonView({ projectId, comparison }: { projectId: string; c
           ))}
         </div>
         <Button asChild>
-          <a href={`/api/projects/${projectId}/export`}>
+          <a href={`/api/projects/${projectId}/export`} download>
             <Download /> Exporter le comparatif
           </a>
         </Button>

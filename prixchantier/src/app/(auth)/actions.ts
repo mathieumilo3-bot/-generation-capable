@@ -27,7 +27,8 @@ export async function login(_: unknown, form: FormData): Promise<ActionResult> {
   const result = await runAction(async () => {
     const parsed = loginSchema.safeParse({ email: form.get("email"), password: form.get("password") });
     if (!parsed.success) throw new ActionError(parsed.error.issues[0].message);
-    await enforceRateLimit("auth", `login:${await clientIp()}`);
+    // Par IP + compte : un bureau derrière une même IP n'est pas bloqué par un seul utilisateur.
+    await enforceRateLimit("auth", `login:${await clientIp()}:${parsed.data.email.toLowerCase()}`);
     const supabase = await createClient();
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
     if (error) {
