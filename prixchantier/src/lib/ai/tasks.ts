@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { getLlm, type LlmPart } from "./llm";
+import { getLlm, type LlmContext, type LlmPart } from "./llm";
+import "./usage";
 import { CATEGORIES } from "@/lib/labels";
 
 /**
@@ -32,6 +33,7 @@ export type LineClassification = z.infer<typeof classificationSchema>["items"][n
 
 export async function classifyLines(
   lines: { i: number; lot: string | null; code: string | null; designation: string; unit: string | null }[],
+  context?: LlmContext,
 ): Promise<Map<number, LineClassification>> {
   const out = new Map<number, LineClassification>();
   const BATCH = 80;
@@ -40,6 +42,7 @@ export async function classifyLines(
     const res = await getLlm().structured({
       name: "classement_lignes",
       schema: classificationSchema,
+      context,
       system: [
         "Tu es chiffreur dans une entreprise française du BTP (CVC, plomberie, électricité).",
         "Pour chaque ligne d'un DPGF, indique :",
@@ -90,16 +93,17 @@ const PDF_LINES_SYSTEM = [
   "- confidence < 0.6 si la ligne est partiellement illisible ou ambiguë.",
 ].join("\n");
 
-export async function extractDpgfLinesFromText(pages: { page: number; text: string }[]): Promise<ExtractedPdfLine[]> {
+export async function extractDpgfLinesFromText(pages: { page: number; text: string }[], context?: LlmContext): Promise<ExtractedPdfLine[]> {
   const content = pages.map((p) => `=== Page ${p.page} ===\n${p.text}`).join("\n\n");
-  const res = await getLlm().structured({ name: "lignes_dpgf", schema: pdfLinesSchema, system: PDF_LINES_SYSTEM, content });
+  const res = await getLlm().structured({ name: "lignes_dpgf", schema: pdfLinesSchema, system: PDF_LINES_SYSTEM, content, context });
   return res.lines;
 }
 
-export async function extractDpgfLinesFromScan(file: { filename: string; data: Buffer; firstPage: number }) {
+export async function extractDpgfLinesFromScan(file: { filename: string; data: Buffer; firstPage: number }, context?: LlmContext) {
   const res = await getLlm().structured({
     name: "lignes_dpgf",
     schema: pdfLinesSchema,
+    context,
     system: `${PDF_LINES_SYSTEM}\nLe document est un scan : lis-le visuellement. La première page de ce fichier est la page ${file.firstPage} du document.`,
     content: [
       { type: "text", text: "Extrais les postes de ce DPGF scanné." },
@@ -192,6 +196,7 @@ export async function extractOffer(input: {
   requested: RequestedLine[];
   emailText: string | null;
   documents: ({ name: string; text: string } | { name: string; pdf: Buffer })[];
+  context?: LlmContext;
 }): Promise<ExtractedOffer> {
   const requested = input.requested
     .map((r) => `${r.key}: ${r.code ? `[${r.code}] ` : ""}${r.designation} — ${r.quantity ?? "?"} ${r.unit ?? ""}`)
@@ -207,5 +212,5 @@ export async function extractOffer(input: {
       parts.push({ type: "pdf", filename: doc.name, data: doc.pdf });
     }
   }
-  return getLlm().structured({ name: "offre_fournisseur", schema: offerSchema, system: OFFER_SYSTEM, content: parts });
+  return getLlm().structured({ name: "offre_fournisseur", schema: offerSchema, system: OFFER_SYSTEM, content: parts, context: input.context });
 }

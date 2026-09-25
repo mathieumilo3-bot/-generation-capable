@@ -2,6 +2,7 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { env } from "@/lib/env";
+import { resilientFetch } from "./resilient-fetch";
 
 let admin: SupabaseClient<Database> | null = null;
 
@@ -17,6 +18,7 @@ export function adminClient() {
     const e = env();
     admin = createClient<Database>(e.NEXT_PUBLIC_SUPABASE_URL, e.SUPABASE_SECRET_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: resilientFetch() },
     });
   }
   return admin;

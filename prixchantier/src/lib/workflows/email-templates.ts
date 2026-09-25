@@ -76,13 +76,6 @@ export function referenceInSubject(subject: string): string | null {
   return m ? m[0] : null;
 }
 
-/** Réponse automatique (absence, accusé) : ne vaut pas réponse fournisseur. */
-export function looksLikeAutoReply(subject: string, body: string) {
-  return /r[ée]ponse automatique|absence|out of office|automatic reply|auto[- ]?reply|accus[ée] de r[ée]ception|undeliverable|non remis|delivery status notification/i.test(
-    `${subject}\n${body.slice(0, 400)}`,
-  );
-}
-
 /**
  * Prochaine échéance de relance : +48 h (1re) puis +72 h, décalée au jour
  * ouvré suivant à 9 h (heure de Paris) si elle tombe un week-end.

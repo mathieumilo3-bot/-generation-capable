@@ -10,13 +10,14 @@ import { extractPdfText } from "@/lib/parsing/pdf";
 import { parseFilledTemplate } from "@/lib/offers/template";
 import { draftFromExtraction, type OfferDraft } from "@/lib/offers/draft";
 import { extractOffer, type RequestedLine } from "@/lib/ai/tasks";
-import { aiConfigured } from "@/lib/ai/llm";
+import { aiConfigured, AiFailure } from "@/lib/ai/llm";
 import { matchOfferLines } from "@/lib/matching/match";
 import { enqueue } from "@/lib/jobs/queue";
 import { PermanentJobError } from "@/lib/jobs/runner";
 import type { JsonValue } from "@/lib/supabase/json";
 import { downloadFile, uploadFile } from "./storage";
-import { looksLikeAutoReply, referenceInSubject } from "./email-templates";
+import { referenceInSubject } from "./email-templates";
+import { looksLikeAutoReply, looksLikeBounce, replyHead } from "@/lib/mail/reply-text";
 import { cancelFollowups } from "./followups";
 
 export type StoredFile = { name: string; path: string | null; mime: string; size: number; skipped?: string };
@@ -174,7 +175,8 @@ async function ingestInbound(orgId: string, connectionId: string, m: InboundMess
     if (error.code === "23505") return; // déjà enregistré par une relève concurrente
     throw new Error(`Enregistrement du message impossible : ${error.message}`);
   }
-  const autoReply = looksLikeAutoReply(m.subject, m.bodyText) && !files.some((f) => f.path);
+  const bounce = r.kind === "consultation" && looksLikeBounce(m.fromEmail, m.subject);
+  const autoReply = bounce || (looksLikeAutoReply(m.subject, m.bodyText) && !files.some((f) => f.path));
   const { data: response } = await admin
     .from("supplier_responses")
     .insert({
@@ -194,6 +196,18 @@ async function ingestInbound(orgId: string, connectionId: string, m: InboundMess
     .single();
   if (r.kind === "unassigned") {
     await logActivity({ organizationId: orgId, type: "response_unassigned", message: `Réponse de ${r.supplierName} à rattacher à une consultation.` });
+    return;
+  }
+  if (bounce && r.kind === "consultation") {
+    // Adresse en échec : plus aucune relance, l'utilisateur corrige puis renvoie.
+    const message = `E-mail non remis à ${r.supplierName} : adresse injoignable. Corrigez l'adresse du fournisseur puis renvoyez la consultation.`;
+    await admin
+      .from("consultations")
+      .update({ status: "erreur", error: message })
+      .eq("id", r.consultationId)
+      .in("status", ["envoye", "relance_prevue", "relance"]);
+    await cancelFollowups(r.consultationId, "Adresse injoignable (e-mail non remis)");
+    await logActivity({ organizationId: orgId, projectId, consultationId, type: "bounce", message });
     return;
   }
   if (autoReply) {
@@ -234,7 +248,9 @@ export async function createManualResponse(orgId: string, consultationId: string
 export async function processResponse(responseId: string) {
   const admin = adminClient();
   const { data: resp } = await admin.from("supplier_responses").select("*").eq("id", responseId).maybeSingle();
-  if (!resp || resp.status === "needs_assignment" || !resp.consultation_id) return;
+  // Idempotence : une tâche rejouée (reprise après crash, doublon) ne relance jamais
+  // l'analyse d'une réponse déjà traitée — un réessai explicite repasse d'abord en « pending ».
+  if (!resp || !resp.consultation_id || !["pending", "processing", "failed"].includes(resp.status)) return;
   const orgId = resp.organization_id;
   const { data: c } = await admin
     .from("consultations")
@@ -258,7 +274,8 @@ export async function processResponse(responseId: string) {
   let emailText: string | null = null;
   if (resp.email_message_id) {
     const { data: em } = await admin.from("email_messages").select("body_text").eq("id", resp.email_message_id).single();
-    emailText = em?.body_text ?? null;
+    // L'analyse ne lit que ce que le fournisseur a écrit, pas notre demande citée en dessous.
+    emailText = em?.body_text ? replyHead(em.body_text) : null;
   }
 
   const files = ((resp.files as unknown as StoredFile[]) ?? []).filter((f) => f.path && !f.skipped);
@@ -298,7 +315,7 @@ export async function processResponse(responseId: string) {
     if (templateDraft) draft = templateDraft;
     else throw new PermanentJobError("Analyse automatique indisponible : consultez le devis joint.");
   } else {
-    const extracted = await extractOffer({ requested, emailText, documents: docs });
+    const extracted = await extractOffer({ requested, emailText, documents: docs, context: { organizationId: orgId, projectId: c.project_id } });
     const aiDraft = draftFromExtraction(extracted, sourceKind, () => docs[0]?.name ?? null);
     if (templateDraft && templatePriced) {
       // Fichier de consultation rempli + autre document : les prix du fichier font foi,
@@ -418,7 +435,12 @@ export async function processResponse(responseId: string) {
 }
 
 export async function markResponseFailed(responseId: string, err: unknown) {
-  const message = err instanceof PermanentJobError ? err.message : "Nous n'avons pas réussi à analyser cette offre automatiquement.";
+  const message =
+    err instanceof PermanentJobError
+      ? err.message
+      : err instanceof AiFailure && !err.retryable
+        ? `Nous n'avons pas réussi à analyser cette offre automatiquement : ${err.userMessage}`
+        : "Nous n'avons pas réussi à analyser cette offre automatiquement.";
   const admin = adminClient();
   const { data } = await admin
     .from("supplier_responses")

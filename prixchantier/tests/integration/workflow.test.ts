@@ -232,6 +232,13 @@ describe("parcours complet (acceptance, côté serveur)", () => {
     expect(count).toBe(4);
 
     for (const r of responses!.filter((x) => x.status === "pending")) await lib.processResponse(r.id);
+
+    // Idempotence : rejouer la tâche ne ré-analyse pas (pas d'appel IA ni d'offre en double).
+    const callsBefore = llmCalls.length;
+    for (const r of responses!) await lib.processResponse(r.id);
+    expect(llmCalls.length).toBe(callsBefore);
+    const { count: offers } = await T.client.from("offers").select("id", { count: "exact", head: true }).eq("project_id", projectId);
+    expect(offers).toBe(3);
   });
 
   it("15-16. extrait les prix et identifie les lignes manquantes", async () => {
@@ -346,6 +353,34 @@ describe("parcours complet (acceptance, côté serveur)", () => {
     const { data: offer } = await T.client.from("offers").select("source_kind, offer_lines(project_line_id)").eq("consultation_id", c!.id).single();
     expect(offer!.source_kind).toBe("pdf_ocr");
     expect(offer!.offer_lines.filter((l) => l.project_line_id).length).toBe(3);
+  });
+
+  it("e-mail non remis : consultation en erreur, plus aucune relance", async () => {
+    const { data: s } = await T.client.from("suppliers").insert({ company_name: "Fournisseur E", email: "adresse-morte@fournisseur-e.test" }).select("id").single();
+    const ref = lib.newReferenceCode();
+    const { data: c } = await T.client
+      .from("consultations")
+      .insert({ project_id: projectId, supplier_id: s!.id, mail_connection_id: connectionId, reference_code: ref, subject: `Demande de prix [${ref}]`, body: "x", auto_followup: true, created_by: T.userId })
+      .select("id")
+      .single();
+    const { data: l } = await T.client.from("project_lines").select("id").eq("project_id", projectId).eq("code", "10.2.1").single();
+    await T.client.from("consultation_lines").insert({ consultation_id: c!.id, project_line_id: l!.id });
+    await lib.sendConsultation(c!.id, T.orgId);
+    const sent = sentMessages().find((m) => m.to === "adresse-morte@fournisseur-e.test");
+    deliver({
+      id: "bounce-e",
+      threadId: sent.threadId,
+      from: "mailer-daemon@googlemail.com",
+      subject: "Delivery Status Notification (Failure)",
+      text: `Adresse introuvable. Le message n'a pas été remis à adresse-morte@fournisseur-e.test.`,
+    });
+    await lib.pollMailbox(connectionId);
+    const { data: after } = await T.client.from("consultations").select("status, error").eq("id", c!.id).single();
+    expect(after!.status).toBe("erreur");
+    expect(after!.error).toMatch(/non remis/);
+    const { data: f } = await T.client.from("scheduled_followups").select("status").eq("consultation_id", c!.id);
+    expect(f!.every((x) => x.status === "cancelled")).toBe(true);
+    expect(await lib.sendFollowup(c!.id, T.orgId, { attempt: 1, automatic: false })).toMatchObject({ sent: false });
   });
 
   it("22. aucune donnée de cette entreprise n'est visible par une autre", async () => {

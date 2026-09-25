@@ -68,6 +68,67 @@ export type Database = {
           },
         ];
       };
+      ai_usage: {
+        Row: {
+          created_at: string;
+          duration_ms: number;
+          id: number;
+          input_tokens: number;
+          model: string;
+          ok: boolean;
+          organization_id: string | null;
+          output_tokens: number;
+          project_id: string | null;
+          task: string;
+        };
+        Insert: {
+          created_at?: string;
+          duration_ms?: number;
+          id?: never;
+          input_tokens?: number;
+          model: string;
+          ok: boolean;
+          organization_id?: string | null;
+          output_tokens?: number;
+          project_id?: string | null;
+          task: string;
+        };
+        Update: {
+          created_at?: string;
+          duration_ms?: number;
+          id?: never;
+          input_tokens?: number;
+          model?: string;
+          ok?: boolean;
+          organization_id?: string | null;
+          output_tokens?: number;
+          project_id?: string | null;
+          task?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ai_usage_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "project_overview";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ai_usage_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       consultation_lines: {
         Row: {
           consultation_id: string;
@@ -1241,6 +1302,10 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      configure_tick: {
+        Args: { p_secret: string; p_url: string };
+        Returns: undefined;
       };
       create_organization: {
         Args: { p_full_name?: string; p_name: string };

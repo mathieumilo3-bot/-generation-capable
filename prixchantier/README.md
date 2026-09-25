@@ -18,7 +18,7 @@ Un monolithe Next.js 16 + Supabase. Pas de microservice.
 | `src/app` | Pages (App Router) et routes API (`/api/cron/tick`, OAuth mail, export, téléchargements) |
 | `src/actions` | Server Actions : toutes les mutations, validées par zod, exécutées sous la session de l'utilisateur (RLS) |
 | `src/lib/parsing` | Lecture déterministe XLSX / XLS / CSV / PDF (texte). Le DPGF tabulaire est lu **sans IA** |
-| `src/lib/ai` | OpenAI en Structured Outputs (JSON Schema strict, revalidé par zod) : classement des lignes, DPGF PDF, offres fournisseurs |
+| `src/lib/ai` | OpenAI (API Responses, `gpt-5.6-luna` par défaut) en Structured Outputs (JSON Schema strict, revalidé par zod) : classement des lignes, DPGF PDF, offres fournisseurs. Pannes typées, journal de consommation `ai_usage` |
 | `src/lib/matching` | Rapprochement ligne d'offre ↔ ligne demandée (référence, similarité, quantité, avis IA) — jamais forcé |
 | `src/lib/comparison` | Comparatif, détection des trous, phrases d'analyse (fonction pure, testée) |
 | `src/lib/mail` | Gmail API et Microsoft Graph (OAuth PKCE, tokens chiffrés AES-256-GCM), relève des réponses |
@@ -52,6 +52,9 @@ Dans l'ordre : identifiant de fil (Gmail `threadId` / Graph `conversationId`) �
 s'il n'a qu'une consultation en cours** (sinon la réponse va dans « Réponses à rattacher »).
 Les messages sans rapport avec une consultation ne sont jamais stockés. Les réponses automatiques
 (absence) ne stoppent pas les relances.
+
+Les briques reprises d'autres projets du compte (et celles écartées) sont listées dans
+[`docs/REUTILISATION.md`](docs/REUTILISATION.md).
 
 ## Démarrage local
 
@@ -133,7 +136,8 @@ appelé via `OPENAI_BASE_URL`, aucun code de test dans l'application). Tout le r
 - Non testé ici avec de **vraies** boîtes Gmail / Microsoft 365 ni avec la **vraie** API OpenAI
   (pas d'identifiants dans l'environnement de développement) : à faire avant commercialisation,
   avec le scénario de `e2e/acceptance.spec.ts` rejoué à la main.
-- La qualité d'extraction des devis PDF libres dépend du modèle OpenAI choisi (`OPENAI_MODEL`).
+- La qualité d'extraction des devis PDF libres dépend du modèle OpenAI choisi (`OPENAI_MODEL`,
+  `gpt-5.6-luna` par défaut, le modèle déjà utilisé par `video-intelligence`).
 - Le CCTP est stocké et joignable aux consultations, mais n'est pas analysé.
 - Une entreprise = un utilisateur à la création (invitation de collègues : non incluse en V1).
 - Pas de Content-Security-Policy stricte (en-têtes de sécurité de base uniquement).

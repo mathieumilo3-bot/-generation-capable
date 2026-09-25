@@ -62,14 +62,17 @@ export async function runJobs({ deadlineMs = 50_000, batch = 3 } = {}) {
             await admin.from("jobs").update({ status: "done", finished_at: new Date().toISOString(), last_error: null }).eq("id", job.id);
           } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            const final = err instanceof PermanentJobError || job.attempts >= job.max_attempts;
+            // Échec définitif (clé IA invalide, crédit épuisé, document refusé…) : aucun réessai inutile.
+            const notRetryable = err instanceof PermanentJobError || (err instanceof Error && "retryable" in err && err.retryable === false);
+            const final = notRetryable || job.attempts >= job.max_attempts;
+            const saturated = err instanceof Error && "kind" in err && err.kind === "rate_limit";
             console.error(`[jobs] ${job.type} ${job.id} tentative ${job.attempts}: ${message}`);
             await admin
               .from("jobs")
               .update({
                 status: final ? "failed" : "queued",
                 last_error: message.slice(0, 1000),
-                run_after: new Date(Date.now() + 60_000 * 2 ** job.attempts).toISOString(),
+                run_after: new Date(Date.now() + (saturated ? 5 * 60_000 : 60_000) * 2 ** job.attempts).toISOString(),
                 finished_at: final ? new Date().toISOString() : null,
               })
               .eq("id", job.id);

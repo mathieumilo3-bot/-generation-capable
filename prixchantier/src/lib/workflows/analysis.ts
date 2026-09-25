@@ -7,7 +7,7 @@ import { readWorkbook, workbookToText } from "@/lib/parsing/spreadsheet";
 import { parseDpgf, type ParsedLine, type SheetReport } from "@/lib/parsing/dpgf";
 import { extractPdfText } from "@/lib/parsing/pdf";
 import { normalizeUnit, parseNumber } from "@/lib/parsing/normalize";
-import { aiConfigured, AiUnavailableError } from "@/lib/ai/llm";
+import { aiConfigured, AiFailure, type LlmContext } from "@/lib/ai/llm";
 import { classifyLines, extractDpgfLinesFromScan, extractDpgfLinesFromText, type ExtractedPdfLine } from "@/lib/ai/tasks";
 import { PermanentJobError } from "@/lib/jobs/runner";
 import { downloadFile } from "./storage";
@@ -57,7 +57,7 @@ async function splitPdf(buffer: Buffer, size: number) {
   return chunks;
 }
 
-async function extractDocument(doc: { id: string; file_name: string; storage_path: string; kind: string }): Promise<{
+async function extractDocument(doc: { id: string; file_name: string; storage_path: string; kind: string }, context: LlmContext): Promise<{
   lines: ParsedLine[];
   summary: DocSummary;
   meta: { page_count?: number; text_chars?: number; used_ocr?: boolean };
@@ -88,7 +88,7 @@ async function extractDocument(doc: { id: string; file_name: string; storage_pat
     }
     const { text, truncated } = workbookToText(wb);
     if (truncated) summary.warnings.push("Fichier très volumineux : seule la première partie a été analysée.");
-    const lines = (await extractDpgfLinesFromText([{ page: 1, text }])).map((l) => ({ ...fromAi(l), sourcePage: null }));
+    const lines = (await extractDpgfLinesFromText([{ page: 1, text }], context)).map((l) => ({ ...fromAi(l), sourcePage: null }));
     summary.method = "ia_texte";
     summary.lines = lines.length;
     return { lines, summary, meta: {} };
@@ -96,18 +96,18 @@ async function extractDocument(doc: { id: string; file_name: string; storage_pat
 
   const pdf = await extractPdfText(buffer);
   const meta = { page_count: pdf.pageCount, text_chars: pdf.totalChars, used_ocr: pdf.needsOcr };
-  if (!aiConfigured()) throw new AiUnavailableError();
+  if (!aiConfigured()) throw new AiFailure("not_configured");
   const lines: ParsedLine[] = [];
   if (!pdf.needsOcr) {
     for (let p = 0; p < pdf.pages.length; p += PAGES_PER_CALL) {
       const pages = pdf.pages.slice(p, p + PAGES_PER_CALL).map((text, i) => ({ page: p + i + 1, text }));
-      lines.push(...(await extractDpgfLinesFromText(pages)).map((l) => fromAi(l)));
+      lines.push(...(await extractDpgfLinesFromText(pages, context)).map((l) => fromAi(l)));
     }
     summary.method = "ia_texte";
   } else {
     // Lecture visuelle uniquement parce que le PDF n'a pas de texte exploitable.
     for (const chunk of await splitPdf(buffer, SCAN_PAGES_PER_CALL)) {
-      const extracted = await extractDpgfLinesFromScan({ filename: doc.file_name, data: chunk.data, firstPage: chunk.firstPage });
+      const extracted = await extractDpgfLinesFromScan({ filename: doc.file_name, data: chunk.data, firstPage: chunk.firstPage }, context);
       lines.push(...extracted.map((l) => fromAi(l)));
     }
     summary.method = "ia_scan";
@@ -142,7 +142,7 @@ export async function analyzeProject(projectId: string) {
     }
     await admin.from("project_documents").update({ status: "processing", error: null }).eq("id", doc.id);
     try {
-      const { lines, summary, meta } = await extractDocument(doc);
+      const { lines, summary, meta } = await extractDocument(doc, { organizationId: project.organization_id, projectId });
       // Réanalyse : on remplace les lignes non encore utilisées de ce document.
       const { error: cleanError } = await admin.from("project_lines").delete().eq("document_id", doc.id);
       if (cleanError) throw new PermanentJobError("Des lignes de ce document sont déjà utilisées dans une consultation.");
@@ -176,11 +176,16 @@ export async function analyzeProject(projectId: string) {
         .eq("id", doc.id);
       summaries.push(summary);
     } catch (err) {
+      // Panne passagère (saturation, réseau…) : la tâche entière est réessayée par la file ;
+      // les documents déjà traités ne sont pas relus.
+      if (err instanceof AiFailure && err.retryable) throw err;
       const message =
-        err instanceof PermanentJobError || err instanceof AiUnavailableError
+        err instanceof PermanentJobError
           ? err.message
-          : "Impossible d'analyser ce document.";
-      if (!(err instanceof PermanentJobError) && !(err instanceof AiUnavailableError)) {
+          : err instanceof AiFailure
+            ? err.userMessage
+            : "Impossible d'analyser ce document.";
+      if (!(err instanceof PermanentJobError) && !(err instanceof AiFailure)) {
         console.error(`[analysis] ${doc.id}:`, err instanceof Error ? err.message : err);
       }
       failures.push(`${doc.file_name} : ${message}`);
@@ -196,6 +201,7 @@ export async function analyzeProject(projectId: string) {
       try {
         const classes = await classifyLines(
           newLineIds.map(({ line }, i) => ({ i, lot: line.lot, code: line.code, designation: line.designation, unit: line.unit })),
+          { organizationId: project.organization_id, projectId },
         );
         for (let i = 0; i < newLineIds.length; i++) {
           const c = classes.get(i);
@@ -214,7 +220,11 @@ export async function analyzeProject(projectId: string) {
         if (unclassified) warnings.push(`${unclassified} ligne(s) non classée(s) automatiquement.`);
       } catch (err) {
         console.error("[analysis] classement:", err instanceof Error ? err.message : err);
-        warnings.push("Le classement automatique des familles a échoué : renseignez-les si besoin.");
+        warnings.push(
+          err instanceof AiFailure && !err.retryable
+            ? `Classement automatique indisponible : ${err.userMessage}`
+            : "Le classement automatique des familles a échoué : renseignez-les si besoin.",
+        );
       }
     } else {
       warnings.push("Classement automatique indisponible : familles d'achat non renseignées.");
@@ -240,6 +250,7 @@ export async function analyzeProject(projectId: string) {
 }
 
 export async function markAnalysisFailed(projectId: string, err: unknown) {
-  const message = err instanceof PermanentJobError ? err.message : "Impossible d'analyser ce dossier.";
+  const message =
+    err instanceof PermanentJobError ? err.message : err instanceof AiFailure ? err.userMessage : "Impossible d'analyser ce dossier.";
   await adminClient().from("projects").update({ analysis_status: "failed", analysis_error: message }).eq("id", projectId);
 }
