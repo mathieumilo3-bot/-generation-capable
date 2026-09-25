@@ -41,7 +41,7 @@ export async function ConsultationsTab({ projectId, closed }: { projectId: strin
   const hasAwaiting = consultations.some((c) => AWAITING.has(c.status));
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm">
           <span className="font-semibold tabular">

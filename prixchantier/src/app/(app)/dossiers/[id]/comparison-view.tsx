@@ -44,12 +44,18 @@ export function ComparisonView({ projectId, comparison }: { projectId: string; c
       : new Set(filter === "lowest" ? comparison.filters.comparable : comparison.filters[filter as "missing" | "differences" | "toVerify"]);
   const visible = ids ? lines.filter((l) => ids.has(l.id)) : lines;
   const cheapest = withOffer.filter((s) => s.total !== null).sort((a, b) => a.total! - b.total!)[0];
+  // « Total le plus bas » n'est affiché que pour une offre couvrant toute la demande.
+  const lowestComplete = cheapest && cheapest.missingCount === 0 && cheapest.coverage === 1;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {suppliers.map((s) => (
-          <SupplierCard key={s.consultationId} s={s} lowest={s.consultationId === cheapest?.consultationId && withOffer.length > 1} />
+          <SupplierCard
+            key={s.consultationId}
+            s={s}
+            lowest={Boolean(lowestComplete) && s.consultationId === cheapest?.consultationId && withOffer.length > 1}
+          />
         ))}
       </div>
 
@@ -154,7 +160,7 @@ function SupplierCard({ s, lowest }: { s: SupplierSummary; lowest: boolean }) {
             <ConsultationStatusBadge status={s.status} />
           </div>
         </div>
-        {lowest ? <Badge variant="success">Total le plus bas</Badge> : null}
+        {lowest ? <Badge variant="success">Total le plus bas</Badge> : s.hasOffer && s.coverage < 1 ? <Badge variant="warning">Périmètre incomplet</Badge> : null}
       </div>
       {s.hasOffer ? (
         <>

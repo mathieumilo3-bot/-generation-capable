@@ -41,7 +41,7 @@ export async function OffersTab({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       {responses.map((r) => {
         const files = (r.files as unknown as StoredFile[]) ?? [];
         const offer = r.offers.find((o) => o.is_current) ?? r.offers[0];
@@ -66,7 +66,7 @@ export async function OffersTab({ projectId }: { projectId: string }) {
               </div>
               {r.status === "failed" ? <RetryResponseButton responseId={r.id} /> : null}
             </CardHeader>
-            <CardContent className="grid gap-5">
+            <CardContent className="grid min-w-0 grid-cols-1 gap-5">
               {files.length ? (
                 <ul className="flex flex-wrap gap-2">
                   {files.map((f) => (

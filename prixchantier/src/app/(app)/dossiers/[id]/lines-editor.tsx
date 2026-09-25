@@ -94,7 +94,7 @@ export function LinesEditor({ projectId, lines, usedIds, closed }: { projectId: 
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">

@@ -33,8 +33,8 @@ export async function OverviewTab({ projectId, closed }: { projectId: string; cl
   const toAnalyze = documents?.some((d) => d.kind === "dpgf" && (d.status === "uploaded" || d.status === "failed"));
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-      <div className="grid content-start gap-6">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid min-w-0 content-start gap-6">
         {analyzing ? (
           <Alert variant="info">
             <Loader2 className="animate-spin" />

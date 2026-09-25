@@ -1,0 +1,68 @@
+name: PrixChantier — CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "prixchantier/**"
+      - ".github/workflows/prixchantier-ci.yml"
+  pull_request:
+    paths:
+      - "prixchantier/**"
+      - ".github/workflows/prixchantier-ci.yml"
+
+defaults:
+  run:
+    working-directory: prixchantier
+
+jobs:
+  checks:
+    name: Lint, types, tests unitaires
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: prixchantier/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  integration:
+    name: Intégration (Supabase local) et bout-en-bout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: prixchantier/package-lock.json
+      - run: npm ci
+      - name: Démarrer Supabase
+        run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta
+      - name: Écrire .env.local
+        run: |
+          npx supabase status -o env > /tmp/sb.env
+          . /tmp/sb.env
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "SUPABASE_SECRET_KEY=$SECRET_KEY"
+            echo "APP_URL=http://localhost:3000"
+            echo "CRON_SECRET=$(openssl rand -hex 24)"
+            echo "TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "ENABLE_TEST_MAILBOX=1"
+          } > .env.local
+      - run: npm run test:integration
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: prixchantier/test-results

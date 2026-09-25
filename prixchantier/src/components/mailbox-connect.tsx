@@ -56,6 +56,7 @@ export function MailboxConnect({
               {PROVIDER_LABEL[c.provider] ?? c.provider}
               {c.status !== "active" ? " — connexion expirée, reconnectez la boîte" : ""}
             </div>
+            {c.status === "active" && c.last_error ? <div className="text-xs text-warning">{c.last_error}</div> : null}
           </div>
           {c.status !== "active" ? <Badge variant="warning">Expirée</Badge> : null}
           <div className="ml-auto flex gap-2">

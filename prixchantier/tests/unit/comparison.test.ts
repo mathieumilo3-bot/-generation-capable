@@ -84,8 +84,9 @@ describe("comparatif", () => {
     expect(cmp.insights.join(" ")).not.toMatch(/meilleur/i);
   });
 
-  it("compare aussi à périmètre identique", () => {
-    expect(cmp.insights[1]).toMatch(/^À périmètre identique \(7 lignes chiffrées par tous\), Fournisseur A est le moins cher/);
+  it("cite l'offre complète la moins chère, puis compare à périmètre identique", () => {
+    expect(cmp.insights[1]).toBe("Parmi les offres couvrant toute la demande, Fournisseur A est la moins chère : 42 850 €.");
+    expect(cmp.insights[2]).toMatch(/^À périmètre identique \(7 lignes chiffrées par tous\), Fournisseur A est le moins cher/);
   });
 
   it("calcule totaux, couverture et lignes manquantes", () => {

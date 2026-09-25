@@ -42,7 +42,7 @@ export function SuppliersManager({ suppliers }: { suppliers: Row[] }) {
     });
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative sm:w-80">
           <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />

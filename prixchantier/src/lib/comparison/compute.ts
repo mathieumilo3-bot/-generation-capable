@@ -358,6 +358,12 @@ function buildInsights(summaries: SupplierSummary[], rows: CmpLine[], cells: Com
     );
   }
 
+  // Offre complète la moins chère (si elle n'est pas déjà la première citée).
+  const complete = priced.filter((s) => s.missingCount === 0 && s.coverage === 1);
+  if (complete.length && complete[0].consultationId !== first.consultationId) {
+    insights.push(`Parmi les offres couvrant toute la demande, ${complete[0].name} est la moins chère : ${euros(complete[0].total)}.`);
+  }
+
   // Comparaison à périmètre identique : lignes chiffrées par toutes les offres.
   const common = rows.filter((l) => priced.every((s) => cells[l.id][s.consultationId]?.kind === "priced"));
   if (common.length && common.length < rows.length) {

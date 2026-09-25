@@ -21,6 +21,13 @@ const suppliers = [
 ];
 const fixture = (n: string) => join(__dirname, "../tests/fixtures/files", n);
 let projectUrl = "";
+
+/** Captures d'écran pour relecture visuelle (SCREENSHOT_DIR=... npx playwright test). */
+async function shot(name: string) {
+  const dir = process.env.SCREENSHOT_DIR;
+  if (!dir) return;
+  await page.screenshot({ path: join(dir, `${name}.png`), fullPage: true });
+}
 let documentHref = "";
 
 test.describe.configure({ mode: "serial" });
@@ -128,6 +135,7 @@ test("1-2. création du compte et connexion de la boîte mail", async () => {
   await signup(page, user);
   await page.getByRole("button", { name: /Boîte de test/ }).click();
   await expect(page.getByText(user.email.toLowerCase())).toBeVisible();
+  await shot("01-onboarding-boite-mail");
   await page.getByRole("link", { name: "Créer mon premier dossier" }).click();
   await page.waitForURL("**/dossiers/nouveau");
 });
@@ -139,6 +147,7 @@ test("3-6. dossier, import d'un DPGF de 73 lignes, correction d'une ligne", asyn
   await page.getByLabel("Référence interne").fill("AO-2026-17");
   await page.locator('input[type="file"]').setInputFiles(fixture("dpgf-standard.xlsx"));
   await expect(page.getByText("dpgf-standard.xlsx")).toBeVisible();
+  await shot("02-nouveau-dossier");
   await page.getByRole("button", { name: "Analyser le dossier" }).click();
   await page.waitForURL(/\/dossiers\/[0-9a-f-]{36}$/);
   projectUrl = new URL(page.url()).pathname;
@@ -147,6 +156,7 @@ test("3-6. dossier, import d'un DPGF de 73 lignes, correction d'une ligne", asyn
   await expect(page.getByRole("link", { name: "Vérifier les lignes" })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText("73 lignes détectées", { exact: true })).toBeVisible();
   documentHref = (await page.getByRole("link", { name: "dpgf-standard.xlsx" }).getAttribute("href"))!;
+  await shot("03-dossier-apres-analyse");
 
   await page.getByRole("link", { name: "Vérifier les lignes" }).click();
   await expect(page.getByRole("heading", { name: "73 lignes détectées" })).toBeVisible();
@@ -157,6 +167,7 @@ test("3-6. dossier, import d'un DPGF de 73 lignes, correction d'une ligne", asyn
   const row = page.getByTestId("line-row").filter({ hasText: "Tube acier noir DN20" });
   await expect(row).toContainText("130");
   await expect(row).toContainText("Modifiée");
+  await shot("04-lignes");
   await page.getByRole("button", { name: "Valider les lignes" }).click();
   await expect(page.getByText("Lignes validées")).toBeVisible();
 });
@@ -175,6 +186,7 @@ test("7-10. trois fournisseurs, trois consultations validées et envoyées", asy
 
   await page.goto(`${projectUrl}/consultations/nouvelle`);
   for (const s of suppliers) await page.getByText(s.name, { exact: true }).click();
+  await shot("05-creer-consultation");
   await page.getByRole("button", { name: "Créer les 3 consultations" }).click();
   await page.waitForURL("**/consultations/envoi");
   await expect(page.getByTestId("draft-card")).toHaveCount(3);
@@ -182,6 +194,7 @@ test("7-10. trois fournisseurs, trois consultations validées et envoyées", asy
   await expect(firstCard.getByLabel("Objet")).toHaveValue(/Demande de prix – Résidence Les Tilleuls \(AO-2026-17\) \[PC-[A-Z0-9]{6}\]/);
   await expect(firstCard.getByLabel("Message")).toHaveValue(/Dans le cadre du chantier Résidence Les Tilleuls/);
   await expect(firstCard.getByRole("link", { name: /Demande de prix PC-.+\.xlsx/ })).toBeVisible();
+  await shot("06-validation-envoi");
 
   for (let i = 0; i < 3; i++) {
     await page.getByTestId("draft-card").first().getByRole("button", { name: "Envoyer la consultation" }).click();
@@ -254,13 +267,16 @@ test("11-19. réponses PDF et Excel, rattachement, extraction, trous, comparatif
     await expect(page.getByTestId("consultation-row").filter({ hasText: "Fournisseur C" })).toContainText("Réponse partielle", { timeout: 1000 });
   }).toPass({ timeout: 90_000, intervals: [2000] });
 
+  await shot("07-consultations");
   await page.goto(`${projectUrl}?tab=offres`);
   await expect(page.getByTestId("response-card")).toHaveCount(3);
   await expect(page.getByTestId("response-card").filter({ hasText: "Fournisseur B" })).toContainText("rattachée par fil de discussion");
   await expect(page.getByTestId("response-card").filter({ hasText: "Fournisseur C" })).toContainText("rattachée par référence dans l'objet");
 
+  await shot("08-offres");
   await page.goto(`${projectUrl}?tab=comparatif`);
   await expect(page.getByTestId("supplier-card")).toHaveCount(3);
+  await shot("09-comparatif");
   for (const total of await page.getByTestId("supplier-total").allTextContents()) expect(total).toMatch(/\d[\d\s]* €/);
   await expect(page.getByTestId("supplier-card").filter({ hasText: "Fournisseur A" })).toContainText("3 lignes demandées absentes du devis.");
   await expect(page.getByTestId("supplier-card").filter({ hasText: "Fournisseur A" })).toContainText("Mise en service non incluse.");
@@ -269,6 +285,7 @@ test("11-19. réponses PDF et Excel, rattachement, extraction, trous, comparatif
   await expect(page.getByTestId("insight").first()).toContainText("moins cher que");
   await expect(page.getByTestId("cell-missing").first()).toBeVisible();
   await page.getByRole("button", { name: /Lignes manquantes/ }).click();
+  await shot("10-comparatif-lignes-manquantes");
   const missingRows = await page.getByTestId("comparison-row").count();
   expect(missingRows).toBeGreaterThanOrEqual(Math.ceil(c.lines.length / 2));
 });
@@ -285,6 +302,27 @@ test("20-21. export XLSX du comparatif", async () => {
   const header = [6, 9, 12].map((col) => String(cmp.getRow(1).getCell(col).value));
   expect(header.sort()).toEqual(["Fournisseur A", "Fournisseur B", "Fournisseur C"]);
   expect(wb.getWorksheet("Lignes manquantes")!.rowCount).toBeGreaterThan(3);
+});
+
+test("affichage mobile des écrans principaux", async () => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const [name, url] of [
+    ["m1-dashboard", "/"],
+    ["m2-dossier", projectUrl],
+    ["m3-lignes", `${projectUrl}?tab=lignes`],
+    ["m4-consultations", `${projectUrl}?tab=consultations`],
+    ["m5-comparatif", `${projectUrl}?tab=comparatif`],
+    ["m6-fournisseurs", "/fournisseurs"],
+  ] as const) {
+    await page.goto(url);
+    await page.waitForLoadState("networkidle");
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, `défilement horizontal sur ${url}`).toBeLessThanOrEqual(1);
+    await shot(name);
+  }
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  await shot("11-dashboard");
 });
 
 test("22. une autre entreprise n'accède à rien", async ({ browser }) => {
