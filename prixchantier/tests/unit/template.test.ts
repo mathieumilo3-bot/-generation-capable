@@ -34,7 +34,7 @@ describe("fichier Excel de consultation", () => {
 
   it("relit exactement un fichier rempli par le fournisseur", async () => {
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(await build());
+    await wb.xlsx.load((await build()) as never);
     const ws = wb.getWorksheet("Demande de prix")!;
     ws.getCell("F7").value = 12.4;
     ws.getCell("F8").value = "15,90"; // saisi en texte à la française
@@ -67,7 +67,7 @@ describe("fichier Excel de consultation", () => {
 
   it("classe en réponse partielle quand des prix manquent", async () => {
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(await build());
+    await wb.xlsx.load((await build()) as never);
     wb.getWorksheet("Demande de prix")!.getCell("F7").value = 10;
     const draft = parseFilledTemplate(readWorkbook(Buffer.from(await wb.xlsx.writeBuffer()), "xlsx"), "c.xlsx")!;
     expect(draft.classification).toBe("partial");

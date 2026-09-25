@@ -70,7 +70,7 @@ export class ActionError extends Error {
   }
 }
 
-export type ActionResult<T = undefined> =
+export type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 

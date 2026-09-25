@@ -11,7 +11,7 @@ export function normalizeText(value: unknown): string {
   if (value === null || value === undefined) return "";
   return String(value)
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/²/g, "2")
     .replace(/³/g, "3")

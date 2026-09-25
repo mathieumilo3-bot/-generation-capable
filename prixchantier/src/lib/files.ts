@@ -27,7 +27,7 @@ export function sanitizeFileName(name: string): string {
   const base = baseName
     .replace(/\.[a-z0-9]{1,8}$/i, "")
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^A-Za-z0-9._-]+/g, "_")
     .replace(/_+/g, "_")
     .replace(/^[._-]+|[._-]+$/g, "")
