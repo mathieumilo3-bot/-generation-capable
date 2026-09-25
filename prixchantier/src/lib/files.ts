@@ -37,7 +37,6 @@ export function sanitizeFileName(name: string): string {
 
 /** Nom affichable : on garde les accents mais on retire tout caractère de contrôle. */
 export function displayFileName(name: string): string {
-  // eslint-disable-next-line no-control-regex
   return name.replace(/[\u0000-\u001f\u007f/\\]/g, "_").trim().slice(0, 255) || "fichier";
 }
 

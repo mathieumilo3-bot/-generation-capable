@@ -9,7 +9,6 @@ export function headerSafe(value: string): string {
 /** Encodage RFC 2047 si nécessaire. */
 export function encodeHeader(value: string): string {
   const v = headerSafe(value);
-  // eslint-disable-next-line no-control-regex
   if (/^[\x20-\x7e]*$/.test(v)) return v;
   return `=?UTF-8?B?${Buffer.from(v, "utf8").toString("base64")}?=`;
 }

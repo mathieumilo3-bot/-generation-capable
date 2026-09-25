@@ -1,6 +1,7 @@
 import "server-only";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
 import type { InboundMessage, InboundSummary, MailProvider, OutgoingMessage, SentMessage } from "./types";
 
@@ -27,14 +28,14 @@ export type StoredMessage = {
 };
 
 export function testMailboxDir() {
-  return process.env.TEST_MAILBOX_DIR || join(process.cwd(), ".e2e", "mailbox");
+  return process.env.TEST_MAILBOX_DIR || join(/* turbopackIgnore: true */ tmpdir(), "prixchantier-mailbox");
 }
 
 export class TestMailProvider implements MailProvider {
   constructor(private email: string) {}
 
   private dir(kind: "sent" | "inbox") {
-    return join(testMailboxDir(), this.email.toLowerCase(), kind);
+    return join(/* turbopackIgnore: true */ testMailboxDir(), this.email.toLowerCase(), kind);
   }
 
   async send(msg: OutgoingMessage): Promise<SentMessage> {
@@ -55,7 +56,7 @@ export class TestMailProvider implements MailProvider {
       date: new Date().toISOString(),
       attachments: msg.attachments.map((a) => ({ filename: a.filename, contentType: a.contentType, base64: a.content.toString("base64") })),
     };
-    await writeFile(join(this.dir("sent"), `${id}.json`), JSON.stringify(stored, null, 2));
+    await writeFile(join(/* turbopackIgnore: true */ this.dir("sent"), `${id}.json`), JSON.stringify(stored, null, 2));
     return { providerMessageId: id, providerThreadId: stored.threadId, internetMessageId: stored.internetMessageId, sentAt: stored.date };
   }
 
@@ -64,7 +65,7 @@ export class TestMailProvider implements MailProvider {
     const files = await readdir(dir).catch(() => []);
     const out: StoredMessage[] = [];
     for (const f of files.filter((x) => x.endsWith(".json"))) {
-      out.push(JSON.parse(await readFile(join(dir, f), "utf8")) as StoredMessage);
+      out.push(JSON.parse(await readFile(join(/* turbopackIgnore: true */ dir, f), "utf8")) as StoredMessage);
     }
     return out;
   }

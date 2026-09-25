@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getLlm, type LlmPart } from "./llm";
+import { CATEGORIES } from "@/lib/labels";
 
 /**
  * Tâches IA à sortie strictement structurée.
@@ -7,28 +8,7 @@ import { getLlm, type LlmPart } from "./llm";
  * null ce qui n'est pas écrit ; signaler l'incertitude via `confidence`.
  */
 
-export const CATEGORIES = [
-  "Production chaud/froid",
-  "Émetteurs",
-  "Ventilation / CTA",
-  "Réseaux aérauliques",
-  "Tuyauterie / réseaux",
-  "Robinetterie / vannes",
-  "Pompes / circulateurs",
-  "Régulation / GTB",
-  "Calorifuge / isolation",
-  "Production ECS",
-  "Appareils sanitaires",
-  "Évacuations",
-  "Distribution électrique",
-  "Câbles / conduits",
-  "Appareillage / éclairage",
-  "Courants faibles",
-  "Sécurité incendie",
-  "Main d'œuvre / prestations",
-  "Études / essais / DOE",
-  "Divers",
-] as const;
+export { CATEGORIES };
 
 const confidence = z.number().min(0).max(1);
 
