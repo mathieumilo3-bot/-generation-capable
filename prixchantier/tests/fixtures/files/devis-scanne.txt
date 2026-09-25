@@ -1,0 +1,10 @@
+Fournisseur S - Devis 5521
+FA48210  Tube acier noir DN20  120 ML  8.00
+FA48217  Tube acier noir DN25  95 ML  21.37
+FA48224  Tube acier noir DN32  60 ML  34.74
+FA48231  Tube acier noir DN40  45 ML  48.11
+FA48238  Tube multicouche 16x2 sous gaine  340 ML  61.48
+FA48245  Tube multicouche 20x2 sous gaine  180 ML  74.85
+FA48252  Vanne d'équilibrage DN20  14 PCE  88.22
+FA48259  Vanne d'équilibrage DN25  8 PCE  101.59
+Validite 30 jours
