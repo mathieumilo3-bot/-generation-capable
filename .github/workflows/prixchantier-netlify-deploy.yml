@@ -1,0 +1,23 @@
+name: Deploy PrixChantier to Netlify
+
+on:
+  push:
+    branches:
+      - "prixchantier/netlify-deploy-20260926"
+    paths:
+      - ".github/workflows/prixchantier-netlify-deploy.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy PrixChantier
+        working-directory: prixchantier
+        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..eshPF7L7mvIpAv6o.x085yACEJoL9FobsoXMYok0idNVbh1O8ybCySmJkE_B5ge7E1p8HlwdNHA1CwNPlWZhAyaG-PLhYi0eHcNCC3nzktdlEas7nEFDiJl3Dr0SmNu60hOJ1FajKh74gq88AfoJBQGeMdmrvIyzMX9wEEL1SLH1MSCy2AK67xYkaxrNg_OI3My0zfTsxU5jpF4jCJX4wsEZYQ4MBb4cXgyVJQQogACuOYoUE-JZ8YhtKOt3qdmALS5VgILm-ONlqujQfQnn-7nXjDuW81Ixmujo8sih4_-UWzTjpVp9pBOi1OmMqKTk64QBM-H9ohShng_j9FFJ5z5JplhmGCw2WcgnUJaQiN24WooZzLfYpO28ngF-zIl_SMM3eqOdLrK83zCUoMdQfqNrX.SuYKcNLZXAQx_efwQAmHVw" --no-wait
