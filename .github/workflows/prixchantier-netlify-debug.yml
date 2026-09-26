@@ -1,4 +1,4 @@
-name: Smoke test PrixChantier production
+name: Inspect Netlify MCP zipAndBuild
 
 on:
   push:
@@ -11,28 +11,19 @@ permissions:
   contents: read
 
 jobs:
-  smoke:
+  inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Check public routes
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Inspect implementation
         run: |
-          set -e
-          for path in /login /signup /forgot-password; do
-            code=$(curl -L -sS -o /tmp/body.html -w "%{http_code}" "https://prixchantier.netlify.app$path")
-            echo "$path HTTP=$code"
-            grep -o '<title>[^<]*' /tmp/body.html | head -1 || true
-            test "$code" = "200"
-          done
-      - name: Check protected root redirect
-        run: |
-          code=$(curl -sS -o /dev/null -w "%{http_code}" https://prixchantier.netlify.app/)
-          location=$(curl -sSI https://prixchantier.netlify.app/ | tr -d '\r' | awk 'tolower($1)=="location:" {print $2}' | tail -1)
-          echo "/ HTTP=$code LOCATION=$location"
-          test "$code" = "307" -o "$code" = "302" -o "$code" = "303"
-          echo "$location" | grep -q "/login"
-      - name: Check cron protection
-        run: |
-          code=$(curl -sS -o /tmp/cron.json -w "%{http_code}" https://prixchantier.netlify.app/api/cron/tick)
-          echo "/api/cron/tick HTTP=$code"
-          cat /tmp/cron.json
-          test "$code" = "401"
+          npm pack @netlify/mcp@latest >/tmp/pkg.txt
+          PKG=$(tail -1 /tmp/pkg.txt)
+          mkdir pkg
+          tar -xzf "$PKG" -C pkg
+          LINE=$(grep -n "zipAndBuild" pkg/package/dist/netlify-mcp.js | head -1 | cut -d: -f1)
+          START=$((LINE-140))
+          END=$((LINE+180))
+          sed -n "${START},${END}p" pkg/package/dist/netlify-mcp.js
