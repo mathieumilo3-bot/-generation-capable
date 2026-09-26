@@ -1,4 +1,4 @@
-name: Capture Netlify remote Next build log
+name: Read Netlify remote Next build log
 
 on:
   push:
@@ -11,23 +11,10 @@ permissions:
   contents: read
 
 jobs:
-  capture:
+  readlog:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Prepare diagnostic build
-        working-directory: prixchantier
-        run: |
-          cat > netlify.toml <<'EOF'
-          [build]
-            command = "mkdir -p debug && (npm run build > debug/build.log 2>&1; echo $? > debug/exit.txt; true)"
-            publish = "debug"
-          [build.environment]
-            NODE_VERSION = "22"
-          EOF
-      - name: Deploy diagnostic and wait
-        working-directory: prixchantier
-        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..x3WmEjEamxXyj0ns.kB7auIauNyWcsnsWi1C5Q1nCKJ1eMizRS0oflZPXHoXPTwKOwjhC-vYlGfCECKwSpqfDAaQGbbav2FkG1qSuhGQUyaKzd5yPFgorOQ51k1087xJzQSGjVPxZPKfAFar8CqnZ37ZnApTNNT3Xu1DwKpZb2DqLNx3BfOK69sgDZvCgXu5nZeT_Wc4l_E7vvOZsMxLeKEJa7790v2M6MxJaRSIHqpAC-fDGQVaknGVgD982nb20IAQnFzQCmd6RK2VtHgX_XWDXIg7PHdJBZgEwk79RRPMkdBFSbnEPyjd6KrJKJA7YAwKbfuKvkjDKAfaE3gmw2EaMzCOjySnrVYLQsVs5tW016FBUR67fHKGRM8Odwj_4x35Ra74WaUxBVdJqnOsKuSp5.XG9TzNsfz8eK6achAEPAUA"
+      - name: Read exit code
+        run: curl -fsSL https://prixchantier.netlify.app/exit.txt || true
+      - name: Read build log
+        run: curl -fsSL https://prixchantier.netlify.app/build.log || true
