@@ -1,4 +1,4 @@
-name: Inspect Netlify MCP CLI
+name: Inspect Netlify MCP deploy code
 
 on:
   push:
@@ -17,13 +17,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Inspect package
+      - name: Inspect deploy implementation
         run: |
           npm pack @netlify/mcp@latest >/tmp/pkg.txt
           PKG=$(tail -1 /tmp/pkg.txt)
           mkdir pkg
           tar -xzf "$PKG" -C pkg
-          echo "=== proxy-path references ==="
-          grep -Rni --exclude='*.map' "proxy-path\|proxyPath\|site-id\|no-wait" pkg/package | head -120 || true
-          echo "=== argv/options ==="
-          grep -Rni --exclude='*.map' "process.argv\|parseArgs\|commander\|yargs\|option(" pkg/package | head -160 || true
+          sed -n '1680,1815p' pkg/package/dist/netlify-mcp.js
