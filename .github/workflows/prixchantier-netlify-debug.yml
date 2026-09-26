@@ -1,0 +1,26 @@
+name: Debug PrixChantier Netlify build
+
+on:
+  push:
+    branches:
+      - "prixchantier/netlify-deploy-20260926"
+    paths:
+      - ".github/workflows/prixchantier-netlify-debug.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        working-directory: prixchantier
+        run: npm ci
+      - name: Netlify build
+        working-directory: prixchantier
+        run: npx -y netlify-cli@latest build
