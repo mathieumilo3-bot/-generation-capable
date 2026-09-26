@@ -29,7 +29,6 @@ jobs:
       - name: Build deploy-ready Netlify output locally
         working-directory: prixchantier
         run: |
-          cp netlify.toml /tmp/netlify-original.toml 2>/dev/null || true
           cat > netlify.toml <<'EOF'
           [build]
             command = "npm run build"
@@ -42,14 +41,15 @@ jobs:
           npx -y netlify-cli@latest build --offline
           rm -rf prebuilt-netlify
           mv .netlify prebuilt-netlify
+
           cat > netlify.toml <<'EOF'
           [build]
-            command = "rm -rf .netlify && cp -a prebuilt-netlify .netlify"
+            command = "rm -rf .netlify && cp -a prebuilt-netlify .netlify && rm -rf .netlify/functions-internal .netlify/edge-functions"
             publish = ".netlify/static"
 
           [build.environment]
             NODE_VERSION = "22"
           EOF
-      - name: Deploy prebuilt runtime through Netlify build
+      - name: Deploy already-packaged Netlify runtime
         working-directory: prixchantier
-        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..O41OeM03jwYZ6ziI.L8XPrRknT_ZM9MzkV237Hv3cwSAI7i9M9jLh99_8CTIjz7vDBbtr4xfj86a7g1zxhmS5JdNskDUGA0CPwwGR0IkTd8tMeddUtSMWj9zGcOk5q_eu4szdLzT_PTAzMUjZNiWbdZv73VOp7ru1-yOh5doPmj-pweS-CUkafWfPPOTLPS7bcSMJ1WXDL2kiUqeEO3uFWgF8LOumdCbNn4iqPVfjkMva4XWAdT77f7iy56dzGei0iRfYZL3m6BXJ2M2ABu23ni7feAUh5HP_E0ptmkrc2N6OcpAaJCzMyP7JYmWE-2UAYDBDvcwuLgbHkdkizQUeXT64Vzrdsn0x9fq4p2YIS2rVO4FvaNcwWwtg9h2o8nt4lBJLlAbaodKzcuF1aH1smY6K.B60Mn2omEa9wpyBrr-unMA"
+        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..F6Tl7053FZ14UeLH.ICJxIz1zCohz0j3i4OCIrFpLsMfCp3hk52u2iSw3XIUT9UCVs3RsM3MSt3i5GSG2asI5b70ub1s6-4JLnH4aeB11Cz95-hcoCF_xK4p2tuSzZeufeXhndnMdLGvPYeUS78Mr3AmVTuCmK_dYbczppZshTlVXsv9jn-jTdFf_KTo7ZCqPJOYd5ipYL-EBfdcmBuemhUoSza5Pf3gRlaVOcXOttR4evuIgyWhRWP3STEyachOKWlnsRJaX4AFm8OBjvDUmWz5tK1FZe6CQo0zLh9fQ5cV3ma1Aikki6bo8FUPs3xppUM2ocxWbJA18LX_BYGCrfSy3qE0f97aJiJdTt64xBLfleH_08rjx-1ny2iCTNeQsZwAFKbgrZysPn6NviJngoTX8.Cthi3KoT1yadxGqCp0t9Uw"
