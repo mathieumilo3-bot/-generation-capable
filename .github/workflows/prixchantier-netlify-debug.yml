@@ -21,6 +21,11 @@ jobs:
       - name: Install
         working-directory: prixchantier
         run: npm ci
+      - name: Link local Netlify state
+        working-directory: prixchantier
+        run: |
+          mkdir -p .netlify
+          printf '{"siteId":"043f9a8f-7a88-4f95-b3c8-85b8c5606799"}' > .netlify/state.json
       - name: Netlify build
         working-directory: prixchantier
-        run: npx -y netlify-cli@latest build
+        run: npx -y netlify-cli@latest build --offline
