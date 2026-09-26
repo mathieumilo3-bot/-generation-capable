@@ -1,4 +1,4 @@
-name: Inspect Netlify MCP zipAndBuild
+name: Debug Netlify remote Next build
 
 on:
   push:
@@ -11,19 +11,17 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  debug:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Inspect implementation
+      - name: Force Next runtime config
+        working-directory: prixchantier
         run: |
-          npm pack @netlify/mcp@latest >/tmp/pkg.txt
-          PKG=$(tail -1 /tmp/pkg.txt)
-          mkdir pkg
-          tar -xzf "$PKG" -C pkg
-          LINE=$(grep -n "zipAndBuild" pkg/package/dist/netlify-mcp.js | head -1 | cut -d: -f1)
-          START=$((LINE-140))
-          END=$((LINE+180))
-          sed -n "${START},${END}p" pkg/package/dist/netlify-mcp.js
+          printf '[build]\ncommand = "npm run build"\n\n[build.environment]\nNODE_VERSION = "22"\n\n[[plugins]]\npackage = "@netlify/plugin-nextjs"\n' > netlify.toml
+      - name: Remote deploy verbose
+        working-directory: prixchantier
+        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..T1-fW_3btDh5lEUl.Mq2hoCef_Ph34rBKuOmIPjG2slyQpCSJ3hfN2HFWKS9yW_E-4tRh1kNOWwxPHNQ1yJuhrdj0GYmOXjeF3FdTrrRjAI8zgMC8L8wBTyIVach-uuF0q0OwrAzIn15Kq8Yqi7S3z34er0FcxVzIqucZgZvHDNQji_uIAA35DfRHiXmr2PQfBDYH0K8AuiAGXq_FURiuy5wqn6hWDegb8uSAt5U_qbF4-Pr1FyJhf4sYmT2f8MjcV1YPyqvJkmqpWSiUMyOs8pnlNKFS9PKXiKLXV2ZjTHyhOmD9Ssp7YFc0h62fu4lMNLBGCKSWGP3gQzvBOK0jEmCvTLbXzKBe6QHmeEsk2VPuCwFM76cph59r3lX1rbEgNJ35vzEZqq_h3bhrby3yDVBJ.VfFvAXEb_hEJ3QukrHwZLw" --verbose
