@@ -1,4 +1,4 @@
-name: Validate PrixChantier nested Netlify build
+name: Validate PrixChantier nested Netlify build v2
 
 on:
   push:
