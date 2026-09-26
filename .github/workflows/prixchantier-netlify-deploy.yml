@@ -1,4 +1,4 @@
-name: Check PrixChantier live
+name: Inspect Netlify MCP deploy CLI
 
 on:
   push:
@@ -11,16 +11,10 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Check routes
-        run: |
-          set -e
-          for path in / /login /signup /forgot-password; do
-            code=$(curl -L -sS -o /tmp/body.html -w "%{http_code}" "https://prixchantier.netlify.app$path")
-            title=$(grep -o '<title>[^<]*' /tmp/body.html | head -1 | sed 's/<title>//')
-            echo "$path HTTP=$code TITLE=$title"
-          done
-          code=$(curl -L -sS -o /tmp/login.html -w "%{http_code}" https://prixchantier.netlify.app/login)
-          test "$code" = "200"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx -y @netlify/mcp@latest --help
