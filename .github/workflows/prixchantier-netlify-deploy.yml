@@ -1,4 +1,4 @@
-name: Inspect Netlify MCP deploy CLI
+name: Deploy PrixChantier to Netlify
 
 on:
   push:
@@ -11,10 +11,13 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx -y @netlify/mcp@latest --help
+      - name: Deploy PrixChantier
+        working-directory: prixchantier
+        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..fpPSHBJE0swFHYWs.O7WMjruGqPWZtfL2UmjqjrlvTJA0dJez8yKUSdSPwD_ah-yUlbDxD1Tkf1vsbHRqc9tIgfsfQwZHmPtsA0KAunYDz4raz7fjbqgYl9mnS84qUlNS3IXtRs6_V1sA5zSKJiBgQz__ZMw2QzAwgNlUEDqzTCnRzCIEZjTA6TQTAHe-STDXLcgLhYut3r_WpsYIYpBDreW9D6hFnkkT1HXGmCa-_V387oEng9N3XXSssvEwF_RWLEuRO814Z-592pJdCd9CTWtWmw8-7u9s-L08O5kPf_4keMw9k9ixf8R0fWrWl3_KbwtPdFVXw03TZmT7ECIEvWtDLLdE6Ah5wrPs08spy7J9jVFe_HeZ-8aQG_rKrSVsYzM9OGaEVnNojj833al0lLb3.i25oyPTOSbcANJzC2rtHtQ" --no-wait
