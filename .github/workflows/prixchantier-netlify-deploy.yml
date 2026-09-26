@@ -18,6 +18,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Deploy PrixChantier
+      - name: Deploy PrixChantier and wait
         working-directory: prixchantier
-        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..sVgx37upxqh044hK.FMXRKvCXQ_tBNDI-P2OKguIxN6gBPN9cuoKc3GMdk2FjlgFWZH9Bw5OmVQZhv7JZVhSo116ZFPRGDR0SFuiBllmxvh1LJbk-_bTibu0D9EcnvU457NVnmCr2tcRUwh9riVoJwjLnnyEwv2CzsvpBUHqgol2QPu-FnynBqiNBC9jTbzw61s22_8zxOFTRnEjcmXuv5TWDC0scUZqcNw5AKwy13HmMx9Upyrc_zW_Ornqdp9DlYqajYY-4gxn6x38Oa0s2EKiiDwNi6I2OzEezyEra7oFhZh0jCr8_RVki7rpJnpYgehkFXOUeKA77vJn-O7i3nzsrMc32NlrRbjDoSSMQxxph2HJaDpIsp1V-7YVO5Q-8fG9QhRXOKQJIsih4bdOVnWsx.rhlX7niY0s9lRK26PFcanA" --no-wait
+        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..m411ztqroWOJfRQF.2smnzEGkxK_ru4EE2vNOy8aSWpH-xOJ4f505TpExbu9pKOzeA0U501CTvmqs74Y64jZ4ASnQGBCdqzncwov3p8UgYh5Lc-UQGUnP4F9Aca5eWLt2_ITxqxIgm_4d6wBcvi4G2ItHFLis4NHh4YqB-OANzsODj9HdGXLqyHtqZq8RICuMtQUMXulCRhlcyDqbmbhc1gvH60Q4z5j1CUaIZOfSYXMWeB6YNWKKMuTz3ymsJYq72adiE9AmBW-J8CmHya9u94LnBHfJH1qmqkOXXUpbZ4YkXtjxNBE00czbNsw5eAYBmE5pV3v_0SJLcigi_NSH5tEPpGoVIjQOEIhjbqbzGxRt14FjkjG0vdAiKAKEewXFO9IUTAVs3ucajKMMgxMyNMCd.GxCOHHdbcYq4eU9hy6bdEA"
