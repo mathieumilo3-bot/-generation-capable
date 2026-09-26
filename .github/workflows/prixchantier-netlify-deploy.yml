@@ -1,4 +1,4 @@
-name: Check PrixChantier live
+name: Deploy PrixChantier to Netlify
 
 on:
   push:
@@ -11,13 +11,13 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Check home
-        run: |
-          set -e
-          code=$(curl -L -sS -o /tmp/home.html -w "%{http_code}" https://prixchantier.netlify.app/)
-          echo "HTTP=$code"
-          head -c 1200 /tmp/home.html | sed 's/</\n</g' | head -40
-          test "$code" = "200"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy PrixChantier
+        working-directory: prixchantier
+        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..dN_7EbjlqRrWDRBA.uSGZTHliqFFCxmTXRo1CJOioOeIwric9oxeRdT0yLe6mybhwIsG8JKXgDxEttfvOkcQked_oRivykymEkQU4grdGvnGKHhWc5u1eMKALhEs1i2BFLfZ3TDfvVQndHQCN-b2ha2WpsriKJIytR9bb-ChI0SQgKEo7vqYurYKajgWFw0XbFE5DMo0xYnB-2lKopuPXDAPjvbOojdJvfCUo4Gmo5ULL_yGAp5JTJ4k4VfIlktPhcnY_65t_9APqmMVqD0drKyDbNLj9zJTkIBP6Ygki5i0OgcAjRkyAozokmTjNA-wdLiLiKWEot0rksvJ4XZQM-1TA84Da8y3jHywNpLvH-vakQwnF5K7go7cRn4hSpPOyCASbSWEsihEUs0lND4PlX5xy.7GGHw4WdnCGPzPPE5kmpeA" --no-wait
