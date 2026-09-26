@@ -1,0 +1,20 @@
+name: Package PrixChantier source
+
+on:
+  push:
+    branches:
+      - "prixchantier/deploy-package-20260926"
+    paths:
+      - ".github/workflows/prixchantier-package.yml"
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prixchantier-source
+          path: prixchantier
+          if-no-files-found: error
+          include-hidden-files: true
