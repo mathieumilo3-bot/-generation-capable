@@ -27,6 +27,7 @@ export class OAuthError extends Error {
   constructor(
     message: string,
     public invalidGrant = false,
+    public code: string | null = null,
   ) {
     super(message);
     this.name = "OAuthError";
@@ -99,7 +100,7 @@ async function tokenRequest(provider: OAuthProvider, params: Record<string, stri
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     const code = String(json.error ?? res.status);
-    throw new OAuthError(`Échec OAuth ${provider} (${code})`, code === "invalid_grant");
+    throw new OAuthError(`Échec OAuth ${provider} (${code})`, code === "invalid_grant", code);
   }
   return {
     accessToken: String(json.access_token),
