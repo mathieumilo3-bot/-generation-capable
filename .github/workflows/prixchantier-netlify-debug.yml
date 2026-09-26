@@ -1,4 +1,4 @@
-name: Validate PrixChantier nested Netlify build v2
+name: Inspect Netlify MCP CLI
 
 on:
   push:
@@ -11,25 +11,19 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  inspect:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install
-        working-directory: prixchantier
-        run: npm ci
-      - name: Validate full Netlify build
-        working-directory: prixchantier
+      - name: Inspect package
         run: |
-          mkdir -p .netlify
-          printf '{"siteId":"043f9a8f-7a88-4f95-b3c8-85b8c5606799"}' > .netlify/state.json
-          npx -y netlify-cli@latest build --offline
-          echo "FUNCTIONS"
-          find .netlify/functions -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
-          echo "EDGE"
-          find .netlify/edge-functions-dist -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
-          echo "STATIC"
-          du -sh .netlify/static
+          npm pack @netlify/mcp@latest >/tmp/pkg.txt
+          PKG=$(tail -1 /tmp/pkg.txt)
+          mkdir pkg
+          tar -xzf "$PKG" -C pkg
+          echo "=== proxy-path references ==="
+          grep -Rni --exclude='*.map' "proxy-path\|proxyPath\|site-id\|no-wait" pkg/package | head -120 || true
+          echo "=== argv/options ==="
+          grep -Rni --exclude='*.map' "process.argv\|parseArgs\|commander\|yargs\|option(" pkg/package | head -160 || true
