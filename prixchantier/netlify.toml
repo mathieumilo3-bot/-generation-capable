@@ -1,0 +1,23 @@
+# PrixChantier — configuration Netlify.
+#
+# Ce fichier vit dans prixchantier/ : le site Netlify (id 043f9a8f-7a88-4f95-b3c8-85b8c5606799)
+# doit avoir son "Base directory" réglé sur "prixchantier" (monorepo). Le build
+# tourne alors depuis ce dossier, où ce fichier est lu.
+#
+# Runtime Next.js : le plugin est déclaré explicitement ET installé en
+# devDependency avec une version épinglée (voir package.json), pour que
+# l'environnement de build distant résolve exactement la même version que
+# celle validée en local — pas de résolution implicite divergente.
+#
+# Ne jamais publier .next comme site statique : Next.js utilise des routes
+# dynamiques et des Server Actions, qui nécessitent le runtime serveur que ce
+# plugin transforme en fonctions Netlify (et en edge functions pour le proxy).
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
