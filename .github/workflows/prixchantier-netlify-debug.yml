@@ -1,4 +1,4 @@
-name: Read current PrixChantier diagnostic
+name: Smoke PrixChantier production
 
 on:
   push:
@@ -11,14 +11,15 @@ permissions:
   contents: read
 
 jobs:
-  read:
+  smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Read exit
+      - name: Check public routes
         run: |
-          echo "=== exit.txt ==="
-          curl -i -sS https://prixchantier.netlify.app/exit.txt || true
-      - name: Read build log
-        run: |
-          echo "=== build.log ==="
-          curl -i -sS https://prixchantier.netlify.app/build.log || true
+          for p in / /login /signup /forgot-password /api/cron/tick; do
+            echo "=== $p ==="
+            curl -sS -o /tmp/body -D /tmp/headers -w "HTTP=%{http_code}\n" "https://prixchantier.netlify.app$p" || true
+            head -20 /tmp/headers
+            head -c 500 /tmp/body || true
+            echo
+          done
