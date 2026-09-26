@@ -1,4 +1,4 @@
-name: Read Netlify remote Next build log
+name: Capture Netlify Next runtime failure
 
 on:
   push:
@@ -11,10 +11,29 @@ permissions:
   contents: read
 
 jobs:
-  readlog:
+  capture:
     runs-on: ubuntu-latest
     steps:
-      - name: Read exit code
-        run: curl -fsSL https://prixchantier.netlify.app/exit.txt || true
-      - name: Read build log
-        run: curl -fsSL https://prixchantier.netlify.app/build.log || true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Force runtime and error capture
+        working-directory: prixchantier
+        run: |
+          cat > netlify.toml <<'EOF'
+          [build]
+            command = "npm run build"
+            publish = ".next"
+          [build.environment]
+            NODE_VERSION = "22"
+
+          [[plugins]]
+            package = "./netlify-debug-plugin"
+
+          [[plugins]]
+            package = "@netlify/plugin-nextjs"
+          EOF
+      - name: Deploy and wait for captured failure
+        working-directory: prixchantier
+        run: npx -y @netlify/mcp@latest --site-id 043f9a8f-7a88-4f95-b3c8-85b8c5606799 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..9lNANN1yHeni7tjT.dPy4-M1OnUKEzlIM0ygaNt-CDRldY19Wt7vS_rz-AfA10Jl8aE7gp6PE9wJIdEpoXCBIf2foUVXkMhttQ_n8yJrx-BaX49pTipfc95qqC0h05x9voePj-F4SAXhYNHo8427u8cCjzEA2wYxoTPe76HSTiXGG4M8sf6zbT3WZxlY06UsgqNJsO1B6qf7CyiM__B-feSFs21Dm8c2u-RYYWya9S8VBXiYF8q7t0D02wLB8czT_suaNeNCde4TuSRdQuJ1hv2rxtpl8nfZLVa_lkcYC2bTlH_2OyYSOvGTWU4sNB80qh1v1J3-E9EGPN_-qlpM7Gz89BNaeyFl46VCdoltVW6UrQhAEQTsIgxrhRmqf3gInbCFLMkzuLlw9j2-Z_q9bqWhQ.dBy4fEZMmJ4b0zzVDwjTwQ"
