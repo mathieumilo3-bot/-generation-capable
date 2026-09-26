@@ -1,5 +1,25 @@
 [build]
-  command = "npm run build"
+  command = "bash scripts/netlify-prebuilt-build.sh"
+  publish = ".netlify/static"
+  edge_functions = ".netlify/edge-functions"
 
 [build.environment]
   NODE_VERSION = "22"
+
+[functions]
+  directory = ".netlify/functions"
+
+[[edge_functions]]
+  function = "___netlify-edge-handler-node-middleware"
+  pattern = "^(?:/(_next/data/[^/]{1,}))?(?:/((?!_next/static|_next/image|favicon.ico|api/cron|.*\\.(?:svg|png|jpg|ico)$).*))(\\.json|\\.rsc|\\.segments/.+\\.segment\\.rsc)?[/#\\?]?$"
+
+[[redirects]]
+  from = "/_next/image"
+  to = "/.netlify/images?url=:url&w=:width&q=:quality"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/___netlify-server-handler"
+  status = 200
+  force = false
