@@ -4,7 +4,7 @@ import { getAuthUser } from "@/lib/session";
 import { env } from "@/lib/env";
 import { adminClient } from "@/lib/supabase/admin";
 import { encryptSecret } from "@/lib/mail/crypto";
-import { exchangeCode, hasRequiredScopes, mailboxIdentity, OAUTH_COOKIE, type OAuthProvider } from "@/lib/mail/oauth";
+import { exchangeCode, hasRequiredScopes, mailboxIdentity, OAuthError, OAUTH_COOKIE, type OAuthProvider } from "@/lib/mail/oauth";
 
 function sameString(a: string, b: string) {
   const ba = Buffer.from(a);
@@ -75,6 +75,12 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/mail/[pr
     return done("mail=connected");
   } catch (err) {
     console.error("[oauth] échec de connexion:", err instanceof Error ? err.message : err);
+    if (err instanceof OAuthError) {
+      if (err.code === "invalid_client") return done("mail_error=invalid_client");
+      if (err.code === "invalid_grant") return done("mail_error=invalid_grant");
+      if (err.code === "redirect_uri_mismatch") return done("mail_error=redirect_uri");
+      if (err.message.includes("profil Gmail")) return done("mail_error=identity");
+    }
     return done("mail_error=exchange");
   }
 }
