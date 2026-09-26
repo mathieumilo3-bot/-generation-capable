@@ -2,3 +2,4 @@ Trigger Netlify production deploy after Supabase server key configuration.
 Runtime env repaired: CRON_SECRET + TOKEN_ENCRYPTION_KEY.
 Google OAuth configured; trigger production rebuild.
 Retry Google OAuth after credential correction.
+Corrected Google OAuth client ID.
