@@ -11,7 +11,7 @@
     "test": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "fixtures": "tsx scripts/generate-fixtures.ts && python3 scripts/make-scanned-pdf.py"
   },
   "dependencies": {
