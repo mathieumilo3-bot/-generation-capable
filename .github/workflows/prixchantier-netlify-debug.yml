@@ -1,4 +1,4 @@
-name: Package PrixChantier Netlify output
+name: Validate PrixChantier nested Netlify build
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  package:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,22 +21,15 @@ jobs:
       - name: Install
         working-directory: prixchantier
         run: npm ci
-      - name: Build Netlify output
+      - name: Validate full Netlify build
         working-directory: prixchantier
         run: |
           mkdir -p .netlify
           printf '{"siteId":"043f9a8f-7a88-4f95-b3c8-85b8c5606799"}' > .netlify/state.json
-          cp netlify.toml /tmp/netlify.outer.toml
-          printf '[build]\ncommand = "npm run build"\n\n[[plugins]]\npackage = "@netlify/plugin-nextjs"\n' > netlify.toml
           npx -y netlify-cli@latest build --offline
-          mv /tmp/netlify.outer.toml netlify.toml
-          echo "=== directories ==="
-          find .netlify -maxdepth 3 -type d | sort | head -120
-          echo "=== files ==="
-          find .netlify -maxdepth 3 -type f | sort | head -180
-      - uses: actions/upload-artifact@v4
-        with:
-          name: prixchantier-netlify-output
-          path: prixchantier/.netlify
-          include-hidden-files: true
-          retention-days: 1
+          echo "FUNCTIONS"
+          find .netlify/functions -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+          echo "EDGE"
+          find .netlify/edge-functions-dist -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+          echo "STATIC"
+          du -sh .netlify/static
