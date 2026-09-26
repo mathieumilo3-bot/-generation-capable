@@ -19,7 +19,7 @@ cat > netlify.toml <<'EOF'
   package = "@netlify/plugin-nextjs"
 EOF
 
-npx -y netlify-cli@latest build --offline
+NETLIFY_NEXT_PLUGIN_SKIP=0 npx -y netlify-cli@latest build --offline
 restore
 trap - EXIT
 
