@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, FileText, Loader2, XCircle } from "lucide-react";
+import { AlertTriangle, Bot, CheckCircle2, Clock3, FileSpreadsheet, FileText, Loader2, MailCheck, RefreshCcw, Scale, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -23,18 +23,118 @@ const METHOD: Record<string, string> = {
 
 export async function OverviewTab({ projectId, closed }: { projectId: string; closed: boolean }) {
   const supabase = await createClient();
-  const [{ data: project }, { data: documents }, { data: activity }] = await Promise.all([
+  const [
+    { data: project },
+    { data: documents },
+    { data: activity },
+    { data: consultations },
+    { data: responses },
+    { data: offers },
+    { data: followups },
+  ] = await Promise.all([
     supabase.from("projects").select("analysis_status, analysis_error, analysis_summary").eq("id", projectId).single(),
     supabase.from("project_documents").select("*").eq("project_id", projectId).order("created_at"),
     supabase.from("activity_logs").select("id, message, created_at, type").eq("project_id", projectId).order("created_at", { ascending: false }).limit(40),
+    supabase.from("consultations").select("id, status, sent_at, responded_at, error").eq("project_id", projectId),
+    supabase.from("supplier_responses").select("id, status, classification").eq("project_id", projectId),
+    supabase.from("offers").select("id, consultation_id, is_current").eq("project_id", projectId).eq("is_current", true),
+    supabase
+      .from("scheduled_followups")
+      .select("id, status, due_at, consultations!inner(project_id)")
+      .eq("consultations.project_id", projectId),
   ]);
   const summary = project?.analysis_summary as Summary | null;
   const analyzing = project?.analysis_status === "pending" || project?.analysis_status === "running";
   const toAnalyze = documents?.some((d) => d.kind === "dpgf" && (d.status === "uploaded" || d.status === "failed"));
 
+  const sentCount = (consultations ?? []).filter((x) => !["a_envoyer", "annulee"].includes(x.status)).length;
+  const responseCount = (responses ?? []).filter((x) => x.status === "processed").length;
+  const offerCount = offers?.length ?? 0;
+  const scheduledFollowups = (followups ?? []).filter((x) => x.status === "scheduled").length;
+  const errorCount = (consultations ?? []).filter((x) => x.status === "erreur").length;
+  const waitingCount = (consultations ?? []).filter((x) => ["envoye", "relance_prevue", "relance"].includes(x.status)).length;
+  const autopilotStarted = (activity ?? []).some((a) => ["autopilot_launched", "auto_launch"].includes(a.type));
+  const autopilotFailed = (activity ?? []).find((a) => a.type === "autopilot_failed");
+
+  const autopilotLabel = analyzing
+    ? "Analyse du dossier"
+    : autopilotFailed && !autopilotStarted
+      ? "Action requise"
+      : sentCount
+        ? waitingCount
+          ? "En attente des fournisseurs"
+          : offerCount
+            ? "Comparatif alimenté"
+            : "Consultations traitées"
+        : summary?.total_lines
+          ? "Prêt à consulter"
+          : "En attente du DPGF";
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="grid min-w-0 content-start gap-6">
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b bg-muted/30">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <Bot className="size-5" />
+                </span>
+                <div>
+                  <CardTitle>Pilote automatique</CardTitle>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {autopilotLabel} · le traitement continue même si vous fermez PrixChantier.
+                  </p>
+                </div>
+              </div>
+              <Badge variant={errorCount || (autopilotFailed && !autopilotStarted) ? "danger" : sentCount ? "success" : analyzing ? "info" : "neutral"}>
+                {errorCount || (autopilotFailed && !autopilotStarted) ? "À vérifier" : sentCount ? "Actif" : analyzing ? "En cours" : "Prêt"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 pt-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-lg border p-3">
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground"><MailCheck className="size-3.5" /> Demandes</div>
+                <div className="text-2xl font-semibold tabular">{sentCount}</div>
+                <div className="text-xs text-muted-foreground">envoyées</div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground"><CheckCircle2 className="size-3.5" /> Réponses</div>
+                <div className="text-2xl font-semibold tabular">{responseCount}</div>
+                <div className="text-xs text-muted-foreground">traitées</div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground"><RefreshCcw className="size-3.5" /> Relances</div>
+                <div className="text-2xl font-semibold tabular">{scheduledFollowups}</div>
+                <div className="text-xs text-muted-foreground">programmées</div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground"><Scale className="size-3.5" /> Offres</div>
+                <div className="text-2xl font-semibold tabular">{offerCount}</div>
+                <div className="text-xs text-muted-foreground">au comparatif</div>
+              </div>
+            </div>
+
+            {waitingCount ? (
+              <div className="flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2.5 text-sm">
+                <Clock3 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <span>
+                  {waitingCount} fournisseur{waitingCount > 1 ? "s" : ""} encore attendu{waitingCount > 1 ? "s" : ""}. PrixChantier surveille la boîte mail et relancera automatiquement si nécessaire.
+                </span>
+              </div>
+            ) : null}
+
+            {autopilotFailed && !autopilotStarted ? (
+              <Alert variant="destructive">
+                <AlertTriangle />
+                <AlertTitle>Le pilote automatique a rencontré un blocage</AlertTitle>
+                <AlertDescription>{autopilotFailed.message}</AlertDescription>
+              </Alert>
+            ) : null}
+          </CardContent>
+        </Card>
+
         {analyzing ? (
           <Alert variant="info">
             <Loader2 className="animate-spin" />
