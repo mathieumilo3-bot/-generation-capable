@@ -1,6 +1,6 @@
 import "server-only";
 
-import OpenAI, { APIError } from "openai";
+import OpenAI from "openai";
 import { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
 import { AiFailure, classifyOpenAiError } from "@/lib/ai/llm";
@@ -85,10 +85,6 @@ Trouve au maximum ${limit} fournisseurs distincts en France. Ne retourne aucun f
       })
       .slice(0, limit);
   } catch (err) {
-    if (err instanceof APIError) {
-      console.error("[supplier-discovery] OpenAI", { status: err.status, code: err.code, message: err.message });
-      throw new Error(`supplier-discovery HTTP ${err.status ?? "?"} ${String(err.code ?? "")}: ${err.message}`);
-    }
     throw classifyOpenAiError(err);
   }
 }
