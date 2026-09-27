@@ -172,6 +172,7 @@ export async function registerDocuments(
     const s = await requireActionSession();
     const { supabase } = await ownProject(projectId);
     const storage = adminClient().storage.from(BUCKET);
+    let hasDpgf = false;
     for (const d of docs) {
       const kind = fileKind(d.name);
       if (!kind || !pathBelongsTo(d.path, s.organizationId, projectId, "source")) throw new ActionError("Fichier invalide.");
@@ -181,16 +182,27 @@ export async function registerDocuments(
         await storage.remove([d.path]);
         throw new ActionError(`« ${d.name} » dépasse 25 Mo.`);
       }
+      const docKind = z.enum(["dpgf", "cctp", "other"]).parse(d.kind);
       const { error: insertError } = await supabase.from("project_documents").insert({
         project_id: projectId,
-        kind: z.enum(["dpgf", "cctp", "other"]).parse(d.kind),
+        kind: docKind,
         file_name: displayFileName(d.name),
         storage_path: d.path,
         mime_type: MIME_BY_KIND[kind],
         size_bytes: info.size,
       });
       if (insertError && insertError.code !== "23505") throw new ActionError("Enregistrement du document impossible.");
+      if (docKind === "dpgf") hasDpgf = true;
     }
+
+    // Le dépôt du DPGF suffit : l'analyse démarre automatiquement, puis le job
+    // d'analyse déclenche le pilote achat. Aucun clic supplémentaire n'est requis.
+    if (hasDpgf) {
+      await supabase.from("projects").update({ analysis_status: "pending", analysis_error: null }).eq("id", projectId);
+      await enqueue("analyze_project", { projectId }, { organizationId: s.organizationId, dedupeKey: `analyze:${projectId}` });
+      kickWorker();
+    }
+
     revalidatePath(`/dossiers/${projectId}`);
   });
 }
