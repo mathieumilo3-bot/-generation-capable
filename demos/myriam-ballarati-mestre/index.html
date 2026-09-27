@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Myriam Ballarati-Mestre — Hypnothérapeute à Bordeaux</title>
+<meta name="description" content="Maquette 1 — cabinet thérapeutique premium. Hypnothérapie, thérapies brèves et PNL à Bordeaux et en visio.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#F8F4EC;
+    --ivory-2:#F1EADD;
+    --graphite:#1D1C1A;
+    --graphite-soft:#3A3733;
+    --brun:#4B322C;
+    --brun-clair:#C9A98C;
+    --line: rgba(29,28,26,0.12);
+    --line-dark: rgba(248,244,236,0.14);
+    --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --max: 1180px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--ivory);
+    color:var(--graphite);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  img{max-width:100%;display:block;}
+  a{color:inherit;}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 32px;}
+  @media (max-width:640px){ .wrap{padding:0 20px;} }
+
+  .eyebrow{
+    font-family:var(--sans);
+    font-size:12px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    font-weight:600;
+    color:var(--brun);
+  }
+  .on-dark .eyebrow{color:var(--brun-clair);}
+
+  h1,h2,h3{
+    font-family:var(--serif);
+    font-weight:500;
+    line-height:1.1;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+
+  /* ---------- NAV ---------- */
+  .nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(248,244,236,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  .nav.scrolled{border-color:var(--line);}
+  .nav-inner{
+    max-width:var(--max);margin:0 auto;padding:18px 32px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  @media (max-width:640px){ .nav-inner{padding:16px 20px;} }
+  .brand{
+    font-family:var(--serif);font-size:19px;letter-spacing:.01em;
+    text-decoration:none;color:var(--graphite);
+  }
+  .nav-cta{
+    font-family:var(--sans);font-size:13px;font-weight:600;
+    letter-spacing:.02em;
+    background:var(--graphite);color:var(--ivory);
+    padding:11px 22px;border-radius:2px;text-decoration:none;
+    transition:background .25s ease;
+    white-space:nowrap;
+  }
+  .nav-cta:hover{background:var(--brun);}
+
+  /* ---------- BUTTONS ---------- */
+  .btn-primary{
+    display:inline-block;
+    font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:.02em;
+    background:var(--graphite);color:var(--ivory);
+    padding:16px 34px;border-radius:2px;text-decoration:none;
+    transition:background .25s ease, transform .25s ease;
+  }
+  .btn-primary:hover{background:var(--brun);}
+  .on-dark .btn-primary{background:var(--ivory);color:var(--graphite);}
+  .on-dark .btn-primary:hover{background:var(--brun-clair);}
+
+  .btn-secondary{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--sans);font-size:14px;font-weight:600;
+    color:var(--graphite);text-decoration:none;
+    padding:16px 4px;border-bottom:1px solid var(--graphite);
+    transition:opacity .2s ease;
+  }
+  .btn-secondary:hover{opacity:.6;}
+  .on-dark .btn-secondary{color:var(--ivory);border-color:var(--ivory);}
+
+  /* ---------- SECTION 1 : HERO ---------- */
+  .hero{
+    padding:96px 0 72px;
+    min-height:calc(100svh - 68px);
+    display:flex;align-items:center;
+  }
+  .hero-grid{
+    width:100%;
+    display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center;
+  }
+  @media (max-width:900px){
+    .hero{min-height:auto;padding:56px 0 48px;}
+    .hero-grid{grid-template-columns:1fr;gap:40px;}
+    .hero-grid{display:flex;flex-direction:column-reverse;}
+  }
+  .hero-title{
+    font-size:clamp(34px,4.6vw,56px);
+    margin-top:18px;
+  }
+  .hero-lede{
+    font-size:17px;color:var(--graphite-soft);
+    max-width:480px;margin-top:24px;
+  }
+  .hero-actions{
+    display:flex;align-items:center;gap:28px;flex-wrap:wrap;
+    margin-top:36px;
+  }
+  .hero-tags{
+    margin-top:44px;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--graphite-soft);
+    opacity:.7;
+  }
+  .hero-visual{position:relative;}
+  .portrait{
+    aspect-ratio:4/5;width:100%;border-radius:2px;
+    background:
+      radial-gradient(120% 140% at 15% 0%, #EFE6D6 0%, transparent 55%),
+      linear-gradient(150deg,#E4D9C6 0%,#C9B79C 45%,#6E5847 100%);
+    position:relative;overflow:hidden;
+    display:flex;align-items:flex-start;
+  }
+  .portrait::after{
+    content:"Portrait de Myriam — cabinet, lumière naturelle\A(photo réelle à intégrer)";
+    white-space:pre;
+    display:block;width:100%;padding:22px;
+    font-family:var(--sans);font-size:12px;letter-spacing:.03em;
+    color:rgba(29,28,26,.55);
+    background:linear-gradient(180deg, rgba(248,244,236,.55), transparent);
+  }
+  .floating-card{
+    position:absolute;left:-28px;bottom:34px;
+    background:var(--ivory);
+    border:1px solid var(--line);
+    padding:18px 22px;border-radius:2px;
+    box-shadow:0 18px 40px -18px rgba(29,28,26,.28);
+    font-size:13.5px;line-height:1.5;
+    max-width:230px;
+  }
+  .floating-card strong{display:block;font-weight:600;margin-bottom:2px;}
+  @media (max-width:900px){
+    .floating-card{position:static;margin-top:16px;max-width:none;}
+  }
+
+  /* ---------- SECTION 2 : IDENTIFICATION ---------- */
+  .section{padding:104px 0;}
+  @media (max-width:640px){ .section{padding:64px 0;} }
+  .section-head{max-width:640px;}
+  .section-title{font-size:clamp(28px,3.6vw,42px);margin-top:14px;}
+  .section-lede{font-size:16.5px;color:var(--graphite-soft);margin-top:20px;}
+
+  .cards-grid{
+    margin-top:56px;
+    display:grid;grid-template-columns:repeat(3,1fr);
+    border-top:1px solid var(--line);
+    border-left:1px solid var(--line);
+  }
+  @media (max-width:900px){ .cards-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:600px){ .cards-grid{grid-template-columns:1fr;} }
+  .id-card{
+    padding:36px 32px;
+    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    transition:background .25s ease;
+  }
+  .id-card:hover{background:var(--ivory-2);}
+  .id-card h3{font-family:var(--sans);font-size:17px;font-weight:600;letter-spacing:-.005em;}
+  .id-card p{font-size:14.5px;color:var(--graphite-soft);margin:10px 0 0;}
+
+  /* ---------- SECTION 3 : PREUVE (dark) ---------- */
+  .on-dark{background:var(--graphite);color:var(--ivory);}
+  .proof-grid{
+    display:grid;grid-template-columns:.85fr 1.15fr;gap:72px;align-items:center;
+    margin-top:52px;
+  }
+  @media (max-width:900px){ .proof-grid{grid-template-columns:1fr;gap:40px;} }
+  .proof-photo{
+    aspect-ratio:3/4;border-radius:2px;overflow:hidden;
+    background:
+      radial-gradient(120% 140% at 85% 0%, #5C463C 0%, transparent 55%),
+      linear-gradient(160deg,#2B2724 0%,#413731 55%,#5C463C 100%);
+    display:flex;align-items:flex-end;
+  }
+  .proof-photo::after{
+    content:"Photo de Myriam en cabinet\A(à intégrer)";
+    white-space:pre;
+    display:block;width:100%;padding:20px;
+    font-family:var(--sans);font-size:12px;color:rgba(248,244,236,.6);
+    background:linear-gradient(0deg, rgba(29,28,26,.5), transparent);
+  }
+  .proof-title{font-size:clamp(26px,3.2vw,36px);margin-top:14px;}
+  .proof-text{font-size:16px;color:rgba(248,244,236,.78);margin-top:22px;max-width:460px;}
+  .stat-row{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    margin-top:40px;background:var(--line-dark);
+  }
+  @media (max-width:640px){ .stat-row{grid-template-columns:1fr;} }
+  .stat{background:var(--graphite);padding:26px 24px;}
+  .stat-num{font-family:var(--serif);font-size:22px;}
+  .stat-sub{font-size:13.5px;color:rgba(248,244,236,.62);margin-top:8px;}
+
+  /* ---------- SECTION 4 : FONCTIONNEMENT ---------- */
+  .steps{
+    margin-top:60px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:48px;
+    position:relative;
+  }
+  @media (max-width:900px){ .steps{grid-template-columns:1fr;gap:40px;} }
+  .steps::before{
+    content:"";position:absolute;left:0;right:0;top:14px;height:1px;
+    background:var(--line);
+  }
+  @media (max-width:900px){ .steps::before{display:none;} }
+  .step-num{
+    font-family:var(--serif);font-size:15px;color:var(--brun);
+    background:var(--ivory);padding-right:14px;display:inline-block;
+    position:relative;z-index:1;
+  }
+  .step h3{font-family:var(--serif);font-size:21px;margin-top:18px;font-weight:500;}
+  .step p{font-size:14.5px;color:var(--graphite-soft);margin-top:12px;max-width:320px;}
+  .steps-cta{margin-top:56px;}
+
+  /* ---------- SECTION 5 : AVIS ---------- */
+  .avis-head{text-align:center;max-width:520px;margin:0 auto;}
+  .stars{letter-spacing:.12em;color:var(--brun);font-size:16px;}
+  .avis-head .eyebrow{margin-top:14px;display:block;}
+  .avis-main{
+    max-width:760px;margin:52px auto 0;text-align:center;
+  }
+  .avis-quote{
+    font-family:var(--serif);font-weight:400;font-style:italic;
+    font-size:clamp(22px,3vw,32px);line-height:1.35;color:var(--graphite);
+  }
+  .avis-attrib{margin-top:22px;font-size:13.5px;color:var(--graphite-soft);letter-spacing:.02em;}
+  .avis-side{
+    margin-top:56px;display:grid;grid-template-columns:1fr 1fr;gap:1px;
+    background:var(--line);
+  }
+  @media (max-width:700px){ .avis-side{grid-template-columns:1fr;} }
+  .avis-side-item{background:var(--ivory);padding:30px 34px;}
+  .avis-side-item p{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--graphite-soft);}
+  .avis-side-item span{display:block;margin-top:14px;font-family:var(--sans);font-style:normal;font-size:12.5px;letter-spacing:.02em;color:var(--graphite-soft);opacity:.75;}
+  .avis-note{
+    margin-top:36px;text-align:center;font-size:12.5px;color:var(--graphite-soft);opacity:.65;
+  }
+
+  /* ---------- SECTION 6 : CONVERSION (dark) ---------- */
+  .convert{text-align:center;padding-top:120px;padding-bottom:120px;}
+  @media (max-width:640px){ .convert{padding-top:72px;padding-bottom:72px;} }
+  .convert-title{
+    font-size:clamp(30px,4.2vw,50px);max-width:760px;margin:0 auto;
+  }
+  .convert-sub{
+    margin-top:22px;font-size:15px;color:rgba(248,244,236,.68);
+    letter-spacing:.02em;
+  }
+  .convert-cta{margin-top:38px;}
+  .convert-price{margin-top:22px;font-size:13.5px;color:rgba(248,244,236,.62);}
+
+  .footer-strip{
+    border-top:1px solid var(--line-dark);
+    margin-top:88px;padding-top:40px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+    font-size:13.5px;color:rgba(248,244,236,.6);
+  }
+  @media (max-width:700px){ .footer-strip{grid-template-columns:1fr;gap:28px;text-align:left;} }
+  .footer-strip strong{display:block;color:var(--ivory);font-weight:600;margin-bottom:6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;}
+  .footer-legal{
+    margin-top:56px;padding-top:24px;border-top:1px solid var(--line-dark);
+    font-size:12px;color:rgba(248,244,236,.4);text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav" id="siteNav">
+  <div class="nav-inner">
+    <a class="brand" href="#hero">Myriam Ballarati-Mestre</a>
+    <a class="nav-cta" href="#rdv">Prendre rendez-vous</a>
+  </div>
+</nav>
+
+<!-- ============ 1. HERO ============ -->
+<section class="hero" id="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">Hypnothérapie · Bordeaux &amp; visio</span>
+        <h1 class="hero-title">Retrouver un espace<br>pour avancer.</h1>
+        <p class="hero-lede">Un accompagnement personnalisé pour celles et ceux qui souhaitent dépasser un blocage, traverser une période de changement ou retrouver davantage de liberté dans leur quotidien.</p>
+        <div class="hero-actions">
+          <a class="btn-primary" href="#rdv">Prendre rendez-vous</a>
+          <a class="btn-secondary" href="#pour-qui">Découvrir l'accompagnement →</a>
+        </div>
+        <p class="hero-tags">Hypnose · Thérapies brèves · PNL</p>
+      </div>
+      <div class="hero-visual">
+        <div class="portrait"></div>
+        <div class="floating-card">
+          <strong>Cabinet à Bordeaux</strong>
+          Consultations également en visio
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. IDENTIFICATION ============ -->
+<section class="section" id="pour-qui">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Par où commencer</span>
+      <h2 class="section-title">Vous n'avez pas besoin de savoir<br>quelle méthode choisir.</h2>
+      <p class="section-lede">Vous venez avec une situation, une sensation ou quelque chose qui vous empêche d'avancer. Le travail commence à partir de là.</p>
+    </div>
+    <div class="cards-grid">
+      <div class="id-card">
+        <h3>Stress &amp; surcharge</h3>
+        <p>Quand tout semble prendre trop de place.</p>
+      </div>
+      <div class="id-card">
+        <h3>Confiance en soi</h3>
+        <p>Quand quelque chose vous retient malgré l'envie d'avancer.</p>
+      </div>
+      <div class="id-card">
+        <h3>Habitudes &amp; comportements</h3>
+        <p>Quand vous avez compris le problème mais que le changement reste difficile.</p>
+      </div>
+      <div class="id-card">
+        <h3>Transitions de vie</h3>
+        <p>Séparation, nouveau départ, changement personnel ou professionnel.</p>
+      </div>
+      <div class="id-card">
+        <h3>Blocages émotionnels</h3>
+        <p>Quand certaines réactions semblent revenir malgré vous.</p>
+      </div>
+      <div class="id-card">
+        <h3>Performance &amp; objectifs</h3>
+        <p>Pour préparer une échéance ou retrouver des ressources.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. PREUVE ============ -->
+<section class="section on-dark" id="pourquoi">
+  <div class="wrap">
+    <span class="eyebrow">Pourquoi Myriam</span>
+    <div class="proof-grid">
+      <div class="proof-photo"></div>
+      <div>
+        <h2 class="proof-title">Une relation thérapeutique<br>avant une technique.</h2>
+        <p class="proof-text">Psychopraticienne et hypnothérapeute, Myriam Ballarati-Mestre accompagne enfants, adolescents et adultes à Bordeaux.</p>
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-num">1h minimum</div>
+            <div class="stat-sub">pour prendre réellement le temps lors d'une séance.</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">Cabinet + visio</div>
+            <div class="stat-sub">selon votre situation.</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">Approche personnalisée</div>
+            <div class="stat-sub">Hypnose, thérapies brèves et PNL.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. FONCTIONNEMENT ============ -->
+<section class="section" id="accompagnement">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">La méthode</span>
+      <h2 class="section-title">Comment se déroule<br>l'accompagnement ?</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01 — Comprendre</span>
+        <h3>Un premier échange</h3>
+        <p>Pour identifier votre besoin et votre objectif.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">02 — Travailler</span>
+        <h3>Une séance construite pour vous</h3>
+        <p>Et non autour d'un protocole générique.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">03 — Avancer</span>
+        <h3>Séance après séance</h3>
+        <p>Selon votre rythme et votre objectif.</p>
+      </div>
+    </div>
+    <div class="steps-cta">
+      <a class="btn-secondary" href="#rdv">Réserver une première séance →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. AVIS ============ -->
+<section class="section" id="avis">
+  <div class="wrap">
+    <div class="avis-head">
+      <div class="stars">★★★★★</div>
+      <span class="eyebrow">Ils témoignent de leur expérience</span>
+    </div>
+    <div class="avis-main">
+      <p class="avis-quote">« Emplacement réservé pour un témoignage client réel — à remplacer par un avis vérifié de Myriam. »</p>
+      <p class="avis-attrib">Prénom — source de l'avis</p>
+    </div>
+    <div class="avis-side">
+      <div class="avis-side-item">
+        <p>« Second témoignage à intégrer. »</p>
+        <span>Prénom — source</span>
+      </div>
+      <div class="avis-side-item">
+        <p>« Troisième témoignage à intégrer. »</p>
+        <span>Prénom — source</span>
+      </div>
+    </div>
+    <p class="avis-note">Textes à remplacer par les avis publics exacts de Myriam avant mise en ligne.</p>
+  </div>
+</section>
+
+<!-- ============ 6. CONVERSION ============ -->
+<section class="on-dark" id="rdv">
+  <div class="wrap convert">
+    <h2 class="convert-title">Et si votre premier pas<br>était simplement d'en parler ?</h2>
+    <p class="convert-sub">Cabinet à Bordeaux · Consultation à distance possible</p>
+    <div class="convert-cta">
+      <!-- Lien de prise de rendez-vous réel (Doctolib / Calendly...) à brancher ici -->
+      <a class="btn-primary" href="#">Prendre rendez-vous</a>
+    </div>
+    <p class="convert-price">Consultation adulte : 80 €</p>
+
+    <div class="footer-strip">
+      <div>
+        <strong>Adresse</strong>
+        [Adresse du cabinet à intégrer], Bordeaux
+      </div>
+      <div>
+        <strong>Horaires</strong>
+        [Horaires de consultation à intégrer]
+      </div>
+      <div>
+        <strong>Contact</strong>
+        [Téléphone / e-mail à intégrer]
+      </div>
+    </div>
+    <div class="footer-legal">Maquette 1 — document de présentation, non destiné à la mise en ligne en l'état.</div>
+  </div>
+</section>
+
+<script>
+  var nav = document.getElementById('siteNav');
+  window.addEventListener('scroll', function(){
+    nav.classList.toggle('scrolled', window.scrollY > 8);
+  }, { passive: true });
+</script>
+</body>
+</html>
