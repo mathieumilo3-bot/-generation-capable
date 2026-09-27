@@ -24,6 +24,24 @@ function authorized(request: NextRequest) {
  */
 async function tick(request: NextRequest) {
   if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // Also wake Commercial Radar. This reuses the already-proven Supabase Cron
+  // heartbeat that calls PrixChantier every minute, so Radar no longer depends
+  // on its own hosting scheduler to start background prospecting.
+  let radarKickStatus: number | null = null;
+  try {
+    const radarKick = await fetch("https://commercial-radar.netlify.app/api/cron/tick", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-radar-kick-source": "prixchantier-supabase-cron" },
+      body: JSON.stringify({ source: "prixchantier-supabase-cron", at: new Date().toISOString() }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    radarKickStatus = radarKick.status;
+  } catch {
+    radarKickStatus = 0;
+  }
+
   const admin = adminClient();
   const now = new Date();
 
@@ -58,7 +76,7 @@ async function tick(request: NextRequest) {
   }
 
   const { processed } = await runJobs({ deadlineMs: 240_000 });
-  return NextResponse.json({ polls, followups: due?.length ?? 0, processed });
+  return NextResponse.json({ polls, followups: due?.length ?? 0, processed, radarKickStatus });
 }
 
 export const GET = tick;
