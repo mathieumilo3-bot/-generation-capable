@@ -15,7 +15,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState, ProjectStatusBadge } from "@/components/page";
@@ -92,12 +91,12 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-2 border-t sm:grid-cols-5">
           {[
-            ["Dossiers actifs", activeProjects.length, Sparkles],
-            ["Demandes envoyées", sentCount, MailCheck],
-            ["Réponses traitées", processedResponses, CheckCircle2],
-            ["Relances prévues", scheduledCount, RefreshCcw],
-            ["Offres comparées", offerCount, Scale],
-          ].map(([label, value, Icon], i) => (
+            { label: "Dossiers actifs", value: activeProjects.length, Icon: Sparkles },
+            { label: "Demandes envoyées", value: sentCount, Icon: MailCheck },
+            { label: "Réponses traitées", value: processedResponses, Icon: CheckCircle2 },
+            { label: "Relances prévues", value: scheduledCount, Icon: RefreshCcw },
+            { label: "Offres comparées", value: offerCount, Icon: Scale },
+          ].map(({ label, value, Icon }, i) => (
             <div key={String(label)} className={"border-border p-4 sm:p-5 " + (i < 4 ? "border-r border-b sm:border-b-0" : "col-span-2 sm:col-span-1")}>
               <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Icon className="size-3.5" /> {label}
