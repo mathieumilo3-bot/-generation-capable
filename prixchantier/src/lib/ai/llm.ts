@@ -90,7 +90,7 @@ export function classifyOpenAiError(err: unknown): AiFailure {
   if (err instanceof APIError) {
     const code = String(err.code ?? "");
     if (err.status === 401 || err.status === 403) return new AiFailure("auth", `HTTP ${err.status}`);
-    if (err.status === 402 || code === "insufficient_quota" || code === "billing_hard_limit_reached") return new AiFailure("credit", code);
+    if (err.status === 402 || code === "insufficient_quota" || code === "billing_hard_limit_reached" || code === "credit_balance_exhausted") return new AiFailure("credit", code);
     if (err.status === 429) return new AiFailure("rate_limit");
     if (err.status === 408) return new AiFailure("timeout");
     if (typeof err.status === "number" && err.status >= 500) return new AiFailure("provider_down", `HTTP ${err.status}`);
