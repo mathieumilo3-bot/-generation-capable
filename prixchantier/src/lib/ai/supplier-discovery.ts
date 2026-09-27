@@ -11,6 +11,7 @@ const SupplierCandidateSchema = z.object({
   website: z.string().url(),
   source_url: z.string().url(),
   categories: z.array(z.string().min(1).max(100)).min(1).max(8),
+  matched_codes: z.array(z.string().min(1).max(100)).min(1).max(30),
   reason: z.string().min(1).max(400),
 });
 
@@ -47,7 +48,8 @@ export async function discoverSuppliersFromWeb(input: {
         "Tu es un acheteur BTP français. Recherche sur Internet des fournisseurs professionnels réellement existants et pertinents. " +
         "N'invente jamais une société, un e-mail ou une URL. Un fournisseur n'est admissible que si son e-mail professionnel public est visible sur son propre site officiel ou une page officielle de contact. " +
         "Privilégie les e-mails génériques professionnels (contact@, commercial@, devis@, agence@) et refuse les adresses personnelles ou celles trouvées uniquement sur des annuaires non officiels. " +
-        "Retourne uniquement des fournisseurs qui vendent réellement les familles ou produits demandés en France. source_url doit être la page exacte qui justifie l'e-mail ou le contact.",
+        "Retourne uniquement des fournisseurs qui vendent réellement les familles ou produits demandés en France. source_url doit être la page exacte qui justifie l\'e-mail ou le contact. " +
+        "categories doit reprendre uniquement des libellés exacts de la liste de familles fournie. matched_codes doit contenir uniquement les références exactes des lignes que ce fournisseur peut réellement chiffrer.",
       input: `Chantier: ${input.projectName}${input.projectReference ? ` — réf. ${input.projectReference}` : ""}
 
 Familles recherchées:
