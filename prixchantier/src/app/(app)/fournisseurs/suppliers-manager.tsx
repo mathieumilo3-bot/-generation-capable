@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/page";
 import { SupplierDialog, type SupplierRow } from "@/components/supplier-dialog";
 import { deleteSupplier, importSuppliersCsv } from "@/actions/suppliers";
 
-type Row = SupplierRow & { usage: { consulted: number; answered: number } };
+type Row = SupplierRow & { usage: { consulted: number; answered: number; lastContact: string | null; lastStatus: string | null } };
 
 export function SuppliersManager({ suppliers }: { suppliers: Row[] }) {
   const router = useRouter();
@@ -83,7 +83,8 @@ export function SuppliersManager({ suppliers }: { suppliers: Row[] }) {
                 <TableHead className="hidden md:table-cell">Commercial</TableHead>
                 <TableHead>E-mail</TableHead>
                 <TableHead className="hidden lg:table-cell">Familles</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">Consulté</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">Historique</TableHead>
+                <TableHead className="hidden md:table-cell">Dernier contact</TableHead>
                 <TableHead className="w-24 pr-5" />
               </TableRow>
             </TableHeader>
@@ -104,7 +105,25 @@ export function SuppliersManager({ suppliers }: { suppliers: Row[] }) {
                     </div>
                   </TableCell>
                   <TableCell className="hidden text-right text-muted-foreground tabular sm:table-cell">
-                    {s.usage.consulted ? `${s.usage.answered} rép. / ${s.usage.consulted}` : "—"}
+                    {s.usage.consulted ? `${s.usage.answered} rép. / ${s.usage.consulted} envoi${s.usage.consulted > 1 ? "s" : ""}` : "Jamais contacté"}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {s.usage.lastContact ? (
+                      <div className="grid gap-1">
+                        <span className="text-xs text-muted-foreground">{new Date(s.usage.lastContact).toLocaleDateString("fr-FR")}</span>
+                        <Badge variant={
+                          s.usage.lastStatus === "erreur" ? "danger" :
+                          ["repondu","reponse_partielle"].includes(s.usage.lastStatus ?? "") ? "success" :
+                          s.usage.lastStatus === "refus" ? "neutral" :
+                          s.usage.lastStatus === "relance" ? "warning" : "info"
+                        }>
+                          {s.usage.lastStatus === "erreur" ? "Erreur" :
+                           ["repondu","reponse_partielle"].includes(s.usage.lastStatus ?? "") ? "Répondu" :
+                           s.usage.lastStatus === "refus" ? "Refus" :
+                           s.usage.lastStatus === "relance" ? "Relancé" : "En attente"}
+                        </Badge>
+                      </div>
+                    ) : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="pr-5">
                     <div className="flex justify-end gap-1">
