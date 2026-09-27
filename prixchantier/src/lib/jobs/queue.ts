@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import type { JsonValue } from "@/lib/supabase/json";
 
-export type JobType = "analyze_project" | "process_response" | "poll_mailbox" | "send_followup";
+export type JobType = "analyze_project" | "auto_launch_project" | "process_response" | "poll_mailbox" | "send_followup";
 
 /**
  * Ajoute une tâche à la file persistante. Une tâche identique déjà en attente
