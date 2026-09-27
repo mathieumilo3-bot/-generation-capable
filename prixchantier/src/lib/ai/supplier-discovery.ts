@@ -41,7 +41,7 @@ export async function discoverSuppliersFromWeb(input: {
 
   try {
     const response = await client.responses.parse({
-      model: process.env.OPENAI_WEB_MODEL || "gpt-5.5",
+      model: process.env.OPENAI_WEB_MODEL || "gpt-5.6-luna",
       tools: [{ type: "web_search" }],
       include: ["web_search_call.action.sources"],
       instructions:
