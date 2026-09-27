@@ -19,7 +19,7 @@ async function handlers(): Promise<Record<JobType, Handler>> {
       onFailure: (p, e) => analysis.markAnalysisFailed(String(p.projectId), e),
     },
     auto_launch_project: {
-      run: (p) => autopilot.autoLaunchProject(String(p.projectId)),
+      run: (p) => autopilot.autoLaunchProject(String(p.projectId), { dryRun: p.dryRun === true }),
       onFailure: (p, e) => autopilot.markAutoLaunchFailed(String(p.projectId), e),
     },
     process_response: {
