@@ -7,9 +7,11 @@ import { AiFailure, classifyOpenAiError } from "@/lib/ai/llm";
 
 const SupplierCandidateSchema = z.object({
   company_name: z.string().min(1).max(200),
-  email: z.string().email().max(254),
-  website: z.string().url(),
-  source_url: z.string().url(),
+  // Garder le schéma API dans le sous-ensemble JSON Schema supporté par Structured Outputs.
+  // La validation e-mail / URL stricte est faite localement après la réponse.
+  email: z.string().min(3).max(254),
+  website: z.string().min(8).max(1000),
+  source_url: z.string().min(8).max(1000),
   categories: z.array(z.string().min(1).max(100)).min(1).max(8),
   matched_codes: z.array(z.string().min(1).max(100)).min(1).max(30),
   reason: z.string().min(1).max(400),
@@ -71,12 +73,12 @@ Trouve au maximum ${limit} fournisseurs distincts en France. Ne retourne aucun f
     return parsed.data.suppliers
       .filter((s) => {
         const email = s.email.trim().toLowerCase();
-        if (seen.has(email)) return false;
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || seen.has(email)) return false;
         seen.add(email);
         try {
           const website = new URL(s.website);
           const source = new URL(s.source_url);
-          return website.protocol.startsWith("http") && source.protocol.startsWith("http");
+          return ["http:", "https:"].includes(website.protocol) && ["http:", "https:"].includes(source.protocol);
         } catch {
           return false;
         }
