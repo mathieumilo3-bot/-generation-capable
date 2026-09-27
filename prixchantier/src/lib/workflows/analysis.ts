@@ -10,6 +10,7 @@ import { normalizeUnit, parseNumber } from "@/lib/parsing/normalize";
 import { aiConfigured, AiFailure, type LlmContext } from "@/lib/ai/llm";
 import { classifyLines, extractDpgfLinesFromScan, extractDpgfLinesFromText, type ExtractedPdfLine } from "@/lib/ai/tasks";
 import { PermanentJobError } from "@/lib/jobs/runner";
+import { enqueue } from "@/lib/jobs/queue";
 import { downloadFile } from "./storage";
 import type { JsonValue } from "@/lib/supabase/json";
 
@@ -247,6 +248,16 @@ export async function analyzeProject(projectId: string) {
     type: "analysis_done",
     message: status === "failed" ? "Analyse du dossier en échec." : `Analyse terminée : ${total} ligne${total > 1 ? "s" : ""} détectée${total > 1 ? "s" : ""}.`,
   });
+
+  // Une fois le DPGF compris, le reste du cycle achat part sans dépendre du navigateur :
+  // sélection / sourcing fournisseurs, envoi, relances, réponses et comparatif.
+  if (status === "done" && total > 0) {
+    await enqueue("auto_launch_project", { projectId }, {
+      organizationId: project.organization_id,
+      dedupeKey: `auto-launch:${projectId}`,
+      maxAttempts: 3,
+    });
+  }
 }
 
 export async function markAnalysisFailed(projectId: string, err: unknown) {
