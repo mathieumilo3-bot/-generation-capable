@@ -15,6 +15,7 @@ import { OffersTab } from "./offers-tab";
 import { ComparisonTab } from "./comparison-tab";
 import { ProjectMenu } from "./project-menu";
 import { RetryAnalysisButton } from "./retry-analysis-button";
+import { AutoLaunchButton } from "./auto-launch-button";
 
 const TABS = [
   { key: "general", label: "Vue générale" },
@@ -56,9 +57,11 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     primary = null;
   } else if (project.analysis_status === "failed" && !lineCount) {
     primary = <RetryAnalysisButton projectId={id} />;
+  } else if (lineCount && !project.consultations_count && !drafts) {
+    primary = <AutoLaunchButton projectId={id} />;
   } else if (lineCount && unvalidated && tab !== "lignes") {
     primary = (
-      <Button asChild size="lg">
+      <Button asChild size="lg" variant="outline">
         <Link href={`/dossiers/${id}?tab=lignes`}>Vérifier les lignes</Link>
       </Button>
     );
