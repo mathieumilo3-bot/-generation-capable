@@ -25,22 +25,23 @@ function authorized(request: NextRequest) {
 async function tick(request: NextRequest) {
   if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  // Also wake Commercial Radar. This reuses the already-proven Supabase Cron
-  // heartbeat that calls PrixChantier every minute, so Radar no longer depends
-  // on its own hosting scheduler to start background prospecting.
-  let radarKickStatus: number | null = null;
-  try {
-    const radarKick = await fetch("https://commercial-radar.netlify.app/api/cron/tick", {
+  // Commercial Radar uses the same proven Supabase heartbeat as PrixChantier,
+  // but dispatches independent micro-workers so one slow source cannot freeze
+  // all prospecting.
+  const radarLanes = [
+    "registry-0","registry-1","web-0","web-1",
+    "enrich-0","enrich-1","enrich-2","enrich-3",
+    "enrich-4","enrich-5","enrich-6","enrich-7"
+  ];
+  const radarKicks = await Promise.allSettled(radarLanes.map(async (lane) => {
+    const response = await fetch(`https://commercial-radar.netlify.app/.netlify/functions/radar-lane-background?lane=${lane}`, {
       method: "POST",
-      headers: { "content-type": "application/json", "x-radar-kick-source": "prixchantier-supabase-cron" },
-      body: JSON.stringify({ source: "prixchantier-supabase-cron", at: new Date().toISOString() }),
       cache: "no-store",
       signal: AbortSignal.timeout(5000),
     });
-    radarKickStatus = radarKick.status;
-  } catch {
-    radarKickStatus = 0;
-  }
+    return response.status;
+  }));
+  const radarKickStatus = radarKicks.filter((x) => x.status === "fulfilled" && x.value === 202).length;
 
   const admin = adminClient();
   const now = new Date();
