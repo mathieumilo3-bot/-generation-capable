@@ -98,6 +98,156 @@ export async function createConsultations(projectId: string, input: z.input<type
   });
 }
 
+
+/**
+ * Mode automatique : choisit jusqu'à 3 fournisseurs adaptés aux familles du DPGF,
+ * prépare leurs consultations et les envoie immédiatement. Les lignes peu fiables
+ * (< 70 % et non validées) sont volontairement laissées de côté.
+ */
+export async function autoLaunchConsultations(
+  projectId: string,
+): Promise<ActionResult<{ sent: number; supplierNames: string[]; skippedLines: number; failed: string[] }>> {
+  return runAction(async () => {
+    const s = await requireActionSession();
+    const supabase = await createClient();
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, name, reference, client, response_deadline, closed_at")
+      .eq("id", uuid.parse(projectId))
+      .maybeSingle();
+    if (!project) throw new ActionError("Dossier introuvable.");
+    if (project.closed_at) throw new ActionError("Ce dossier est terminé.");
+
+    const { count: existing } = await supabase
+      .from("consultations")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", projectId)
+      .neq("status", "annulee");
+    if (existing) throw new ActionError("Ce dossier a déjà des consultations. Utilisez l'onglet Consultations pour la suite.");
+
+    const conn = await defaultConnection(s.organizationId, s.userId);
+    if (!conn || conn.status !== "active") throw new ActionError("Connectez d'abord une boîte mail active dans Paramètres.");
+
+    const [{ data: lines }, { data: suppliers }] = await Promise.all([
+      supabase
+        .from("project_lines")
+        .select("id, position, category, confidence, user_validated, supplier_required")
+        .eq("project_id", projectId)
+        .eq("supplier_required", true)
+        .order("position"),
+      supabase.from("suppliers").select("id, company_name, categories").order("company_name"),
+    ]);
+
+    if (!lines?.length) throw new ActionError("Aucune ligne à consulter dans ce dossier.");
+    if (!suppliers?.length) throw new ActionError("Ajoutez au moins un fournisseur avant de lancer le pilote automatique.");
+
+    const eligible = lines.filter((l) => l.user_validated || l.confidence === null || Number(l.confidence) >= 0.7);
+    const skippedLines = lines.length - eligible.length;
+    if (!eligible.length) throw new ActionError("Toutes les lignes doivent être vérifiées avant un envoi automatique.");
+
+    const specificCategories = new Set(
+      eligible.map((l) => l.category).filter((x): x is string => Boolean(x) && x !== "Divers"),
+    );
+    const ranked = suppliers
+      .map((supplier) => ({
+        supplier,
+        score: (supplier.categories ?? []).filter((c) => specificCategories.has(c)).length,
+      }))
+      .filter((x) => specificCategories.size === 0 || x.score > 0)
+      .sort((a, b) => b.score - a.score || a.supplier.company_name.localeCompare(b.supplier.company_name))
+      .slice(0, 3);
+
+    if (!ranked.length) {
+      throw new ActionError("Aucun fournisseur de votre carnet ne correspond aux familles détectées dans ce DPGF.");
+    }
+
+    const supplierNames: string[] = [];
+    const failed: string[] = [];
+    let sent = 0;
+
+    for (const { supplier } of ranked) {
+      const supplierCategories = new Set(supplier.categories ?? []);
+      const selectedLines = eligible.filter(
+        (line) => !line.category || line.category === "Divers" || supplierCategories.has(line.category),
+      );
+      if (!selectedLines.length) continue;
+
+      let consultationId: string | null = null;
+      let referenceCode = "";
+      for (let attempt = 0; attempt < 5 && !consultationId; attempt++) {
+        referenceCode = newReferenceCode();
+        const { data, error } = await supabase
+          .from("consultations")
+          .insert({
+            project_id: projectId,
+            supplier_id: supplier.id,
+            mail_connection_id: conn.id,
+            reference_code: referenceCode,
+            status: "a_envoyer",
+            response_due_date: project.response_deadline,
+            include_excel: true,
+            auto_followup: true,
+            attached_document_ids: [],
+            subject: consultationSubject({ projectName: project.name, projectReference: project.reference, referenceCode }),
+            body: consultationBody({
+              projectName: project.name,
+              client: project.client,
+              dueDate: project.response_deadline,
+              lineCount: selectedLines.length,
+              senderName: s.fullName,
+              organizationName: s.organizationName,
+              withExcel: true,
+            }),
+            created_by: s.userId,
+          })
+          .select("id")
+          .single();
+        if (error && error.code !== "23505") throw new ActionError("Création automatique de la consultation impossible.");
+        consultationId = data?.id ?? null;
+      }
+      if (!consultationId) {
+        failed.push(supplier.company_name);
+        continue;
+      }
+
+      const { error: linesError } = await supabase.from("consultation_lines").insert(
+        selectedLines.map((line, index) => ({
+          consultation_id: consultationId!,
+          project_line_id: line.id,
+          position: index,
+        })),
+      );
+      if (linesError) {
+        failed.push(supplier.company_name);
+        await supabase.from("consultations").delete().eq("id", consultationId);
+        continue;
+      }
+
+      await enforceRateLimit("send", s.userId);
+      try {
+        await sendConsultation(consultationId, s.organizationId);
+        supplierNames.push(supplier.company_name);
+        sent++;
+      } catch (err) {
+        failed.push(supplier.company_name);
+        if (!(err instanceof SendError)) console.error("[auto-launch] envoi impossible:", err);
+      }
+    }
+
+    if (!sent) throw new ActionError("Aucune consultation n'a pu être envoyée automatiquement.");
+
+    await logActivity({
+      organizationId: s.organizationId,
+      projectId,
+      type: "auto_launch",
+      message: `Pilote automatique lancé : ${sent} consultation${sent > 1 ? "s" : ""} envoyée${sent > 1 ? "s" : ""} à ${supplierNames.join(", ")}${skippedLines ? ` · ${skippedLines} ligne(s) peu fiable(s) ignorée(s)` : ""}.`,
+    });
+    revalidatePath("/");
+    revalidatePath(`/dossiers/${projectId}`);
+    return { sent, supplierNames, skippedLines, failed };
+  });
+}
+
 const draftSchema = z.object({
   subject: z.string().trim().min(1, "L'objet est obligatoire.").max(300),
   body: z.string().trim().min(1, "Le message est obligatoire.").max(10000),
