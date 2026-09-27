@@ -38,7 +38,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         </div>
       ) : null}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-24 sm:px-6 sm:py-10">{children}</main>
     </div>
   );
 }
