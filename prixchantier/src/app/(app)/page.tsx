@@ -156,7 +156,7 @@ export default async function DashboardPage() {
             <p className="text-sm text-muted-foreground">Où en est chaque consultation.</p>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link href="/dossiers/nouveau"><Plus /> Nouveau</Link>
+            <Link href="/dossiers/nouveau"><Plus /> Nouveau dossier</Link>
           </Button>
         </div>
 
