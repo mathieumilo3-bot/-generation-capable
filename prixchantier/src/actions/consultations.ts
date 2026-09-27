@@ -15,6 +15,7 @@ import { enqueue, kickWorker } from "@/lib/jobs/queue";
 import { logActivity } from "@/lib/activity";
 import { fileKind, MAX_FILE_BYTES, MIME_BY_KIND, pathBelongsTo, storagePath } from "@/lib/files";
 import { BUCKET } from "@/lib/workflows/storage";
+import { discoverSuppliersFromWeb } from "@/lib/ai/supplier-discovery";
 
 const uuid = z.uuid();
 
@@ -128,18 +129,17 @@ export async function autoLaunchConsultations(
     const conn = await defaultConnection(s.organizationId, s.userId);
     if (!conn || conn.status !== "active") throw new ActionError("Connectez d'abord une boîte mail active dans Paramètres.");
 
-    const [{ data: lines }, { data: suppliers }] = await Promise.all([
+    const [{ data: lines }, { data: initialSuppliers }] = await Promise.all([
       supabase
         .from("project_lines")
-        .select("id, position, category, confidence, user_validated, supplier_required")
+        .select("id, position, code, designation, quantity, unit, category, confidence, user_validated, supplier_required")
         .eq("project_id", projectId)
         .eq("supplier_required", true)
         .order("position"),
-      supabase.from("suppliers").select("id, company_name, categories").order("company_name"),
+      supabase.from("suppliers").select("id, company_name, email, categories").order("company_name"),
     ]);
 
     if (!lines?.length) throw new ActionError("Aucune ligne à consulter dans ce dossier.");
-    if (!suppliers?.length) throw new ActionError("Ajoutez au moins un fournisseur avant de lancer le pilote automatique.");
 
     const eligible = lines.filter((l) => l.user_validated || l.confidence === null || Number(l.confidence) >= 0.7);
     const skippedLines = lines.length - eligible.length;
@@ -148,28 +148,104 @@ export async function autoLaunchConsultations(
     const specificCategories = new Set(
       eligible.map((l) => l.category).filter((x): x is string => Boolean(x) && x !== "Divers"),
     );
-    const ranked = suppliers
+
+    type RankedSupplier = {
+      supplier: { id: string; company_name: string; email: string; categories: string[] };
+      score: number;
+      matchedCodes: Set<string> | null;
+      discovered: boolean;
+    };
+
+    const ranked: RankedSupplier[] = (initialSuppliers ?? [])
       .map((supplier) => ({
-        supplier,
-        score: (supplier.categories ?? []).filter((c) => specificCategories.has(c)).length,
+        supplier: { ...supplier, categories: supplier.categories ?? [] },
+        score: (supplier.categories ?? []).filter((cat) => specificCategories.has(cat)).length,
+        matchedCodes: null,
+        discovered: false,
       }))
       .filter((x) => specificCategories.size === 0 || x.score > 0)
-      .sort((a, b) => b.score - a.score || a.supplier.company_name.localeCompare(b.supplier.company_name))
-      .slice(0, 3);
+      .sort((a, b) => b.score - a.score || a.supplier.company_name.localeCompare(b.supplier.company_name));
+
+    // Si le carnet ne suffit pas, PrixChantier cherche lui-même des fournisseurs
+    // professionnels sur le web à partir des lignes du DPGF.
+    if (ranked.length < 3) {
+      await enforceRateLimit("analysis", s.userId);
+      try {
+        const discovered = await discoverSuppliersFromWeb({
+          projectName: project.name,
+          projectReference: project.reference,
+          categories: specificCategories.size ? [...specificCategories] : ["Divers"],
+          lines: eligible.map((l) => ({
+            code: l.code,
+            designation: l.designation,
+            quantity: l.quantity,
+            unit: l.unit,
+            category: l.category,
+          })),
+          limit: 3 - ranked.length,
+        });
+
+        for (const candidate of discovered) {
+          const categories = candidate.categories.filter((cat) => specificCategories.size === 0 || specificCategories.has(cat));
+          const matchedCodes = new Set(candidate.matched_codes.map((code) => code.trim()).filter(Boolean));
+          if (!matchedCodes.size) continue;
+
+          const { data: existingSupplier } = await supabase
+            .from("suppliers")
+            .select("id, company_name, email, categories")
+            .ilike("email", candidate.email.trim())
+            .maybeSingle();
+
+          let supplier = existingSupplier
+            ? { ...existingSupplier, categories: existingSupplier.categories ?? [] }
+            : null;
+
+          if (!supplier) {
+            const note = `Découvert automatiquement par PrixChantier. Site : ${candidate.website} · Source e-mail : ${candidate.source_url} · ${candidate.reason}`.slice(0, 2000);
+            const { data: created, error: supplierError } = await supabase
+              .from("suppliers")
+              .insert({
+                company_name: candidate.company_name,
+                email: candidate.email.trim().toLowerCase(),
+                categories: categories.length ? categories : [...specificCategories],
+                notes: note,
+              })
+              .select("id, company_name, email, categories")
+              .single();
+            if (supplierError || !created) continue;
+            supplier = { ...created, categories: created.categories ?? [] };
+          }
+
+          if (ranked.some((x) => x.supplier.id === supplier!.id)) continue;
+          ranked.push({
+            supplier,
+            score: Math.max(1, categories.length),
+            matchedCodes,
+            discovered: true,
+          });
+        }
+      } catch (err) {
+        console.error("[auto-launch] recherche fournisseurs web indisponible:", err);
+      }
+    }
+
+    ranked.sort((a, b) => b.score - a.score || Number(b.discovered) - Number(a.discovered) || a.supplier.company_name.localeCompare(b.supplier.company_name));
+    ranked.splice(3);
 
     if (!ranked.length) {
-      throw new ActionError("Aucun fournisseur de votre carnet ne correspond aux familles détectées dans ce DPGF.");
+      throw new ActionError("Aucun fournisseur pertinent trouvé dans votre carnet ni automatiquement sur Internet.");
     }
 
     const supplierNames: string[] = [];
     const failed: string[] = [];
     let sent = 0;
 
-    for (const { supplier } of ranked) {
+    for (const { supplier, matchedCodes } of ranked) {
       const supplierCategories = new Set(supplier.categories ?? []);
-      const selectedLines = eligible.filter(
-        (line) => !line.category || line.category === "Divers" || supplierCategories.has(line.category),
-      );
+      const selectedLines = eligible.filter((line) => {
+        if (matchedCodes) return Boolean(line.code && matchedCodes.has(line.code));
+        return !line.category || line.category === "Divers" || supplierCategories.has(line.category);
+      });
       if (!selectedLines.length) continue;
 
       let consultationId: string | null = null;
