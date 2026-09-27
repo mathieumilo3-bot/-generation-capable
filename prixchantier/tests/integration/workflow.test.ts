@@ -40,6 +40,7 @@ let lib: {
   buildComparisonWorkbook: typeof import("@/lib/export/comparison-xlsx").buildComparisonWorkbook;
   consultationSubject: typeof import("@/lib/workflows/email-templates").consultationSubject;
   newReferenceCode: typeof import("@/lib/workflows/email-templates").newReferenceCode;
+  autoLaunchProject: typeof import("@/lib/workflows/autopilot").autoLaunchProject;
 };
 
 beforeAll(async () => {
@@ -61,6 +62,7 @@ beforeAll(async () => {
     ...(await import("@/lib/comparison/load")),
     ...(await import("@/lib/export/comparison-xlsx")),
     ...(await import("@/lib/workflows/email-templates")),
+    ...(await import("@/lib/workflows/autopilot")),
   };
   T = await createTenant("workflow");
 });
@@ -381,6 +383,79 @@ describe("parcours complet (acceptance, côté serveur)", () => {
     const { data: f } = await T.client.from("scheduled_followups").select("status").eq("consultation_id", c!.id);
     expect(f!.every((x) => x.status === "cancelled")).toBe(true);
     expect(await lib.sendFollowup(c!.id, T.orgId, { attempt: 1, automatic: false })).toMatchObject({ sent: false });
+  });
+
+  it("autopilote : lance 3 consultations sans navigateur et reste idempotent", async () => {
+    const { data: p } = await T.client
+      .from("projects")
+      .insert({ name: "Autopilot test", reference: "AUTO-TEST", analysis_status: "done", created_by: T.userId })
+      .select("id")
+      .single();
+
+    await T.client.from("project_lines").insert([
+      {
+        project_id: p!.id,
+        position: 0,
+        code: "ISO-01",
+        designation: "Isolation laine de verre 100 mm",
+        quantity: 100,
+        unit: "m²",
+        category: "Calorifuge / isolation",
+        supplier_required: true,
+        confidence: 0.99,
+        user_validated: true,
+        original: { test: true },
+      },
+      {
+        project_id: p!.id,
+        position: 1,
+        code: "ISO-02",
+        designation: "Panneau isolant thermique",
+        quantity: 50,
+        unit: "m²",
+        category: "Calorifuge / isolation",
+        supplier_required: true,
+        confidence: 0.99,
+        user_validated: true,
+        original: { test: true },
+      },
+    ]);
+
+    for (const [i, email] of ["auto1@fournisseur.test", "auto2@fournisseur.test", "auto3@fournisseur.test"].entries()) {
+      await T.client.from("suppliers").insert({
+        company_name: `Autopilot Fournisseur ${i + 1}`,
+        email,
+        categories: ["Calorifuge / isolation"],
+      });
+    }
+
+    const before = sentMessages().length;
+    await lib.autoLaunchProject(p!.id);
+
+    const { data: created } = await T.client
+      .from("consultations")
+      .select("id, status, auto_followup, sent_at")
+      .eq("project_id", p!.id)
+      .order("created_at");
+
+    expect(created).toHaveLength(3);
+    expect(created!.every((x) => x.status === "relance_prevue" && x.auto_followup && x.sent_at)).toBe(true);
+    expect(sentMessages().length - before).toBe(3);
+
+    const { data: followups } = await T.client
+      .from("scheduled_followups")
+      .select("consultation_id, attempt, status")
+      .in("consultation_id", created!.map((x) => x.id));
+    expect(followups).toHaveLength(3);
+    expect(followups!.every((x) => x.attempt === 1 && x.status === "scheduled")).toBe(true);
+
+    await lib.autoLaunchProject(p!.id);
+    const { count } = await T.client
+      .from("consultations")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", p!.id);
+    expect(count).toBe(3);
+    expect(sentMessages().length - before).toBe(3);
   });
 
   it("22. aucune donnée de cette entreprise n'est visible par une autre", async () => {
