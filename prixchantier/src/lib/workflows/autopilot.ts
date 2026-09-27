@@ -62,7 +62,7 @@ export async function autoLaunchProject(projectId: string) {
     throw new PermanentJobError("Aucune boîte mail active pour lancer automatiquement les consultations.");
   }
 
-  const [{ data: rawLines }, { data: initialSuppliers }, { data: user }] = await Promise.all([
+  const [{ data: rawLines }, { data: initialSuppliers }, { data: user }, { data: organization }] = await Promise.all([
     admin
       .from("project_lines")
       .select("id, position, code, designation, quantity, unit, category, confidence, user_validated, supplier_required")
@@ -75,6 +75,7 @@ export async function autoLaunchProject(projectId: string) {
       .eq("organization_id", project.organization_id)
       .order("company_name"),
     admin.from("users").select("full_name").eq("id", project.created_by).maybeSingle(),
+    admin.from("organizations").select("name").eq("id", project.organization_id).maybeSingle(),
   ]);
 
   const lines = (rawLines ?? []) as Line[];
@@ -213,7 +214,7 @@ export async function autoLaunchProject(projectId: string) {
             dueDate: project.response_deadline,
             lineCount: selectedLines.length,
             senderName: user?.full_name ?? "Équipe travaux",
-            organizationName: "Entreprise",
+            organizationName: organization?.name ?? "Entreprise",
             withExcel: true,
           }),
           created_by: project.created_by,
