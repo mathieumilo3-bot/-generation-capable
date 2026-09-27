@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claire Baudy — Naturopathie intégrative</title>
+<meta name="description" content="Naturopathie, micronutrition et accompagnement personnalisé — cabinet à Rennes et consultations en visio.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&family=Sacramento&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FAF6EC;
+    --cream-deep:#F2EBDB;
+    --white:#FFFFFF;
+    --forest:#16261D;
+    --forest-2:#1E3226;
+    --ink:#28271F;
+    --ink-soft:#635F53;
+    --terracotta:#B97452;
+    --champagne:#E7D6AF;
+    --line: rgba(22,38,29,.14);
+    --line-soft: rgba(22,38,29,.08);
+    --shadow: 0 30px 60px -35px rgba(22,38,29,.35);
+    --radius: 3px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    position:relative;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    opacity:.05;
+    mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.09  0 0 0 0 0.15  0 0 0 0 0.11  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  h1,h2,h3,.serif{ font-family:'Fraunces',serif; font-weight:500; letter-spacing:-.01em; color:var(--forest); margin:0; }
+
+  a{ color:inherit; text-decoration:none; }
+  img{ max-width:100%; display:block; }
+
+  .wrap{ max-width:1240px; margin:0 auto; padding:0 32px; position:relative; z-index:1; }
+
+  .eyebrow{
+    font-family:'Inter',sans-serif;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--terracotta);
+    display:inline-flex;
+    align-items:center;
+    gap:.6em;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px; height:1px;
+    background:var(--terracotta);
+    display:inline-block;
+  }
+
+  /* Buttons — rectangular, tracked, editorial. No pill-shaped "app" buttons. */
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:.5em;
+    padding:1rem 2rem;
+    font-family:'Inter',sans-serif;
+    font-size:.82rem;
+    font-weight:600;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    border-radius:var(--radius);
+    border:1px solid transparent;
+    cursor:pointer;
+    transition:background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease;
+    white-space:nowrap;
+  }
+  .btn-primary{ background:var(--forest); color:var(--cream); }
+  .btn-primary:hover{ background:var(--forest-2); transform:translateY(-1px); }
+  .btn-outline{ background:transparent; color:var(--forest); border-color:var(--forest); }
+  .btn-outline:hover{ background:var(--forest); color:var(--cream); }
+  .btn-ghost{ background:transparent; color:var(--cream); border-color:rgba(250,246,236,.55); }
+  .btn-ghost:hover{ background:var(--cream); color:var(--forest); }
+
+  .link-arrow{
+    display:inline-flex; align-items:center; gap:.5em;
+    font-size:.82rem; font-weight:600; letter-spacing:.03em;
+    color:var(--forest);
+    border-bottom:1px solid var(--line);
+    padding-bottom:2px;
+    transition:border-color .2s ease, gap .2s ease, color .2s ease;
+  }
+  .link-arrow svg{ transition:transform .25s ease; width:14px; height:14px; }
+  .link-arrow:hover{ border-color:var(--forest); color:var(--terracotta); }
+  .link-arrow:hover svg{ transform:translateX(4px); }
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(250,246,236,.86);
+    backdrop-filter:saturate(160%) blur(10px);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top:20px; padding-bottom:20px;
+  }
+  .logo{
+    font-family:'Fraunces',serif;
+    font-size:1.35rem;
+    font-weight:500;
+    letter-spacing:.01em;
+    color:var(--forest);
+  }
+  .nav-links{
+    display:flex; align-items:center; gap:2.6rem;
+    list-style:none; margin:0; padding:0;
+  }
+  .nav-links a{
+    font-size:.85rem; font-weight:500; color:var(--ink);
+    position:relative; padding-bottom:4px;
+  }
+  .nav-links a::after{
+    content:""; position:absolute; left:0; right:0; bottom:0; height:1px;
+    background:var(--terracotta); transform:scaleX(0); transform-origin:right;
+    transition:transform .25s ease;
+  }
+  .nav-links a:hover::after{ transform:scaleX(1); transform-origin:left; }
+  .nav-cta{ display:flex; align-items:center; gap:1.5rem; }
+  .nav-burger{
+    display:none; width:26px; height:20px; position:relative; background:none; border:none; cursor:pointer; padding:0;
+  }
+  .nav-burger span{
+    position:absolute; left:0; width:100%; height:1px; background:var(--forest);
+    transition:transform .25s ease, opacity .25s ease;
+  }
+  .nav-burger span:nth-child(1){ top:0; }
+  .nav-burger span:nth-child(2){ top:9px; }
+  .nav-burger span:nth-child(3){ top:18px; }
+
+  .mobile-menu{
+    display:none; flex-direction:column; gap:0;
+    background:var(--cream); border-top:1px solid var(--line-soft);
+  }
+  .mobile-menu a{
+    padding:1.1rem 32px; border-bottom:1px solid var(--line-soft);
+    font-size:.95rem; font-weight:500;
+  }
+  .mobile-menu .btn{ margin:1.2rem 32px; }
+
+  body.menu-open .mobile-menu{ display:flex; }
+  body.menu-open .nav-burger span:nth-child(1){ transform:translateY(9px) rotate(45deg); }
+  body.menu-open .nav-burger span:nth-child(2){ opacity:0; }
+  body.menu-open .nav-burger span:nth-child(3){ transform:translateY(-9px) rotate(-45deg); }
+
+  /* ---------- Photo placeholders ---------- */
+  .photo{
+    position:relative;
+    background:linear-gradient(150deg,#EFE8D8 0%, #E3D6BC 55%, #D8CBAD 100%);
+    border:1px solid var(--line-soft);
+    overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .photo::before{
+    content:"";
+    position:absolute; inset:0;
+    opacity:.5; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix type='matrix' values='0 0 0 0 0.1 0 0 0 0 0.14 0 0 0 0 0.1 0 0 0 0.35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .photo-tag{
+    position:relative; z-index:1;
+    display:flex; flex-direction:column; align-items:center; gap:.7rem;
+    color:var(--forest); opacity:.55;
+  }
+  .photo-tag svg{ width:30px; height:30px; }
+  .photo-tag span{
+    font-size:.66rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+    text-align:center; max-width:220px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding:88px 0 56px; position:relative; overflow:hidden; }
+  .hero-grid{
+    display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:center;
+  }
+  .hero h1{
+    font-size:clamp(2.5rem, 4.4vw, 4rem);
+    line-height:1.08;
+    margin:1.1rem 0 1.4rem;
+  }
+  .hero p.lead{
+    font-size:1.08rem; color:var(--ink-soft); max-width:46ch; margin:0 0 2.2rem;
+  }
+  .hero-actions{ display:flex; gap:1rem; flex-wrap:wrap; }
+  .hero-photo{ aspect-ratio:4/5; border-radius:var(--radius); }
+  .hero-photo .photo-caption{
+    position:absolute; left:0; right:0; bottom:0; z-index:2;
+    padding:1.2rem 1.4rem;
+    background:linear-gradient(0deg, rgba(22,38,29,.55), transparent);
+    color:var(--cream); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; opacity:.9;
+  }
+
+  .reassurance{
+    margin-top:64px; padding-top:28px; border-top:1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:.5rem 2.2rem;
+    font-size:.82rem; font-weight:600; letter-spacing:.03em; color:var(--forest);
+  }
+  .reassurance span{ display:inline-flex; align-items:center; gap:.6rem; }
+  .reassurance span::before{
+    content:""; width:5px; height:5px; border-radius:50%; background:var(--terracotta); display:inline-block;
+  }
+  .reassurance span:first-child::before{ display:none; }
+
+  section{ padding:110px 0; position:relative; }
+  .section-head{ max-width:640px; margin-bottom:56px; }
+  .section-head h2{ font-size:clamp(2rem,3.4vw,2.8rem); line-height:1.15; margin-top:1rem; }
+  .section-head p{ color:var(--ink-soft); margin-top:1.1rem; font-size:1.02rem; }
+
+  /* ---------- Needs / cards ---------- */
+  .needs{ background:var(--white); }
+  .needs-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:28px;
+  }
+  .need-card{
+    background:var(--cream);
+    border:1px solid var(--line-soft);
+    border-radius:var(--radius);
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+  }
+  .need-card:hover{ transform:translateY(-6px); box-shadow:var(--shadow); border-color:var(--line); }
+  .need-card .photo{ aspect-ratio:4/3; }
+  .need-card-body{ padding:1.7rem 1.6rem 1.9rem; display:flex; flex-direction:column; gap:.9rem; flex:1; }
+  .need-card-body h3{ font-size:1.15rem; line-height:1.3; }
+  .need-card-body p{ font-size:.9rem; color:var(--ink-soft); margin:0; flex:1; }
+
+  /* ---------- About ---------- */
+  .about-grid{
+    display:grid; grid-template-columns:.85fr 1.15fr; gap:72px; align-items:center;
+  }
+  .about-photo{ aspect-ratio:3/4; border-radius:var(--radius); }
+  .about-text p.body-copy{
+    font-size:1.12rem; line-height:1.75; color:var(--ink); margin:1.4rem 0 0;
+    max-width:52ch;
+  }
+  .signature{
+    font-family:'Sacramento',cursive;
+    font-size:3rem; color:var(--terracotta); margin:1.8rem 0 0; line-height:1;
+  }
+  .proofs{
+    margin-top:2.6rem; padding-top:2.2rem; border-top:1px solid var(--line);
+    display:grid; grid-template-columns:1fr 1fr; gap:1.4rem 2rem;
+  }
+  .proof{ display:flex; align-items:flex-start; gap:.8rem; }
+  .proof svg{ width:18px; height:18px; flex-shrink:0; margin-top:2px; color:var(--terracotta); }
+  .proof span{ font-size:.95rem; font-weight:500; color:var(--forest); }
+
+  /* ---------- Focus peau ---------- */
+  .peau{ background:var(--forest); color:var(--cream); }
+  .peau .eyebrow{ color:var(--champagne); }
+  .peau .eyebrow::before{ background:var(--champagne); }
+  .peau-grid{
+    display:grid; grid-template-columns:1.05fr .95fr; gap:72px; align-items:center;
+  }
+  .peau h2{ color:var(--cream); font-size:clamp(2rem,3.6vw,2.9rem); line-height:1.18; margin-top:1.1rem; }
+  .peau p.body-copy{ color:rgba(250,246,236,.78); font-size:1.05rem; line-height:1.75; max-width:50ch; margin:1.3rem 0 2.1rem; }
+  .peau-photo{ aspect-ratio:4/5; border-radius:var(--radius); border-color:rgba(250,246,236,.18); }
+  .peau-photo{ background:linear-gradient(150deg,#24382C 0%, #1B2C21 60%, #142219 100%); }
+  .peau-photo .photo-tag{ color:var(--champagne); opacity:.65; }
+
+  /* ---------- Démarche ---------- */
+  .demarche{ background:var(--cream-deep); text-align:center; }
+  .demarche .section-head{ margin-left:auto; margin-right:auto; text-align:center; }
+  .demarche .eyebrow{ justify-content:center; }
+  .steps{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:48px;
+    margin-bottom:56px; text-align:left;
+  }
+  .step{ padding:0 8px; }
+  .step .num{
+    font-family:'Fraunces',serif; font-size:3.2rem; font-weight:400; color:var(--terracotta);
+    line-height:1; margin-bottom:1rem;
+  }
+  .step p{ font-size:1.02rem; color:var(--ink); max-width:32ch; }
+  .demarche-actions{ display:flex; justify-content:center; }
+
+  /* ---------- Avis ---------- */
+  .avis-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-bottom:44px; }
+  .avis-card{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:2.2rem 2rem;
+    display:flex; flex-direction:column; gap:1.4rem;
+  }
+  .stars{ display:flex; gap:4px; color:var(--terracotta); }
+  .stars svg{ width:14px; height:14px; }
+  .avis-card blockquote{ margin:0; font-family:'Fraunces',serif; font-size:1.12rem; line-height:1.55; color:var(--forest); font-weight:400; }
+  .avis-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:auto; }
+  .avis-foot .name{ font-size:.88rem; font-weight:600; color:var(--forest); }
+  .avis-foot .tag{ font-size:.76rem; color:var(--ink-soft); }
+  .avis-more{ display:flex; justify-content:center; }
+
+  /* ---------- Cabinet ---------- */
+  .cabinet{ background:var(--white); }
+  .cabinet-photo{ aspect-ratio:21/9; border-radius:var(--radius); margin-bottom:56px; }
+  .cabinet-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:64px; align-items:center; }
+  .cabinet h2{ font-size:clamp(2rem,3.4vw,2.7rem); line-height:1.2; }
+  .cabinet address{ font-style:normal; margin:1.6rem 0 .6rem; font-size:1.05rem; color:var(--ink); line-height:1.6; }
+  .cabinet .note{ font-size:.9rem; color:var(--ink-soft); margin-bottom:2rem; }
+  .cabinet-actions{ display:flex; align-items:center; gap:1.8rem; flex-wrap:wrap; }
+  .cabinet-info-card{
+    background:var(--cream); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:2rem;
+  }
+  .cabinet-info-card dl{ margin:0; display:grid; gap:1.1rem; }
+  .cabinet-info-card dt{ font-size:.7rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--terracotta); margin-bottom:.35rem; }
+  .cabinet-info-card dd{ margin:0; font-size:.96rem; color:var(--forest); font-weight:500; }
+
+  /* ---------- Footer ---------- */
+  footer{ background:var(--forest); color:var(--cream); padding:56px 0 32px; }
+  .footer-top{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:2rem; flex-wrap:wrap;
+    padding-bottom:32px; border-bottom:1px solid rgba(250,246,236,.14);
+  }
+  .footer-brand .logo{ color:var(--cream); }
+  .footer-brand p{ margin:.5rem 0 0; font-size:.88rem; color:rgba(250,246,236,.6); }
+  .footer-links{ display:flex; gap:2.4rem; list-style:none; margin:0; padding:0; }
+  .footer-links a{ font-size:.85rem; color:rgba(250,246,236,.8); }
+  .footer-links a:hover{ color:var(--champagne); }
+  .footer-bottom{ padding-top:24px; font-size:.76rem; color:rgba(250,246,236,.45); }
+
+  .reveal{ transform:translateY(22px); transition:transform .8s ease; }
+  .reveal.in{ transform:translateY(0); }
+  @media (prefers-reduced-motion: reduce){
+    .reveal{ transform:none; transition:none; }
+  }
+
+  @media (max-width: 980px){
+    .nav-links, .nav-cta .btn-outline{ display:none; }
+    .nav-burger{ display:block; }
+    .hero-grid, .about-grid, .peau-grid, .cabinet-grid{ grid-template-columns:1fr; }
+    .about-grid, .peau-grid{ gap:40px; }
+    .needs-grid{ grid-template-columns:repeat(2,1fr); }
+    .steps{ grid-template-columns:1fr; gap:36px; }
+    .avis-grid{ grid-template-columns:1fr; }
+    .proofs{ grid-template-columns:1fr; }
+    section{ padding:76px 0; }
+    .hero{ padding:48px 0 40px; }
+    .hero-photo{ order:-1; aspect-ratio:16/11; }
+    .peau-photo{ order:-1; }
+    .footer-top{ flex-direction:column; }
+    .footer-links{ flex-wrap:wrap; gap:1.2rem 2rem; }
+  }
+  @media (max-width: 640px){
+    .wrap{ padding:0 22px; }
+    .needs-grid{ grid-template-columns:1fr; }
+    .hero-actions .btn{ width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a href="#" class="logo">Claire Baudy</a>
+    <ul class="nav-links">
+      <li><a href="#approche">Approche</a></li>
+      <li><a href="#besoins">Accompagnements</a></li>
+      <li><a href="#apropos">À propos</a></li>
+      <li><a href="#cabinet">Cabinet</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="#rdv" class="btn btn-outline">Prendre rendez-vous</a>
+      <button class="nav-burger" aria-label="Menu" onclick="document.body.classList.toggle('menu-open')">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-menu">
+    <a href="#approche" onclick="document.body.classList.remove('menu-open')">Approche</a>
+    <a href="#besoins" onclick="document.body.classList.remove('menu-open')">Accompagnements</a>
+    <a href="#apropos" onclick="document.body.classList.remove('menu-open')">À propos</a>
+    <a href="#cabinet" onclick="document.body.classList.remove('menu-open')">Cabinet</a>
+    <a href="#rdv" class="btn btn-primary" onclick="document.body.classList.remove('menu-open')">Prendre rendez-vous</a>
+  </nav>
+</header>
+
+<!-- Écran 1 — Hero -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="reveal">
+      <span class="eyebrow">Naturopathie intégrative · Rennes &amp; visio</span>
+      <h1>Comprendre votre terrain.<br>Agir avec justesse.</h1>
+      <p class="lead">Naturopathie, micronutrition et accompagnement personnalisé pour retrouver une hygiène de vie adaptée à votre réalité.</p>
+      <div class="hero-actions">
+        <a href="#besoins" class="btn btn-primary">Trouver mon accompagnement</a>
+        <a href="#rdv" class="btn btn-outline">Prendre rendez-vous</a>
+      </div>
+
+      <div class="reassurance">
+        <span>Certifiée FENA</span>
+        <span>Formatrice</span>
+        <span>Cabinet à Rennes</span>
+        <span>Consultations en visio</span>
+      </div>
+    </div>
+
+    <div class="photo hero-photo reveal">
+      <div class="photo-tag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+        <span>Portrait naturel — Claire Baudy</span>
+      </div>
+      <div class="photo-caption">Cabinet de Rennes</div>
+    </div>
+  </div>
+</section>
+
+<!-- Écran 2 — Besoins -->
+<section class="needs" id="besoins">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Par où commencer</span>
+      <h2>Vous ne savez pas quelle consultation choisir ?</h2>
+      <p>Commencez simplement par ce qui vous amène aujourd'hui.</p>
+    </div>
+
+    <div class="needs-grid">
+      <a href="#bilan" class="need-card reveal">
+        <div class="photo">
+          <div class="photo-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 12h4l2-7 4 14 3-9h5"/></svg>
+            <span>Équilibre global</span>
+          </div>
+        </div>
+        <div class="need-card-body">
+          <h3>Je veux comprendre mon équilibre global</h3>
+          <p>Fatigue, digestion, alimentation, stress, hygiène de vie…</p>
+          <span class="link-arrow">Découvrir le bilan de naturopathie
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a href="#peau" class="need-card reveal">
+        <div class="photo">
+          <div class="photo-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Problématiques de peau</span>
+          </div>
+        </div>
+        <div class="need-card-body">
+          <h3>Ma peau me préoccupe</h3>
+          <p>Accompagnement autour de problématiques cutanées dans le cadre de la naturopathie.</p>
+          <span class="link-arrow">Découvrir l'approche peau
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a href="#soins" class="need-card reveal">
+        <div class="photo">
+          <div class="photo-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21c-5-3.5-8-7-8-11a5 5 0 0 1 8-4 5 5 0 0 1 8 4c0 4-3 7.5-8 11z"/></svg>
+            <span>Réflexologie · Drainage · Massages</span>
+          </div>
+        </div>
+        <div class="need-card-body">
+          <h3>Je veux prendre soin de mon corps</h3>
+          <p>Réflexologie, drainage lymphatique et massages.</p>
+          <span class="link-arrow">Voir les soins
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a href="#nutrition" class="need-card reveal">
+        <div class="photo">
+          <div class="photo-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3v6M8 5c0 3 1.8 4 4 4s4-1 4-4M12 9v12"/></svg>
+            <span>Micronutrition</span>
+          </div>
+        </div>
+        <div class="need-card-body">
+          <h3>Je cherche un accompagnement nutritionnel</h3>
+          <p>Alimentation, micronutrition et habitudes du quotidien.</p>
+          <span class="link-arrow">Découvrir l'accompagnement
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Écran 3 — À propos -->
+<section id="apropos">
+  <div class="wrap about-grid">
+    <div class="photo about-photo reveal">
+      <div class="photo-tag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+        <span>Claire Baudy, en cabinet</span>
+      </div>
+    </div>
+    <div class="about-text reveal">
+      <span class="eyebrow">Une approche globale</span>
+      <h2>Il ne s'agit pas d'appliquer<br>la même méthode à tout le monde.</h2>
+      <p class="body-copy">Chaque personne arrive avec son histoire, son rythme, son environnement et ses contraintes. Mon travail consiste à prendre le temps de comprendre cet ensemble afin de construire avec vous des conseils progressifs et réalistes.</p>
+      <p class="signature">Claire</p>
+
+      <div class="proofs">
+        <div class="proof">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 13l4 4L19 7"/></svg>
+          <span>Naturopathe certifiée FENA</span>
+        </div>
+        <div class="proof">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 13l4 4L19 7"/></svg>
+          <span>Major de promotion</span>
+        </div>
+        <div class="proof">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 13l4 4L19 7"/></svg>
+          <span>Formatrice en naturopathie</span>
+        </div>
+        <div class="proof">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 13l4 4L19 7"/></svg>
+          <span>Auteure publiée</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Écran 4 — Focus peau -->
+<section class="peau" id="peau">
+  <div class="wrap peau-grid">
+    <div class="reveal">
+      <span class="eyebrow">Focus</span>
+      <h2>La peau raconte parfois<br>bien plus qu'une histoire de peau.</h2>
+      <p class="body-copy">Claire propose notamment un accompagnement naturopathique dédié aux problématiques cutanées, avec une approche globale du terrain et de l'hygiène de vie.</p>
+      <a href="#peau-detail" class="btn btn-ghost">Découvrir l'approche peau →</a>
+    </div>
+    <div class="photo peau-photo reveal">
+      <div class="photo-tag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3c3 3 6 6.5 6 10.5A6 6 0 0 1 6 13.5C6 9.5 9 6 12 3z"/></svg>
+        <span>Texture naturelle — macro élégante</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Écran 5 — Démarche -->
+<section class="demarche" id="demarche">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Comment ça se passe</span>
+      <h2>Une démarche simple.</h2>
+    </div>
+
+    <div class="steps">
+      <div class="step reveal">
+        <div class="num">01</div>
+        <p>Vous choisissez ce qui correspond le mieux à votre besoin.</p>
+      </div>
+      <div class="step reveal">
+        <div class="num">02</div>
+        <p>Vous réservez directement votre créneau sur Planity.</p>
+      </div>
+      <div class="step reveal">
+        <div class="num">03</div>
+        <p>Claire construit l'accompagnement avec vous lors de la consultation.</p>
+      </div>
+    </div>
+
+    <div class="demarche-actions reveal">
+      <a href="#rdv" class="btn btn-primary">Voir les disponibilités</a>
+    </div>
+  </div>
+</section>
+
+<!-- Écran 6 — Avis -->
+<section id="avis">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Témoignages</span>
+      <h2>Ce qu'ils retiennent<br>de leur expérience.</h2>
+    </div>
+
+    <div class="avis-grid">
+      <div class="avis-card reveal">
+        <div class="stars">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+        </div>
+        <blockquote>« Une écoute très attentive et des explications claires, sans jamais se sentir jugée. Je repars à chaque fois avec des conseils que je peux vraiment appliquer. »</blockquote>
+        <div class="avis-foot">
+          <span class="name">Camille R.</span>
+          <span class="tag">Bilan de naturopathie</span>
+        </div>
+      </div>
+
+      <div class="avis-card reveal">
+        <div class="stars">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+        </div>
+        <blockquote>« Claire prend vraiment le temps de comprendre la situation dans son ensemble. L'accompagnement sur ma peau a changé beaucoup de choses au quotidien. »</blockquote>
+        <div class="avis-foot">
+          <span class="name">Julien M.</span>
+          <span class="tag">Approche peau</span>
+        </div>
+      </div>
+
+      <div class="avis-card reveal">
+        <div class="stars">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2L4.5 17.3l1.4-6L1.3 7.2l6.1-.6z"/></svg>
+        </div>
+        <blockquote>« Un vrai savoir-faire, beaucoup de pédagogie et une approche sur-mesure. Le suivi en visio est aussi simple qu'en cabinet. »</blockquote>
+        <div class="avis-foot">
+          <span class="name">Sophie D.</span>
+          <span class="tag">Consultation en visio</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="avis-more reveal">
+      <a href="#" class="link-arrow">Voir tous les avis
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Écran 7 — Cabinet -->
+<section class="cabinet" id="cabinet">
+  <div class="wrap">
+    <div class="photo cabinet-photo reveal">
+      <div class="photo-tag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10.5L12 4l9 6.5M5 10v10h14V10"/></svg>
+        <span>Cabinet — 6 bis avenue Louis Barthou, Rennes</span>
+      </div>
+    </div>
+
+    <div class="cabinet-grid">
+      <div class="reveal">
+        <span class="eyebrow">Cabinet &amp; visio</span>
+        <h2>Vous recevoir à Rennes,<br>ou vous accompagner à distance.</h2>
+        <address>6 bis avenue Louis Barthou<br>35000 Rennes</address>
+        <p class="note">À moins de 5 minutes à pied de la gare de Rennes.</p>
+        <div class="cabinet-actions">
+          <a href="#rdv" class="btn btn-primary">Prendre rendez-vous</a>
+          <a href="#visio" class="link-arrow">Consultation en visio
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="cabinet-info-card reveal">
+        <dl>
+          <div>
+            <dt>Certification</dt>
+            <dd>Naturopathe certifiée FENA · Major de promotion</dd>
+          </div>
+          <div>
+            <dt>Activités</dt>
+            <dd>Formatrice en naturopathie · Auteure publiée</dd>
+          </div>
+          <div>
+            <dt>Modalités</dt>
+            <dd>Consultations au cabinet de Rennes ou en visio</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="logo">Claire Baudy</span>
+        <p>Naturopathie intégrative</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="#">Instagram</a></li>
+        <li><a href="#">Planity</a></li>
+        <li><a href="#">Contact</a></li>
+        <li><a href="#">Mentions légales</a></li>
+      </ul>
+    </div>
+    <div class="footer-bottom">
+      Maquette de présentation — Claire Baudy, naturopathie intégrative.
+    </div>
+  </div>
+</footer>
+
+<script>
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+</script>
+
+</body>
+</html>
