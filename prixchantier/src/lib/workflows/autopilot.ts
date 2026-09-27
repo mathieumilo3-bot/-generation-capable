@@ -35,7 +35,7 @@ type RankedSupplier = {
   discovered: boolean;
 };
 
-export async function autoLaunchProject(projectId: string) {
+export async function autoLaunchProject(projectId: string, opts: { dryRun?: boolean } = {}) {
   const admin = adminClient();
 
   const { data: project } = await admin
@@ -117,6 +117,18 @@ export async function autoLaunchProject(projectId: string) {
       })),
       limit: 3 - ranked.length,
     });
+
+    if (opts.dryRun) {
+      await logActivity({
+        organizationId: project.organization_id,
+        projectId,
+        type: "autopilot_smoke",
+        message: discovered.length
+          ? `Test sourcing réussi : ${discovered.map((s) => `${s.company_name} <${s.email}>`).join(", ")}`
+          : "Test sourcing terminé : aucun fournisseur vérifiable trouvé.",
+      });
+      return;
+    }
 
     for (const candidate of discovered) {
       const categories = candidate.categories.filter(
