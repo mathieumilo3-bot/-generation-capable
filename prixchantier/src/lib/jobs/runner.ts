@@ -12,10 +12,15 @@ async function handlers(): Promise<Record<JobType, Handler>> {
   const analysis = await import("@/lib/workflows/analysis");
   const responses = await import("@/lib/workflows/responses");
   const followups = await import("@/lib/workflows/followups");
+  const autopilot = await import("@/lib/workflows/autopilot");
   return {
     analyze_project: {
       run: (p) => analysis.analyzeProject(String(p.projectId)),
       onFailure: (p, e) => analysis.markAnalysisFailed(String(p.projectId), e),
+    },
+    auto_launch_project: {
+      run: (p) => autopilot.autoLaunchProject(String(p.projectId)),
+      onFailure: (p, e) => autopilot.markAutoLaunchFailed(String(p.projectId), e),
     },
     process_response: {
       run: (p) => responses.processResponse(String(p.responseId)),
