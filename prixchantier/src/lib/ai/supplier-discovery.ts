@@ -85,6 +85,7 @@ Trouve au maximum ${limit} fournisseurs distincts en France. Ne retourne aucun f
   } catch (err) {
     if (err instanceof APIError) {
       console.error("[supplier-discovery] OpenAI", { status: err.status, code: err.code, message: err.message });
+      throw new Error(`supplier-discovery HTTP ${err.status ?? "?"} ${String(err.code ?? "")}: ${err.message}`);
     }
     throw classifyOpenAiError(err);
   }
