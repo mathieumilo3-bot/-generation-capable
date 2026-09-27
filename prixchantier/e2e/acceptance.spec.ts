@@ -152,13 +152,13 @@ test("3-6. dossier, import d'un DPGF de 73 lignes, correction d'une ligne", asyn
   await page.waitForURL(/\/dossiers\/[0-9a-f-]{36}$/);
   projectUrl = new URL(page.url()).pathname;
 
-  // Analyse asynchrone : la page se met à jour seule.
-  await expect(page.getByRole("link", { name: "Vérifier les lignes" })).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText("73 lignes détectées", { exact: true })).toBeVisible();
+  // Analyse asynchrone : la page se met à jour seule. Le pilote peut ensuite
+  // démarrer sans bloquer la consultation sur une étape manuelle.
+  await expect(page.getByText("73 lignes détectées", { exact: true })).toBeVisible({ timeout: 60_000 });
   documentHref = (await page.getByRole("link", { name: "dpgf-standard.xlsx" }).getAttribute("href"))!;
   await shot("03-dossier-apres-analyse");
 
-  await page.getByRole("link", { name: "Vérifier les lignes" }).click();
+  await page.goto(`${projectUrl}?tab=lignes`);
   await expect(page.getByRole("heading", { name: "73 lignes détectées" })).toBeVisible();
   await expect(page.getByTestId("line-row")).toHaveCount(73);
   await page.getByRole("button", { name: "Modifier Tube acier noir DN20 y compris supports" }).click();
