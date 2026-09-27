@@ -1,4 +1,5 @@
 # PrixChantier — configuration Netlify.
+# UI dashboard refresh.
 #
 # Ce fichier vit dans prixchantier/ : le site Netlify (id 043f9a8f-7a88-4f95-b3c8-85b8c5606799)
 # doit avoir son "Base directory" réglé sur "prixchantier" (monorepo). Le build
