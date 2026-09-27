@@ -99,7 +99,7 @@ export async function autoLaunchProject(projectId: string) {
       matchedCodes: null,
       discovered: false,
     }))
-    .filter((x) => specificCategories.size === 0 || x.score > 0)
+    .filter((x) => specificCategories.size > 0 && x.score > 0)
     .sort((a, b) => b.score - a.score || a.supplier.company_name.localeCompare(b.supplier.company_name));
 
   // Complète automatiquement le carnet avec des fournisseurs trouvés sur le web.
@@ -181,7 +181,7 @@ export async function autoLaunchProject(projectId: string) {
     const supplierCategories = new Set(supplier.categories ?? []);
     const selectedLines = eligible.filter((line) => {
       if (matchedCodes) return Boolean(line.code && matchedCodes.has(line.code));
-      return !line.category || line.category === "Divers" || supplierCategories.has(line.category);
+      return Boolean(line.category && line.category !== "Divers" && supplierCategories.has(line.category));
     });
     if (!selectedLines.length) continue;
 
