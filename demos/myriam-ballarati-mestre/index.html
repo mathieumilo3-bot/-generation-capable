@@ -150,11 +150,16 @@
   .portrait::after{
     content:"Portrait de Myriam — cabinet, lumière naturelle\A(photo réelle à intégrer)";
     white-space:pre;
-    display:block;width:100%;padding:22px;
+    display:block;width:100%;padding:22px;position:relative;z-index:1;
     font-family:var(--sans);font-size:12px;letter-spacing:.03em;
     color:rgba(29,28,26,.55);
     background:linear-gradient(180deg, rgba(248,244,236,.55), transparent);
   }
+  .photo-fill{
+    position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;z-index:0;
+  }
+  .has-photo::after{display:none;}
   .floating-card{
     position:absolute;left:-28px;bottom:34px;
     background:var(--ivory);
@@ -211,9 +216,9 @@
   .proof-photo::after{
     content:"Photo de Myriam en cabinet\A(à intégrer)";
     white-space:pre;
-    display:block;width:100%;padding:20px;
+    display:block;width:100%;padding:20px;position:relative;z-index:1;
     font-family:var(--sans);font-size:12px;color:rgba(248,244,236,.6);
-    background:linear-gradient(0deg, rgba(29,28,26,.5), transparent);
+    background:linear-gradient(0deg, rgba(29,28,26,.7), transparent);
   }
   .proof-title{font-size:clamp(26px,3.2vw,36px);margin-top:14px;}
   .proof-text{font-size:16px;color:rgba(248,244,236,.78);margin-top:22px;max-width:460px;}
@@ -322,7 +327,15 @@
         <p class="hero-tags">Hypnose · Thérapies brèves · PNL</p>
       </div>
       <div class="hero-visual">
-        <div class="portrait"></div>
+        <!-- PHOTO DE DÉMO UNIQUEMENT — photo internet libre de droit (LoremFlickr,
+             par mot-clé, pas un portrait réel de Myriam). Ne jamais publier en
+             l'état : à remplacer par un vrai portrait de Myriam avant mise en ligne. -->
+        <div class="portrait" id="heroPortrait">
+          <img class="photo-fill" alt="Portrait (photo de démonstration — à remplacer par une vraie photo de Myriam)"
+               src="https://loremflickr.com/900/1125/woman,portrait,business/all"
+               onload="document.getElementById('heroPortrait').classList.add('has-photo')"
+               onerror="this.remove()">
+        </div>
         <div class="floating-card">
           <strong>Cabinet à Bordeaux</strong>
           Consultations également en visio
@@ -374,7 +387,13 @@
   <div class="wrap">
     <span class="eyebrow">Pourquoi Myriam</span>
     <div class="proof-grid">
-      <div class="proof-photo"></div>
+      <!-- PHOTO DE DÉMO UNIQUEMENT — même remarque que ci-dessus. -->
+      <div class="proof-photo" id="proofPhoto">
+        <img class="photo-fill" alt="Photo de cabinet (démonstration — à remplacer)"
+             src="https://loremflickr.com/900/1200/office,armchair,cozy/all"
+             onload="document.getElementById('proofPhoto').classList.add('has-photo')"
+             onerror="this.remove()">
+      </div>
       <div>
         <h2 class="proof-title">Une relation thérapeutique<br>avant une technique.</h2>
         <p class="proof-text">Psychopraticienne et hypnothérapeute, Myriam Ballarati-Mestre accompagne enfants, adolescents et adultes à Bordeaux.</p>
