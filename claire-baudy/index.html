@@ -24,6 +24,8 @@
     --line-soft: rgba(22,38,29,.08);
     --shadow: 0 30px 60px -35px rgba(22,38,29,.35);
     --radius: 3px;
+    --radius-btn: 6px;
+    color-scheme: light;
   }
 
   *{box-sizing:border-box;}
@@ -79,25 +81,27 @@
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:.5em;
-    padding:1rem 2rem;
+    gap:.6em;
+    padding:1.05rem 2.2rem;
     font-family:'Inter',sans-serif;
     font-size:.82rem;
     font-weight:600;
-    letter-spacing:.08em;
+    letter-spacing:.07em;
     text-transform:uppercase;
-    border-radius:var(--radius);
+    border-radius:var(--radius-btn);
     border:1px solid transparent;
     cursor:pointer;
-    transition:background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease;
+    transition:background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease, box-shadow .25s ease;
     white-space:nowrap;
   }
+  .btn svg{ width:14px; height:14px; flex-shrink:0; transition:transform .25s ease; }
   .btn-primary{ background:var(--forest); color:var(--cream); }
-  .btn-primary:hover{ background:var(--forest-2); transform:translateY(-1px); }
+  .btn-primary:hover{ background:var(--forest-2); transform:translateY(-2px); box-shadow:0 14px 28px -16px rgba(22,38,29,.55); }
   .btn-outline{ background:transparent; color:var(--forest); border-color:var(--forest); }
-  .btn-outline:hover{ background:var(--forest); color:var(--cream); }
+  .btn-outline:hover{ background:var(--forest); color:var(--cream); transform:translateY(-2px); }
   .btn-ghost{ background:transparent; color:var(--cream); border-color:rgba(250,246,236,.55); }
   .btn-ghost:hover{ background:var(--cream); color:var(--forest); }
+  .btn:hover svg{ transform:translateX(3px); }
 
   .link-arrow{
     display:inline-flex; align-items:center; gap:.5em;
@@ -229,7 +233,7 @@
   }
 
   /* ---------- Hero ---------- */
-  .hero{ padding:88px 0 56px; position:relative; overflow:hidden; }
+  .hero{ padding:64px 0 44px; position:relative; overflow:hidden; }
   .hero-grid{
     display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:center;
   }
@@ -245,7 +249,7 @@
   .hero-photo{ aspect-ratio:4/5; border-radius:var(--radius); }
 
   .reassurance{
-    margin-top:64px; padding-top:28px; border-top:1px solid var(--line);
+    margin-top:40px; padding-top:24px; border-top:1px solid var(--line);
     display:flex; flex-wrap:wrap; gap:.5rem 2.2rem;
     font-size:.82rem; font-weight:600; letter-spacing:.03em; color:var(--forest);
   }
@@ -255,8 +259,8 @@
   }
   .reassurance span:first-child::before{ display:none; }
 
-  section{ padding:110px 0; position:relative; }
-  .section-head{ max-width:640px; margin-bottom:56px; }
+  section{ padding:80px 0; position:relative; }
+  .section-head{ max-width:640px; margin-bottom:40px; }
   .section-head h2{ font-size:clamp(2rem,3.4vw,2.8rem); line-height:1.15; margin-top:1rem; }
   .section-head p{ color:var(--ink-soft); margin-top:1.1rem; font-size:1.02rem; }
 
@@ -281,7 +285,7 @@
 
   /* ---------- About ---------- */
   .about-grid{
-    display:grid; grid-template-columns:.85fr 1.15fr; gap:72px; align-items:center;
+    display:grid; grid-template-columns:.85fr 1.15fr; gap:56px; align-items:center;
   }
   .about-photo{ aspect-ratio:3/4; border-radius:var(--radius); }
   .about-text p.body-copy{
@@ -293,7 +297,7 @@
     font-size:3rem; color:var(--terracotta); margin:1.8rem 0 0; line-height:1;
   }
   .proofs{
-    margin-top:2.6rem; padding-top:2.2rem; border-top:1px solid var(--line);
+    margin-top:2rem; padding-top:1.8rem; border-top:1px solid var(--line);
     display:grid; grid-template-columns:1fr 1fr; gap:1.4rem 2rem;
   }
   .proof{ display:flex; align-items:flex-start; gap:.8rem; }
@@ -305,30 +309,30 @@
   .peau .eyebrow{ color:var(--champagne); }
   .peau .eyebrow::before{ background:var(--champagne); }
   .peau-grid{
-    display:grid; grid-template-columns:1.05fr .95fr; gap:72px; align-items:center;
+    display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center;
   }
   .peau h2{ color:var(--cream); font-size:clamp(2rem,3.6vw,2.9rem); line-height:1.18; margin-top:1.1rem; }
   .peau p.body-copy{ color:rgba(250,246,236,.78); font-size:1.05rem; line-height:1.75; max-width:50ch; margin:1.3rem 0 2.1rem; }
   .peau-photo{ aspect-ratio:4/5; border-radius:var(--radius); border-color:rgba(250,246,236,.18); }
 
   /* ---------- Démarche ---------- */
-  .demarche{ background:var(--cream-deep); text-align:center; }
-  .demarche .section-head{ margin-left:auto; margin-right:auto; text-align:center; }
+  .demarche{ background:var(--cream-deep); text-align:center; padding:56px 0; }
+  .demarche .section-head{ margin-left:auto; margin-right:auto; text-align:center; margin-bottom:32px; }
   .demarche .eyebrow{ justify-content:center; }
   .steps{
     display:grid; grid-template-columns:repeat(3,1fr); gap:48px;
-    margin-bottom:56px; text-align:left;
+    margin-bottom:36px; text-align:left;
   }
-  .step{ padding:0 8px; }
+  .step{ padding:0 8px; display:flex; align-items:baseline; gap:1rem; }
   .step .num{
-    font-family:'Fraunces',serif; font-size:3.2rem; font-weight:400; color:var(--terracotta);
-    line-height:1; margin-bottom:1rem;
+    font-family:'Fraunces',serif; font-size:2.4rem; font-weight:400; color:var(--terracotta);
+    line-height:1; flex-shrink:0;
   }
   .step p{ font-size:1.02rem; color:var(--ink); max-width:32ch; }
   .demarche-actions{ display:flex; justify-content:center; }
 
   /* ---------- Avis ---------- */
-  .avis-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-bottom:44px; }
+  .avis-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-bottom:32px; }
   .avis-card{
     background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
     padding:2.2rem 2rem;
@@ -344,8 +348,8 @@
 
   /* ---------- Cabinet ---------- */
   .cabinet{ background:var(--white); }
-  .cabinet-photo{ aspect-ratio:21/9; border-radius:var(--radius); margin-bottom:56px; }
-  .cabinet-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:64px; align-items:center; }
+  .cabinet-photo{ aspect-ratio:21/9; border-radius:var(--radius); margin-bottom:40px; }
+  .cabinet-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:56px; align-items:center; }
   .cabinet h2{ font-size:clamp(2rem,3.4vw,2.7rem); line-height:1.2; }
   .cabinet address{ font-style:normal; margin:1.6rem 0 .6rem; font-size:1.05rem; color:var(--ink); line-height:1.6; }
   .cabinet .note{ font-size:.9rem; color:var(--ink-soft); margin-bottom:2rem; }
@@ -378,7 +382,7 @@
   }
 
   @media (max-width: 980px){
-    .nav-links, .nav-cta .btn-outline{ display:none; }
+    .nav-links, .nav-cta .btn{ display:none; }
     .nav-burger{ display:block; }
     .hero-grid, .about-grid, .peau-grid, .cabinet-grid{ grid-template-columns:1fr; }
     .about-grid, .peau-grid{ gap:40px; }
@@ -386,8 +390,9 @@
     .steps{ grid-template-columns:1fr; gap:36px; }
     .avis-grid{ grid-template-columns:1fr; }
     .proofs{ grid-template-columns:1fr; }
-    section{ padding:76px 0; }
-    .hero{ padding:48px 0 40px; }
+    section{ padding:60px 0; }
+    .demarche{ padding:44px 0; }
+    .hero{ padding:40px 0 32px; }
     .hero-photo{ order:-1; aspect-ratio:16/11; }
     .peau-photo{ order:-1; }
     .footer-top{ flex-direction:column; }
@@ -412,7 +417,9 @@
       <li><a href="#cabinet">Cabinet</a></li>
     </ul>
     <div class="nav-cta">
-      <a href="#rdv" class="btn btn-outline">Prendre rendez-vous</a>
+      <a href="#rdv" class="btn btn-primary">Prendre rendez-vous
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
       <button class="nav-burger" aria-label="Menu" onclick="document.body.classList.toggle('menu-open')">
         <span></span><span></span><span></span>
       </button>
@@ -423,7 +430,9 @@
     <a href="#besoins" onclick="document.body.classList.remove('menu-open')">Accompagnements</a>
     <a href="#apropos" onclick="document.body.classList.remove('menu-open')">À propos</a>
     <a href="#cabinet" onclick="document.body.classList.remove('menu-open')">Cabinet</a>
-    <a href="#rdv" class="btn btn-primary" onclick="document.body.classList.remove('menu-open')">Prendre rendez-vous</a>
+    <a href="#rdv" class="btn btn-primary" onclick="document.body.classList.remove('menu-open')">Prendre rendez-vous
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
   </nav>
 </header>
 
@@ -435,8 +444,10 @@
       <h1>Comprendre votre terrain.<br>Agir avec justesse.</h1>
       <p class="lead">Naturopathie, micronutrition et accompagnement personnalisé pour retrouver une hygiène de vie adaptée à votre réalité.</p>
       <div class="hero-actions">
-        <a href="#besoins" class="btn btn-primary">Trouver mon accompagnement</a>
-        <a href="#rdv" class="btn btn-outline">Prendre rendez-vous</a>
+        <a href="#rdv" class="btn btn-primary">Prendre rendez-vous
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="#besoins" class="btn btn-outline">Trouver mon accompagnement</a>
       </div>
 
       <div class="reassurance">
@@ -670,7 +681,9 @@
     </div>
 
     <div class="demarche-actions reveal">
-      <a href="#rdv" class="btn btn-primary">Voir les disponibilités</a>
+      <a href="#rdv" class="btn btn-primary">Voir les disponibilités
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
     </div>
   </div>
 </section>
@@ -760,7 +773,9 @@
         <address>6 bis avenue Louis Barthou<br>35000 Rennes</address>
         <p class="note">À moins de 5 minutes à pied de la gare de Rennes.</p>
         <div class="cabinet-actions">
-          <a href="#rdv" class="btn btn-primary">Prendre rendez-vous</a>
+          <a href="#rdv" class="btn btn-primary">Prendre rendez-vous
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
           <a href="#visio" class="link-arrow">Consultation en visio
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
