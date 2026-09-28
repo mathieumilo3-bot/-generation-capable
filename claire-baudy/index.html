@@ -170,29 +170,62 @@
   body.menu-open .nav-burger span:nth-child(2){ opacity:0; }
   body.menu-open .nav-burger span:nth-child(3){ transform:translateY(-9px) rotate(-45deg); }
 
-  /* ---------- Photo placeholders ---------- */
-  .photo{
+  /* ---------- Art plates — fine-line botanical illustration in place of photography ---------- */
+  .art{
     position:relative;
-    background:linear-gradient(150deg,#EFE8D8 0%, #E3D6BC 55%, #D8CBAD 100%);
     border:1px solid var(--line-soft);
     overflow:hidden;
     display:flex; align-items:center; justify-content:center;
+    isolation:isolate;
   }
-  .photo::before{
+  .art-light{
+    background:
+      radial-gradient(120% 90% at 10% 6%, rgba(255,252,244,.9) 0%, rgba(255,252,244,0) 55%),
+      radial-gradient(95% 80% at 94% 102%, rgba(185,116,82,.22) 0%, rgba(185,116,82,0) 60%),
+      linear-gradient(150deg,#F4EEDF 0%, #E7D8BC 55%, #D9C6A2 100%);
+  }
+  .art-dark{
+    background:
+      radial-gradient(120% 90% at 90% 4%, rgba(231,214,175,.14) 0%, rgba(231,214,175,0) 55%),
+      radial-gradient(95% 80% at 6% 104%, rgba(185,116,82,.2) 0%, rgba(185,116,82,0) 60%),
+      linear-gradient(150deg,#243828 0%, #1B2C21 55%, #101D17 100%);
+  }
+  .art::before{
     content:"";
-    position:absolute; inset:0;
-    opacity:.5; mix-blend-mode:multiply;
+    position:absolute; z-index:0; pointer-events:none;
+    width:60%; padding-bottom:60%; border-radius:50%;
+    top:-18%; right:-14%; filter:blur(46px);
+  }
+  .art-light::before{ background:radial-gradient(circle, rgba(255,255,255,.85), rgba(255,255,255,0) 70%); opacity:.8; }
+  .art-dark::before{ background:radial-gradient(circle, rgba(231,214,175,.3), rgba(231,214,175,0) 70%); opacity:.7; }
+  .art::after{
+    content:"";
+    position:absolute; inset:0; z-index:2; pointer-events:none;
+    opacity:.4; mix-blend-mode:multiply;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix type='matrix' values='0 0 0 0 0.1 0 0 0 0 0.14 0 0 0 0 0.1 0 0 0 0.35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   }
-  .photo-tag{
-    position:relative; z-index:1;
-    display:flex; flex-direction:column; align-items:center; gap:.7rem;
-    color:var(--forest); opacity:.55;
+  .art-frame{ position:absolute; inset:16px; z-index:1; border:1px solid rgba(22,38,29,.15); pointer-events:none; }
+  .art-dark .art-frame{ border-color:rgba(250,246,236,.2); }
+
+  .art-line{ position:relative; z-index:1; width:44%; height:auto; overflow:visible; color:var(--forest); opacity:.82; }
+  .art-line *{ fill:none; stroke:currentColor; stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+  .art-line circle.solid{ fill:currentColor; stroke:none; }
+  .art-dark .art-line{ color:var(--champagne); }
+  .art-line.wide{ width:62%; }
+  .art-line.tall{ width:30%; }
+  .art-line.small{ width:36%; }
+
+  .art-plate{
+    position:absolute; left:26px; bottom:20px; z-index:3;
+    font-family:'Fraunces',serif; font-style:italic; font-weight:400;
+    font-size:.8rem; letter-spacing:.01em; color:var(--forest); opacity:.7;
   }
-  .photo-tag svg{ width:30px; height:30px; }
-  .photo-tag span{
-    font-size:.66rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
-    text-align:center; max-width:220px;
+  .art-dark .art-plate{ color:var(--champagne); }
+
+  .art-num{
+    position:absolute; top:10px; left:16px; z-index:3;
+    font-family:'Fraunces',serif; font-size:2.4rem; color:var(--forest); opacity:.14;
+    line-height:1; pointer-events:none;
   }
 
   /* ---------- Hero ---------- */
@@ -210,12 +243,6 @@
   }
   .hero-actions{ display:flex; gap:1rem; flex-wrap:wrap; }
   .hero-photo{ aspect-ratio:4/5; border-radius:var(--radius); }
-  .hero-photo .photo-caption{
-    position:absolute; left:0; right:0; bottom:0; z-index:2;
-    padding:1.2rem 1.4rem;
-    background:linear-gradient(0deg, rgba(22,38,29,.55), transparent);
-    color:var(--cream); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; opacity:.9;
-  }
 
   .reassurance{
     margin-top:64px; padding-top:28px; border-top:1px solid var(--line);
@@ -247,7 +274,7 @@
     transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease;
   }
   .need-card:hover{ transform:translateY(-6px); box-shadow:var(--shadow); border-color:var(--line); }
-  .need-card .photo{ aspect-ratio:4/3; }
+  .need-card .art{ aspect-ratio:4/3; }
   .need-card-body{ padding:1.7rem 1.6rem 1.9rem; display:flex; flex-direction:column; gap:.9rem; flex:1; }
   .need-card-body h3{ font-size:1.15rem; line-height:1.3; }
   .need-card-body p{ font-size:.9rem; color:var(--ink-soft); margin:0; flex:1; }
@@ -283,8 +310,6 @@
   .peau h2{ color:var(--cream); font-size:clamp(2rem,3.6vw,2.9rem); line-height:1.18; margin-top:1.1rem; }
   .peau p.body-copy{ color:rgba(250,246,236,.78); font-size:1.05rem; line-height:1.75; max-width:50ch; margin:1.3rem 0 2.1rem; }
   .peau-photo{ aspect-ratio:4/5; border-radius:var(--radius); border-color:rgba(250,246,236,.18); }
-  .peau-photo{ background:linear-gradient(150deg,#24382C 0%, #1B2C21 60%, #142219 100%); }
-  .peau-photo .photo-tag{ color:var(--champagne); opacity:.65; }
 
   /* ---------- Démarche ---------- */
   .demarche{ background:var(--cream-deep); text-align:center; }
@@ -422,12 +447,22 @@
       </div>
     </div>
 
-    <div class="photo hero-photo reveal">
-      <div class="photo-tag">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
-        <span>Portrait naturel — Claire Baudy</span>
-      </div>
-      <div class="photo-caption">Cabinet de Rennes</div>
+    <div class="art art-light hero-photo reveal">
+      <div class="art-frame"></div>
+      <svg class="art-line tall" viewBox="0 0 140 260">
+        <path d="M70 250 C64 195 76 150 66 110 C60 85 74 70 68 55"/>
+        <ellipse cx="46" cy="216" rx="19" ry="8" transform="rotate(-34 46 216)"/>
+        <ellipse cx="88" cy="198" rx="19" ry="8" transform="rotate(34 88 198)"/>
+        <ellipse cx="44" cy="172" rx="16" ry="7" transform="rotate(-30 44 172)"/>
+        <ellipse cx="86" cy="156" rx="16" ry="7" transform="rotate(32 86 156)"/>
+        <ellipse cx="48" cy="132" rx="13" ry="6" transform="rotate(-28 48 132)"/>
+        <ellipse cx="82" cy="118" rx="13" ry="6" transform="rotate(30 82 118)"/>
+        <ellipse cx="60" cy="60" rx="9" ry="16" transform="rotate(-18 60 60)"/>
+        <ellipse cx="78" cy="58" rx="9" ry="16" transform="rotate(16 78 58)"/>
+        <ellipse cx="69" cy="46" rx="8" ry="15"/>
+        <circle class="solid" cx="69" cy="42" r="3.4"/>
+      </svg>
+      <span class="art-plate">Planche I — Terrain &amp; vitalité</span>
     </div>
   </div>
 </section>
@@ -443,11 +478,17 @@
 
     <div class="needs-grid">
       <a href="#bilan" class="need-card reveal">
-        <div class="photo">
-          <div class="photo-tag">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 12h4l2-7 4 14 3-9h5"/></svg>
-            <span>Équilibre global</span>
-          </div>
+        <div class="art art-light">
+          <span class="art-num">01</span>
+          <svg class="art-line small" viewBox="0 0 120 160">
+            <path d="M60 150 C55 110 65 70 60 20"/>
+            <ellipse cx="42" cy="128" rx="17" ry="7" transform="rotate(-35 42 128)"/>
+            <ellipse cx="78" cy="112" rx="17" ry="7" transform="rotate(35 78 112)"/>
+            <ellipse cx="40" cy="90" rx="15" ry="6.5" transform="rotate(-40 40 90)"/>
+            <ellipse cx="76" cy="72" rx="15" ry="6.5" transform="rotate(38 76 72)"/>
+            <ellipse cx="46" cy="50" rx="13" ry="5.5" transform="rotate(-32 46 50)"/>
+            <circle class="solid" cx="60" cy="18" r="5"/>
+          </svg>
         </div>
         <div class="need-card-body">
           <h3>Je veux comprendre mon équilibre global</h3>
@@ -459,11 +500,17 @@
       </a>
 
       <a href="#peau" class="need-card reveal">
-        <div class="photo">
-          <div class="photo-tag">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
-            <span>Problématiques de peau</span>
-          </div>
+        <div class="art art-light">
+          <span class="art-num">02</span>
+          <svg class="art-line small" viewBox="0 0 160 200">
+            <path d="M80 190 C40 160 30 90 80 20 C130 90 120 160 80 190 Z"/>
+            <path d="M80 185 C78 140 80 70 80 25"/>
+            <path d="M80 150 C60 140 50 130 45 120"/>
+            <path d="M80 150 C100 140 110 130 115 120"/>
+            <path d="M80 110 C63 102 55 95 50 88"/>
+            <path d="M80 110 C97 102 105 95 110 88"/>
+            <circle class="solid" cx="103" cy="172" r="4.5"/>
+          </svg>
         </div>
         <div class="need-card-body">
           <h3>Ma peau me préoccupe</h3>
@@ -475,11 +522,15 @@
       </a>
 
       <a href="#soins" class="need-card reveal">
-        <div class="photo">
-          <div class="photo-tag">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21c-5-3.5-8-7-8-11a5 5 0 0 1 8-4 5 5 0 0 1 8 4c0 4-3 7.5-8 11z"/></svg>
-            <span>Réflexologie · Drainage · Massages</span>
-          </div>
+        <div class="art art-light">
+          <span class="art-num">03</span>
+          <svg class="art-line small" viewBox="0 0 160 160">
+            <path d="M30 88 Q80 138 130 88"/>
+            <ellipse cx="80" cy="86" rx="50" ry="9"/>
+            <path d="M55 70 C50 55 62 50 57 35 C52 20 64 15 60 5"/>
+            <path d="M80 65 C75 50 87 45 82 30 C77 15 89 10 85 0"/>
+            <path d="M105 70 C100 55 112 50 107 35 C102 20 114 15 110 5"/>
+          </svg>
         </div>
         <div class="need-card-body">
           <h3>Je veux prendre soin de mon corps</h3>
@@ -491,11 +542,19 @@
       </a>
 
       <a href="#nutrition" class="need-card reveal">
-        <div class="photo">
-          <div class="photo-tag">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3v6M8 5c0 3 1.8 4 4 4s4-1 4-4M12 9v12"/></svg>
-            <span>Micronutrition</span>
-          </div>
+        <div class="art art-light">
+          <span class="art-num">04</span>
+          <svg class="art-line small" viewBox="0 0 100 180">
+            <path d="M50 170 C48 120 52 70 50 15"/>
+            <ellipse cx="38" cy="140" rx="6" ry="12" transform="rotate(-18 38 140)"/>
+            <ellipse cx="62" cy="140" rx="6" ry="12" transform="rotate(18 62 140)"/>
+            <ellipse cx="37" cy="112" rx="6" ry="12" transform="rotate(-16 37 112)"/>
+            <ellipse cx="63" cy="112" rx="6" ry="12" transform="rotate(16 63 112)"/>
+            <ellipse cx="38" cy="84" rx="5.5" ry="11" transform="rotate(-15 38 84)"/>
+            <ellipse cx="62" cy="84" rx="5.5" ry="11" transform="rotate(15 62 84)"/>
+            <ellipse cx="40" cy="56" rx="5" ry="10" transform="rotate(-13 40 56)"/>
+            <ellipse cx="60" cy="56" rx="5" ry="10" transform="rotate(13 60 56)"/>
+          </svg>
         </div>
         <div class="need-card-body">
           <h3>Je cherche un accompagnement nutritionnel</h3>
@@ -512,11 +571,23 @@
 <!-- Écran 3 — À propos -->
 <section id="apropos">
   <div class="wrap about-grid">
-    <div class="photo about-photo reveal">
-      <div class="photo-tag">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
-        <span>Claire Baudy, en cabinet</span>
-      </div>
+    <div class="art art-light about-photo reveal">
+      <div class="art-frame"></div>
+      <svg class="art-line" viewBox="0 0 160 200">
+        <path d="M30 185 C50 152 60 112 70 72 C74 58 78 48 84 40"/>
+        <path d="M130 185 C110 152 100 112 90 72 C86 58 82 48 76 40"/>
+        <ellipse cx="44" cy="160" rx="14" ry="6" transform="rotate(-32 44 160)"/>
+        <ellipse cx="56" cy="132" rx="13" ry="5.5" transform="rotate(-26 56 132)"/>
+        <ellipse cx="64" cy="102" rx="12" ry="5" transform="rotate(-20 64 102)"/>
+        <ellipse cx="72" cy="74" rx="11" ry="4.6" transform="rotate(-16 72 74)"/>
+        <ellipse cx="116" cy="160" rx="14" ry="6" transform="rotate(32 116 160)"/>
+        <ellipse cx="104" cy="132" rx="13" ry="5.5" transform="rotate(26 104 132)"/>
+        <ellipse cx="96" cy="102" rx="12" ry="5" transform="rotate(20 96 102)"/>
+        <ellipse cx="88" cy="74" rx="11" ry="4.6" transform="rotate(16 88 74)"/>
+        <circle class="solid" cx="78" cy="37" r="4"/>
+        <circle class="solid" cx="84" cy="39" r="3.2"/>
+      </svg>
+      <span class="art-plate">Planche II — Le geste</span>
     </div>
     <div class="about-text reveal">
       <span class="eyebrow">Une approche globale</span>
@@ -555,11 +626,22 @@
       <p class="body-copy">Claire propose notamment un accompagnement naturopathique dédié aux problématiques cutanées, avec une approche globale du terrain et de l'hygiène de vie.</p>
       <a href="#peau-detail" class="btn btn-ghost">Découvrir l'approche peau →</a>
     </div>
-    <div class="photo peau-photo reveal">
-      <div class="photo-tag">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 3c3 3 6 6.5 6 10.5A6 6 0 0 1 6 13.5C6 9.5 9 6 12 3z"/></svg>
-        <span>Texture naturelle — macro élégante</span>
-      </div>
+    <div class="art art-dark peau-photo reveal">
+      <div class="art-frame"></div>
+      <svg class="art-line" viewBox="0 0 160 200">
+        <ellipse cx="80" cy="105" rx="70" ry="86" opacity=".35"/>
+        <ellipse cx="80" cy="105" rx="52" ry="65" opacity=".5"/>
+        <path d="M80 190 C40 160 30 90 80 20 C130 90 120 160 80 190 Z"/>
+        <path d="M80 185 C78 140 80 70 80 25"/>
+        <path d="M80 155 C58 145 47 133 40 122"/>
+        <path d="M80 155 C102 145 113 133 120 122"/>
+        <path d="M80 118 C61 109 52 101 46 92"/>
+        <path d="M80 118 C99 109 108 101 114 92"/>
+        <path d="M80 78 C67 71 60 65 55 57"/>
+        <path d="M80 78 C93 71 100 65 105 57"/>
+        <circle class="solid" cx="106" cy="170" r="5"/>
+      </svg>
+      <span class="art-plate">Planche III — La peau</span>
     </div>
   </div>
 </section>
@@ -659,11 +741,16 @@
 <!-- Écran 7 — Cabinet -->
 <section class="cabinet" id="cabinet">
   <div class="wrap">
-    <div class="photo cabinet-photo reveal">
-      <div class="photo-tag">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10.5L12 4l9 6.5M5 10v10h14V10"/></svg>
-        <span>Cabinet — 6 bis avenue Louis Barthou, Rennes</span>
-      </div>
+    <div class="art art-light cabinet-photo reveal">
+      <div class="art-frame"></div>
+      <svg class="art-line wide" viewBox="0 0 320 110">
+        <path d="M40 95 C46 78 44 66 50 56 C56 46 62 46 68 56 C74 66 72 78 78 95"/>
+        <path d="M132 95 L132 50 A28 28 0 0 1 188 50 L188 95"/>
+        <path d="M124 95 L196 95"/>
+        <path d="M144 95 L144 65 M160 95 L160 60 M176 95 L176 65"/>
+        <path d="M242 95 C248 78 246 66 252 56 C258 46 264 46 270 56 C276 66 274 78 280 95"/>
+      </svg>
+      <span class="art-plate">Planche IV — Le cabinet</span>
     </div>
 
     <div class="cabinet-grid">
