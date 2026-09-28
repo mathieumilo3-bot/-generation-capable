@@ -111,6 +111,7 @@
     padding:96px 0 72px;
     min-height:calc(100svh - 68px);
     display:flex;align-items:center;
+    position:relative;
   }
   .hero-grid{
     width:100%;
@@ -139,6 +140,28 @@
     opacity:.7;
   }
   .hero-visual{position:relative;}
+  .hero-visual::before{
+    content:"";position:absolute;inset:0;
+    transform:translate(16px,16px);
+    border:1px solid var(--brun-clair);
+    z-index:-1;
+  }
+  .scroll-cue{
+    position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--graphite-soft);opacity:.55;
+  }
+  .scroll-cue span{
+    width:1px;height:34px;background:currentColor;
+    animation:scrollcue 1.8s ease-in-out infinite;
+  }
+  @keyframes scrollcue{
+    0%,100%{transform:scaleY(.4);opacity:.3;}
+    50%{transform:scaleY(1);opacity:.8;}
+  }
+  @media (max-width:900px){ .scroll-cue{display:none;} }
+  @media (prefers-reduced-motion: reduce){ .scroll-cue span{animation:none;} }
   .portrait{
     aspect-ratio:4/5;width:100%;border-radius:2px;
     background:
@@ -181,23 +204,36 @@
   .section-title{font-size:clamp(28px,3.6vw,42px);margin-top:14px;}
   .section-lede{font-size:16.5px;color:var(--graphite-soft);margin-top:20px;}
 
-  .cards-grid{
-    margin-top:56px;
-    display:grid;grid-template-columns:repeat(3,1fr);
-    border-top:1px solid var(--line);
-    border-left:1px solid var(--line);
+  .id-layout{
+    margin-top:64px;
+    display:grid;grid-template-columns:.7fr 1.3fr;gap:64px;
   }
-  @media (max-width:900px){ .cards-grid{grid-template-columns:repeat(2,1fr);} }
-  @media (max-width:600px){ .cards-grid{grid-template-columns:1fr;} }
-  .id-card{
-    padding:36px 32px;
-    border-right:1px solid var(--line);
-    border-bottom:1px solid var(--line);
-    transition:background .25s ease;
+  @media (max-width:900px){ .id-layout{grid-template-columns:1fr;gap:8px;} }
+  .id-layout-note{
+    font-size:13.5px;color:var(--graphite-soft);opacity:.75;
+    max-width:280px;align-self:end;padding-bottom:28px;
   }
-  .id-card:hover{background:var(--ivory-2);}
-  .id-card h3{font-family:var(--sans);font-size:17px;font-weight:600;letter-spacing:-.005em;}
-  .id-card p{font-size:14.5px;color:var(--graphite-soft);margin:10px 0 0;}
+  @media (max-width:900px){ .id-layout-note{display:none;} }
+  .id-list{border-top:1px solid var(--line);}
+  .id-row{
+    display:grid;grid-template-columns:56px 1fr 1.4fr;gap:28px;align-items:baseline;
+    padding:26px 4px;border-bottom:1px solid var(--line);
+    transition:padding-left .3s ease, background .3s ease;
+  }
+  .id-row:hover{padding-left:14px;background:var(--ivory-2);}
+  .id-num{font-family:var(--serif);font-size:15px;color:var(--brun);}
+  .id-row h3{font-family:var(--sans);font-size:17px;font-weight:600;letter-spacing:-.005em;}
+  .id-row p{font-size:14.5px;color:var(--graphite-soft);margin:0;}
+  @media (max-width:700px){
+    .id-row{
+      grid-template-columns:36px 1fr;
+      grid-template-areas:"num title" ". desc";
+      row-gap:6px;
+    }
+    .id-num{grid-area:num;}
+    .id-row h3{grid-area:title;}
+    .id-row p{grid-area:desc;}
+  }
 
   /* ---------- SECTION 3 : PREUVE (dark) ---------- */
   .on-dark{background:var(--graphite);color:var(--ivory);}
@@ -206,8 +242,15 @@
     margin-top:52px;
   }
   @media (max-width:900px){ .proof-grid{grid-template-columns:1fr;gap:40px;} }
+  .proof-photo-wrap{position:relative;}
+  .proof-photo-wrap::before{
+    content:"";position:absolute;inset:0;
+    transform:translate(-16px,16px);
+    border:1px solid rgba(201,169,140,.4);
+    z-index:0;
+  }
   .proof-photo{
-    aspect-ratio:3/4;border-radius:2px;overflow:hidden;
+    aspect-ratio:3/4;border-radius:2px;overflow:hidden;position:relative;z-index:1;
     background:
       radial-gradient(120% 140% at 85% 0%, #5C463C 0%, transparent 55%),
       linear-gradient(160deg,#2B2724 0%,#413731 55%,#5C463C 100%);
@@ -301,6 +344,16 @@
     margin-top:56px;padding-top:24px;border-top:1px solid var(--line-dark);
     font-size:12px;color:rgba(248,244,236,.4);text-align:center;
   }
+
+  /* ---------- REVEAL ---------- */
+  .reveal{
+    opacity:0;transform:translateY(16px);
+    transition:opacity .7s ease, transform .7s ease;
+  }
+  .reveal.in-view{opacity:1;transform:translateY(0);}
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1;transform:none;transition:none;}
+  }
 </style>
 </head>
 <body>
@@ -332,7 +385,7 @@
              l'état : à remplacer par un vrai portrait de Myriam avant mise en ligne. -->
         <div class="portrait" id="heroPortrait">
           <img class="photo-fill" alt="Portrait (photo de démonstration — à remplacer par une vraie photo de Myriam)"
-               src="https://loremflickr.com/900/1125/woman,portrait,business/all"
+               src="https://images.pexels.com/photos/9064773/pexels-photo-9064773.jpeg?auto=compress&cs=tinysrgb&w=1000"
                onload="document.getElementById('heroPortrait').classList.add('has-photo')"
                onerror="this.remove()">
         </div>
@@ -343,40 +396,52 @@
       </div>
     </div>
   </div>
+  <div class="scroll-cue"><span></span>Défiler</div>
 </section>
 
 <!-- ============ 2. IDENTIFICATION ============ -->
 <section class="section" id="pour-qui">
   <div class="wrap">
-    <div class="section-head">
-      <span class="eyebrow">Par où commencer</span>
-      <h2 class="section-title">Vous n'avez pas besoin de savoir<br>quelle méthode choisir.</h2>
-      <p class="section-lede">Vous venez avec une situation, une sensation ou quelque chose qui vous empêche d'avancer. Le travail commence à partir de là.</p>
-    </div>
-    <div class="cards-grid">
-      <div class="id-card">
-        <h3>Stress &amp; surcharge</h3>
-        <p>Quand tout semble prendre trop de place.</p>
+    <div class="id-layout">
+      <div>
+        <div class="section-head reveal">
+          <span class="eyebrow">Par où commencer</span>
+          <h2 class="section-title">Vous n'avez pas besoin de savoir quelle méthode choisir.</h2>
+          <p class="section-lede">Vous venez avec une situation, une sensation ou quelque chose qui vous empêche d'avancer. Le travail commence à partir de là.</p>
+        </div>
+        <p class="id-layout-note">Ce sont des portes d'entrée, pas des cases à cocher : la plupart des personnes se reconnaissent dans plusieurs.</p>
       </div>
-      <div class="id-card">
-        <h3>Confiance en soi</h3>
-        <p>Quand quelque chose vous retient malgré l'envie d'avancer.</p>
-      </div>
-      <div class="id-card">
-        <h3>Habitudes &amp; comportements</h3>
-        <p>Quand vous avez compris le problème mais que le changement reste difficile.</p>
-      </div>
-      <div class="id-card">
-        <h3>Transitions de vie</h3>
-        <p>Séparation, nouveau départ, changement personnel ou professionnel.</p>
-      </div>
-      <div class="id-card">
-        <h3>Blocages émotionnels</h3>
-        <p>Quand certaines réactions semblent revenir malgré vous.</p>
-      </div>
-      <div class="id-card">
-        <h3>Performance &amp; objectifs</h3>
-        <p>Pour préparer une échéance ou retrouver des ressources.</p>
+      <div class="id-list">
+        <div class="id-row reveal">
+          <span class="id-num">01</span>
+          <h3>Stress &amp; surcharge</h3>
+          <p>Quand tout semble prendre trop de place.</p>
+        </div>
+        <div class="id-row reveal">
+          <span class="id-num">02</span>
+          <h3>Confiance en soi</h3>
+          <p>Quand quelque chose vous retient malgré l'envie d'avancer.</p>
+        </div>
+        <div class="id-row reveal">
+          <span class="id-num">03</span>
+          <h3>Habitudes &amp; comportements</h3>
+          <p>Quand vous avez compris le problème mais que le changement reste difficile.</p>
+        </div>
+        <div class="id-row reveal">
+          <span class="id-num">04</span>
+          <h3>Transitions de vie</h3>
+          <p>Séparation, nouveau départ, changement personnel ou professionnel.</p>
+        </div>
+        <div class="id-row reveal">
+          <span class="id-num">05</span>
+          <h3>Blocages émotionnels</h3>
+          <p>Quand certaines réactions semblent revenir malgré vous.</p>
+        </div>
+        <div class="id-row reveal">
+          <span class="id-num">06</span>
+          <h3>Performance &amp; objectifs</h3>
+          <p>Pour préparer une échéance ou retrouver des ressources.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -388,25 +453,27 @@
     <span class="eyebrow">Pourquoi Myriam</span>
     <div class="proof-grid">
       <!-- PHOTO DE DÉMO UNIQUEMENT — même remarque que ci-dessus. -->
-      <div class="proof-photo" id="proofPhoto">
-        <img class="photo-fill" alt="Photo de cabinet (démonstration — à remplacer)"
-             src="https://loremflickr.com/900/1200/office,armchair,cozy/all"
-             onload="document.getElementById('proofPhoto').classList.add('has-photo')"
-             onerror="this.remove()">
+      <div class="proof-photo-wrap reveal">
+        <div class="proof-photo" id="proofPhoto">
+          <img class="photo-fill" alt="Portrait en cabinet (démonstration — à remplacer)"
+               src="https://images.pexels.com/photos/30684790/pexels-photo-30684790.jpeg?auto=compress&cs=tinysrgb&w=1000"
+               onload="document.getElementById('proofPhoto').classList.add('has-photo')"
+               onerror="this.remove()">
+        </div>
       </div>
       <div>
         <h2 class="proof-title">Une relation thérapeutique<br>avant une technique.</h2>
         <p class="proof-text">Psychopraticienne et hypnothérapeute, Myriam Ballarati-Mestre accompagne enfants, adolescents et adultes à Bordeaux.</p>
         <div class="stat-row">
-          <div class="stat">
+          <div class="stat reveal">
             <div class="stat-num">1h minimum</div>
             <div class="stat-sub">pour prendre réellement le temps lors d'une séance.</div>
           </div>
-          <div class="stat">
+          <div class="stat reveal">
             <div class="stat-num">Cabinet + visio</div>
             <div class="stat-sub">selon votre situation.</div>
           </div>
-          <div class="stat">
+          <div class="stat reveal">
             <div class="stat-num">Approche personnalisée</div>
             <div class="stat-sub">Hypnose, thérapies brèves et PNL.</div>
           </div>
@@ -419,22 +486,22 @@
 <!-- ============ 4. FONCTIONNEMENT ============ -->
 <section class="section" id="accompagnement">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head reveal">
       <span class="eyebrow">La méthode</span>
       <h2 class="section-title">Comment se déroule<br>l'accompagnement ?</h2>
     </div>
     <div class="steps">
-      <div class="step">
+      <div class="step reveal">
         <span class="step-num">01 — Comprendre</span>
         <h3>Un premier échange</h3>
         <p>Pour identifier votre besoin et votre objectif.</p>
       </div>
-      <div class="step">
+      <div class="step reveal">
         <span class="step-num">02 — Travailler</span>
         <h3>Une séance construite pour vous</h3>
         <p>Et non autour d'un protocole générique.</p>
       </div>
-      <div class="step">
+      <div class="step reveal">
         <span class="step-num">03 — Avancer</span>
         <h3>Séance après séance</h3>
         <p>Selon votre rythme et votre objectif.</p>
@@ -453,16 +520,16 @@
       <div class="stars">★★★★★</div>
       <span class="eyebrow">Ils témoignent de leur expérience</span>
     </div>
-    <div class="avis-main">
+    <div class="avis-main reveal">
       <p class="avis-quote">« Emplacement réservé pour un témoignage client réel — à remplacer par un avis vérifié de Myriam. »</p>
       <p class="avis-attrib">Prénom — source de l'avis</p>
     </div>
     <div class="avis-side">
-      <div class="avis-side-item">
+      <div class="avis-side-item reveal">
         <p>« Second témoignage à intégrer. »</p>
         <span>Prénom — source</span>
       </div>
-      <div class="avis-side-item">
+      <div class="avis-side-item reveal">
         <p>« Troisième témoignage à intégrer. »</p>
         <span>Prénom — source</span>
       </div>
@@ -474,7 +541,7 @@
 <!-- ============ 6. CONVERSION ============ -->
 <section class="on-dark" id="rdv">
   <div class="wrap convert">
-    <h2 class="convert-title">Et si votre premier pas<br>était simplement d'en parler ?</h2>
+    <h2 class="convert-title reveal">Et si votre premier pas<br>était simplement d'en parler ?</h2>
     <p class="convert-sub">Cabinet à Bordeaux · Consultation à distance possible</p>
     <div class="convert-cta">
       <!-- Lien de prise de rendez-vous réel (Doctolib / Calendly...) à brancher ici -->
@@ -505,6 +572,28 @@
   window.addEventListener('scroll', function(){
     nav.classList.toggle('scrolled', window.scrollY > 8);
   }, { passive: true });
+
+  if ('IntersectionObserver' in window) {
+    var groups = {};
+    document.querySelectorAll('.reveal').forEach(function(el){
+      var parent = el.closest('.id-list, .stat-row, .steps, .avis-side') || el.parentElement;
+      (groups[parent] = groups[parent] || []).push(el);
+    });
+    Object.values(groups).forEach(function(list){
+      list.forEach(function(el, i){ el.style.transitionDelay = (i * 70) + 'ms'; });
+    });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in-view'); });
+  }
 </script>
 </body>
 </html>
