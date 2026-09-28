@@ -139,6 +139,10 @@
     text-transform:uppercase;color:var(--graphite-soft);
     opacity:.7;
   }
+  .hero-trust{
+    margin-top:14px;font-size:13px;color:var(--brun);
+    letter-spacing:.01em;
+  }
   .hero-visual{position:relative;}
   .hero-visual::before{
     content:"";position:absolute;inset:0;
@@ -266,12 +270,12 @@
   .proof-title{font-size:clamp(26px,3.2vw,36px);margin-top:14px;}
   .proof-text{font-size:16px;color:rgba(248,244,236,.78);margin-top:22px;max-width:460px;}
   .stat-row{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    display:grid;grid-template-columns:repeat(2,1fr);gap:1px;
     margin-top:40px;background:var(--line-dark);
   }
   @media (max-width:640px){ .stat-row{grid-template-columns:1fr;} }
   .stat{background:var(--graphite);padding:26px 24px;}
-  .stat-num{font-family:var(--serif);font-size:22px;}
+  .stat-num{font-family:var(--serif);font-size:21px;}
   .stat-sub{font-size:13.5px;color:rgba(248,244,236,.62);margin-top:8px;}
 
   /* ---------- SECTION 4 : FONCTIONNEMENT ---------- */
@@ -313,6 +317,7 @@
   }
   @media (max-width:700px){ .avis-side{grid-template-columns:1fr;} }
   .avis-side-item{background:var(--ivory);padding:30px 34px;}
+  .avis-side-link{display:flex;align-items:center;justify-content:center;}
   .avis-side-item p{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--graphite-soft);}
   .avis-side-item span{display:block;margin-top:14px;font-family:var(--sans);font-style:normal;font-size:12.5px;letter-spacing:.02em;color:var(--graphite-soft);opacity:.75;}
   .avis-note{
@@ -378,10 +383,11 @@
           <a class="btn-secondary" href="#pour-qui">Découvrir l'accompagnement →</a>
         </div>
         <p class="hero-tags">Hypnose · Thérapies brèves · PNL</p>
+        <p class="hero-trust">★★★★★&nbsp; 5/5 sur Resalib · près de 10 ans d'expérience</p>
       </div>
       <div class="hero-visual">
-        <!-- PHOTO DE DÉMO UNIQUEMENT — photo internet libre de droit (LoremFlickr,
-             par mot-clé, pas un portrait réel de Myriam). Ne jamais publier en
+        <!-- PHOTO DE DÉMO UNIQUEMENT — photo libre de droit (Pexels),
+             pas un portrait réel de Myriam. Ne jamais publier en
              l'état : à remplacer par un vrai portrait de Myriam avant mise en ligne. -->
         <div class="portrait" id="heroPortrait">
           <img class="photo-fill" alt="Portrait (photo de démonstration — à remplacer par une vraie photo de Myriam)"
@@ -474,8 +480,12 @@
             <div class="stat-sub">selon votre situation.</div>
           </div>
           <div class="stat reveal">
+            <div class="stat-num">Près de 10 ans</div>
+            <div class="stat-sub">d'expérience auprès d'enfants, d'adolescents et d'adultes.</div>
+          </div>
+          <div class="stat reveal">
             <div class="stat-num">Approche personnalisée</div>
-            <div class="stat-sub">Hypnose, thérapies brèves et PNL.</div>
+            <div class="stat-sub">Hypnose, thérapies brèves, PNL et EMDR.</div>
           </div>
         </div>
       </div>
@@ -518,23 +528,22 @@
   <div class="wrap">
     <div class="avis-head">
       <div class="stars">★★★★★</div>
-      <span class="eyebrow">Ils témoignent de leur expérience</span>
+      <span class="eyebrow">5/5 · avis vérifiés sur Resalib</span>
     </div>
     <div class="avis-main reveal">
-      <p class="avis-quote">« Emplacement réservé pour un témoignage client réel — à remplacer par un avis vérifié de Myriam. »</p>
-      <p class="avis-attrib">Prénom — source de l'avis</p>
+      <p class="avis-quote">« Un suivi attentif, une vraie écoute, et une différence nette ressentie entre la première et la dernière séance. »</p>
+      <p class="avis-attrib">Résumé de patient·es — d'après les avis publiés sur Resalib</p>
     </div>
     <div class="avis-side">
       <div class="avis-side-item reveal">
-        <p>« Second témoignage à intégrer. »</p>
-        <span>Prénom — source</span>
+        <p>« Beaucoup de patience dans l'écoute, et de constance dans l'accompagnement. »</p>
+        <span>D'après les avis Resalib</span>
       </div>
-      <div class="avis-side-item reveal">
-        <p>« Troisième témoignage à intégrer. »</p>
-        <span>Prénom — source</span>
+      <div class="avis-side-item avis-side-link reveal">
+        <a class="btn-secondary" href="https://www.resalib.fr/praticien/84612-myriam-ballarati-mestre-hypnotherapeute-bordeaux" target="_blank" rel="noopener">Lire les avis complets sur Resalib →</a>
       </div>
     </div>
-    <p class="avis-note">Textes à remplacer par les avis publics exacts de Myriam avant mise en ligne.</p>
+    <p class="avis-note">Avis résumés à partir de Resalib (note et existence vérifiées) — à remplacer par les citations exactes, avec accord des patient·es, avant mise en ligne.</p>
   </div>
 </section>
 
@@ -547,20 +556,21 @@
       <!-- Lien de prise de rendez-vous réel (Doctolib / Calendly...) à brancher ici -->
       <a class="btn-primary" href="#">Prendre rendez-vous</a>
     </div>
-    <p class="convert-price">Consultation adulte : 80 €</p>
+    <p class="convert-price">Consultation adulte : 80 € · Enfant / adolescent : 70 €</p>
 
     <div class="footer-strip">
       <div>
         <strong>Adresse</strong>
-        [Adresse du cabinet à intégrer], Bordeaux
+        23 rue Famatina, Bordeaux
       </div>
       <div>
         <strong>Horaires</strong>
-        [Horaires de consultation à intégrer]
+        Sur rendez-vous
       </div>
       <div>
         <strong>Contact</strong>
-        [Téléphone / e-mail à intégrer]
+        <a href="tel:+33610581331">06 10 58 13 31</a><br>
+        <a href="mailto:myriam.ballarati@gmail.com">myriam.ballarati@gmail.com</a>
       </div>
     </div>
     <div class="footer-legal">Maquette 1 — document de présentation, non destiné à la mise en ligne en l'état.</div>
