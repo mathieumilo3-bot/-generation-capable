@@ -67,14 +67,28 @@
   .nav.scrolled{border-color:var(--line);}
   .nav-inner{
     max-width:var(--max);margin:0 auto;padding:18px 32px;
-    display:flex;align-items:center;justify-content:space-between;
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:24px;
   }
-  @media (max-width:640px){ .nav-inner{padding:16px 20px;} }
+  @media (max-width:640px){
+    .nav-inner{padding:16px 20px;}
+    .brand{font-size:15.5px;line-height:1.2;}
+    .nav-cta{padding:9px 16px;font-size:12px;}
+  }
   .brand{
+    grid-column:1;
     font-family:var(--serif);font-size:19px;letter-spacing:.01em;
     text-decoration:none;color:var(--graphite);
   }
+  .nav-links{
+    grid-column:2;
+    display:flex;justify-content:center;gap:30px;
+    font-size:13px;letter-spacing:.01em;
+  }
+  .nav-links a{text-decoration:none;color:var(--graphite-soft);transition:color .2s ease;white-space:nowrap;}
+  .nav-links a:hover{color:var(--graphite);}
+  @media (max-width:900px){ .nav-links{display:none;} }
   .nav-cta{
+    grid-column:3;justify-self:end;
     font-family:var(--sans);font-size:13px;font-weight:600;
     letter-spacing:.02em;
     background:var(--graphite);color:var(--ivory);
@@ -320,10 +334,6 @@
   .avis-side-link{display:flex;align-items:center;justify-content:center;}
   .avis-side-item p{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--graphite-soft);}
   .avis-side-item span{display:block;margin-top:14px;font-family:var(--sans);font-style:normal;font-size:12.5px;letter-spacing:.02em;color:var(--graphite-soft);opacity:.75;}
-  .avis-note{
-    margin-top:36px;text-align:center;font-size:12.5px;color:var(--graphite-soft);opacity:.65;
-  }
-
   /* ---------- SECTION 6 : CONVERSION (dark) ---------- */
   .convert{text-align:center;padding-top:120px;padding-bottom:120px;}
   @media (max-width:640px){ .convert{padding-top:72px;padding-bottom:72px;} }
@@ -345,10 +355,6 @@
   }
   @media (max-width:700px){ .footer-strip{grid-template-columns:1fr;gap:28px;text-align:left;} }
   .footer-strip strong{display:block;color:var(--ivory);font-weight:600;margin-bottom:6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;}
-  .footer-legal{
-    margin-top:56px;padding-top:24px;border-top:1px solid var(--line-dark);
-    font-size:12px;color:rgba(248,244,236,.4);text-align:center;
-  }
 
   /* ---------- REVEAL ---------- */
   .reveal{
@@ -362,10 +368,28 @@
 </style>
 </head>
 <body>
+<script>
+  function photoFallback(img){
+    var list = (img.getAttribute('data-fallback') || '').split('|').filter(Boolean);
+    var next = list.shift();
+    if (next) {
+      img.setAttribute('data-fallback', list.join('|'));
+      img.src = next;
+    } else {
+      img.remove();
+    }
+  }
+</script>
 
 <nav class="nav" id="siteNav">
   <div class="nav-inner">
     <a class="brand" href="#hero">Myriam Ballarati-Mestre</a>
+    <div class="nav-links">
+      <a href="#pour-qui">Pour qui</a>
+      <a href="#pourquoi">Pourquoi Myriam</a>
+      <a href="#accompagnement">La méthode</a>
+      <a href="#avis">Avis</a>
+    </div>
     <a class="nav-cta" href="#rdv">Prendre rendez-vous</a>
   </div>
 </nav>
@@ -392,8 +416,9 @@
         <div class="portrait" id="heroPortrait">
           <img class="photo-fill" alt="Portrait (photo de démonstration — à remplacer par une vraie photo de Myriam)"
                src="https://images.pexels.com/photos/9064773/pexels-photo-9064773.jpeg?auto=compress&cs=tinysrgb&w=1000"
+               data-fallback="https://randomuser.me/api/portraits/women/68.jpg|https://i.pravatar.cc/900?img=47|https://xsgames.co/randomusers/assets/avatars/female/68.jpg"
                onload="document.getElementById('heroPortrait').classList.add('has-photo')"
-               onerror="this.remove()">
+               onerror="photoFallback(this)">
         </div>
         <div class="floating-card">
           <strong>Cabinet à Bordeaux</strong>
@@ -463,8 +488,9 @@
         <div class="proof-photo" id="proofPhoto">
           <img class="photo-fill" alt="Portrait en cabinet (démonstration — à remplacer)"
                src="https://images.pexels.com/photos/30684790/pexels-photo-30684790.jpeg?auto=compress&cs=tinysrgb&w=1000"
+               data-fallback="https://randomuser.me/api/portraits/women/65.jpg|https://i.pravatar.cc/900?img=44|https://xsgames.co/randomusers/assets/avatars/female/65.jpg"
                onload="document.getElementById('proofPhoto').classList.add('has-photo')"
-               onerror="this.remove()">
+               onerror="photoFallback(this)">
         </div>
       </div>
       <div>
@@ -543,7 +569,9 @@
         <a class="btn-secondary" href="https://www.resalib.fr/praticien/84612-myriam-ballarati-mestre-hypnotherapeute-bordeaux" target="_blank" rel="noopener">Lire les avis complets sur Resalib →</a>
       </div>
     </div>
-    <p class="avis-note">Avis résumés à partir de Resalib (note et existence vérifiées) — à remplacer par les citations exactes, avec accord des patient·es, avant mise en ligne.</p>
+    <!-- NOTE INTERNE (invisible sur la page) : avis résumés à partir de Resalib
+         (note et existence vérifiées) — à remplacer par les citations exactes,
+         avec l'accord des patient·es, avant toute mise en ligne réelle. -->
   </div>
 </section>
 
@@ -573,7 +601,8 @@
         <a href="mailto:myriam.ballarati@gmail.com">myriam.ballarati@gmail.com</a>
       </div>
     </div>
-    <div class="footer-legal">Maquette 1 — document de présentation, non destiné à la mise en ligne en l'état.</div>
+    <!-- NOTE INTERNE (invisible sur la page) : Maquette 1 — document de
+         présentation, non destiné à la mise en ligne en l'état. -->
   </div>
 </section>
 
