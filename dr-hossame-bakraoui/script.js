@@ -138,7 +138,19 @@ form.addEventListener("submit", e => {
     `Motif : ${form.motif.value}`,
     form.msg.value.trim() && `Message : ${form.msg.value.trim()}`
   ].filter(Boolean);
-  window.open(waUrl(lines.join("\n")), "_blank", "noopener");
+  const url = waUrl(lines.join("\n"));
+  // Certains environnements bloquent window.open : on affiche aussi un lien direct.
+  let opened = null;
+  try { opened = window.open(url, "_blank", "noopener"); } catch (err) {}
+  let fb = $("#waFallback");
+  if (!fb) {
+    fb = document.createElement("a");
+    fb.id = "waFallback"; fb.className = "wa-fallback"; fb.target = "_blank"; fb.rel = "noopener";
+    form.appendChild(fb);
+  }
+  fb.href = url;
+  fb.textContent = html.lang === "ar" ? "افتح واتساب لإرسال الطلب ←" : "Ouvrir WhatsApp pour envoyer la demande →";
+  fb.hidden = !!opened;
 });
 form.name.addEventListener("input", () => form.name.classList.remove("err"));
 

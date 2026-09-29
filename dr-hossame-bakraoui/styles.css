@@ -319,3 +319,8 @@ h1 em,h2 em{font-style:italic;font-weight:400;color:var(--gold)}
   .steps li{gap:20px}
   .scroll-cue{display:none}
 }
+
+.wa-fallback{display:block;text-align:center;font-weight:600;font-size:.92rem;color:var(--teal-700);text-decoration:underline;text-underline-offset:4px}
+.wa-fallback[hidden]{display:none}
+.nav{padding-top:calc(18px + env(safe-area-inset-top,0px))}
+.nav.scrolled{padding-top:calc(12px + env(safe-area-inset-top,0px))}
