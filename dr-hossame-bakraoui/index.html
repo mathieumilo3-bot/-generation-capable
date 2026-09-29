@@ -2,323 +2,111 @@
 <html lang="fr" dir="ltr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dr Hossame Bakraoui — Chirurgien-dentiste à Meknès</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dr Hossame Bakraoui</title>
 <meta name="description" content="Dr Hossame Bakraoui, chirurgien-dentiste à Meknès (Hamria). Chirurgie, esthétique du sourire, gouttières. Soins sans douleur, résultats naturels et durables.">
-<meta name="theme-color" content="#0b2a28">
+<meta name="theme-color" content="#f6f4ef">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@300;400;500;600&family=Tajawal:wght@300;400;500;700&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600&family=Tajawal:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="progress" id="progress"></div>
-
-<!-- ============ NAV ============ -->
 <header class="nav" id="nav">
-  <a class="brand" href="#top" aria-label="Dr Hossame Bakraoui">
-    <span class="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 48 48" width="34" height="34"><path d="M24 4c-3.6 0-6.2 1.3-9 1.3C10.6 5.3 6 8.6 6 15.6c0 5 2.3 8.5 3.4 13.4 1 4.3 1.6 12 5.1 12 3.3 0 3-8 5.2-11.5 1.2-1.9 2.5-2.7 4.3-2.7s3.1.8 4.3 2.7c2.2 3.5 1.9 11.5 5.2 11.5 3.5 0 4.1-7.7 5.1-12 1.1-4.900 3.400-8.400 3.400-13.400C42 8.600 37.400 5.300 33 5.300 30.200 5.300 27.600 4 24 4z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M31.500 13.500l1.200 2.500 2.800.4-2 2 .5 2.700-2.500-1.300-2.500 1.300.5-2.700-2-2 2.800-.4z" fill="currentColor" stroke="none"/></svg>
-    </span>
-    <span class="brand-text"><b>Dr Hossame</b><i>Bakraoui</i></span>
-  </a>
-  <nav class="links" id="links">
-    <a href="#cabinet" data-ar="العيادة">Le cabinet</a>
-    <a href="#soins" data-ar="العلاجات">Soins</a>
-    <a href="#approche" data-ar="منهجيتي">Approche</a>
-    <a href="#resultats" data-ar="النتائج">Résultats</a>
-    <a href="#contenus" data-ar="محتوى">Conseils</a>
-    <a href="#faq" data-ar="أسئلة">FAQ</a>
-  </nav>
+  <a class="brand" href="#top">Dr Hossame Bakraoui</a>
   <div class="nav-right">
-    <button class="lang" id="lang" type="button" aria-label="Changer de langue"><span class="on">FR</span><span>عر</span></button>
-    <a class="btn btn-gold btn-sm" href="#rdv" data-wa data-ar="احجز موعدا">Prendre RDV</a>
-    <button class="burger" id="burger" type="button" aria-label="Menu" aria-expanded="false"><i></i><i></i></button>
+    <button class="lang" id="lang" type="button" aria-label="Changer de langue"><span class="on">FR</span><span>عربية</span></button>
+    <a class="btn btn-line" href="#rdv" data-ar="موعد">Rendez-vous</a>
   </div>
 </header>
 
 <main id="top">
 
-<!-- ============ HERO ============ -->
+<!-- HERO -->
 <section class="hero">
-  <div class="hero-bg" aria-hidden="true">
-    <span class="orb o1"></span><span class="orb o2"></span>
-    <svg class="hero-lines" viewBox="0 0 1200 800" preserveAspectRatio="none"><path d="M-50 640C220 560 420 700 700 600S1100 420 1300 500" fill="none" stroke="url(#g1)" stroke-width="1"/><path d="M-50 700C260 620 460 760 740 660S1120 490 1300 560" fill="none" stroke="url(#g1)" stroke-width="1" opacity=".5"/><defs><linearGradient id="g1"><stop offset="0" stop-color="#d8bd8a" stop-opacity="0"/><stop offset=".5" stop-color="#d8bd8a"/><stop offset="1" stop-color="#d8bd8a" stop-opacity="0"/></linearGradient></defs></svg>
-  </div>
-
   <div class="wrap hero-grid">
+    <div class="portrait reveal">
+      <img src="assets/img/hossame-portrait.png" alt="Dr Hossame Bakraoui, chirurgien-dentiste à Meknès" width="720" height="720" fetchpriority="high">
+    </div>
     <div class="hero-copy">
-      <p class="eyebrow reveal" data-ar="جرّاح أسنان · مكناس · الحمرية"><span class="dot"></span>Chirurgien-dentiste · Meknès · Hamria</p>
-      <h1 class="reveal d1" data-ar="ابتسامة تشبهك،<br><em>بدون ألم.</em>">Le sourire qui vous ressemble,<br><em>sans douleur.</em></h1>
-      <p class="lead reveal d2" data-ar="جراحة وتجميل الأسنان بخبرة دولية. علاجات دقيقة ونتائج طبيعية ومستدامة، في أجواء تبعث على الاطمئنان.">Chirurgie et esthétique dentaire, portées par une expertise internationale. Des soins précis, des résultats naturels et durables — dans une ambiance qui rassure.</p>
-      <div class="cta-row reveal d3">
-        <a class="btn btn-gold" href="#rdv" data-wa data-ar="احجز موعدك عبر واتساب">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2zm5.200 14.200c-.2.600-1.300 1.200-1.800 1.200-.5.100-1 .200-3.300-.700-2.800-1.100-4.500-4-4.700-4.200-.1-.2-1.100-1.500-1.100-2.800s.7-2 1-2.300c.2-.3.500-.3.700-.3h.5c.2 0 .4 0 .6.500l.8 2c.1.200.1.400 0 .500l-.3.400-.4.400c-.1.200-.3.300-.1.600.2.300.8 1.300 1.700 2.100 1.100 1 2 1.300 2.300 1.400.3.100.500.100.600-.1l.9-1.100c.2-.3.400-.2.600-.1l1.900.9c.3.100.500.200.500.300.100.100.100.600-.100 1.200z"/></svg>
-          Prendre rendez-vous
-        </a>
-        <a class="btn btn-ghost" href="#soins" data-ar="اكتشف العلاجات">Découvrir les soins <span aria-hidden="true">→</span></a>
-      </div>
-      <ul class="trust reveal d4">
-        <li><b dir="ltr">0</b><span data-ar="ألم" >douleur<br>ressentie</span></li>
-        <li><b dir="ltr">EU</b><span data-ar="خبرة دولية">expertise<br>internationale</span></li>
-        <li><b dir="ltr">6K+</b><span data-ar="متابع على إنستغرام">abonnés<br>Instagram</span></li>
-      </ul>
-    </div>
-
-    <div class="hero-visual reveal d2">
-      <div class="portrait" id="portrait">
-        <span class="ring r1"></span><span class="ring r2"></span>
-        <img src="assets/img/hossame-portrait.png" alt="Dr Hossame Bakraoui, chirurgien-dentiste à Meknès" width="720" height="720" fetchpriority="high">
-        <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
-      </div>
-      <div class="float f1">
-        <span class="ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-4.400-7-10a4 4 0 0 1 7-2.600A4 4 0 0 1 19 11c0 5.600-7 10-7 10z"/></svg></span>
-        <div><b data-ar="حمرية، مكناس">Hamria, Meknès</b><small data-ar="العيادة">Le cabinet</small></div>
-      </div>
-      <div class="float f2">
-        <span class="ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.600 5.400 5.900.8-4.300 4.100 1 5.900L12 16.400 6.800 19.200l1-5.900L3.500 9.200l5.900-.8z"/></svg></span>
-        <div><b data-ar="نتائج طبيعية">Résultats naturels</b><small data-ar="ومستدامة">& durables</small></div>
+      <p class="label reveal" data-ar="جرّاح أسنان · مكناس">Chirurgien-dentiste · Meknès</p>
+      <h1 class="reveal d1" data-ar="ابتسامة طبيعية،<br><em>بدون ألم.</em>">Un sourire naturel,<br><em>sans douleur.</em></h1>
+      <p class="lead reveal d2" data-ar="جراحة وتجميل الأسنان في عيادة الحمرية، بخبرة دولية ونتائج تدوم.">Chirurgie et esthétique dentaire au cabinet de Hamria, avec une expertise internationale et des résultats durables.</p>
+      <div class="cta reveal d3">
+        <a class="btn btn-solid" href="#rdv" data-wa data-ar="احجز موعدا">Prendre rendez-vous</a>
+        <a class="link" href="#soins" data-ar="العلاجات">Les soins <span aria-hidden="true">→</span></a>
       </div>
     </div>
   </div>
-  <a class="scroll-cue" href="#cabinet" aria-label="Défiler"><span></span></a>
-</section>
-
-<!-- ============ MARQUEE ============ -->
-<div class="marquee" aria-hidden="true">
-  <div class="track">
-    <span>Chirurgie dentaire</span><i>✦</i><span>Esthétique du sourire</span><i>✦</i><span>Gouttières</span><i>✦</i><span>Soins sans douleur</span><i>✦</i><span>Blanchiment</span><i>✦</i><span>Expertise internationale</span><i>✦</i>
-    <span>Chirurgie dentaire</span><i>✦</i><span>Esthétique du sourire</span><i>✦</i><span>Gouttières</span><i>✦</i><span>Soins sans douleur</span><i>✦</i><span>Blanchiment</span><i>✦</i><span>Expertise internationale</span><i>✦</i>
-  </div>
-</div>
-
-<!-- ============ CABINET / ABOUT ============ -->
-<section class="section about" id="cabinet">
-  <div class="wrap about-grid">
-    <div class="about-media reveal">
-      <figure class="frame">
-        <img src="assets/img/hossame-consultation.jpg" alt="Dr Hossame Bakraoui en tenue de cabinet, en consultation" loading="lazy">
-        <span class="frame-gold"></span>
-      </figure>
-      <figure class="frame small">
-        <img src="assets/img/smile-detail.jpg" alt="Détail d'un sourire lors d'un soin" loading="lazy">
-      </figure>
-      <div class="badge-round" aria-hidden="true">
-        <svg viewBox="0 0 120 120"><defs><path id="circ" d="M60 60m-46 0a46 46 0 1 1 92 0a46 46 0 1 1-92 0"/></defs><text><textPath href="#circ" startOffset="0" textLength="286" lengthAdjust="spacing">SANS DOULEUR ✦ RÉSULTATS NATURELS ✦ </textPath></text></svg>
-        <b>HB</b>
-      </div>
-    </div>
-
-    <div class="about-copy">
-      <p class="eyebrow reveal" data-ar="عن الطبيب"><span class="dot"></span>Le praticien</p>
-      <h2 class="reveal d1" data-ar="الدقة الجراحية، <em>ولمسة إنسانية.</em>">La précision d’un chirurgien, <em>la douceur d’une écoute.</em></h2>
-      <p class="reveal d2" data-ar="أنا الدكتور حسام بكراوي، جرّاح أسنان في مكناس. أؤمن أن العناية بالأسنان لا يجب أن تكون مصدر خوف: نشرح كل خطوة، نختار العلاج الأنسب لكل حالة، ونحرص على راحتك من الاستقبال إلى المتابعة.">Je suis le Dr Hossame Bakraoui, chirurgien-dentiste à Meknès. Je crois que prendre soin de ses dents ne devrait jamais faire peur : chaque étape est expliquée, chaque traitement pensé pour votre cas, et votre confort passe avant tout — de l’accueil jusqu’au suivi.</p>
-      <blockquote class="quote reveal d3" data-ar="«الصيانة دائما أقل كلفة من الإصلاح. ما لا تعتنون به اليوم، قد تفقدونه يوما ما.»">« L’entretien est toujours moins cher que la réparation. Ce que vous n’entretenez pas aujourd’hui, vous le perdrez peut-être un jour. »</blockquote>
-      <ul class="checks reveal d3">
-        <li data-ar="جراحة وتجميل: خبرة مزدوجة في خدمة الابتسامة"><span></span>Chirurgie & esthétique : une double expertise au service du sourire</li>
-        <li data-ar="تقنيات وبروتوكولات على المستوى الدولي"><span></span>Techniques et protocoles au niveau des standards internationaux</li>
-        <li data-ar="تواصل شفاف: تشخيص واضح، خطة علاج مفهومة"><span></span>Communication transparente : diagnostic clair, plan de soins compris</li>
-      </ul>
-      <div class="sign reveal d4"><span class="sig">Hossame Bakraoui</span><small data-ar="جرّاح أسنان">Chirurgien-dentiste</small></div>
-    </div>
+  <div class="wrap facts reveal d3">
+    <span data-ar="الحمرية، مكناس">Hamria, Meknès</span>
+    <span data-ar="خبرة دولية">Expertise internationale</span>
+    <span data-ar="علاج بدون ألم">Soins sans douleur</span>
   </div>
 </section>
 
-<!-- ============ SOINS ============ -->
-<section class="section soins dark" id="soins">
-  <div class="wrap">
-    <div class="head">
-      <p class="eyebrow center reveal" data-ar="العلاجات"><span class="dot"></span>Les soins</p>
-      <h2 class="reveal d1" data-ar="كل ما تحتاجه ابتسامتك، <em>في مكان واحد.</em>">Tout ce dont votre sourire a besoin, <em>en un seul cabinet.</em></h2>
-    </div>
-    <div class="cards">
-      <article class="card reveal">
-        <span class="num">01</span>
-        <div class="c-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M24 6c-3 0-5 1-7.500 1C12.500 7 9 9.700 9 15.500c0 4.200 2 7 3 11 .8 3.500 1.300 10.500 4.300 10.500 2.800 0 2.500-6.500 4.400-9.500 1-1.600 2.200-2.300 3.300-2.300s2.300.7 3.300 2.300c1.900 3 1.600 9.500 4.400 9.500 3 0 3.500-7 4.300-10.500 1-4 3-6.800 3-11C39 9.700 35.500 7 31.500 7 29 7 27 6 24 6z"/></svg></div>
-        <h3 data-ar="جراحة الفم والأسنان">Chirurgie dentaire</h3>
-        <p data-ar="قلع الأسنان، بما فيها ضروس العقل، والتدخلات الجراحية بدقة وأقل قدر من الانزعاج.">Extractions, dents de sagesse et actes chirurgicaux réalisés avec précision, pour un minimum de gêne et une récupération sereine.</p>
-        <a href="#rdv" data-ar="اعرف المزيد">En savoir plus <span>→</span></a>
-      </article>
-      <article class="card reveal d1">
-        <span class="num">02</span>
-        <div class="c-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M24 6l3.800 8 8.700 1.200-6.400 6.100 1.600 8.700L24 25.800l-7.700 4.200 1.600-8.700-6.400-6.100L20.200 14z"/><path d="M36 33l1.200 2.800L40 37l-2.800 1.200L36 41l-1.200-2.800L32 37l2.800-1.200z"/></svg></div>
-        <h3 data-ar="تجميل الابتسامة">Esthétique du sourire</h3>
-        <p data-ar="ابتسامة متناسقة وطبيعية، تحافظ على شخصيتك وتبرز جمالك.">Un sourire harmonieux et naturel, qui respecte votre visage et votre personnalité — sans effet « artificiel ».</p>
-        <a href="#rdv" data-ar="اعرف المزيد">En savoir plus <span>→</span></a>
-      </article>
-      <article class="card reveal d2">
-        <span class="num">03</span>
-        <div class="c-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 22c4 10 10 14 18 14s14-4 18-14"/><path d="M9 20c5 5 10 7 15 7s10-2 15-7"/><path d="M15 26v4M21 28v5M27 28v5M33 26v4"/></svg></div>
-        <h3 data-ar="التقويم الشفاف (Gouttières)">Gouttières d’alignement</h3>
-        <p data-ar="تقويم شبه غير مرئي لتصحيح تراص الأسنان بشكل مريح وأنيق.">Aligner vos dents de façon discrète, confortable et élégante, avec un suivi rigoureux tout au long du traitement.</p>
-        <a href="#rdv" data-ar="اعرف المزيد">En savoir plus <span>→</span></a>
-      </article>
-      <article class="card reveal">
-        <span class="num">04</span>
-        <div class="c-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="24" cy="24" r="8"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11.300 11.300l4.200 4.200M32.500 32.500l4.200 4.200M11.300 36.700l4.200-4.200M32.500 15.500l4.200-4.200"/></svg></div>
-        <h3 data-ar="تبييض الأسنان">Blanchiment & éclat</h3>
-        <p data-ar="ابتسامة أكثر إشراقا بأمان، مع الحفاظ على صحة الميناء.">Retrouvez un sourire lumineux en toute sécurité, en préservant la santé de votre émail.</p>
-        <a href="#rdv" data-ar="اعرف المزيد">En savoir plus <span>→</span></a>
-      </article>
-      <article class="card reveal d1">
-        <span class="num">05</span>
-        <div class="c-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M24 40s-14-8-14-19a8 8 0 0 1 14-5 8 8 0 0 1 14 5c0 11-14 19-14 19z"/><path d="M17 22h5l2-4 3 8 2-4h3"/></svg></div>
-        <h3 data-ar="العلاجات التحفظية">Soins conservateurs</h3>
-        <p data-ar="علاج التسوس وحشو الأسنان لإنقاذ السن الطبيعية أطول مدة ممكنة.">Caries, dévitalisations, reconstitutions : sauver la dent naturelle le plus longtemps possible.</p>
-        <a href="#rdv" data-ar="اعرف المزيد">En savoir plus <span>→</span></a>
-      </article>
-      <article class="card reveal d2">
-        <span class="num">06</span>
-        <div class="c-ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M24 6l14 5v11c0 9-6 15-14 20-8-5-14-11-14-20V11z"/><path d="M17 24l5 5 9-10"/></svg></div>
-        <h3 data-ar="الوقاية والفحص">Prévention & contrôle</h3>
-        <p data-ar="فحوصات دورية وتنظيف احترافي وإرشادات يومية للحفاظ على النتائج.">Bilans réguliers, détartrage professionnel et conseils au quotidien pour préserver vos résultats.</p>
-        <a href="#rdv" data-ar="اعرف المزيد">En savoir plus <span>→</span></a>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ============ APPROCHE ============ -->
-<section class="section approche" id="approche">
-  <div class="wrap approche-grid">
-    <div class="approche-title">
-      <p class="eyebrow reveal" data-ar="منهجيتي"><span class="dot"></span>Mon approche</p>
-      <h2 class="reveal d1" data-ar="أربع خطوات، <em>صفر قلق.</em>">Quatre étapes, <em>zéro appréhension.</em></h2>
-      <p class="reveal d2" data-ar="كل مريض فريد. لذلك يبدأ كل شيء بالإنصات، ثم بتشخيص دقيق وخطة علاج شفافة.">Chaque patient est unique. Tout commence par l’écoute, puis un diagnostic précis et un plan de traitement transparent.</p>
-      <div class="pain reveal d3">
-        <div class="pain-ring"><b>0</b><small>/10</small></div>
-        <p data-ar="هدفنا: علاج مريح ومسيطر عليه من الألم في كل مرحلة."><b>Notre objectif</b> — un soin confortable et maîtrisé, à chaque étape.</p>
-      </div>
-    </div>
-    <ol class="steps">
-      <li class="reveal"><span class="s-num">1</span><div><h3 data-ar="الاستقبال والإنصات">Accueil & écoute</h3><p data-ar="نتحدث عن انتظاراتك ومخاوفك وتاريخك الصحي، بدون استعجال.">On parle de vos attentes, de vos craintes et de votre historique, sans se presser.</p></div></li>
-      <li class="reveal d1"><span class="s-num">2</span><div><h3 data-ar="التشخيص الدقيق">Diagnostic précis</h3><p data-ar="فحص شامل وشرح واضح لحالتك وللخيارات المتاحة.">Examen complet et explications claires sur votre situation et les options disponibles.</p></div></li>
-      <li class="reveal d2"><span class="s-num">3</span><div><h3 data-ar="العلاج بدون ألم">Soin sans douleur</h3><p data-ar="تخدير مدروس وتقنيات لطيفة لتجربة مريحة.">Anesthésie maîtrisée et gestes doux pour une expérience confortable.</p></div></li>
-      <li class="reveal d3"><span class="s-num">4</span><div><h3 data-ar="المتابعة والنتائج">Suivi & durabilité</h3><p data-ar="نتابع حالتك ونمنحك نصائح للحفاظ على نتائج تدوم.">Nous suivons votre évolution et vous guidons pour que les résultats durent.</p></div></li>
-    </ol>
-  </div>
-</section>
-
-<!-- ============ RESULTATS ============ -->
-<section class="section resultats dark" id="resultats">
-  <div class="wrap res-grid">
-    <div class="res-copy">
-      <p class="eyebrow reveal" data-ar="النتائج"><span class="dot"></span>Résultats</p>
-      <h2 class="reveal d1" data-ar="النتائج الطبيعية <em>هي الأجمل.</em>">Les résultats naturels, <em>ce sont les plus beaux.</em></h2>
-      <p class="reveal d2" data-ar="نبحث عن التوازن بين الشكل والوظيفة، لابتسامة تبدو طبيعية وتدوم. حرّك المؤشر لترى الفرق.">Nous cherchons l’équilibre entre forme et fonction : un sourire qui paraît naturel, et qui dure. Faites glisser le curseur pour voir la différence.</p>
-      <p class="note reveal d3" data-ar="* صورة توضيحية — تستبدل بحالات المريض الحقيقية.">* Aperçu illustratif — à remplacer par de vrais cas cliniques (avec l’accord des patients).</p>
-    </div>
-    <div class="ba reveal d2" id="ba">
-      <div class="ba-layer ba-after" id="baAfter" role="img" aria-label="Sourire après soin (illustration)"></div>
-      <div class="ba-before-wrap" id="baBefore"><div class="ba-layer ba-before" id="baBeforeSvg" role="img" aria-label="Sourire avant soin (illustration)"></div></div>
-      <span class="ba-tag t1" data-ar="قبل">Avant</span><span class="ba-tag t2" data-ar="بعد">Après</span>
-      <div class="ba-handle" id="baHandle"><span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></span></div>
-      <input class="ba-range" id="baRange" type="range" min="0" max="100" value="50" aria-label="Comparer avant / après">
-    </div>
-  </div>
-</section>
-
-<!-- ============ CONTENUS ============ -->
-<section class="section contenus" id="contenus">
-  <div class="wrap">
-    <div class="head split">
-      <div>
-        <p class="eyebrow reveal" data-ar="محتوى تثقيفي"><span class="dot"></span>Conseils & pédagogie</p>
-        <h2 class="reveal d1" data-ar="أشارك معكم <em>كل ما يهم صحة أسنانكم.</em>">J’explique, vous décidez : <em>l’information avant le soin.</em></h2>
-      </div>
-      <a class="btn btn-dark reveal d2" href="https://www.instagram.com/dr_hossame_bakraoui" target="_blank" rel="noopener" data-ar="تابعوني على إنستغرام">Suivre sur Instagram <span aria-hidden="true">↗</span></a>
-    </div>
-    <div class="videos">
-      <a class="vid reveal" href="https://www.instagram.com/dr_hossame_bakraoui" target="_blank" rel="noopener">
-        <img src="assets/img/hossame-consultation.jpg" alt="" loading="lazy">
-        <span class="play"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-        <div class="v-info"><small data-ar="نصائح يومية">Hygiène</small><h3 data-ar="كيف تنظف أسنانك بشكل صحيح؟">Comment bien se brosser les dents ?</h3></div>
-      </a>
-      <a class="vid reveal d1" href="https://www.instagram.com/dr_hossame_bakraoui" target="_blank" rel="noopener">
-        <img src="assets/img/video-siwak.jpg" alt="" loading="lazy">
-        <span class="play"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-        <div class="v-info"><small data-ar="أفكار شائعة">Idées reçues</small><h3 data-ar="السواك: هل يكفي؟">Le siwak : que vaut-il vraiment ?</h3></div>
-      </a>
-      <a class="vid reveal d2" href="https://www.instagram.com/dr_hossame_bakraoui" target="_blank" rel="noopener">
-        <img src="assets/img/video-radio.jpg" alt="" loading="lazy">
-        <span class="play"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
-        <div class="v-info"><small data-ar="ضيف الإذاعة">Radio</small><h3 data-ar="ضيف على إذاعة Medina FM">Invité sur Medina FM</h3></div>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- ============ FAQ ============ -->
-<section class="section faq" id="faq">
-  <div class="wrap faq-grid">
+<!-- PRATICIEN -->
+<section class="section praticien">
+  <div class="wrap two">
+    <p class="label reveal" data-ar="الطبيب">Le praticien</p>
     <div>
-      <p class="eyebrow reveal" data-ar="أسئلة شائعة"><span class="dot"></span>Questions fréquentes</p>
-      <h2 class="reveal d1" data-ar="أجوبة <em>صريحة.</em>">Des réponses <em>franches.</em></h2>
-    </div>
-    <div class="acc reveal d1">
-      <details open><summary data-ar="هل العلاج مؤلم؟">Est-ce que les soins font mal ?</summary><p data-ar="هدفنا علاج مريح. نستعمل تخديرا مدروسا وتقنيات لطيفة، ونتحدث معك في كل خطوة.">Notre priorité est un soin confortable. Anesthésie adaptée, gestes doux, et explications à chaque étape : vous savez toujours ce qui se passe.</p></details>
-      <details><summary data-ar="كم يستغرق العلاج؟">Combien de temps dure un traitement ?</summary><p data-ar="حسب الحالة. بعد الفحص نقدم لك خطة واضحة بالمدة والمراحل.">Cela dépend du cas. Après l’examen, vous recevez un plan clair avec la durée et les étapes prévues.</p></details>
-      <details><summary data-ar="أعاني من الخوف من طبيب الأسنان، ماذا أفعل؟">J’ai peur du dentiste, que faire ?</summary><p data-ar="لست وحدك. نأخذ وقتنا، نشرح، ونتقدم بالوتيرة التي تناسبك.">Vous n’êtes pas seul(e). Nous prenons le temps, expliquons, et avançons à votre rythme.</p></details>
-      <details><summary data-ar="كيف أحجز موعدا؟">Comment prendre rendez-vous ?</summary><p data-ar="عبر واتساب أو بنموذج الحجز أسفله، وسنرد عليك في أقرب وقت.">Par WhatsApp ou via le formulaire ci-dessous. Nous vous répondons rapidement pour confirmer un créneau.</p></details>
+      <h2 class="reveal" data-ar="العناية بالأسنان لا يجب أن تكون مصدر خوف.">Prendre soin de ses dents ne devrait jamais faire peur.</h2>
+      <p class="body reveal d1" data-ar="كل خطوة مشروحة، وكل علاج مصمم لحالتك. راحتك أولا، من الاستقبال إلى المتابعة.">Chaque étape est expliquée, chaque traitement pensé pour votre cas. Votre confort passe avant tout, de l’accueil jusqu’au suivi.</p>
+      <blockquote class="quote reveal d2" data-ar="«الصيانة دائما أقل كلفة من الإصلاح.»">« L’entretien est toujours moins cher que la réparation. »<cite>Dr Hossame Bakraoui</cite></blockquote>
     </div>
   </div>
 </section>
 
-<!-- ============ RDV ============ -->
-<section class="section rdv dark" id="rdv">
-  <div class="wrap rdv-grid">
-    <div class="rdv-copy">
-      <p class="eyebrow reveal" data-ar="الحجز"><span class="dot"></span>Rendez-vous</p>
-      <h2 class="reveal d1" data-ar="ابدأ رحلة <em>ابتسامتك.</em>">Commençons par <em>votre sourire.</em></h2>
-      <p class="reveal d2" data-ar="اترك بياناتك وسنتواصل معك عبر واتساب لتأكيد الموعد.">Laissez-nous vos coordonnées : la demande s’ouvre directement dans WhatsApp pour confirmer votre créneau.</p>
-      <ul class="info reveal d3">
-        <li><span class="i"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-5.400-7-11a7 7 0 0 1 14 0c0 5.600-7 11-7 11z"/><circle cx="12" cy="10" r="2.500"/></svg></span><div><b data-ar="العنوان">Adresse</b><span data-ar="الحمرية، مكناس">Hamria, Meknès</span></div></li>
-        <li><span class="i"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><b data-ar="ساعات العمل">Horaires</b><span data-ar="الإثنين – السبت · 09:00 – 19:00">Lun – Sam · 09:00 – 19:00</span></div></li>
-        <li><span class="i"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2z"/></svg></span><div><b>WhatsApp</b><a data-wa href="#rdv" data-ar="راسلنا مباشرة">Écrire directement</a></div></li>
-        <li><span class="i"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.500" cy="6.500" r="1"/></svg></span><div><b>Instagram</b><a href="https://www.instagram.com/dr_hossame_bakraoui" target="_blank" rel="noopener">@dr_hossame_bakraoui</a></div></li>
-      </ul>
-    </div>
-    <form class="form reveal d2" id="rdvForm" novalidate>
-      <div class="row">
-        <label><span data-ar="الاسم الكامل">Nom complet</span><input name="name" type="text" required autocomplete="name" placeholder="Ex. Sara El Idrissi"></label>
-        <label><span data-ar="الهاتف">Téléphone</span><input name="phone" type="tel" autocomplete="tel" placeholder="06 00 00 00 00"></label>
-      </div>
-      <label><span data-ar="نوع العلاج">Motif de la visite</span>
-        <select name="motif">
-          <option value="Consultation / bilan">Consultation / bilan</option>
-          <option value="Chirurgie dentaire">Chirurgie dentaire</option>
-          <option value="Esthétique du sourire">Esthétique du sourire</option>
-          <option value="Gouttières d'alignement">Gouttières d'alignement</option>
-          <option value="Blanchiment">Blanchiment</option>
-          <option value="Urgence / douleur">Urgence / douleur</option>
-        </select>
-      </label>
-      <label><span data-ar="ملاحظات (اختياري)">Message (facultatif)</span><textarea name="msg" rows="3" placeholder="Parlez-nous de votre besoin…"></textarea></label>
-      <button class="btn btn-gold btn-block" type="submit">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2zm5.200 14.200c-.2.600-1.300 1.200-1.800 1.200-.5.100-1 .200-3.300-.700-2.800-1.100-4.500-4-4.700-4.200-.1-.2-1.100-1.500-1.100-2.800s.7-2 1-2.300c.2-.3.500-.3.700-.3h.5c.2 0 .4 0 .6.500l.8 2c.1.200.1.400 0 .500l-.3.400-.4.400c-.1.200-.3.300-.1.600.2.300.8 1.300 1.700 2.100 1.100 1 2 1.300 2.300 1.400.3.100.500.100.600-.1l.9-1.100c.2-.3.400-.2.600-.1l1.900.9c.3.100.500.200.500.300.100.100.100.600-.100 1.200z"/></svg>
-        <span data-ar="إرسال الطلب عبر واتساب">Envoyer via WhatsApp</span>
-      </button>
-      <p class="fine" data-ar="بياناتك تستعمل فقط لتأكيد الموعد.">Vos informations servent uniquement à confirmer votre rendez-vous.</p>
-    </form>
+<!-- SOINS -->
+<section class="section soins" id="soins">
+  <div class="wrap two">
+    <p class="label reveal" data-ar="العلاجات">Les soins</p>
+    <ul class="list">
+      <li class="reveal">
+        <h3 data-ar="جراحة الفم والأسنان">Chirurgie dentaire</h3>
+        <p data-ar="قلع الأسنان وضروس العقل والتدخلات الجراحية بأقل قدر من الانزعاج.">Extractions, dents de sagesse et actes chirurgicaux, avec un minimum de gêne.</p>
+      </li>
+      <li class="reveal">
+        <h3 data-ar="تجميل الابتسامة">Esthétique du sourire</h3>
+        <p data-ar="ابتسامة متناسقة تحترم ملامح وجهك.">Un sourire harmonieux, qui respecte votre visage.</p>
+      </li>
+      <li class="reveal">
+        <h3 data-ar="التقويم الشفاف">Gouttières d’alignement</h3>
+        <p data-ar="تصحيح تراص الأسنان بشكل خفي ومريح.">Aligner vos dents de façon discrète et confortable.</p>
+      </li>
+      <li class="reveal">
+        <h3 data-ar="العلاج والوقاية">Soins et prévention</h3>
+        <p data-ar="علاج التسوس والتنظيف والفحوصات الدورية للحفاظ على النتيجة.">Caries, détartrage et bilans réguliers pour préserver le résultat.</p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- RDV -->
+<section class="rdv" id="rdv">
+  <div class="wrap rdv-inner">
+    <h2 class="reveal" data-ar="لنحدد موعدا.">Prenons rendez-vous.</h2>
+    <p class="reveal d1" data-ar="راسلنا على واتساب وسنؤكد لك موعدا في أقرب وقت.">Écrivez-nous sur WhatsApp, nous confirmons un créneau rapidement.</p>
+    <a class="btn btn-light reveal d2" data-wa href="#rdv">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2zm5.200 14.200c-.2.600-1.300 1.200-1.800 1.200-.5.100-1 .200-3.300-.700-2.800-1.100-4.500-4-4.700-4.200-.1-.2-1.100-1.500-1.100-2.800s.7-2 1-2.300c.2-.3.500-.3.700-.3h.5c.2 0 .4 0 .6.500l.8 2c.1.200.1.400 0 .500l-.3.400-.4.400c-.1.200-.3.300-.1.600.2.300.8 1.300 1.700 2.100 1.100 1 2 1.300 2.300 1.400.3.100.500.100.600-.1l.9-1.100c.2-.3.400-.2.600-.1l1.900.9c.3.100.500.200.500.300.100.100.100.600-.100 1.200z"/></svg>
+      <span data-ar="راسلنا على واتساب">Écrire sur WhatsApp</span>
+    </a>
+    <dl class="info reveal d3">
+      <div><dt data-ar="العنوان">Adresse</dt><dd data-ar="الحمرية، مكناس">Hamria, Meknès</dd></div>
+      <div><dt data-ar="المواعيد">Consultations</dt><dd data-ar="بموعد مسبق">Sur rendez-vous</dd></div>
+      <div><dt>Instagram</dt><dd><a href="https://www.instagram.com/dr_hossame_bakraoui" target="_blank" rel="noopener">@dr_hossame_bakraoui</a></dd></div>
+    </dl>
   </div>
 </section>
 </main>
 
-<!-- ============ FOOTER ============ -->
 <footer class="footer">
   <div class="wrap foot">
-    <div class="f-brand"><span class="sig big">Dr Hossame Bakraoui</span><p data-ar="جرّاح أسنان · مكناس، الحمرية">Chirurgien-dentiste · Meknès, Hamria</p></div>
-    <nav class="f-links">
-      <a href="#cabinet" data-ar="العيادة">Le cabinet</a><a href="#soins" data-ar="العلاجات">Soins</a><a href="#approche" data-ar="منهجيتي">Approche</a><a href="#faq" data-ar="أسئلة">FAQ</a><a href="#rdv" data-ar="الحجز">Rendez-vous</a>
-    </nav>
-    <p class="copy">© <span id="year">2026</span> Dr Hossame Bakraoui — <span data-ar="جميع الحقوق محفوظة">Tous droits réservés</span></p>
+    <span>Dr Hossame Bakraoui</span>
+    <span>© <span id="year">2026</span></span>
   </div>
 </footer>
-
-<a class="fab" data-wa href="#rdv" aria-label="WhatsApp">
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2zm5.200 14.200c-.2.600-1.300 1.200-1.800 1.200-.5.100-1 .200-3.300-.700-2.800-1.100-4.500-4-4.700-4.200-.1-.2-1.100-1.500-1.100-2.800s.7-2 1-2.300c.2-.3.500-.3.700-.3h.5c.2 0 .4 0 .6.500l.8 2c.1.200.1.400 0 .500l-.3.400-.4.400c-.1.200-.3.300-.1.600.2.300.8 1.300 1.700 2.100 1.100 1 2 1.300 2.300 1.400.3.100.500.100.600-.1l.9-1.100c.2-.3.400-.2.600-.1l1.900.9c.3.100.500.200.500.300.100.100.100.600-.100 1.200z"/></svg>
-</a>
 
 <script src="script.js"></script>
 </body>
