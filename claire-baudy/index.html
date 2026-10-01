@@ -282,6 +282,21 @@
   .need-card-body{ padding:1.7rem 1.6rem 1.9rem; display:flex; flex-direction:column; gap:.9rem; flex:1; }
   .need-card-body h3{ font-size:1.15rem; line-height:1.3; }
   .need-card-body p{ font-size:.9rem; color:var(--ink-soft); margin:0; flex:1; }
+  .card-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:.5em;
+    align-self:flex-start;
+    margin-top:.3rem;
+    padding:.8rem 1.15rem;
+    font-family:'Inter',sans-serif;
+    font-size:.74rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--forest);
+    border:1px solid var(--forest);
+    border-radius:var(--radius-btn);
+    transition:background .25s ease, color .25s ease;
+  }
+  .card-btn svg{ width:13px; height:13px; transition:transform .25s ease; }
+  .need-card:hover .card-btn{ background:var(--forest); color:var(--cream); }
+  .need-card:hover .card-btn svg{ transform:translateX(3px); }
 
   /* ---------- About ---------- */
   .about-grid{
@@ -504,7 +519,7 @@
         <div class="need-card-body">
           <h3>Je veux comprendre mon équilibre global</h3>
           <p>Fatigue, digestion, alimentation, stress, hygiène de vie…</p>
-          <span class="link-arrow">Prendre rendez-vous — Bilan de naturopathie
+          <span class="card-btn">Prendre rendez-vous
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </span>
         </div>
@@ -526,7 +541,7 @@
         <div class="need-card-body">
           <h3>Ma peau me préoccupe</h3>
           <p>Accompagnement autour de problématiques cutanées dans le cadre de la naturopathie.</p>
-          <span class="link-arrow">Prendre rendez-vous — Approche peau
+          <span class="card-btn">Prendre rendez-vous
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </span>
         </div>
@@ -546,7 +561,7 @@
         <div class="need-card-body">
           <h3>Je veux prendre soin de mon corps</h3>
           <p>Réflexologie, drainage lymphatique et massages.</p>
-          <span class="link-arrow">Prendre rendez-vous — Soins du corps
+          <span class="card-btn">Prendre rendez-vous
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </span>
         </div>
@@ -570,7 +585,7 @@
         <div class="need-card-body">
           <h3>Je cherche un accompagnement nutritionnel</h3>
           <p>Alimentation, micronutrition et habitudes du quotidien.</p>
-          <span class="link-arrow">Prendre rendez-vous — Accompagnement nutrition
+          <span class="card-btn">Prendre rendez-vous
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </span>
         </div>
