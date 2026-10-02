@@ -61,6 +61,7 @@ export function runEditor(
       timelineStart: cursor,
       outDuration,
       zoomKeyframes: [],
+      effects: [],
       transitionIn: transitionForClip(i, styleProfile),
       role,
     };

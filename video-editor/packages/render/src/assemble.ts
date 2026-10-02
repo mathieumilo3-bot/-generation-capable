@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { EditBlueprint } from "@video-editor/shared-types";
 import { cutClip, concatClips, finalizeOutput, mixAudioWithMusic, probe } from "./ffmpeg.js";
 import { renderHabillage, type HabillageCaptionStyle } from "./remotion.js";
+import { renderHabillageFFmpeg, type FfmpegHabillageSpec } from "./ffmpeg-habillage.js";
 
 export interface AssembleProfile {
   cutPreset?: string;
@@ -112,7 +113,7 @@ export async function assembleFromBlueprint(
     }
   }
 
-  // ÉTAPE 4: Habillage (sous-titres animés + zoom) — Remotion OU repli FFmpeg
+  // ÉTAPE 4: Habillage (sous-titres animés + zoom) — FFmpeg hybride PAR DÉFAUT, Remotion en repli
   console.log(`[assemble] Rendering habillage (${opts.captionStyle})…`);
   const fps = opts.fps;
   const durationInFrames = Math.max(1, Math.round(concatInfo.durationSec * fps));
@@ -121,59 +122,132 @@ export async function assembleFromBlueprint(
   let framesRendered: number | undefined;
   let renderConcurrency: number | undefined;
 
-  const captionsForRemotion = blueprint.captions.map((c) => ({
-    startFrame: Math.round(c.timelineStart * fps),
-    endFrame: Math.round(c.timelineEnd * fps),
-    words: c.words.map((w) => ({
-      word: w.word,
-      startFrame: Math.round(w.start * fps),
-      endFrame: Math.round(w.end * fps),
-      emphasize: w.emphasize,
-    })),
+  const captionsForHabillage = blueprint.captions.map((c) => ({
+    startSec: c.timelineStart,
+    endSec: c.timelineEnd,
+    text: c.text,
   }));
-  const zoomWindows = blueprint.clips
-    .filter((c) => c.zoomKeyframes.length > 0)
-    .map((c) => ({
-      startFrame: Math.round(c.timelineStart * fps),
-      endFrame: Math.round((c.timelineStart + c.outDuration) * fps),
-      scale: c.zoomKeyframes[0]!.scale,
-    }));
 
   const tHabillage = Date.now();
-  try {
-    const remotionOut = join(opts.workDir, "habillage.mp4");
-    console.log(`[assemble] Trying Remotion render…`);
-    const r = await renderHabillage({
-      videoSrc: audioPath,
-      outputPath: remotionOut,
-      durationInFrames,
-      fps,
-      width: opts.width,
-      height: opts.height,
-      captions: captionsForRemotion,
-      zoomWindows,
-      captionStyle: opts.captionStyle,
-      concurrency: profile.remotionConcurrency ?? null,
-      onProgress: opts.onRenderProgress,
-    });
-    habillagePath = remotionOut;
-    usedRemotionHabillage = true;
-    framesRendered = r.framesRendered;
-    renderConcurrency = r.concurrency;
-    console.log(`[assemble] Remotion render succeeded (concurrency=${r.concurrency})`);
-  } catch (err) {
-    console.log(`[assemble] Remotion unavailable, using FFmpeg fallback (drawtext captions)`);
-    warnings.push(`Remotion unavailable (${(err as Error).message}), using FFmpeg caption burn instead`);
-    const fallbackOut = join(opts.workDir, "captions_fallback.mp4");
-    await import("./ffmpeg.js").then(({ burnCaptionsFallback }) =>
-      burnCaptionsFallback(
-        audioPath,
-        fallbackOut,
-        blueprint.captions.map((c) => ({ text: c.text, startSec: c.timelineStart, endSec: c.timelineEnd }))
-      )
-    );
-    habillagePath = fallbackOut;
+
+  // Essayer FFmpeg hybride EN PREMIER (chemin par défaut + plus rapide)
+  const useFFmpegHybrid = process.env.VIDEO_EDITOR_HYBRID_HABILLAGE !== "0";
+  if (useFFmpegHybrid) {
+    try {
+      const hybridOut = join(opts.workDir, "habillage_hybrid.mp4");
+      console.log(`[assemble] Trying FFmpeg hybrid habillage…`);
+
+      // Collecter tous les effets depuis les clips
+      const allEffects: any[] = [];
+      for (const c of blueprint.clips) {
+        // Ajouter les effets existants avec temps absolus
+        for (const e of c.effects ?? []) {
+          const effectWithAbsoluteTime = { ...e } as any;
+          if ("startSec" in effectWithAbsoluteTime) {
+            effectWithAbsoluteTime.startSec = c.timelineStart + effectWithAbsoluteTime.startSec;
+          }
+          if ("endSec" in effectWithAbsoluteTime) {
+            effectWithAbsoluteTime.endSec = c.timelineStart + effectWithAbsoluteTime.endSec;
+          }
+          allEffects.push(effectWithAbsoluteTime);
+        }
+
+        // Ajouter les effets zoom en tant qu'EffectSpec
+        if (c.zoomKeyframes && c.zoomKeyframes.length > 0) {
+          allEffects.push({
+            type: "zoom",
+            startSec: c.timelineStart,
+            endSec: c.timelineStart + c.outDuration,
+            keyframes: c.zoomKeyframes.map((z) => ({
+              atSec: c.timelineStart + z.atSec,
+              scale: z.scale,
+              focusX: z.focusX ?? 0.5,
+              focusY: z.focusY ?? 0.5,
+            })),
+          });
+        }
+      }
+
+      const ffmpegSpec: FfmpegHabillageSpec = {
+        inputPath: audioPath,
+        outputPath: hybridOut,
+        width: opts.width,
+        height: opts.height,
+        fps,
+        durationSec: concatInfo.durationSec,
+        effects: allEffects,
+        captions: captionsForHabillage,
+        preset: profile.finalPreset,
+        crf: profile.finalCrf,
+      };
+
+      const r = await renderHabillageFFmpeg(ffmpegSpec);
+      habillagePath = hybridOut;
+      usedRemotionHabillage = false;
+      framesRendered = r.framesRendered;
+      console.log(`[assemble] FFmpeg hybrid render succeeded (${r.framesRendered} frames)`);
+    } catch (err) {
+      console.log(`[assemble] FFmpeg hybrid failed, falling back to Remotion: ${(err as Error).message}`);
+    }
   }
+
+  // Fallback vers Remotion si FFmpeg a échoué ou si désactivé explicitement
+  if (habillagePath === audioPath && !process.env.VIDEO_EDITOR_HYBRID_HABILLAGE) {
+    try {
+      const remotionOut = join(opts.workDir, "habillage.mp4");
+      console.log(`[assemble] Trying Remotion render…`);
+
+      const captionsForRemotion = blueprint.captions.map((c) => ({
+        startFrame: Math.round(c.timelineStart * fps),
+        endFrame: Math.round(c.timelineEnd * fps),
+        words: c.words.map((w) => ({
+          word: w.word,
+          startFrame: Math.round(w.start * fps),
+          endFrame: Math.round(w.end * fps),
+          emphasize: w.emphasize,
+        })),
+      }));
+      const zoomWindows = blueprint.clips
+        .filter((c) => c.zoomKeyframes.length > 0)
+        .map((c) => ({
+          startFrame: Math.round(c.timelineStart * fps),
+          endFrame: Math.round((c.timelineStart + c.outDuration) * fps),
+          scale: c.zoomKeyframes[0]!.scale,
+        }));
+
+      const r = await renderHabillage({
+        videoSrc: audioPath,
+        outputPath: remotionOut,
+        durationInFrames,
+        fps,
+        width: opts.width,
+        height: opts.height,
+        captions: captionsForRemotion,
+        zoomWindows,
+        captionStyle: opts.captionStyle,
+        concurrency: profile.remotionConcurrency ?? null,
+        onProgress: opts.onRenderProgress,
+      });
+      habillagePath = remotionOut;
+      usedRemotionHabillage = true;
+      framesRendered = r.framesRendered;
+      renderConcurrency = r.concurrency;
+      console.log(`[assemble] Remotion render succeeded (concurrency=${r.concurrency})`);
+    } catch (err) {
+      console.log(`[assemble] Remotion also failed, using FFmpeg text burn…`);
+      warnings.push(`Both FFmpeg hybrid and Remotion failed, using FFmpeg caption burn instead`);
+      const fallbackOut = join(opts.workDir, "captions_fallback.mp4");
+      await import("./ffmpeg.js").then(({ burnCaptionsFallback }) =>
+        burnCaptionsFallback(
+          audioPath,
+          fallbackOut,
+          blueprint.captions.map((c) => ({ text: c.text, startSec: c.timelineStart, endSec: c.timelineEnd }))
+        )
+      );
+      habillagePath = fallbackOut;
+    }
+  }
+
   const habillageMs = Date.now() - tHabillage;
 
   // ÉTAPE 5: Export final — remux stream-copy si déjà au format cible
