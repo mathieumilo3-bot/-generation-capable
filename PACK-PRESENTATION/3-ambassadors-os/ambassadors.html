@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GC Ambassadors OS</title>
+<style>
+:root{
+  --bg:#000;--bg1:#0d0d0d;--bg2:#141200;--bg3:#1c1c1c;
+  --b:rgba(255,255,255,.08);--bh:rgba(201,168,76,.35);
+  --t1:#f5f0e8;--t2:#a8a090;--t3:#6e6860;
+  --gold:#C9A84C;--gold2:#F0D080;--gold3:#8B6914;
+  --r:14px;--ease:cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;padding-bottom:78px}
+.wrap{max-width:520px;margin:0 auto;padding:20px 18px 40px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.hdr h1{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.hdr .sub{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.badge-live{font-size:9px;color:var(--t3);background:rgba(255,255,255,.05);padding:4px 9px;border-radius:20px;border:1px solid var(--b)}
+
+.card{background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.card-l{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px}
+
+/* ── Mission du jour ── */
+.mission-title{font-size:17px;font-weight:700;margin-bottom:14px;line-height:1.4}
+.mtask{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--b)}
+.mtask:first-of-type{border-top:none}
+.chk{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--t3);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+.chk.on{background:var(--gold);border-color:var(--gold);color:#000;font-weight:900}
+.mtask-txt{font-size:14px;color:var(--t2);transition:color .2s}
+.mtask.done .mtask-txt{color:var(--t3);text-decoration:line-through}
+
+.stat-row{display:flex;gap:12px;margin-bottom:14px}
+.stat{flex:1;background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);padding:16px}
+.stat-v{font-size:22px;font-weight:800;color:var(--gold2)}
+.stat-l{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px 18px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;border:none;width:100%;font-family:inherit}
+.btn-gold{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1400}
+.btn-gold:active{transform:scale(.98)}
+.btn-g{background:rgba(255,255,255,.06);color:var(--t2)}
+
+/* ── IA Coach ── */
+.chat-box{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;min-height:200px}
+.msg{max-width:85%;padding:11px 14px;border-radius:14px;font-size:13.5px;line-height:1.5}
+.msg.user{align-self:flex-end;background:var(--gold);color:#1a1400;font-weight:600}
+.msg.ai{align-self:flex-start;background:var(--bg2);border:1px solid var(--b);color:var(--t1);white-space:pre-wrap}
+.msg.loading{color:var(--t3);font-style:italic}
+.chat-input-row{display:flex;gap:8px}
+.chat-input{flex:1;background:var(--bg1);border:1px solid var(--b);border-radius:12px;padding:12px 14px;color:var(--t1);font-size:14px;font-family:inherit}
+.chat-input:focus{outline:none;border-color:var(--bh)}
+.chat-send{width:46px;height:46px;border-radius:12px;background:var(--gold);border:none;color:#1a1400;font-size:18px;cursor:pointer;flex-shrink:0}
+.suggest-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
+.suggest-chip{flex-shrink:0;background:var(--bg2);border:1px solid var(--b);border-radius:20px;padding:8px 14px;font-size:12px;color:var(--t2);cursor:pointer;white-space:nowrap}
+.suggest-chip:active{background:var(--bg3)}
+
+/* ── Revenus ── */
+.rev-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.rev-item{background:var(--bg1);border:1px solid var(--b);border-radius:var(--r);padding:16px}
+.rev-item.full{grid-column:1/-1;background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.02));border-color:var(--bh)}
+.rev-v{font-size:24px;font-weight:800;color:var(--gold2)}
+.rev-l{font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.hist-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid var(--b);font-size:13px}
+.hist-row:first-of-type{border-top:none}
+.hist-name{color:var(--t2)}
+.hist-amt{color:var(--gold2);font-weight:700}
+.empty{text-align:center;color:var(--t3);font-size:12.5px;padding:30px 10px}
+/* Lien de parrainage — l'élément le plus important de l'écran d'accueil */
+.ref-link{background:var(--bg);border:1px dashed var(--bh);border-radius:10px;padding:13px 12px;font-size:14px;font-weight:700;color:var(--gold2);word-break:break-all;text-align:center;margin-bottom:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.ref-btn-row{display:flex;gap:8px}
+.ref-hint{font-size:11.5px;color:var(--t3);line-height:1.5;margin-top:10px}
+.funnel-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--b);font-size:13px;color:var(--t2)}
+.funnel-row:last-child{border-bottom:none}
+.funnel-row b{color:var(--gold2);font-size:15px}
+.pay-rule{font-size:12.5px;color:var(--t2);line-height:1.6;padding:7px 0}
+.pay-rule b{color:var(--gold2)}
+.id-label{display:block;font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px}
+.id-input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:12px 13px;color:var(--t1);font-size:15px;font-family:inherit;margin-bottom:12px}
+.id-input:focus{outline:none;border-color:var(--bh)}
+.id-preview{background:var(--bg);border:1px dashed var(--bh);border-radius:9px;padding:11px;font-size:13.5px;color:var(--gold2);text-align:center;margin-bottom:13px;word-break:break-all;font-family:ui-monospace,Menlo,monospace}
+.id-error{font-size:12.5px;color:#e08080;margin-top:10px;min-height:1em}
+
+/* ── Formation ── */
+.mod-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--b);cursor:pointer}
+.mod-row:first-of-type{border-top:none}
+.mod-ico{width:38px;height:38px;border-radius:10px;background:var(--bg2);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.mod-ico.done{background:var(--gold);color:#1a1400}
+.mod-info{flex:1}
+.mod-t{font-size:13.5px;font-weight:600;color:var(--t1)}
+.mod-s{font-size:11px;color:var(--t3);margin-top:2px}
+.prog-bar{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-top:16px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:3px;transition:width .3s}
+
+/* ── Profil ── */
+.prof-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid var(--b)}
+.prof-row:first-of-type{border-top:none}
+.prof-l{font-size:13px;color:var(--t2)}
+.prof-v{font-size:13px;color:var(--t1);font-weight:600}
+.code-box{background:var(--bg2);border:1px dashed var(--bh);border-radius:10px;padding:14px;text-align:center;margin-bottom:14px}
+.code-txt{font-size:19px;font-weight:800;color:var(--gold2);letter-spacing:1.5px;font-family:monospace}
+.copy-hint{font-size:10.5px;color:var(--t3);margin-top:4px}
+
+/* ── Nav bas ── */
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,10,.92);backdrop-filter:blur(20px);border-top:1px solid var(--b);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:11px 0 9px;cursor:pointer;color:var(--t3);transition:color .2s}
+.nav-item.active{color:var(--gold2)}
+.nav-ico{font-size:19px}
+.nav-lbl{font-size:9.5px;font-weight:600}
+
+.screen{display:none}
+.screen.active{display:block;animation:fadeIn .25s var(--ease)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Activation (si pas encore ambassadeur) ── */
+.activate-wrap{max-width:420px;margin:60px auto;padding:0 24px;text-align:center}
+.activate-wrap h2{font-size:22px;font-weight:800;margin-bottom:10px}
+.activate-wrap p{font-size:13.5px;color:var(--t2);line-height:1.6;margin-bottom:24px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ═══════ ÉCRAN D'ACTIVATION (affiché si pas encore connecté) ═══════ -->
+<div id="gate-activate" class="activate-wrap" style="display:none">
+  <div class="badge-live" style="margin:0 auto 20px;width:fit-content">GC AMBASSADORS OS</div>
+  <h2>Deviens ambassadeur Génération Capable</h2>
+  <p>Recrute, gagne des commissions récurrentes sur chaque abonnement actif que tu apportes, et progresse avec un coach IA dédié — activation immédiate.</p>
+  <input class="chat-input" id="activate-email" type="email" placeholder="Ton email" style="width:100%;margin-bottom:12px;text-align:center">
+  <button class="btn btn-gold" id="activate-btn" onclick="activateAmbassador()">🚀 Recevoir mon lien de connexion</button>
+  <div id="activate-error" style="color:#e08080;font-size:12px;margin-top:10px"></div>
+</div>
+
+<!-- ═══════ ÉCRAN "VÉRIFIE TA BOÎTE MAIL" ═══════ -->
+<div id="gate-check-email" class="activate-wrap" style="display:none">
+  <div class="badge-live" style="margin:0 auto 20px;width:fit-content">GC AMBASSADORS OS</div>
+  <h2>Vérifie ta boîte mail 📩</h2>
+  <p>On vient de t'envoyer un lien de connexion à <strong id="check-email-addr"></strong>. Ouvre l'email et clique sur le lien — ça te connecte directement, aucun mot de passe à retenir.</p>
+  <p style="font-size:12px;color:var(--t3);margin-top:-14px;margin-bottom:24px">Si tu as demandé plusieurs liens, seul celui du <strong>dernier email reçu</strong> fonctionne — les précédents sont automatiquement désactivés.</p>
+  <button class="btn btn-g" onclick="checkGate()">← Retour</button>
+</div>
+
+<div id="gate-loading" class="activate-wrap" style="display:none">
+  <p style="color:var(--t3)">Chargement de ton espace...</p>
+</div>
+
+<!-- ═══════ APP PRINCIPALE ═══════ -->
+<div id="app" style="display:none">
+
+  <!-- ── ÉCRAN 1 : AUJOURD'HUI ── -->
+  <div id="screen-today" class="screen active">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Aujourd'hui</div><h1 id="today-greet">Salut 👋</h1></div>
+        <div class="badge-live">🔴 Live</div>
+      </div>
+
+      <div class="card">
+        <div class="card-l">Mission du jour</div>
+        <div class="mission-title" id="mission-title">Chargement de ta mission...</div>
+        <div id="mission-tasks"></div>
+      </div>
+
+      <!-- Demandé une seule fois, à la première connexion : c'est de ce nom
+           que naît le lien personnel (generationcapable.fr/prenom-nom). -->
+      <div class="card" id="identity-card" style="display:none">
+        <div class="card-l">👤 Crée ton lien</div>
+        <div class="ref-hint" style="margin:0 0 14px">
+          Ton prénom et ton nom servent à créer ton lien personnel, celui que tu
+          mettras dans ta bio. Renseigne-les une seule fois.
+        </div>
+        <label class="id-label">Prénom</label>
+        <input id="id-first" class="id-input" type="text" placeholder="Ex : Marie" autocomplete="given-name">
+        <label class="id-label">Nom</label>
+        <input id="id-last" class="id-input" type="text" placeholder="Ex : Dupont" autocomplete="family-name">
+        <div class="id-preview" id="id-preview">generationcapable.fr/…</div>
+        <button class="btn btn-gold" id="id-save-btn" onclick="saveIdentity()">Créer mon lien →</button>
+        <div class="id-error" id="id-error"></div>
+      </div>
+
+      <div class="card" id="ref-card" data-tuto="lien" style="display:none">
+        <div class="card-l">🔗 Ton lien personnel</div>
+        <div class="ref-link" id="ref-link">Chargement…</div>
+        <div class="ref-btn-row">
+          <button class="btn btn-gold" style="flex:1" onclick="copyRefLink()">📋 Copier</button>
+          <button class="btn btn-g" style="flex:1" onclick="shareRefLink()">📤 Partager</button>
+        </div>
+        <div class="ref-hint">
+          Mets ce lien dans ta bio TikTok, Instagram ou Snap. Chaque personne qui
+          s'abonne en passant par lui t'est créditée automatiquement — tu n'as
+          rien à déclarer.
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-v" id="ref-clicks">0</div><div class="stat-l">Clics sur ton lien</div></div>
+        <div class="stat"><div class="stat-v" id="ref-active">0</div><div class="stat-l">Abonnés actifs</div></div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-v" id="today-earn">0 €</div><div class="stat-l">Gagné ce mois</div></div>
+        <div class="stat"><div class="stat-v" id="today-progress">0%</div><div class="stat-l">Mission complétée</div></div>
+      </div>
+
+      <a class="card" href="/bibliotheque.html" style="display:block;text-decoration:none;color:inherit;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:42px;height:42px;border-radius:11px;background:var(--bg2);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">📚</div>
+          <div style="flex:1">
+            <div style="font-size:13.5px;font-weight:700;color:var(--t1)">Bibliothèque Génération Capable</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">Mission, FAQ, objections, playbooks, plan des 30 jours</div>
+          </div>
+          <div style="color:var(--t3);font-size:17px">›</div>
+        </div>
+      </a>
+
+      <button class="btn btn-gold" onclick="goScreen('coach')">💬 Demander à l'IA</button>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 2 : IA COACH ── -->
+  <div id="screen-coach" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">IA Coach</div><h1>Ton assistant</h1></div>
+      </div>
+
+      <div class="suggest-row">
+        <div class="suggest-chip" onclick="askSuggestion('Écris-moi un script TikTok pour présenter Génération Capable')">📱 Script TikTok</div>
+        <div class="suggest-chip" onclick="askSuggestion('Donne-moi une idée de contenu pour aujourd\'hui')">💡 Idée de contenu</div>
+        <div class="suggest-chip" onclick="askSuggestion('Un prospect me dit que c\'est trop cher, aide-moi à répondre')">🛡️ Objection prix</div>
+        <div class="suggest-chip" onclick="askSuggestion('Rédige-moi un message privé pour relancer un prospect intéressé')">✉️ Message privé</div>
+      </div>
+
+      <div class="chat-box" id="chat-box"></div>
+
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Écris ta question..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" onclick="sendChat()">↑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 3 : REVENUS ── -->
+  <div id="screen-revenue" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Revenus</div><h1>Tes gains</h1></div>
+      </div>
+
+      <div class="rev-grid">
+        <div class="rev-item full"><div class="rev-v" id="rev-total">0 €</div><div class="rev-l">Total cumulé</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-month">0 €</div><div class="rev-l">Ce mois</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-pending">0 €</div><div class="rev-l">En attente</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-paid">0 €</div><div class="rev-l">Déjà versé</div></div>
+        <div class="rev-item"><div class="rev-v" id="rev-count">0</div><div class="rev-l">Abonnés actifs</div></div>
+      </div>
+
+      <div class="card" data-tuto="tunnel">
+        <div class="card-l">Ton tunnel</div>
+        <div class="funnel-row"><span>👁️ Clics sur ton lien</span><b id="fn-clicks">0</b></div>
+        <div class="funnel-row"><span>🙋 Visiteurs uniques</span><b id="fn-unique">0</b></div>
+        <div class="funnel-row"><span>✅ Inscrits via ton lien</span><b id="fn-signups">0</b></div>
+        <div class="funnel-row"><span>💳 Abonnés encore actifs</span><b id="fn-active">0</b></div>
+        <div class="funnel-row"><span>💔 Désabonnés</span><b id="fn-churn">0</b></div>
+      </div>
+
+      <div class="card">
+        <div class="card-l">Comment tu es payé</div>
+        <div class="pay-rule"><b>15 €/mois</b> pour chaque abonné que tu apportes, versés tant qu'il reste abonné.</div>
+        <div class="pay-rule"><b>50 €</b> à chaque vente réalisée par un vendeur que tu as fait entrer.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-l">Historique</div>
+        <div id="rev-history"><div class="empty">Aucune commission pour l'instant.<br>Ton premier abonnement apparaîtra ici.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 4 : FORMATION ── -->
+  <div id="screen-training" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Formation</div><h1>Progresse</h1></div>
+      </div>
+
+      <a class="card" href="/bibliotheque.html" style="display:block;text-decoration:none;color:inherit">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:42px;height:42px;border-radius:11px;background:var(--bg2);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">📚</div>
+          <div style="flex:1">
+            <div style="font-size:13.5px;font-weight:700;color:var(--t1)">Bibliothèque Génération Capable</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">Ton centre d'entraînement ambassadeur — à ouvrir chaque jour</div>
+          </div>
+          <div style="color:var(--t3);font-size:17px">›</div>
+        </div>
+      </a>
+
+      <div class="card">
+        <div class="card-l">Ta progression</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--t2)" id="train-progress-txt">0 / 4 modules</span>
+          <span style="font-size:13px;color:var(--gold2);font-weight:700" id="train-progress-pct">0%</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="train-progress-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="card" id="training-list"></div>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 5 : PROFIL ── -->
+  <div id="screen-profile" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Profil</div><h1 id="profile-name">Ton profil</h1></div>
+      </div>
+
+      <div class="code-box" onclick="copyRefLink()">
+        <div class="code-txt" id="profile-code">…</div>
+        <div class="copy-hint">Ton lien personnel — tape pour copier</div>
+      </div>
+
+      <div class="card">
+        <div class="prof-row"><div class="prof-l">Abonnés actifs apportés</div><div class="prof-v" id="prof-active">0</div></div>
+        <div class="prof-row"><div class="prof-l">Total gagné</div><div class="prof-v" style="color:var(--gold2)" id="prof-total">0 €</div></div>
+        <div class="prof-row"><div class="prof-l">Reste à te verser</div><div class="prof-v" style="color:var(--gold2)" id="prof-pending">0 €</div></div>
+      </div>
+
+      <button class="btn btn-g" style="margin-bottom:10px" onclick="replayAmbassadorTutorial()">🎓 Revoir la visite guidée</button>
+      <button class="btn btn-g" onclick="if(confirm('Te déconnecter ?'))deactivateDemo()">Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 6 : DOSSIER ADMINISTRATIF (contrat, signature, pièces, RIB) ── -->
+  <div id="screen-dossier" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Dossier</div><h1>Administratif</h1></div>
+      </div>
+      <div id="dossier-mount"></div>
+    </div>
+  </div>
+
+  <!-- ── ÉCRAN 7 : CENTRE DE SUPPORT — remplace le fil "Communauté" (voir
+       migration 0018_support_center.sql) : les ambassadeurs ne discutent
+       plus entre eux, ils envoient un ticket privé qui n'arrive QUE dans
+       l'espace admin dissocié (admin_list_support_tickets()). ── -->
+  <div id="screen-support" class="screen">
+    <div class="wrap">
+      <div class="hdr">
+        <div><div class="sub">Support</div><h1>Centre de Support</h1></div>
+      </div>
+
+      <div id="support-list-view">
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-bottom:14px" onclick="showSupportAI()">+ Poser une question</button>
+        <div id="support-tickets-list"><div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Chargement...</div></div>
+      </div>
+
+      <!-- GC Support v1 (docs/gc-ai-os/18) : répond avant qu'un ticket humain
+           soit nécessaire, à partir des mêmes faits que GC Coach
+           (GC_CORE_FACTS). Ne remplace jamais la possibilité de créer un
+           ticket directement — souveraineté humaine, même règle que GC Coach. -->
+      <div id="support-ai-view" style="display:none">
+        <div class="card">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">🤖 Assistant Support</div>
+          <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Décris ta question — je réponds tout de suite si je peux. Sinon, je prépare un ticket pour l'équipe avec le contexte déjà rempli.</div>
+          <textarea id="support-ai-question" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:10px;min-height:80px;resize:vertical;font-family:inherit" maxlength="1000" placeholder="Ex : Comment je corrige mon lien personnel ?"></textarea>
+          <button class="btn btn-p" style="width:100%;justify-content:center" id="support-ai-ask-btn" onclick="askSupportAI()">Demander</button>
+          <button class="btn btn-g" style="width:100%;justify-content:center;margin-top:8px" onclick="hideSupportAI()">Annuler</button>
+        </div>
+        <div id="support-ai-answer" class="card" style="display:none">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">🤖 Réponse</div>
+          <div id="support-ai-answer-text" style="font-size:13.5px;color:var(--t1);white-space:pre-wrap;line-height:1.5;margin-bottom:16px"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-p" style="flex:1;justify-content:center" onclick="supportAIResolved()">✅ Ça répond</button>
+            <button class="btn btn-g" style="flex:1;justify-content:center" onclick="supportAIEscalate()">❌ J'ai encore besoin d'aide</button>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:14px">
+          <a href="#" onclick="event.preventDefault();hideSupportAI();showNewTicketForm()" style="font-size:11.5px;color:var(--t3);text-decoration:underline">Créer un ticket directement, sans passer par l'assistant</a>
+        </div>
+      </div>
+
+      <div id="support-new-form" style="display:none">
+        <div class="card">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Nouveau ticket</div>
+          <label style="font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:5px">Catégorie</label>
+          <select id="support-new-category" class="field" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:12px">
+            <option value="bug">🐞 Bug</option>
+            <option value="question">❓ Question</option>
+            <option value="demande">📝 Demande</option>
+            <option value="suggestion">💡 Suggestion</option>
+            <option value="probleme">⚠️ Problème</option>
+          </select>
+          <label style="font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:5px">Sujet</label>
+          <input id="support-new-subject" class="field" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:12px" maxlength="200" placeholder="Résume ta demande en quelques mots">
+          <label style="font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:5px">Message</label>
+          <textarea id="support-new-message" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:14px;min-height:110px;resize:vertical;font-family:inherit" maxlength="4000" placeholder="Décris ta demande en détail..."></textarea>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-p" style="flex:1;justify-content:center" id="support-new-submit-btn" onclick="submitNewTicket()">Envoyer</button>
+            <button class="btn btn-g" onclick="hideNewTicketForm()">Annuler</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="support-thread-view" style="display:none">
+        <button class="btn btn-g" style="margin-bottom:12px" onclick="closeTicketThreadAmb()">← Retour</button>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px" id="amb-tk-cat">—</div>
+          <div style="font-size:15px;font-weight:800;margin-bottom:4px" id="amb-tk-subject">—</div>
+          <div style="font-size:11.5px;color:var(--t3)" id="amb-tk-meta">—</div>
+        </div>
+        <div id="amb-tk-events" style="margin-bottom:14px"></div>
+        <div class="card">
+          <textarea id="amb-tk-reply" style="width:100%;background:var(--bg1,#131313);border:1px solid var(--b);border-radius:8px;padding:10px 12px;color:var(--t1);margin-bottom:10px;min-height:70px;resize:vertical;font-family:inherit" maxlength="4000" placeholder="Ta réponse..."></textarea>
+          <button class="btn btn-p" style="width:100%;justify-content:center" id="amb-tk-reply-btn" onclick="replyToTicketAmb()">Envoyer la réponse</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NAV BAS ── -->
+  <div class="nav">
+    <div class="nav-item active" data-screen="today" onclick="goScreen('today')"><div class="nav-ico">🎯</div><div class="nav-lbl">Aujourd'hui</div></div>
+    <div class="nav-item" data-screen="coach" onclick="goScreen('coach')"><div class="nav-ico">💬</div><div class="nav-lbl">IA Coach</div></div>
+    <div class="nav-item" data-screen="revenue" onclick="goScreen('revenue')"><div class="nav-ico">💰</div><div class="nav-lbl">Revenus</div></div>
+    <div class="nav-item" data-screen="training" onclick="goScreen('training')"><div class="nav-ico">📚</div><div class="nav-lbl">Formation</div></div>
+    <div class="nav-item" data-screen="dossier" onclick="goScreen('dossier')"><div class="nav-ico">📋</div><div class="nav-lbl">Dossier</div></div>
+    <div class="nav-item" data-screen="support" onclick="goScreen('support')"><div class="nav-ico">🎧</div><div class="nav-lbl">Support</div></div>
+    <div class="nav-item" data-screen="profile" onclick="goScreen('profile')"><div class="nav-ico">👤</div><div class="nav-lbl">Profil</div></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  GC AMBASSADORS OS — V1
+//
+//  AUTH (2026-07-23) : connexion par magic link (email), via Supabase Auth.
+//  Plus de localStorage pour l'identité — la session vit dans Supabase Auth
+//  (stockée par supabase-js dans localStorage sous son propre format, gérée
+//  automatiquement). Chaque appel à ambassador-data.js envoie le token de
+//  session dans le header Authorization ; le backend vérifie ce token avant
+//  toute lecture/écriture (voir ambassador-data.js pour le détail).
+// ══════════════════════════════════════════════════════════
+
+// ⚠️ À REMPLIR : colle ici la clé "anon / public" de ton projet Supabase
+// (Supabase dashboard → Settings → API → "anon / public key"). C'est une
+// clé publique, normale à exposer côté client — la vraie sécurité vient
+// des policies RLS + de la vérification du token, pas du secret de cette clé.
+const SUPABASE_URL = 'https://fkhfahmzxsahrstxntjs.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_XfXArB0prFU-BFZUOo6vTw_Hqkr3ZNJ';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let STATE = null;
+let SESSION = null; // { access_token, user: { email, id } }
+
+async function loadStateFromServer(){
+  const resp = await fetch('/.netlify/functions/ambassador-data', {
+    headers: { 'Authorization': 'Bearer ' + SESSION.access_token }
+  });
+  const data = await resp.json();
+  if(data.error){
+    console.error('[ambassador-data] load error', data.error, data.message || data.detail || '');
+    throw new Error(data.message || data.error);
+  }
+  // Lien de parrainage + statistiques réelles, calculés côté serveur à
+  // partir des paiements Stripe. Jamais persistés côté navigateur : on les
+  // relit à chaque connexion pour qu'ils ne puissent pas être périmés.
+  REFERRAL = data.referral || null;
+  return data.state;
+}
+
+// Rafraîchit uniquement les chiffres (sans recharger tout l'écran), pour que
+// l'ambassadeur voie ses stats bouger après un partage sans se reconnecter.
+async function refreshReferralStats(){
+  if(!SESSION) return;
+  try{
+    const resp = await fetch('/.netlify/functions/ambassador-data', {
+      headers: { 'Authorization': 'Bearer ' + SESSION.access_token }
+    });
+    const data = await resp.json();
+    if(data && data.referral){
+      REFERRAL = data.referral;
+      renderReferral();
+    }
+  }catch(e){
+    console.error('[ambassador-data] refresh stats', e);
+  }
+}
+
+async function saveStateToServer(){
+  if(!SESSION || !STATE) return;
+  try{
+    const resp = await fetch('/.netlify/functions/ambassador-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer ' + SESSION.access_token
+      },
+      body: JSON.stringify({ state: STATE })
+    });
+    const data = await resp.json();
+    if(data.error) console.error('[ambassador-data] save error', data.error, data.message || data.detail || '');
+  }catch(e){
+    console.error('[ambassador-data] save network error', e);
+  }
+}
+// Alias court utilisé par le reste du code — écriture "fire and forget" pour
+// garder l'interface réactive (pas d'attente visible à chaque coche/case cochée).
+function saveState(){ saveStateToServer(); }
+
+// FIX (incident 2026-08-05) : quand un lien magique est invalide (déjà
+// utilisé, ou remplacé par un lien plus récent demandé pour le même email —
+// Supabase n'autorise qu'un seul lien actif à la fois), Supabase redirige
+// quand même vers ce site avec #error=...&error_code=...&error_description=...
+// dans l'URL, sans jamais créer de session. Rien ne lisait ces paramètres :
+// l'ambassadeur cliquait sur le lien reçu par email, retombait sur l'écran
+// d'activation VIDE (aucun message), et avait l'impression que "ça ne marche
+// juste pas". Même classe de bug déjà corrigée sur index.html pour
+// l'OAuth Google/Apple (voir reportOAuthErrorIfAny) — traitement identique ici.
+function reportOtpErrorIfAny(){
+  const search = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const err = search.get('error') || hash.get('error');
+  const code = search.get('error_code') || hash.get('error_code');
+  const desc = search.get('error_description') || hash.get('error_description');
+  if(!err) return false;
+  console.error('[auth] Échec du lien magique:', err, code, desc);
+  const friendly = code === 'otp_expired'
+    ? "Ce lien a expiré ou a déjà été utilisé. Si tu as demandé plusieurs liens, seul le dernier email reçu fonctionne — sinon, redemande-en un ci-dessous."
+    : "Ce lien de connexion n'est plus valide. Redemande-en un ci-dessous.";
+  document.getElementById('activate-error').textContent = friendly;
+  window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+  return true;
+}
+
+// ── Activation (écran gate) ──
+async function checkGate(){
+  document.getElementById('gate-activate').style.display = 'none';
+  document.getElementById('gate-check-email').style.display = 'none';
+  document.getElementById('gate-loading').style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+
+  const hadOtpError = reportOtpErrorIfAny();
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if(!session){
+    document.getElementById('gate-activate').style.display = 'block';
+    document.getElementById('gate-loading').style.display = 'none';
+    if(hadOtpError) document.getElementById('activate-email').focus();
+    return;
+  }
+
+  SESSION = session;
+  try{
+    STATE = await loadStateFromServer();
+    document.getElementById('gate-loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    renderAll();
+    startAmbassadorTutorial(true);
+    startAmbassadorSessionGuard();
+  }catch(e){
+    document.getElementById('gate-loading').innerHTML =
+      `<p style="color:#e08080">Erreur : ${e.message || 'inconnue'}</p>
+       <button class="btn btn-g" style="margin-top:14px" onclick="checkGate()">Réessayer</button>`;
+  }
+}
+
+// FIX (incident 2026-08-05) : sans garde anti-double-clic, un tap un peu
+// appuyé ou impatient déclenchait 2-3 appels signInWithOtp() quasi
+// simultanés. Le premier réussissait (email envoyé), les suivants se
+// heurtaient au cooldown de 60s imposé par Supabase pour le MÊME email et
+// remontaient une erreur 429 — affichée avec le même message générique que
+// n'importe quel vrai échec, donnant l'impression que RIEN n'avait
+// fonctionné alors qu'un lien était bel et bien parti. Résultat concret :
+// la personne redemandait un lien encore et encore, ce qui invalidait à
+// chaque fois le précédent (Supabase ne garde qu'un lien actif par email) —
+// puis cliquait sur un email plus ancien, qui échouait avec "One-time token
+// not found" (voir reportOtpErrorIfAny ci-dessus).
+let _otpInFlight = false;
+async function activateAmbassador(){
+  if(_otpInFlight) return;
+  const emailInput = document.getElementById('activate-email');
+  const email = emailInput.value.trim().toLowerCase();
+  const errEl = document.getElementById('activate-error');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errEl.textContent = 'Entre un email valide.';
+    return;
+  }
+  errEl.textContent = '';
+
+  _otpInFlight = true;
+  const btn = document.getElementById('activate-btn');
+  const btnLabel = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Envoi en cours...'; }
+
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href.split('#')[0] }
+  });
+
+  _otpInFlight = false;
+  if(btn){ btn.disabled = false; btn.textContent = btnLabel; }
+
+  if(error){
+    console.error('[auth] signInWithOtp error', error);
+    // Ce cooldown ne se déclenche QUE si un envoi a déjà réussi il y a moins
+    // d'une minute pour cet email — ce n'est donc jamais un vrai échec.
+    const isCooldown = error.status === 429 || (error.code && error.code.includes('rate_limit')) || /security purposes/i.test(error.message || '');
+    errEl.textContent = isCooldown
+      ? "Un lien vient déjà d'être envoyé à cette adresse il y a moins d'une minute — vérifie ta boîte mail (et les spams) avant d'en redemander un nouveau."
+      : "Impossible d'envoyer le lien, réessaie dans une minute.";
+    return;
+  }
+
+  document.getElementById('check-email-addr').textContent = email;
+  document.getElementById('gate-activate').style.display = 'none';
+  document.getElementById('gate-check-email').style.display = 'block';
+}
+
+async function deactivateDemo(){
+  await supabaseClient.auth.signOut();
+  SESSION = null;
+  STATE = null;
+  checkGate();
+}
+
+// Supabase gère automatiquement l'échange du lien magique contre une session
+// au chargement de la page (detectSessionInUrl activé par défaut). On écoute
+// simplement les changements de session pour rafraîchir l'écran au bon moment.
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED'){
+    SESSION = session;
+  }
+});
+
+// Échappe le HTML avant insertion via innerHTML — la chat box affiche du texte
+// libre (saisie utilisateur + réponses IA), jamais du HTML de confiance.
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str ?? '');
+  return div.innerHTML;
+}
+
+// ── Navigation ──
+function goScreen(name){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelector(`.nav-item[data-screen="${name}"]`).classList.add('active');
+  window.scrollTo(0,0);
+  if(name === 'dossier') mountDossierPage();
+  if(name === 'support') loadMySupportTicketsAmb();
+}
+
+// ── Centre de Support — mêmes RPC que index.html (get_my_support_tickets,
+// create_support_ticket, get_my_support_ticket_events,
+// add_support_ticket_message ; voir migration 0018_support_center.sql).
+// Chaque ambassadeur ne voit que ses propres tickets (RLS), l'équipe les
+// traite depuis l'espace admin dissocié (admin_list_support_tickets()).
+const SUPPORT_CATEGORY_LABELS_AMB = { bug:'🐞 Bug', question:'❓ Question', demande:'📝 Demande', suggestion:'💡 Suggestion', probleme:'⚠️ Problème' };
+const SUPPORT_STATUS_LABELS_AMB = { nouveau:'🆕 Nouveau', en_cours:'🔧 En cours', resolu:'✅ Résolu', ferme:'🔒 Fermé' };
+let SUPPORT_TICKETS_CACHE_AMB = [];
+
+async function loadMySupportTicketsAmb(){
+  const el = document.getElementById('support-tickets-list');
+  if(!el || !SESSION) return;
+  el.innerHTML = '<div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Chargement...</div>';
+  const { data, error } = await supabaseClient.rpc('get_my_support_tickets');
+  if(error){ console.error('[support] liste:', error); el.innerHTML = '<div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Erreur de chargement.</div>'; return; }
+  SUPPORT_TICKETS_CACHE_AMB = data || [];
+  if(!SUPPORT_TICKETS_CACHE_AMB.length){
+    el.innerHTML = '<div class="card" style="text-align:center;color:var(--t3);font-size:12.5px">Aucun ticket pour l\'instant — envoie-nous un message si tu as une question.</div>';
+    return;
+  }
+  el.innerHTML = SUPPORT_TICKETS_CACHE_AMB.map(t => `
+    <div class="card" style="cursor:pointer" onclick="openTicketThreadAmb('${t.id}')">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+        <div style="font-size:13.5px;font-weight:700">${escapeHtml(t.subject)}</div>
+        <div style="font-size:10.5px;font-weight:800;white-space:nowrap">${SUPPORT_STATUS_LABELS_AMB[t.status] || t.status}</div>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:4px">${SUPPORT_CATEGORY_LABELS_AMB[t.category] || t.category} · ${new Date(t.created_at).toLocaleDateString('fr-FR')}</div>
+    </div>`).join('');
+}
+
+// ── GC Support v1 (docs/gc-ai-os/17-21) ──
+//
+// Couche IA posée devant le Centre de Support déjà en production
+// (create_support_ticket, get_my_support_tickets) — répond à partir de
+// GC_CORE_FACTS avant qu'un ticket humain soit créé. Si la réponse ne
+// suffit pas, le ticket est créé avec la question ET la réponse déjà
+// tentée en contexte : l'ambassadeur n'a jamais à tout retaper, et
+// l'équipe voit immédiatement ce qui a déjà été essayé.
+function showSupportAI(){
+  document.getElementById('support-list-view').style.display = 'none';
+  document.getElementById('support-ai-view').style.display = 'block';
+  document.getElementById('support-ai-answer').style.display = 'none';
+  document.getElementById('support-ai-question').value = '';
+}
+function hideSupportAI(){
+  document.getElementById('support-ai-view').style.display = 'none';
+  document.getElementById('support-list-view').style.display = 'block';
+}
+
+let SUPPORT_AI_LAST_Q = '';
+let SUPPORT_AI_LAST_A = '';
+let SUPPORT_AI_INFLIGHT = false;
+
+async function askSupportAI(){
+  if(SUPPORT_AI_INFLIGHT) return;
+  const q = document.getElementById('support-ai-question').value.trim();
+  if(!q) return;
+
+  SUPPORT_AI_INFLIGHT = true;
+  const btn = document.getElementById('support-ai-ask-btn');
+  btn.disabled = true;
+  btn.textContent = 'Recherche...';
+
+  try{
+    const resp = await fetch('/.netlify/functions/ai-proxy', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization': 'Bearer ' + SESSION.access_token},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 400,
+        system: GC_SUPPORT_SYSTEM_PROMPT,
+        messages: [{ role:'user', content: q }]
+      })
+    });
+    const data = await resp.json();
+    const answer = (!data.error && data.content?.find(b => b.type === 'text')?.text) || '';
+    SUPPORT_AI_LAST_Q = q;
+    SUPPORT_AI_LAST_A = answer;
+    document.getElementById('support-ai-answer-text').textContent =
+      answer || "Je n'ai pas pu répondre avec certitude — crée un ticket, l'équipe reprend directement ta question ci-dessous.";
+    document.getElementById('support-ai-answer').style.display = 'block';
+  }catch(e){
+    console.error('[GCSupport] ask', e);
+    SUPPORT_AI_LAST_Q = q;
+    SUPPORT_AI_LAST_A = '';
+    document.getElementById('support-ai-answer-text').textContent = 'Erreur réseau — crée un ticket, l\'équipe reprend directement ta question ci-dessous.';
+    document.getElementById('support-ai-answer').style.display = 'block';
+  } finally {
+    SUPPORT_AI_INFLIGHT = false;
+    btn.disabled = false;
+    btn.textContent = 'Demander';
+  }
+}
+
+function supportAIResolved(){
+  hideSupportAI();
+  if(typeof toastAmb === 'function') toastAmb('✅ Parfait, question résolue.');
+}
+
+// Escalade : jamais silencieuse. Le formulaire de ticket s'ouvre pré-rempli
+// avec la question et la tentative de réponse, pour que l'équipe voie tout
+// de suite ce qui a déjà été essayé — l'ambassadeur ne retape rien.
+function supportAIEscalate(){
+  document.getElementById('support-ai-view').style.display = 'none';
+  showNewTicketForm();
+  document.getElementById('support-new-subject').value = SUPPORT_AI_LAST_Q.slice(0, 200);
+  document.getElementById('support-new-message').value = SUPPORT_AI_LAST_Q +
+    (SUPPORT_AI_LAST_A ? '\n\n— Réponse automatique reçue (insuffisante) :\n' + SUPPORT_AI_LAST_A : '');
+}
+
+function showNewTicketForm(){
+  document.getElementById('support-list-view').style.display = 'none';
+  document.getElementById('support-new-form').style.display = 'block';
+}
+function hideNewTicketForm(){
+  document.getElementById('support-new-form').style.display = 'none';
+  document.getElementById('support-list-view').style.display = 'block';
+  document.getElementById('support-new-subject').value = '';
+  document.getElementById('support-new-message').value = '';
+}
+let SUPPORT_SUBMIT_INFLIGHT_AMB = false;
+async function submitNewTicket(){
+  if(SUPPORT_SUBMIT_INFLIGHT_AMB || !SESSION) return;
+  const category = document.getElementById('support-new-category').value;
+  const subject = document.getElementById('support-new-subject').value.trim();
+  const message = document.getElementById('support-new-message').value.trim();
+  if(!subject || !message){ alert('Merci de remplir le sujet et le message.'); return; }
+  if(subject.length > 200){ alert('Sujet trop long (200 caractères max).'); return; }
+  if(message.length > 4000){ alert('Message trop long (4000 caractères max).'); return; }
+
+  SUPPORT_SUBMIT_INFLIGHT_AMB = true;
+  const btn = document.getElementById('support-new-submit-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supabaseClient.rpc('create_support_ticket', { p_category: category, p_priority: 'normale', p_subject: subject, p_message: message });
+    if(error){ console.error('[support] création:', error); alert('❌ ' + error.message); return; }
+    hideNewTicketForm();
+    await loadMySupportTicketsAmb();
+  } finally {
+    SUPPORT_SUBMIT_INFLIGHT_AMB = false;
+    btn.disabled = false;
+  }
+}
+
+let CURRENT_TICKET_ID_AMB = null;
+async function openTicketThreadAmb(ticketId){
+  CURRENT_TICKET_ID_AMB = ticketId;
+  const t = SUPPORT_TICKETS_CACHE_AMB.find(x => x.id === ticketId);
+  if(!t) return;
+  document.getElementById('support-list-view').style.display = 'none';
+  document.getElementById('support-thread-view').style.display = 'block';
+  document.getElementById('amb-tk-cat').textContent = SUPPORT_CATEGORY_LABELS_AMB[t.category] || t.category;
+  document.getElementById('amb-tk-subject').textContent = t.subject;
+  document.getElementById('amb-tk-meta').textContent = `${SUPPORT_STATUS_LABELS_AMB[t.status] || t.status} · ${new Date(t.created_at).toLocaleDateString('fr-FR')}`;
+
+  const eventsEl = document.getElementById('amb-tk-events');
+  eventsEl.innerHTML = `<div class="card" style="margin-bottom:8px">${escapeHtml(t.message)}<div style="font-size:10px;color:var(--t3);margin-top:6px">${new Date(t.created_at).toLocaleString('fr-FR')}</div></div>`;
+
+  const { data: evData, error } = await supabaseClient.rpc('get_my_support_ticket_events', { p_ticket_id: ticketId });
+  if(error){ console.error('[support] historique:', error); return; }
+  (evData || []).forEach(ev => {
+    const isAdmin = ev.author === 'admin';
+    eventsEl.innerHTML += `<div class="card" style="margin-bottom:8px${isAdmin ? ';border-color:var(--gold2)' : ''}">
+      <div style="font-size:10.5px;font-weight:700;margin-bottom:3px">${isAdmin ? "🎧 L'équipe" : 'Toi'}</div>
+      ${ev.note ? escapeHtml(ev.note) : ''}
+      ${ev.new_status ? `<div style="font-size:10px;color:var(--t3);margin-top:4px">Statut → ${SUPPORT_STATUS_LABELS_AMB[ev.new_status] || ev.new_status}</div>` : ''}
+      <div style="font-size:10px;color:var(--t3);margin-top:6px">${new Date(ev.created_at).toLocaleString('fr-FR')}</div>
+    </div>`;
+  });
+}
+function closeTicketThreadAmb(){
+  document.getElementById('support-thread-view').style.display = 'none';
+  document.getElementById('support-list-view').style.display = 'block';
+  document.getElementById('amb-tk-reply').value = '';
+  CURRENT_TICKET_ID_AMB = null;
+}
+let SUPPORT_REPLY_INFLIGHT_AMB = false;
+async function replyToTicketAmb(){
+  if(SUPPORT_REPLY_INFLIGHT_AMB || !CURRENT_TICKET_ID_AMB) return;
+  const input = document.getElementById('amb-tk-reply');
+  const message = input.value.trim();
+  if(!message) return;
+  if(message.length > 4000){ alert('Message trop long (4000 caractères max).'); return; }
+
+  SUPPORT_REPLY_INFLIGHT_AMB = true;
+  const btn = document.getElementById('amb-tk-reply-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await supabaseClient.rpc('add_support_ticket_message', { p_ticket_id: CURRENT_TICKET_ID_AMB, p_message: message });
+    if(error){ console.error('[support] réponse:', error); alert('❌ ' + error.message); return; }
+    input.value = '';
+    await openTicketThreadAmb(CURRENT_TICKET_ID_AMB);
+  } finally {
+    SUPPORT_REPLY_INFLIGHT_AMB = false;
+    btn.disabled = false;
+  }
+}
+
+// ── Dossier administratif (contrat, signature, pièces, RIB) — voir
+// compliance-client.js, partagé avec index.html (role différent).
+let _dossierMounted = false;
+function mountDossierPage(){
+  if(_dossierMounted || !window.GCCompliance) return;
+  const mountEl = document.getElementById('dossier-mount');
+  if(!mountEl) return;
+  _dossierMounted = true;
+  window.GCCompliance.mount(mountEl, {
+    role: 'ambassadeur',
+    getSession: async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      return data && data.session ? data.session : null;
+    }
+  });
+}
+
+// ── GC Pilot v1 (docs/gc-ai-os/17-21) ──
+//
+// Remplace les 2 missions statiques ("Publier 1ère/2ème vidéo", identiques
+// pour tout le monde depuis le premier jour de l'app) par une mission
+// calculée à partir de signaux déjà disponibles côté client : formation,
+// distribution du lien, inactivité. Volontairement déterministe (règles,
+// pas d'appel IA) — c'est la version "Phase 1" décrite en
+// 20-dashboards-ux-roadmap.md : coût marginal nul, aucune nouvelle
+// infrastructure serveur, testable en isolation.
+//
+// Priorité : le risque de l'INACTION passe avant tout le reste (voir
+// 17-plateforme-membres-vision.md) — un ambassadeur qui n'a rien fait
+// depuis 2 jours doit voir une mission de réactivation avant n'importe
+// quelle autre suggestion, même une formation en retard. Règle de sortie
+// identique à l'IA Coach (AMBASSADOR_SYSTEM_PROMPT) : une priorité claire,
+// jamais dix — deux missions maximum.
+function todayKey(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+const PILOT_HEADLINES = {
+  setup:      'Débloque tes missions',
+  reactivate: 'On reprend en douceur 👋',
+  training:   'On avance sur ta formation',
+  share:      'Fais connaître ton lien',
+  engage:     'Transforme ton audience',
+  publish:    'Ta mission du jour'
+};
+
+function computeMissionsForToday(state, referral){
+  const identitySet = !!(referral && referral.identity_set);
+  if(!identitySet){
+    return [{ id: 'setup-link', kind: 'setup', label: 'Crée ton lien personnel ci-dessus pour débloquer tes missions du jour', done: false }];
+  }
+
+  const missions = [];
+  const stats = (referral && referral.stats) || {};
+
+  // updated_at vient du serveur (ambassador-data.js) : dernière écriture
+  // réelle de l'état de cet ambassadeur, pas une estimation côté client.
+  const lastActiveIso = referral && referral.updated_at;
+  if(lastActiveIso){
+    const daysInactive = (Date.now() - new Date(lastActiveIso).getTime()) / 86400000;
+    if(daysInactive >= 2){
+      missions.push({ id: 'reactivate', kind: 'reactivate', label: 'Reprends avec une action de 5 minutes : réponds à un commentaire ou un message reçu', done: false });
+    }
+  }
+
+  const nextModule = (state.training || []).find(m => !m.done);
+  if(nextModule){
+    missions.push({ id: 'training-' + nextModule.title, kind: 'training', label: 'Termine le module : ' + nextModule.title, done: false });
+  }
+
+  if((stats.clicks || 0) === 0){
+    missions.push({ id: 'share-link', kind: 'share', label: 'Mets ton lien personnel dans ta bio (TikTok, Instagram ou Snap)', done: false });
+  } else if((stats.subs_active || 0) === 0){
+    missions.push({ id: 'engage', kind: 'engage', label: 'Réponds à tous les commentaires et messages reçus depuis ta dernière publication', done: false });
+  }
+
+  if(missions.length === 0){
+    missions.push({ id: 'publish', kind: 'publish', label: 'Publie un contenu aujourd\'hui', done: false });
+  }
+
+  return missions.slice(0, 2);
+}
+
+// Régénéré une fois par jour (date locale), ou immédiatement si le lien
+// vient d'être créé (identitySet change) — jamais recalculé à chaque
+// rendu, pour que cocher une mission ne la fasse pas disparaître avant la
+// fin de la journée.
+function ensurePilotMissions(){
+  const key = todayKey();
+  const identitySet = !!(REFERRAL && REFERRAL.identity_set);
+  if(!STATE.pilot || STATE.pilot.date !== key || STATE.pilot.identitySet !== identitySet){
+    STATE.pilot = { date: key, identitySet, missions: computeMissionsForToday(STATE, REFERRAL) };
+    saveState(STATE);
+  }
+  return STATE.pilot.missions;
+}
+
+// ── Écran Aujourd'hui ──
+function renderToday(){
+  const h = new Date().getHours();
+  document.getElementById('today-greet').textContent =
+    (h < 12 ? 'Bonjour' : h < 18 ? 'Salut' : 'Bonsoir') + ' 👋';
+
+  const missions = ensurePilotMissions();
+  const isSetup = missions[0].kind === 'setup';
+  document.getElementById('mission-title').textContent = PILOT_HEADLINES[missions[0].kind] || PILOT_HEADLINES.publish;
+
+  const tasksEl = document.getElementById('mission-tasks');
+  tasksEl.innerHTML = isSetup ? '' : missions.map(m => `
+    <div class="mtask ${m.done ? 'done' : ''}">
+      <div class="chk ${m.done ? 'on' : ''}" onclick="toggleMission('${m.id}')">${m.done ? '✓' : ''}</div>
+      <div class="mtask-txt">${m.label}</div>
+    </div>
+  `).join('');
+
+  // Le lien et les compteurs viennent du serveur (renderReferral), pas de
+  // STATE : c'est ce qui garantit que l'ambassadeur voit ses vrais chiffres.
+  renderReferral();
+  const done = isSetup ? 0 : missions.filter(m => m.done).length;
+  const total = isSetup ? 1 : missions.length;
+  document.getElementById('today-progress').textContent = Math.round(done / total * 100) + '%';
+}
+function toggleMission(id){
+  const m = STATE.pilot.missions.find(x => x.id === id);
+  if(!m) return;
+  m.done = !m.done;
+  saveState(STATE);
+  renderToday();
+}
+
+// ── Parrainage : lien personnel et statistiques réelles ──
+//
+// REFERRAL est renseigné par le serveur (ambassador-data.js → RPC
+// ambassador_dashboard). Aucune de ces valeurs n'est calculée ni stockée
+// dans le navigateur : elles proviennent des paiements Stripe réellement
+// encaissés. L'ancien bloc STATE.revenue, qui n'était alimenté par rien,
+// n'est plus utilisé pour l'affichage.
+let REFERRAL = null;
+
+function eurCents(c){
+  return (Number(c || 0) / 100).toLocaleString('fr-FR', {
+    minimumFractionDigits: 0, maximumFractionDigits: 2
+  }) + ' €';
+}
+
+// Aperçu du lien pendant la saisie : l'ambassadeur voit ce qu'il obtiendra
+// avant de valider. La translittération reproduit celle de la base
+// (fonction SQL slugify) pour que l'aperçu corresponde au résultat réel.
+function previewSlug(first, last){
+  const src = (first + ' ' + last)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')  // retire les accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return src;
+}
+
+function updateIdentityPreview(){
+  const first = document.getElementById('id-first').value.trim();
+  const last  = document.getElementById('id-last').value.trim();
+  const slug  = previewSlug(first, last);
+  document.getElementById('id-preview').textContent =
+    'generationcapable.fr/' + (slug || '…');
+}
+
+async function saveIdentity(){
+  const first = document.getElementById('id-first').value.trim();
+  const last  = document.getElementById('id-last').value.trim();
+  const err   = document.getElementById('id-error');
+  err.textContent = '';
+
+  if(first.length < 2 || last.length < 2){
+    err.textContent = 'Renseigne ton prénom et ton nom.';
+    return;
+  }
+
+  const btn = document.getElementById('id-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Création…';
+  try{
+    const resp = await fetch('/.netlify/functions/ambassador-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION.access_token },
+      body: JSON.stringify({ action: 'set_identity', first_name: first, last_name: last })
+    });
+    const data = await resp.json();
+    if(data.error){ err.textContent = data.message || data.error; return; }
+
+    REFERRAL = data.referral || REFERRAL;
+    if(STATE){ STATE.name = first; saveState(STATE); }
+    // renderToday() recalcule aussi la mission GC Pilot (voir plus bas) :
+    // tant que le lien n'existait pas, la seule mission possible était de le
+    // créer — une fois REFERRAL.identity_set vrai, une vraie mission du jour
+    // doit apparaître immédiatement, pas seulement au lendemain.
+    renderToday();
+    renderProfile();
+    toastAmb('✅ Ton lien est prêt');
+  }catch(e){
+    console.error('[identity]', e);
+    err.textContent = 'Erreur réseau — réessaie.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Créer mon lien →';
+  }
+}
+
+function renderReferral(){
+  const linkEl  = document.getElementById('ref-link');
+  const idCard  = document.getElementById('identity-card');
+  const refCard = document.getElementById('ref-card');
+  if(!linkEl) return;
+
+  // Pas encore de nom renseigné → on demande d'abord l'identité, sans quoi
+  // le lien n'existe pas. C'est le tout premier geste d'un ambassadeur.
+  const needsIdentity = !REFERRAL || !REFERRAL.identity_set || !REFERRAL.link;
+  if(idCard)  idCard.style.display  = needsIdentity ? 'block' : 'none';
+  if(refCard) refCard.style.display = needsIdentity ? 'none'  : 'block';
+
+  if(needsIdentity){
+    const f = document.getElementById('id-first');
+    const l = document.getElementById('id-last');
+    if(f && !f._bound){
+      f._bound = true;
+      f.addEventListener('input', updateIdentityPreview);
+      l.addEventListener('input', updateIdentityPreview);
+      l.addEventListener('keydown', (e) => { if(e.key === 'Enter') saveIdentity(); });
+    }
+    updateIdentityPreview();
+    return;
+  }
+  // Affiché sans "https://" — plus lisible et plus court à recopier à la main.
+  linkEl.textContent = REFERRAL.link.replace(/^https?:\/\//, '');
+
+  const s = REFERRAL.stats || {};
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+
+  set('ref-clicks', s.clicks_total || 0);
+  set('ref-active', s.subs_active || 0);
+  set('today-earn', eurCents(s.earned_month_cents));
+
+  set('rev-total',   eurCents(s.earned_total_cents));
+  set('rev-month',   eurCents(s.earned_month_cents));
+  set('rev-pending', eurCents(s.earned_pending_cents));
+  set('rev-paid',    eurCents(s.earned_paid_cents));
+  set('rev-count',   s.subs_active || 0);
+
+  set('fn-clicks',  s.clicks_total || 0);
+  set('fn-unique',  s.clicks_unique || 0);
+  set('fn-signups', s.signups_total || 0);
+  set('fn-active',  s.subs_active || 0);
+  set('fn-churn',   s.subs_churned || 0);
+
+  renderRevenueHistory(s.history || []);
+}
+
+function renderRevenueHistory(history){
+  const histEl = document.getElementById('rev-history');
+  if(!histEl) return;
+  if(!history.length){
+    histEl.innerHTML = `<div class="empty">Aucune commission pour l'instant.<br>Ton premier abonnement apparaîtra ici.</div>`;
+    return;
+  }
+  histEl.innerHTML = history.map(h => {
+    const d = h.date ? new Date(h.date).toLocaleDateString('fr-FR', {day:'2-digit',month:'short'}) : '';
+    const cancelled = h.status === 'cancelled';
+    return `<div class="hist-row">
+      <div class="hist-name">${escapeHtmlAmb(h.label || '')}${d ? ' · ' + d : ''}</div>
+      <div class="hist-amt" style="${cancelled ? 'opacity:.45;text-decoration:line-through' : ''}">+${eurCents(h.amount)}</div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtmlAmb(str){
+  const d = document.createElement('div');
+  d.textContent = String(str ?? '');
+  return d.innerHTML;
+}
+
+async function copyRefLink(){
+  if(!REFERRAL || !REFERRAL.link) return;
+  try{
+    await navigator.clipboard.writeText(REFERRAL.link);
+    toastAmb('✅ Lien copié — colle-le dans ta bio');
+  }catch(e){
+    // Safari iOS refuse l'accès au presse-papiers hors geste direct : on
+    // sélectionne le texte pour que l'ambassadeur puisse copier à la main.
+    const el = document.getElementById('ref-link');
+    if(el){
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    toastAmb('Sélectionne le lien puis appuie sur "Copier"');
+  }
+}
+
+async function shareRefLink(){
+  if(!REFERRAL || !REFERRAL.link) return;
+  const shareData = {
+    title: 'Génération Capable',
+    text: 'Rejoins Génération Capable avec mon lien 👇',
+    url: REFERRAL.link
+  };
+  if(navigator.share){
+    try{ await navigator.share(shareData); return; }
+    catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  copyRefLink();
+}
+
+function toastAmb(msg){
+  let el = document.getElementById('amb-toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'amb-toast';
+    el.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1c1c1c;border:1px solid rgba(201,168,76,.35);color:#f5f0e8;padding:11px 16px;border-radius:11px;font-size:13px;z-index:9999;max-width:88%;text-align:center;transition:opacity .25s';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2600);
+}
+
+// ── Écran Revenus ──
+function renderRevenue(){
+  renderReferral();
+}
+
+// ── Visite guidée (voir tutorial.js) ──
+//
+// S'ouvre automatiquement à la toute première connexion, et reste
+// relançable depuis le Profil. L'ordre suit ce qu'un nouvel ambassadeur
+// doit faire dans la vraie vie : récupérer son lien, le partager, puis
+// savoir où il verra l'argent arriver.
+function ambassadorTutorialSteps(){
+  return [
+    {
+      el: '[data-tuto="lien"]',
+      title: 'Voici ton lien à toi',
+      text: "C'est ton identité sur Génération Capable. Toute personne qui s'abonne en passant par ce lien est comptée pour toi, automatiquement. Tu n'as jamais à déclarer une vente toi-même.",
+      before: () => goScreen('today')
+    },
+    {
+      el: '[data-tuto="lien"] .ref-btn-row',
+      title: 'Copie-le et mets-le dans ta bio',
+      text: "Bio TikTok, Instagram, Snap, description YouTube : partout où des gens peuvent cliquer. « Partager » ouvre directement tes applis pour l'envoyer en message.",
+    },
+    {
+      el: '.nav-item[data-screen="revenue"]',
+      title: 'Tes gains, en direct',
+      text: "Tu gagnes 15 € par mois pour chaque abonné que tu apportes, tant qu'il reste abonné. Plus 50 € à chaque vente réalisée par un vendeur que tu as fait entrer.",
+      before: () => goScreen('revenue')
+    },
+    {
+      el: '[data-tuto="tunnel"]',
+      title: 'Comprends ce qui bloque',
+      text: "Beaucoup de clics mais peu d'inscrits ? Ton lien attire, mais ton message ne convainc pas encore. C'est là que tu verras quoi améliorer.",
+    },
+    {
+      el: '.nav-item[data-screen="coach"]',
+      title: "L'IA Coach répond 24h/24",
+      text: "Un script TikTok, une réponse à « c'est trop cher », une idée de contenu : demande-lui. Elle connaît l'offre et les commissions par cœur.",
+      before: () => goScreen('coach')
+    },
+    {
+      el: '.nav-item[data-screen="dossier"]',
+      title: 'Ton dossier, à remplir une fois',
+      text: "Contrat, pièce d'identité et RIB. Sans ça, tes gains s'accumulent mais ne peuvent pas t'être versés. Cinq minutes, une seule fois.",
+      before: () => goScreen('dossier')
+    },
+    {
+      title: 'À toi de jouer 🚀',
+      text: "Ton premier objectif : mettre ton lien dans ta bio aujourd'hui. Tu peux revoir cette visite quand tu veux depuis l'onglet Profil.",
+      before: () => goScreen('today')
+    }
+  ];
+}
+
+function startAmbassadorTutorial(onlyFirstVisit, _tries){
+  // tutorial.js est chargé en "defer" : à la toute première connexion il
+  // peut ne pas encore être là quand l'écran s'affiche. On réessaie
+  // brièvement plutôt que d'abandonner silencieusement.
+  if(!window.GCTuto){
+    const n = (_tries || 0) + 1;
+    if(n <= 20) setTimeout(() => startAmbassadorTutorial(onlyFirstVisit, n), 150);
+    return;
+  }
+  const opts = { id: 'ambassadeur', steps: ambassadorTutorialSteps() };
+  if(onlyFirstVisit) window.GCTuto.startIfFirstVisit(opts);
+  else window.GCTuto.start(opts);
+}
+
+function replayAmbassadorTutorial(){
+  if(!window.GCTuto) return;
+  window.GCTuto.reset('ambassadeur');
+  startAmbassadorTutorial(false);
+}
+
+// ── Un seul appareil connecté à la fois ──
+//
+// Même garde que sur l'espace vendeur (voir session-guard-client.js) : un
+// espace ambassadeur donne accès aux gains et au coach IA, il ne doit pas se
+// partager. Règle "le dernier appareil gagne" : changer de téléphone n'exige
+// aucune intervention.
+function startAmbassadorSessionGuard(_tries){
+  if(!window.GCSessionGuard){
+    const n = (_tries || 0) + 1;
+    if(n <= 20) setTimeout(() => startAmbassadorSessionGuard(n), 150);
+    return;
+  }
+  window.GCSessionGuard.init({
+    getSession: async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      return data && data.session ? data.session : null;
+    },
+    onDisplaced: async () => {
+      try{ await supabaseClient.auth.signOut(); }catch(e){}
+      alert(
+        'Ton compte vient d\'être utilisé sur un autre appareil.\n\n' +
+        'Un seul appareil peut être connecté à la fois. Reconnecte-toi ici si c\'est bien toi.'
+      );
+      location.reload();
+    }
+  });
+  window.GCSessionGuard.claim();
+}
+
+// ── Écran Formation ──
+function renderTraining(){
+  const list = STATE.training;
+  const doneCount = list.filter(m => m.done).length;
+  const pct = Math.round(doneCount / list.length * 100);
+  document.getElementById('train-progress-txt').textContent = `${doneCount} / ${list.length} modules`;
+  document.getElementById('train-progress-pct').textContent = pct + '%';
+  document.getElementById('train-progress-bar').style.width = pct + '%';
+
+  document.getElementById('training-list').innerHTML = list.map((m,i) => `
+    <div class="mod-row" onclick="toggleTraining(${i})">
+      <div class="mod-ico ${m.done ? 'done' : ''}">${m.done ? '✓' : (i+1)}</div>
+      <div class="mod-info">
+        <div class="mod-t">${m.title}</div>
+        <div class="mod-s">${m.done ? 'Terminé' : 'À faire'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+function toggleTraining(i){
+  STATE.training[i].done = !STATE.training[i].done;
+  saveState(STATE);
+  renderTraining();
+}
+
+// ── Écran Profil ──
+function renderProfile(){
+  document.getElementById('profile-name').textContent = STATE.name;
+
+  // Affiche le vrai lien de parrainage, plus l'ancien code "GC-AMB###" tiré
+  // au hasard qui ne servait à rien : c'est ce lien, et lui seul, qui
+  // déclenche l'attribution d'une vente.
+  const codeEl = document.getElementById('profile-code');
+  if(codeEl){
+    codeEl.textContent = REFERRAL && REFERRAL.link
+      ? REFERRAL.link.replace(/^https?:\/\//, '')
+      : 'Lien en cours de création…';
+  }
+
+  const s = (REFERRAL && REFERRAL.stats) || {};
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  set('prof-active',  s.subs_active || 0);
+  set('prof-total',   eurCents(s.earned_total_cents));
+  set('prof-pending', eurCents(s.earned_pending_cents));
+}
+
+function renderAll(){
+  renderToday();
+  renderRevenue();
+  renderTraining();
+  renderProfile();
+}
+
+// ══════════════════════════════════════════════════════════
+//  IA COACH — réutilise le GC Cognitive Engine existant
+//  (même Core que index.html, nouvelle Config Layer "Ambassadeur")
+// ══════════════════════════════════════════════════════════
+// ── GC Core Facts — source unique de vérité factuelle sur l'offre ──
+//
+// Utilisé par GC Coach (AMBASSADOR_SYSTEM_PROMPT) ET GC Support
+// (GC_SUPPORT_SYSTEM_PROMPT) : deux IA qui répondraient différemment à
+// "combien coûte l'abonnement ?" casseraient la confiance immédiatement
+// (voir docs/gc-ai-os/17-plateforme-membres-vision.md — « aucune IA ne
+// doit donner une réponse contradictoire »). Une seule chaîne, jamais deux
+// copies qui peuvent diverger avec le temps.
+const GC_CORE_FACTS = `CONNAISSANCE PRODUIT
+Génération Capable : formation à la vente terrain (prospection, découverte, closing) avec accompagnement IA quotidien intégré. Offre unique : 67€/mois, engagement 6 mois, accès immédiat. Inclut 6 modules vidéo+PDF, coaching 24/7, diagnostic IA du profil vendeur, plan d'action généré chaque matin, rapport analysé chaque soir.
+
+COMMISSIONS (précis, ne jamais approximer ni inventer un autre chiffre)
+15€/mois pour chaque client apporté par l'ambassadeur, versés tant que ce client reste abonné (s'arrête s'il se désabonne). En plus : 50€ à chaque vente réalisée par un vendeur que l'ambassadeur a personnellement fait intégrer à Génération Capable (commission de second niveau, sur l'activité du vendeur recruté, pas sur les clients de ce vendeur).
+
+Positionnement liberté (légitime, spécifique au rôle d'ambassadeur) : un ambassadeur travaille d'où il veut, quand il veut, et apprend à créer ses propres opportunités — c'est une réalité du rôle, pas une promesse abstraite. Reste toujours honnête : cette liberté vient du travail fourni, jamais d'un résultat automatique ou garanti.
+
+Cible : jeunes (18-25 ans) motivés mais pas encore formés à la vente, cherchant un cadre structurant et une compétence monétisable.
+
+Différenciation réelle : suivi quotidien (pas juste des vidéos passives), diagnostic IA du profil vendeur qui adapte le coaching, fondateur avec vraie expérience terrain.
+
+Objections et réponses honnêtes :
+- "Trop cher" → coût par jour (~2,20€/jour), jamais de chiffre de revenu promis en retour.
+- "Pas le temps" → modules courts et actionnables ; ne jamais minimiser l'effort réel requis.
+- "Système pyramidal ?" → non : contenu pédagogique réel, commission sur vente apportée, pas de structure à paliers de recrutement.
+- "Gratuit sur YouTube existe" → le gratuit n'a pas de suivi individualisé quotidien.`;
+
+// ── GC Support v1 (docs/gc-ai-os/18-agents-membres-catalogue.md) ──
+//
+// Couche IA posée devant le Centre de Support déjà en production, pas un
+// nouveau centre de support. Scope volontairement étroit : questions
+// pratiques sur l'app/l'offre, jamais de coaching commercial (ça reste
+// GC Coach, ci-dessous) — deux rôles clairs valent mieux qu'une IA qui
+// essaie de tout faire.
+const GC_SUPPORT_SYSTEM_PROMPT = `Tu es GC Support, l'assistant du Centre de Support de Génération Capable, dans l'espace ambassadeur.
+
+TON RÔLE
+Répondre aux questions pratiques sur l'app, l'abonnement, les commissions, le fonctionnement du programme ambassadeur. Tu n'es PAS un coach commercial : si la personne demande de l'aide pour vendre, créer du contenu ou répondre à un prospect, dis-le lui et oriente-la vers l'écran "IA Coach" — n'essaie jamais de faire ce travail à sa place.
+
+${GC_CORE_FACTS}
+
+FONCTIONNEMENT DE L'APP (pour répondre aux questions pratiques)
+- Le lien personnel se crée une seule fois, à la première connexion (écran "Aujourd'hui"), à partir du prénom et du nom.
+- Les gains (total, ce mois, en attente, déjà versé) sont visibles sur l'écran "Revenus".
+- La progression de formation est sur l'écran "Formation", avec la mission du jour recalculée automatiquement chaque jour.
+- La bibliothèque de ressources (FAQ, objections, playbooks réseaux sociaux, règles, check-lists) est accessible via "📚 Bibliothèque Génération Capable" sur les écrans "Aujourd'hui" et "Formation".
+- Pour corriger un lien personnel déjà créé, ou toute question de facturation/résiliation précise, la réponse honnête est d'orienter vers un ticket — ne jamais improviser une procédure que tu ne connais pas avec certitude.
+
+RÈGLES ABSOLUES
+- Ne jamais inventer un chiffre, un délai ou une procédure que tu ne connais pas avec certitude — dis-le clairement plutôt que de deviner.
+- Ne jamais promettre un revenu ni un résultat.
+- Si tu ne peux pas résoudre la question avec certitude, dis-le explicitement en une phrase et invite la personne à créer un ticket — ne fais jamais semblant d'avoir résolu le problème.
+
+FORMAT
+Réponse courte (5 lignes maximum), directe, sans préambule. Si tu ne sais pas, dis-le en une phrase, pas plus.`;
+
+const AMBASSADOR_SYSTEM_PROMPT = `Tu es le GC Cognitive Engine™. Tu n'es pas un chatbot ni un assistant conversationnel générique. Tu es une architecture cognitive dont la seule mission est de faire progresser durablement la personne qui te parle vers son plus haut potentiel professionnel.
+
+MISSION
+Avant chaque réponse, pose-toi une seule question : cette intervention augmente-t-elle la probabilité que cette personne devienne meilleure ? Si non, elle est rejetée.
+
+HIÉRARCHIE ABSOLUE
+1. L'éthique. 2. La progression de la personne. 3. La création de valeur. 4. La qualité de la décision. 5. La performance. 6. Les résultats financiers (jamais un objectif en soi).
+
+PRINCIPE DE SOUVERAINETÉ HUMAINE
+Tu conseilles, tu structures la réflexion — la décision finale appartient toujours à la personne.
+
+PERSONNALITÉ
+Exigeant sans dureté. Bienveillant même en confrontant. Lucide. Rigoureux. Calme. Humble. Responsabilisant.
+
+INTERDITS ABSOLUS
+Ne jamais culpabiliser, ridiculiser, manipuler, flatter pour obtenir l'adhésion, inventer une certitude que tu n'as pas, créer une dépendance affective.
+
+— CONFIGURATION AMBASSADEUR : GC AMBASSADOR BRAIN™ —
+
+Tu es le meilleur coach commercial qu'un ambassadeur de Génération Capable puisse avoir. Tu existes pour une seule raison : transformer un débutant en ambassadeur performant capable d'attirer régulièrement de nouveaux membres grâce à une communication honnête, efficace et utile.
+
+Ton succès ne se mesure jamais au nombre de messages envoyés, au temps passé à discuter, ou au nombre de réponses produites. Il se mesure uniquement à la progression réelle de l'ambassadeur : chaque réponse doit augmenter ses compétences, sa confiance, ses résultats.
+
+MISSION QUOTIDIENNE
+Chaque jour, aide l'ambassadeur à : créer, publier, prospecter, répondre, analyser, apprendre, progresser, recommencer.
+
+OBJECTIF ULTIME
+Créer le plus grand nombre possible de nouveaux membres — non pas grâce à la manipulation, de fausses promesses ou des techniques agressives, mais parce que les ambassadeurs deviennent réellement meilleurs.
+
+${GC_CORE_FACTS}
+
+TU CONNAIS PARFAITEMENT
+Génération Capable, ses formations, ses modules, ses valeurs, son offre, les commissions, les objections, les profils utilisateurs, les réseaux sociaux, les algorithmes, le copywriting, le storytelling, la vente, la psychologie, le closing, la prospection, le personal branding, la pédagogie.
+
+TU ES EXPERT EN
+SPIN, Challenger Sale, MEDDICC, Sandler, Gap Selling, Consultative Selling, StoryBrand, copywriting, TikTok, Instagram, YouTube Shorts, hooks, storytelling, email, messages privés, prospection terrain et digitale, psychologie comportementale et cognitive, habitudes, motivation, discipline, prise de décision, communication, leadership, coaching.
+
+TA PHILOSOPHIE
+Tu refuses toujours : les raccourcis, les mensonges, les manipulations, les promesses irréalistes, les techniques toxiques.
+Tu préfères toujours : la confiance, la compétence, la valeur, la pédagogie, la progression.
+
+TON RAISONNEMENT (avant chaque réponse)
+Analyse silencieusement : Qui est cette personne ? Quel est son niveau ? Quel est son blocage ? Quel est son objectif ? Quelle est la meilleure prochaine action ? Quelle réponse produira le plus de progrès ?
+
+TU IDENTIFIES LE PROFIL
+Débutant, intermédiaire, expert, bloqué, découragé, trop confiant, stressé, perfectionniste, dispersé — et tu adaptes ton ton, ta pédagogie, tes exemples, tes exercices en conséquence.
+
+TU ES CAPABLE DE CRÉER
+Script TikTok, Reel, hook, story, publication, carousel, message privé, réponse, relance, appel à l'action, plan de contenu sur 30 jours, stratégie, campagne, séquence de prospection, plan de progression, journée ou semaine de travail, plan d'apprentissage.
+
+TU ES CAPABLE D'ANALYSER
+Une vidéo, un script, un hook, une bio Instagram, un profil TikTok, une conversation, un appel, une objection, une publication, une page de vente, un tunnel, un email, une stratégie.
+
+RÉPONSES TYPES
+- "Je n'ai pas d'idée" → propose immédiatement 10 idées concrètes.
+- "Je ne sais pas quoi publier" → construis immédiatement un calendrier.
+- "Je n'ai pas de vues" → analyse son contenu et identifie ce qui bloque.
+- "Je n'ai pas de prospects" → reconstruis sa stratégie de prospection.
+- "Je n'arrive pas à vendre" → identifie précisément où il perd ses prospects.
+
+RÈGLE DE SORTIE
+Toujours UNE priorité, jamais dix. Une action claire, mesurable, applicable immédiatement. Jamais de réponse générique, jamais de réponse longue inutilement, jamais de réponse qui cherche à impressionner plutôt qu'à faire agir.
+
+TU ES EXIGEANT
+Tu félicites uniquement quand c'est mérité. Tu confrontes quand c'est nécessaire, en expliquant toujours pourquoi, et tu proposes toujours une meilleure version.
+
+RÈGLE ABSOLUE
+Si une réponse n'améliore pas concrètement les compétences ou les résultats de l'ambassadeur, elle ne doit pas être donnée.
+
+— GC KNOWLEDGE CORE™ (honnêteté factuelle et posture) —
+
+Tu ne dois jamais inventer une information sur Génération Capable. Si une information n'est pas certaine, dis-le clairement plutôt que d'improviser une réponse qui a l'air sûre.
+
+La promesse de Génération Capable n'est jamais "gagner beaucoup d'argent" — c'est "développer une compétence qui a de la valeur". Recentre toujours une discussion sur la compétence, jamais sur l'enrichissement rapide.
+
+Quand quelqu'un pose une question sur l'offre, réponds d'abord pour informer et rassurer — n'essaie pas immédiatement de conclure une vente. Propose la prochaine étape seulement si c'est pertinent une fois la question vraiment répondue.
+
+Tu es le gardien de la réputation de Génération Capable à travers chaque réponse. Refuse toujours : promesses irréalistes, faux témoignages, faux chiffres, manipulations, raccourcis marketing trompeurs. Préfère perdre une vente plutôt que perdre la confiance de quelqu'un.
+
+Ton objectif n'est pas de convaincre tout le monde — c'est d'aider chaque personne à déterminer honnêtement si Génération Capable est adapté à sa situation. Si ce n'est pas le cas, dis-le. Une vente qui ne crée pas de valeur est un échec ; une personne bien orientée (même vers un "non") est une réussite.
+
+FORMAT
+Réponses courtes, actionnables, sans préambule. Si on te demande un script, donne le script directement.`;
+
+function renderChatHistory(){
+  const box = document.getElementById('chat-box');
+  box.innerHTML = STATE.chatHistory.map(m =>
+    `<div class="msg ${m.role === 'user' ? 'user' : 'ai'}">${escapeHtml(m.text)}</div>`
+  ).join('');
+  box.scrollIntoView({block:'end'});
+}
+
+function askSuggestion(text){
+  document.getElementById('chat-input').value = text;
+  sendChat();
+}
+
+async function sendChat(){
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  STATE.chatHistory.push({role:'user', text});
+  renderChatHistory();
+  saveState(STATE);
+
+  const box = document.getElementById('chat-box');
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'msg ai loading';
+  loadingEl.textContent = 'Réflexion...';
+  box.appendChild(loadingEl);
+
+  try{
+    // FIX CRITIQUE (audit 2026-08-03) : ai-proxy.js exige maintenant un token de
+    // session Supabase valide (voir index.html) — sans ce header, cet appel
+    // échouerait désormais avec AUTH_REQUIRED pour tout ambassadeur pourtant connecté.
+    const resp = await fetch('/.netlify/functions/ai-proxy', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization': 'Bearer ' + SESSION.access_token},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 800,
+        system: AMBASSADOR_SYSTEM_PROMPT,
+        messages: [{ role:'user', content: text }]
+      })
+    });
+    const data = await resp.json();
+    loadingEl.remove();
+
+    if(data.error){
+      console.error('[Ambassadors-IA]', data.error, data.message || data.detail || '');
+      STATE.chatHistory.push({role:'ai', text: "Je n'ai pas pu répondre — réessaie dans quelques secondes."});
+    } else {
+      const raw = data.content?.find(b => b.type === 'text')?.text || '';
+      STATE.chatHistory.push({role:'ai', text: raw || "Réponse vide, réessaie."});
+    }
+  }catch(e){
+    loadingEl.remove();
+    console.error('[Ambassadors-IA] NETWORK_ERROR', e);
+    STATE.chatHistory.push({role:'ai', text: "Erreur réseau — réessaie."});
+  }
+
+  saveState(STATE);
+  renderChatHistory();
+}
+
+// ── Init ──
+checkGate();
+</script>
+<script src="/compliance-client.js" defer></script>
+<script src="/tutorial.js" defer></script>
+<script src="/session-guard-client.js" defer></script>
+</body>
+</html>
