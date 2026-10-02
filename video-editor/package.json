@@ -1,0 +1,26 @@
+{
+  "name": "video-editor",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Monteur vidéo IA autonome — MVP. Voir README.md pour l'état réel du pipeline.",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "pipeline:run": "pnpm --filter @video-editor/pipeline run demo"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "turbo": "^2.1.0",
+    "typescript": "^5.6.0"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

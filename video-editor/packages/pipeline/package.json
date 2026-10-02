@@ -1,0 +1,33 @@
+{
+  "name": "@video-editor/pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'no lint configured'",
+    "test": "node dist/test-montage-quality.js",
+    "test:render-opt": "node dist/test-render-optimization.js",
+    "test:montage": "node dist/test-montage-quality.js",
+    "test:captions": "node dist/test-captions-sync.js",
+    "test:brain": "node dist/test-creative-brain.js",
+    "test:duration": "node dist/test-duration-policy.js",
+    "test:e2e": "node dist/test-e2e-facecam.js",
+    "demo": "node dist/demo.js"
+  },
+  "dependencies": {
+    "@video-editor/shared-types": "workspace:*",
+    "@video-editor/db": "workspace:*",
+    "@video-editor/model-router": "workspace:*",
+    "@video-editor/cost-ledger": "workspace:*",
+    "@video-editor/render": "workspace:*",
+    "@video-editor/agents": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
+}
