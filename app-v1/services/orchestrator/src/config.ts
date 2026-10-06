@@ -15,11 +15,14 @@ const Schema = z.object({
   STATUS_POLL_MS: num(3000),
   LEASE_SECONDS: num(600),
   JOB_TIMEOUT_MS: num(60 * 60_000),
+  // Supprime les fichiers du moteur dès la livraison (conservation minimale). Mettre « false » si les modifications sont réactivées : le balayage 24 h du moteur prend alors le relais.
+  ENGINE_PURGE_AFTER_DELIVERY: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
   ENGINE_FLAKY_TOLERANCE: num(20),               // échecs réseau consécutifs tolérés pendant le suivi d'un job
   ASSET_URL_TTL_SECONDS: num(6 * 3600),
   USD_EUR: num(0.92),
   RENDER_COST_MICRO_EUR_PER_SEC: num(0),         // coût de calcul estimé (à calibrer sur l'infra réelle)
   STORAGE_COST_MICRO_EUR_PER_GB_MONTH: num(0),
+  RETENTION_HOURS: num(24),                       // rappelé dans les e-mails (doit refléter app_settings.retention.renders_hours)
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   PRODUCT_NAME: z.string().default("Montage"),

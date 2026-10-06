@@ -5,7 +5,7 @@
 - Architecture : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · audit de l'existant : [`docs/AUDIT.md`](docs/AUDIT.md)
 - **À renseigner avant production : [`SETUP_REQUIRED.md`](SETUP_REQUIRED.md)** (variables, où les trouver, décisions business)
 - Sécurité : [`docs/SECURITY.md`](docs/SECURITY.md) · données/suppression : [`docs/PRIVACY_RETENTION.md`](docs/PRIVACY_RETENTION.md)
-- Stores : [`docs/STORE_READINESS.md`](docs/STORE_READINESS.md), [`docs/STORE_PAYMENT_POLICY.md`](docs/STORE_PAYMENT_POLICY.md) · exploitation : [`docs/OPERATIONS.md`](docs/OPERATIONS.md) · tests : [`docs/TESTING.md`](docs/TESTING.md)
+- **Soumission iOS : [`docs/IOS_SUBMISSION.md`](docs/IOS_SUBMISSION.md)** (`npm run release:check`) · Stores : [`docs/STORE_READINESS.md`](docs/STORE_READINESS.md), [`docs/STORE_PAYMENT_POLICY.md`](docs/STORE_PAYMENT_POLICY.md) · exploitation : [`docs/OPERATIONS.md`](docs/OPERATIONS.md) · tests : [`docs/TESTING.md`](docs/TESTING.md)
 
 ## Démarrage local
 
@@ -54,11 +54,11 @@ npm run e2e -w @app/orchestrator
 ## Limites assumées (documentées, pas des oublis)
 
 1. **Création autonome indisponible** : le moteur n'a pas de génération vidéo (`autonomous_creation=false`). L'option est masquée et refusée par le serveur ; les écrans et prix (2,90 € / 5,80 €) sont prêts et s'activent quand la capacité apparaît.
-2. **Révisions** : le moteur n'accepte qu'un menu fermé (plus court / rapide / lent / plus ou moins de zooms). Le texte libre est mappé honnêtement, ce qui n'est pas pris en charge est signalé **avant** paiement. Prix provisoire : 1,21 €.
+2. **Modifications de vidéo : non proposées pour le moment** (`features.revisions = false` : masquées dans l'app, refusées par le serveur). Le code, les tests et le moteur (menu fermé de 5 commandes) sont prêts ; réactivation = un réglage. Prix provisoire : 1,21 €.
 3. **Dictée vocale** : jointe comme note vocale ; pas de transcription serveur (un texte écrit reste requis pour « Personnalisé »).
 4. **Upload en arrière-plan** : la reprise TUS est fiable (réseau, redémarrage), mais iOS/Android suspendent le JavaScript quand l'app est en arrière-plan ; l'envoi reprend au retour au premier plan.
 5. **Paiements stores** : packs fixes 10/20/50/100 €, **sans** montant libre ni recharge automatique silencieuse (non supportée par les consommables) ; matrice par **plateforme** (pas encore par storefront/pays : prévoir un flag si vous activez le lien externe US/UE). À faire valider (voir `STORE_PAYMENT_POLICY.md`, parties Google/Stripe lues via sources secondaires).
-6. **Rétention** : illimitée tant que le business n'a pas fixé de durée (`app_settings.retention.*`) ; aucune purge planifiée active.
+6. **Conservation : 24 h maximum** pour les fichiers envoyés et les vidéos produites (purge automatique active, avertissement avant suppression, copies du moteur purgées). Réglable dans `app_settings.retention.*_hours`.
 7. **Moteur** : B-roll résolu en métadonnées mais pas inséré dans le rendu ; sous-titres parlés exigent `DEEPGRAM_API_KEY`.
-8. **Légal** : textes publics = modèles factuels à faire valider ; statut du solde prépayé, TVA et droit de rétractation à trancher avec un juriste/comptable.
+8. **Légal** : dossier complet généré depuis `web-public/legal.config.json` (mentions légales, CGU, CGV avec rétractation/renonciation et médiation, confidentialité RGPD, cookies, suppression de compte) + acceptation versionnée dans l'app ; reste à renseigner l'identité de la société et à faire relire par un juriste ; TVA du solde prépayé : expert-comptable.
 9. Mode sombre non fourni en V1 (direction artistique claire) ; icônes/splash = placeholders.

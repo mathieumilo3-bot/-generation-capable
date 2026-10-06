@@ -16,6 +16,7 @@ export interface ClaimedJob {
 export interface PendingPush { notification_id: string; user_id: string; title: string; body: string; data: Record<string, unknown>; token: string; platform: string }
 export interface PendingEmail { kind: "welcome" | "notification"; ref_id: string; user_id: string; email: string; first_name: string | null; title: string; body: string; data: Record<string, unknown> }
 export interface PurgeItem { asset_id: string; bucket: string; path: string }
+export interface VersionPurge { version_id: string; project_id: string; user_id: string; render_path: string | null; thumbnail_path: string | null }
 
 export interface Store {
   claim(worker: string, leaseSeconds: number): Promise<ClaimedJob | null>;
@@ -34,6 +35,10 @@ export interface Store {
   markEmailSent(kind: string, ref: string): Promise<void>;
   assetsToPurge(limit: number): Promise<PurgeItem[]>;
   assetPurged(id: string): Promise<void>;
+  expireContent(): Promise<{ assets_marked: number }>;
+  versionsToPurge(limit: number): Promise<VersionPurge[]>;
+  versionPurged(id: string): Promise<void>;
+  notifyExpiring(hoursBefore: number): Promise<number>;
 }
 
 export class SupabaseStore implements Store {
@@ -66,4 +71,8 @@ export class SupabaseStore implements Store {
   async markEmailSent(kind: string, ref: string) { await this.rpc("svc_mark_email_sent", { p_kind: kind, p_ref: ref }); }
   assetsToPurge(limit: number) { return this.rpc<PurgeItem[]>("svc_assets_to_purge", { p_limit: limit }); }
   async assetPurged(id: string) { await this.rpc("svc_asset_purged", { p_asset_id: id }); }
+  expireContent() { return this.rpc<{ assets_marked: number }>("svc_expire_content"); }
+  versionsToPurge(limit: number) { return this.rpc<VersionPurge[]>("svc_versions_to_purge", { p_limit: limit }); }
+  async versionPurged(id: string) { await this.rpc("svc_version_purged", { p_version_id: id }); }
+  notifyExpiring(h: number) { return this.rpc<number>("svc_notify_expiring", { p_hours_before: h }); }
 }

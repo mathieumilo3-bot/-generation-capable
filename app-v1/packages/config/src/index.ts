@@ -22,6 +22,8 @@ export const PublicSettingsSchema = z.object({
   "product.name": z.string(),
   "product.support_email": z.string(),
   "urls.terms": z.string(),
+  "urls.sales_terms": z.string(),
+  "urls.legal_notice": z.string(),
   "urls.privacy": z.string(),
   "urls.support": z.string(),
   "urls.account_deletion": z.string(),
@@ -48,6 +50,14 @@ export const PublicSettingsSchema = z.object({
   "upload.allowed_mime_types": z.array(z.string()),
   "features.voice_instructions": z.boolean(),
   "features.organizations": z.boolean(),
+  "features.revisions": z.boolean(),
+  "features.password_login": z.boolean(),
+  "retention.raw_hours": z.number().int().positive(),
+  "retention.renders_hours": z.number().int().positive(),
+  "legal.terms_version": z.string(),
+  "legal.ai_consent_version": z.string(),
+  "legal.ai_providers": z.array(z.string()),
+  "features.third_party_ai": z.boolean(),
 });
 export type PublicSettings = z.infer<typeof PublicSettingsSchema>;
 
@@ -55,6 +65,8 @@ export const DEFAULT_PUBLIC_SETTINGS: PublicSettings = {
   "product.name": "Montage",
   "product.support_email": "support@example.com",
   "urls.terms": "https://example.com/conditions",
+  "urls.sales_terms": "https://example.com/conditions-de-vente",
+  "urls.legal_notice": "https://example.com/mentions-legales",
   "urls.privacy": "https://example.com/confidentialite",
   "urls.support": "https://example.com/aide",
   "urls.account_deletion": "https://example.com/supprimer-mon-compte",
@@ -99,6 +111,15 @@ export const DEFAULT_PUBLIC_SETTINGS: PublicSettings = {
   ],
   "features.voice_instructions": true,
   "features.organizations": false,
+  // Modifications désactivées pour le moment ; conservation 24 h maximum ; connexion par mot de passe réservée au compte App Review.
+  "features.revisions": false,
+  "features.password_login": false,
+  "retention.raw_hours": 24,
+  "retention.renders_hours": 24,
+  "legal.terms_version": "2026-10-06",
+  "legal.ai_consent_version": "2026-10-06",
+  "legal.ai_providers": ["Anthropic", "Deepgram", "Google"],
+  "features.third_party_ai": true,
 };
 
 /**

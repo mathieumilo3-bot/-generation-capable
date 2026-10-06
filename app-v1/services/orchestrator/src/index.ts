@@ -3,6 +3,7 @@ import { createHttpEngineClient } from "@app/video-engine";
 import { SupabaseBlobs } from "./blobs.ts";
 import { loadConfig } from "./config.ts";
 import { sendPendingEmails } from "./mail-loop.ts";
+import { runRetention } from "./retention.ts";
 import { Orchestrator, consoleLog } from "./orchestrator.ts";
 import { SupabaseStore } from "./store.ts";
 
@@ -27,12 +28,10 @@ if (cfg.CRON_SECRET) {
 }
 if (cfg.RESEND_API_KEY && cfg.EMAIL_FROM) {
   extras.push({ name: "emails", everyMs: 15_000, run: () => sendPendingEmails(store, {
-    mailer: { apiKey: cfg.RESEND_API_KEY!, from: cfg.EMAIL_FROM! }, brand: cfg.PRODUCT_NAME, supportEmail: cfg.SUPPORT_EMAIL, webUrl: cfg.APP_WEB_URL, log: consoleLog,
+    mailer: { apiKey: cfg.RESEND_API_KEY!, from: cfg.EMAIL_FROM! }, brand: cfg.PRODUCT_NAME, retentionHours: cfg.RETENTION_HOURS, supportEmail: cfg.SUPPORT_EMAIL, webUrl: cfg.APP_WEB_URL, log: consoleLog,
   }) });
 } else consoleLog("warn", "e-mails transactionnels désactivés (RESEND_API_KEY / EMAIL_FROM absents)");
-extras.push({ name: "purge", everyMs: 10 * 60_000, run: async () => {
-  for (const a of await store.assetsToPurge(100)) { await blobs.remove(a.bucket, a.path).catch(() => undefined); await store.assetPurged(a.asset_id); }
-} });
+extras.push({ name: "retention", everyMs: 5 * 60_000, run: () => runRetention(store, blobs, { log: consoleLog }) });
 
 const orch = new Orchestrator({ store, engine, blobs, cfg, extras });
 await orch.start();

@@ -107,6 +107,7 @@ supabase functions deploy stripe-webhook create-topup-checkout create-card-setup
 | `VIDEO_EDITOR_STORAGE_ROOT` | volume persistant (`/data`) | Fichiers + base SQLite du moteur |
 | `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`, `GOOGLE_API_KEY` | consoles respectives | **Qualité de montage** : sans elles le moteur tourne en mode déterministe honnête (pas de sous-titres parlés, sélection éditoriale simplifiée) |
 | `ENGINE_DURATION_TARGET_RATIO` (0,9), `ENGINE_MAX_INPUT_BYTES` | optionnels | Cible de durée dans le palier payé, taille max par fichier |
+| `ENGINE_RETENTION_HOURS` (24) | optionnel | Balayage de secours : tout fichier du moteur plus vieux que cette durée est supprimé (la suppression normale a lieu dès la livraison) |
 
 Ne **jamais** exposer l'UI historique du moteur (cookie utilisateur non authentifié) sur Internet : placez le moteur sur un réseau privé ou derrière un pare-feu n'autorisant que l'orchestrateur.
 
@@ -123,14 +124,20 @@ Voir `services/orchestrator/.env.example`. `ENGINE_URL` + `ENGINE_TOKEN` (= `ENG
 
 `npm i -g eas-cli && eas login && cd apps/client && eas init` → `EAS_PROJECT_ID`. Variables par environnement : `eas env:create --environment production --name EXPO_PUBLIC_SUPABASE_URL …` (idem publishable key, `APP_*`). Identifiants iOS/Android : `eas credentials`. Builds : `eas build -p ios|android --profile development|staging|production`. Soumission : renseigner `submit.production.ios.ascAppId` dans `eas.json`. Les icônes/splash de `assets/` sont des **placeholders** à remplacer.
 
-## 10. Décisions business à valider (valeurs provisoires, toutes modifiables sans republier)
+## 10. Décisions déjà prises (modifiables sans republier l'app)
 
 | Sujet | Valeur actuelle | Où la changer |
 |---|---|---|
-| Prix d'une modification | **1,21 €** (placeholder) | Back-office → Tarifs (`pricing_rules`, mode `revision`) |
-| Durée de conservation rushs / rendus | **illimitée** (`null`) | `app_settings.retention.*_days` (aucune purge automatique tant qu'elle n'est pas décidée) |
-| Création autonome (« Créez tout pour moi ») | **masquée** : le moteur n'a pas de génération vidéo (`autonomous_creation=false`) | s'active toute seule quand la passerelle publie la capacité ; prix 2,90 € / 5,80 € déjà en base |
-| Recharge iOS/Android | packs fixes 10/20/50/100 €, **sans** auto-recharge ni montant libre | `payments.providers`, `payments.store_packs` ; **voir `docs/STORE_PAYMENT_POLICY.md` : à valider avec App Review** |
-| Statut juridique du solde prépayé, TVA, droit de rétractation | non tranché | **juriste + comptable** avant ouverture au public |
-| Textes légaux | modèles factuels dans `web-public/` | **juriste** |
-| Nom de marque, logo, icônes | « Montage », placeholders | `app_settings.product.name`, `assets/`, `APP_NAME` |
+| **Conservation des fichiers et vidéos** | **24 h maximum** (fichiers envoyés : 24 h après envoi ; vidéos et miniatures : 24 h après création ; avertissement 3 h avant) | `app_settings.retention.raw_hours` / `retention.renders_hours` (+ `ENGINE_RETENTION_HOURS` côté moteur, + texte juridique `web-public/legal.config.json → retention`) |
+| **Modifications de vidéo** | **non proposées** (masquées dans l'app, refusées par le serveur : `revisions_disabled`) | `app_settings.features.revisions` = true pour les réactiver (code, prix 1,21 € provisoire et moteur déjà prêts ; mettre `ENGINE_PURGE_AFTER_DELIVERY=false` sur l'orchestrateur et tenir compte de la conservation 24 h) |
+| Création autonome (« Créez tout pour moi ») | masquée : le moteur ne génère pas de vidéo | s'active seule quand la passerelle publie la capacité |
+| IA tierces | consentement explicite avant chaque premier montage (Apple 5.1.2(i)) | `features.third_party_ai`, `legal.ai_providers`, `legal.ai_consent_version` |
+| Recharge iOS/Android | packs fixes 10/20/50/100 €, sans auto-recharge ni montant libre | `payments.providers`, `payments.store_packs` ; `docs/STORE_PAYMENT_POLICY.md` |
+| Connexion par mot de passe | désactivée (réservée au compte de relecture) | `features.password_login` |
+
+## 11. Ce que seul le propriétaire peut fournir (rien ne peut être inventé)
+
+1. **Identité légale** : `web-public/legal.config.json` (dénomination, forme, capital, adresse, SIREN/RCS, TVA, directeur de la publication, contact, DPO, médiateur de la consommation) puis `npm run legal:build`. Les textes juridiques (mentions, CGU, CGV avec rétractation et renonciation, confidentialité RGPD, cookies) sont **rédigés** ; ils doivent seulement être relus par un juriste. Statut TVA / fiscalité du solde prépayé : **expert-comptable**.
+2. Comptes et clés : Supabase (§1), Stripe (§2), Apple (§3, + `docs/IOS_SUBMISSION.md`), Google (§4), Resend (§5), hébergement du moteur et de l'orchestrateur (§6-7), domaine (§8), EAS (§9).
+3. Nom de marque définitif, logo, icônes (`apps/client/assets/`), textes de fiche (`apps/client/store.config.json`).
+4. Validation finale : `npm run release:check` (liste tout placeholder restant).

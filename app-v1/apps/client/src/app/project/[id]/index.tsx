@@ -12,11 +12,15 @@ import { BackButton } from "@/features/common/BackButton";
 import { ErrorNotice, codeOfThrown, errorFromCode } from "@/features/common/ErrorView";
 import { RequireAuth } from "@/features/common/RequireAuth";
 import { href } from "@/features/common/nav";
+import { useNow } from "@/features/common/hooks";
 import { projectTitle } from "@/features/projects/logic";
 import { downloadVideo, shareVideo } from "@/features/result/actions";
 import { ProjectMenu } from "@/features/result/ProjectMenu";
 import { JobProgressCard, RushList, VersionList } from "@/features/result/Panels";
-import { activeJobOf, downloadFileName, failedJobOf, pickInitialVersion, playerAspect, versionLabel } from "@/features/result/logic";
+import { ExpiryBanner } from "@/features/result/ExpiryBanner";
+import { canOfferRevision, revisionsEnabled, showVersionList } from "@/features/result/flags";
+import { activeJobOf, downloadFileName, failedJobOf, playerAspect, resolveVersion, versionLabel } from "@/features/result/logic";
+import { EXPIRED_TITLE, expiredBody, expiryBannerText, retentionHours, versionAvailability } from "@/features/retention/logic";
 
 type Flash = { tone: "success" | "error"; text: string } | null;
 
@@ -28,7 +32,8 @@ function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const projectId = typeof id === "string" ? id : "";
   const router = useRouter();
-  const { capabilities } = useConfig();
+  const { capabilities, settings } = useConfig();
+  const now = useNow();
   const { width, height } = useWindowDimensions();
 
   const q = useQuery({
@@ -52,13 +57,13 @@ function ProjectScreen() {
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
 
   const data = q.data;
-  const version = useMemo(() => {
-    if (!data) return null;
-    const chosen = data.versions.find((v) => v.id === selectedId && v.status === "ready" && v.render_path);
-    return chosen ?? pickInitialVersion(data.project, data.versions);
-  }, [data, selectedId]);
+  // Version affichée : lisible d'abord ; sinon, s'il n'en reste qu'une supprimée (conservation limitée), l'état « n'est plus disponible ».
+  const resolved = useMemo(() => (data ? resolveVersion(data.project, data.versions, selectedId, now) : null), [data, selectedId, now]);
+  const version = resolved?.version ?? null;
+  const expired = resolved?.expired ?? false;
 
-  const renderPath = version?.render_path ?? null;
+  // Aucune URL signée pour une vidéo supprimée.
+  const renderPath = expired ? null : version?.render_path ?? null;
   const urlQ = useQuery({
     queryKey: ["render-url", version?.id, renderPath],
     enabled: !!renderPath,
@@ -119,14 +124,17 @@ function ProjectScreen() {
   const aspect = playerAspect(version);
   const available = Math.min(width, 560) - 40;
   const playerWidth = Math.max(160, Math.min(available, height * 0.6 * aspect));
-  const canRevise = capabilities.revisions.enabled && !!version && !activeJob;
+  const revisionsOn = revisionsEnabled(settings);
+  const canRevise = canOfferRevision({ settingEnabled: revisionsOn, engineEnabled: capabilities.revisions.enabled, hasPlayableVersion: !!version && !expired, hasActiveJob: !!activeJob });
+  const availability = version && !expired ? versionAvailability(version, now) : null;
+  const expiring = availability === "expiring";
   const fileName = downloadFileName(project.title, version?.version_number ?? 1);
 
   return (
     <Screen>
-      {header(project, versions.length > 0 && version ? version.version_number : null, <ProjectMenu project={project} versionId={version?.id} onMessage={show} />)}
+      {header(project, revisionsOn && versions.length > 0 && version ? version.version_number : null, <ProjectMenu project={project} versionId={version?.id} onMessage={show} />)}
 
-      {version ? (
+      {version && !expired ? (
         <View style={{ alignItems: "center" }}>
           <VideoPlayer key={version.id} uri={urlQ.data ?? null} aspectRatio={aspect} width={playerWidth}
             onRetry={() => void urlQ.refetch()}
@@ -134,6 +142,9 @@ function ProjectScreen() {
         </View>
       ) : activeJob ? (
         <JobProgressCard job={activeJob} onOpen={() => router.push(href(`/processing/${activeJob.id}`))} />
+      ) : expired ? (
+        <EmptyState icon="time-outline" title={EXPIRED_TITLE} body={expiredBody(retentionHours(settings).renders)}
+          actionLabel="Créer une nouvelle vidéo" onAction={() => router.push(href("/create"))} />
       ) : failedJob ? (
         <Notice tone="error" icon="alert-circle-outline" title={errorFromCode(failedJob.error_code).title}
           body="Aucun montant n'a été prélevé. Vous pouvez relancer une création ou nous signaler le problème." actionLabel="Créer une vidéo" onAction={() => router.push(href("/create"))} />
@@ -141,10 +152,12 @@ function ProjectScreen() {
         <EmptyState icon="film-outline" title="Cette vidéo n'est pas encore disponible." body="Dès qu'elle sera prête, elle apparaîtra ici." />
       )}
 
-      {version && activeJob ? (
+      {version && !expired && activeJob ? (
         <Notice tone="neutral" icon="hourglass-outline" title="Une nouvelle version est en cours de création." body="Vous serez prévenu dès qu'elle sera prête."
           actionLabel="Voir l'avancement" onAction={() => router.push(href(`/processing/${activeJob.id}`))} />
       ) : null}
+
+      {renderPath && version?.expires_at ? <ExpiryBanner text={expiryBannerText(version.expires_at, now)} warning={expiring} /> : null}
 
       {flash ? <Notice tone={flash.tone === "success" ? "success" : "error"} icon={flash.tone === "success" ? "checkmark-circle-outline" : "alert-circle-outline"} title={flash.text} /> : null}
 
@@ -155,7 +168,7 @@ function ProjectScreen() {
             onPress={() => { analytics.track("video_downloaded", { project_id: project.id, version_id: version.id }); void run("download", () => downloadVideo(renderPath, fileName)); }} />
           <View style={{ flexDirection: "row", gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <Button label="Partager" variant="secondary" loading={busy === "share"} disabled={busy === "download"}
+              <Button label="Partager" variant={expiring ? "ghost" : "secondary"} loading={busy === "share"} disabled={busy === "download"}
                 icon={<Ionicons name="share-outline" size={22} color={colors.text} />}
                 onPress={() => void run("share", () => shareVideo(renderPath, fileName, projectTitle(project)))} />
             </View>
@@ -170,7 +183,7 @@ function ProjectScreen() {
         </View>
       ) : null}
 
-      {versions.length > 1 ? <VersionList versions={versions} selectedId={version?.id ?? null} onSelect={(v) => { haptics.tap(); setSelectedId(v.id); show(null); }} /> : null}
+      {showVersionList(revisionsOn, versions.length) ? <VersionList versions={versions} selectedId={version?.id ?? null} onSelect={(v) => { haptics.tap(); setSelectedId(v.id); show(null); }} /> : null}
       <RushList assets={assets} />
     </Screen>
   );

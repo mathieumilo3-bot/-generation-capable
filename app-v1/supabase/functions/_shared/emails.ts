@@ -12,6 +12,8 @@ export interface EmailVars {
   amountLabel?: string | null;
   receiptUrl?: string | null;
   inviterName?: string | null;
+  /** Durée de conservation des vidéos (heures) : rappelée dans les e-mails de livraison. */
+  retentionHours?: number;
 }
 
 export interface RenderedEmail { subject: string; html: string; text: string }
@@ -27,9 +29,9 @@ function content(kind: EmailKind, v: EmailVars): Content {
     case "welcome":
       return { subject: `Bienvenue sur ${v.brand}`, title: "Bienvenue", paragraphs: [hello, "Votre compte est prêt. Envoyez vos vidéos, choisissez la durée : nous nous occupons du montage.", "Vous retrouverez toujours votre travail et votre solde dans l'application."], cta: "Créer ma première vidéo" };
     case "video_ready":
-      return { subject: "Votre vidéo est prête", title: "Votre vidéo est prête", paragraphs: [hello, "Le montage est terminé. Vous pouvez la regarder, la télécharger ou demander une modification."], cta: "Voir ma vidéo" };
+      return { subject: "Votre vidéo est prête", title: "Votre vidéo est prête", paragraphs: [hello, "Le montage est terminé. Vous pouvez la regarder et la télécharger.", v.retentionHours ? `Pour votre confidentialité, elle est supprimée ${v.retentionHours} h après sa création : pensez à la télécharger.` : ""].filter(Boolean), cta: "Voir ma vidéo" };
     case "revision_ready":
-      return { subject: "Votre nouvelle version est prête", title: "Votre nouvelle version est prête", paragraphs: [hello, "La version modifiée est disponible. La précédente est conservée."], cta: "Voir la nouvelle version" };
+      return { subject: "Votre nouvelle version est prête", title: "Votre nouvelle version est prête", paragraphs: [hello, "La version modifiée est disponible.", v.retentionHours ? `Elle est supprimée ${v.retentionHours} h après sa création : pensez à la télécharger.` : ""].filter(Boolean), cta: "Voir la nouvelle version" };
     case "job_failed":
       return { subject: "Votre rendu n'a pas pu être terminé", title: "Votre rendu n'a pas pu être terminé", paragraphs: [hello, "Nous n'avons pas pu terminer votre vidéo. Aucun montant n'a été prélevé : la somme réservée a été libérée.", "Vous pouvez relancer la création ou contacter notre support depuis l'application."], cta: "Ouvrir l'application" };
     case "topup_done":

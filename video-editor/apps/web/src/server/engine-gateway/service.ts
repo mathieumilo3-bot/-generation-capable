@@ -1,6 +1,6 @@
 import { execFile, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { probe } from "@video-editor/render/dist/ffmpeg.js";
@@ -62,6 +62,7 @@ export class GatewayError extends Error {
 
 // ── Soumission ──────────────────────────────────────────────────────────
 export function submit(req: GatewayJobRequest): { engineJobId: string } {
+  ensureSweeper();
   if (!KNOWN_PRESETS.includes(req.presetId)) throw new GatewayError(422, "unknown_preset");
   if (req.aspectRatio !== "9:16") throw new GatewayError(422, "aspect_ratio_unsupported");
   const attempt = Math.max(1, req.attempt ?? 1);
@@ -188,6 +189,7 @@ export async function status(engineJobId: string): Promise<GatewayStatus | null>
   const db = getDb();
   const costs = () => ({ entries: db.listCostByProject(link.projectId).map((c) => ({ provider: c.provider, callType: c.callType, costMicroUsd: c.costMicroUsd, isStub: c.isStub })) });
 
+  if (link.state === "purged") return { ...base, state: "succeeded", stage: null, progress: 100 };   // fichiers supprimés (conservation) : le résultat a déjà été livré
   if (link.state === "failed") return { ...base, state: "failed", stage: null, progress: 0, error: { code: link.errorCode ?? "engine_failed", message: link.errorMessage ?? "échec", retryable: link.retryable } };
   if (link.state === "cancelled") return { ...base, state: "cancelled", stage: null, progress: 0 };
 
@@ -259,3 +261,42 @@ export async function thumbnailFile(engineJobId: string): Promise<string | null>
   return out;
 }
 void readFile; void writeFile;
+
+
+// ── Conservation : suppression des fichiers du moteur ───────────────────
+const RETENTION_HOURS = Number(process.env.ENGINE_RETENTION_HOURS ?? "24");
+
+/** Supprime tous les fichiers du projet moteur lié à ce job (rushs téléchargés, intermédiaires, rendus). Idempotent. */
+export async function purge(engineJobId: string): Promise<boolean> {
+  const link = links.byEngine(engineJobId);
+  if (!link) return false;
+  if (link.state === "queued" || link.state === "running") throw new GatewayError(409, "job_active");
+  await rm(join(resolveStorageRoot(), link.projectId), { recursive: true, force: true });
+  if (link.state === "succeeded" || link.state === "failed" || link.state === "cancelled") {
+    links.update(link.externalJobId, { state: link.state === "succeeded" ? "purged" : link.state });
+  }
+  return true;
+}
+
+/** Filet de sécurité : tout job de l'app plus vieux que la durée de conservation est purgé, même si l'orchestrateur n'a pas pu le faire. */
+export async function sweepExpired(now = Date.now()): Promise<number> {
+  let n = 0;
+  for (const l of links.all()) {
+    if (l.state === "queued" || l.state === "running" || runners().has(l.externalJobId)) continue;
+    if (now - new Date(l.createdAt).getTime() < RETENTION_HOURS * 3600_000) continue;
+    const dir = join(resolveStorageRoot(), l.projectId);
+    if (!existsSync(dir)) continue;
+    await rm(dir, { recursive: true, force: true });
+    if (l.state === "succeeded") links.update(l.externalJobId, { state: "purged" });
+    n++;
+  }
+  return n;
+}
+
+declare global { var __gatewaySweeper: ReturnType<typeof setInterval> | undefined }
+export function ensureSweeper(): void {
+  if (globalThis.__gatewaySweeper) return;
+  void sweepExpired().catch(() => undefined);
+  globalThis.__gatewaySweeper = setInterval(() => { void sweepExpired().catch(() => undefined); }, 10 * 60_000);
+  globalThis.__gatewaySweeper.unref?.();
+}

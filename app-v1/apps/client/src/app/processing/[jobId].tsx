@@ -14,10 +14,12 @@ import { ErrorNotice, codeOfThrown, errorFromCode } from "@/features/common/Erro
 import { RequireAuth } from "@/features/common/RequireAuth";
 import { href } from "@/features/common/nav";
 import { ReportSheet } from "@/features/processing/ReportSheet";
+import { useConfig } from "@/providers/ConfigProvider";
+import { readyDownloadMessage, retentionHours } from "@/features/retention/logic";
 import { jobPollInterval, percentLabel, progressValue, titleForJob } from "@/features/processing/logic";
 import { dismissPushOffer, requestPushPermission, shouldOfferPush } from "@/lib/push";
 
-const AUTO_OPEN_DELAY_MS = 900;
+const AUTO_OPEN_DELAY_MS = 2_500; // laisse lire « téléchargez-la dans les N h » avant d'ouvrir la vidéo
 
 export default function ProcessingRoute() {
   return <RequireAuth><ProcessingScreen /></RequireAuth>;
@@ -29,6 +31,7 @@ function ProcessingScreen() {
   const router = useRouter();
   const qc = useQueryClient();
   const uid = useUserId();
+  const { settings } = useConfig();
 
   // Realtime met ce cache à jour (useLiveSync) ; le polling prend le relais si le temps réel est coupé.
   const jobQ = useQuery({
@@ -169,7 +172,7 @@ function ProcessingScreen() {
         </>
       ) : job.status === "completed" ? (
         <View style={{ gap: spacing.lg }}>
-          <Notice tone="success" icon="checkmark-circle-outline" title="Votre vidéo est prête." body="Nous vous l'ouvrons dans un instant." />
+          <Notice tone="success" icon="checkmark-circle-outline" title={readyDownloadMessage(retentionHours(settings).renders)} body="Nous vous l'ouvrons dans un instant." />
           <Button label="Voir ma vidéo" onPress={() => router.replace(href(`/project/${job.project_id}`))} />
         </View>
       ) : job.status === "failed" ? (

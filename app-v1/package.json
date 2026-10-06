@@ -21,7 +21,11 @@
     "client": "npm run start -w @app/client",
     "client:web": "npm run web -w @app/client",
     "admin": "npm run dev -w @app/admin",
-    "orchestrator": "npm run start -w @app/orchestrator"
+    "orchestrator": "npm run start -w @app/orchestrator",
+    "legal:build": "node web-public/build.mjs",
+    "legal:check": "node web-public/build.mjs --check",
+    "release:check": "node scripts/check-release-ready.mjs",
+    "review-account": "node scripts/create-review-account.mjs"
   },
   "devDependencies": {
     "typescript": "~6.0.3",

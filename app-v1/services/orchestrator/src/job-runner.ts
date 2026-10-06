@@ -16,7 +16,7 @@ export interface RunnerDeps {
   store: Store;
   engine: EngineClient;
   blobs: BlobStore;
-  cfg: Pick<OrchestratorConfig, "STATUS_POLL_MS" | "LEASE_SECONDS" | "JOB_TIMEOUT_MS" | "ENGINE_FLAKY_TOLERANCE" | "ASSET_URL_TTL_SECONDS" | "USD_EUR" | "RENDER_COST_MICRO_EUR_PER_SEC" | "STORAGE_COST_MICRO_EUR_PER_GB_MONTH">;
+  cfg: Pick<OrchestratorConfig, "ENGINE_PURGE_AFTER_DELIVERY" | "STATUS_POLL_MS" | "LEASE_SECONDS" | "JOB_TIMEOUT_MS" | "ENGINE_FLAKY_TOLERANCE" | "ASSET_URL_TTL_SECONDS" | "USD_EUR" | "RENDER_COST_MICRO_EUR_PER_SEC" | "STORAGE_COST_MICRO_EUR_PER_GB_MONTH">;
   /** Commandes de révision supportées par le moteur (capacités synchronisées). */
   revisionCommands: () => string[];
   sleep?: (ms: number) => Promise<void>;
@@ -108,9 +108,14 @@ export async function runJob(job: ClaimedJob, d: RunnerDeps): Promise<RunOutcome
     }
 
     if (status.state === "succeeded") break;
-    if (status.state === "failed") return fail(status.error?.code ?? "engine_failed", status.error?.message ?? "échec moteur", status.error?.retryable ?? false);
+    if (status.state === "failed") {
+      const out = await fail(status.error?.code ?? "engine_failed", status.error?.message ?? "échec moteur", status.error?.retryable ?? false);
+      if (out === "failed") await engine.purge(engineJobId).catch(() => undefined);
+      return out;
+    }
     if (status.state === "cancelled") {
       await store.cancelled(job.job_id);
+      await engine.purge(engineJobId).catch(() => undefined);
       return "cancelled";
     }
 
@@ -122,6 +127,7 @@ export async function runJob(job: ClaimedJob, d: RunnerDeps): Promise<RunOutcome
     if (p.cancel_requested) {
       await engine.cancel(engineJobId).catch(() => undefined);
       await store.cancelled(job.job_id);
+      await engine.purge(engineJobId).catch(() => undefined);
       await ev("info", "cancel", "Annulation confirmée, montant libéré");
       return "cancelled";
     }
@@ -158,6 +164,8 @@ export async function runJob(job: ClaimedJob, d: RunnerDeps): Promise<RunOutcome
     const r = status.result ?? { durationSec: 0, width: 0, height: 0, sizeBytes: size };
     await store.complete({ jobId: job.job_id, renderPath, thumbnailPath: thumbPath, durationSec: r.durationSec, width: r.width, height: r.height, sizeBytes: size });
     log("info", "job livré", { job: job.job_id, size });
+    // Conservation minimale : le moteur n'a plus aucune raison de garder les rushs ni le rendu (livrés au Storage privé).
+    if (d.cfg.ENGINE_PURGE_AFTER_DELIVERY) await engine.purge(engineJobId).catch((e: Error) => log("warn", "purge moteur différée (balayage automatique)", { error: e.message }));
     return "completed";
   } catch (e) {
     return fail("delivery_failed", (e as Error).message, true);

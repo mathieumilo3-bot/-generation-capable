@@ -59,15 +59,27 @@ describe("aide", () => {
     expect(canSendSupport("Ma vidéo ne se lit pas")).toBe(true);
   });
   it("FAQ : prix issus des règles chargées, jamais inventés", () => {
-    const withPrices = buildFaq({ minPriceCents: 242, maxPriceCents: 950, supportEmail: "s@x.fr" });
+    const withPrices = buildFaq({ minPriceCents: 242, maxPriceCents: 950, supportEmail: "s@x.fr", retention: { raw: 12, renders: 12 }, revisionsEnabled: true });
     const price = withPrices.find((f) => f.id === "price")!;
     const ans = price.answer.replace(/\u00a0/g, " ");
     expect(ans).toContain("2,42 €");
     expect(ans).toContain("9,50 €");
-    const without = buildFaq({ minPriceCents: null, maxPriceCents: null, supportEmail: "s@x.fr" });
+    const without = buildFaq({ minPriceCents: null, maxPriceCents: null, supportEmail: "s@x.fr", retention: { raw: 12, renders: 12 }, revisionsEnabled: true });
     expect(without.find((f) => f.id === "price")!.answer).not.toMatch(/€/);
     expect(without.map((f) => f.id)).toEqual(expect.arrayContaining(["duration", "price", "failure", "revisions", "data"]));
     expect(without.some((f) => /bout en bout/i.test(f.answer))).toBe(false);
+  });
+  it("FAQ : modifications cachées si le réglage est faux ; conservation toujours expliquée avec les heures du réglage", () => {
+    const off = buildFaq({ minPriceCents: null, maxPriceCents: null, supportEmail: "s@x.fr", retention: { raw: 12, renders: 36 }, revisionsEnabled: false });
+    expect(off.some((f) => f.id === "revisions")).toBe(false);
+    expect(off.some((f) => /modifier ma vidéo|Modifier »|nouvelle version/i.test(f.question + f.answer))).toBe(false);
+    const ret = off.find((f) => f.id === "retention")!;
+    expect(ret.question).toBe("Combien de temps mes fichiers sont-ils conservés ?");
+    expect(ret.answer).toContain("12 h");
+    expect(ret.answer).toContain("36 h");
+    expect(ret.answer).toMatch(/justificatifs de paiement/);
+    const dflt = buildFaq({ minPriceCents: null, maxPriceCents: null, supportEmail: "s@x.fr", retention: { raw: 12, renders: 12 } });
+    expect(dflt.some((f) => f.id === "revisions")).toBe(false);
   });
 });
 

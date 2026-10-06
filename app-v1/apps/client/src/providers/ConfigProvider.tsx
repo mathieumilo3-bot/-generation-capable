@@ -8,6 +8,8 @@ import { useAuth } from "./AuthProvider";
 
 interface ConfigValue {
   settings: PublicSettings;
+  /** Vrai une fois les réglages serveur lus (ou en échec : on garde alors les défauts sûrs). Évite d'agir sur des défauts trop tôt. */
+  settingsLoaded: boolean;
   pricing: PricingRule[];
   capabilities: EngineCapabilities;
   methods: EditingMethod[];
@@ -38,6 +40,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     const settings = settingsQ.data ?? DEFAULT_PUBLIC_SETTINGS;
     return {
       settings,
+      settingsLoaded: settingsQ.isSuccess || settingsQ.isError,
       pricing: pricingQ.data ?? [],
       capabilities: capsQ.data ?? FALLBACK_CAPABILITIES,
       methods: methodsQ.data ?? [],

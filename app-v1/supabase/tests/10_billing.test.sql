@@ -1,4 +1,8 @@
 -- Parcours financier complet : topup, hold, capture, release, retry, idempotence.
+-- Les modifications sont désactivées par défaut en production : ce parcours les active pour tester leur logique.
+update public.app_settings set value = 'true' where key = 'features.revisions';
+-- Le consentement IA est exigé par défaut : ces parcours le donnent (voir 60_ai_consent.test.sql pour le refus).
+update public.app_settings set value = 'false' where key = 'features.third_party_ai';
 do $$
 declare
   a uuid; w uuid; pay public.payments; r jsonb; proj uuid; ast jsonb; rule uuid; meth uuid; k int;

@@ -280,6 +280,10 @@ describe("e-mails transactionnels", () => {
     expect(renderEmail("welcome", { ...v, ctaUrl: "javascript:alert(1)" }).html).not.toContain("javascript:");
     expect(renderEmail("welcome", { ...v, ctaUrl: 'https://x.fr/"onmouseover="x' }).html).not.toContain("onmouseover");
   });
+  it("rappelle la conservation limitée dans l'e-mail de livraison", () => {
+    expect(renderEmail("video_ready", { ...v, retentionHours: 24 }).text).toContain("supprimée 24 h après sa création");
+    expect(renderEmail("video_ready", v).text).not.toContain("supprimée");
+  });
   it("rassure sur l'argent en cas d'échec", () => {
     expect(renderEmail("job_failed", v).text).toContain("Aucun montant n'a été prélevé");
     expect(renderEmail("payment_failed", v).text).toContain("Votre solde n'a pas été modifié");

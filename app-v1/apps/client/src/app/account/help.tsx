@@ -9,6 +9,8 @@ import { HumanErrorNotice } from "@/features/shared/HumanErrorNotice";
 import { BackRow } from "@/features/shared/BackRow";
 import { buildFaq } from "@/features/account/faq";
 import { SUPPORT_CATEGORIES, canSendSupport, supportContext, type SupportCategory } from "@/features/account/logic";
+import { retentionHours } from "@/features/retention/logic";
+import { revisionsEnabled } from "@/features/result/flags";
 import { useConfig } from "@/providers/ConfigProvider";
 import { api } from "@/lib/supabase";
 
@@ -35,6 +37,8 @@ function HelpScreen() {
     return buildFaq({
       minPriceCents: prices.length ? Math.min(...prices) : null, maxPriceCents: prices.length ? Math.max(...prices) : null,
       supportEmail: settings["product.support_email"],
+      retention: retentionHours(settings),
+      revisionsEnabled: revisionsEnabled(settings),
     });
   }, [pricing, settings]);
 

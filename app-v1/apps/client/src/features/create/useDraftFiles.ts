@@ -26,6 +26,8 @@ export function useDraftFiles(projectId: string | null | undefined, kinds?: read
   const summary: FilesSummary = useMemo(() => summarizeRows(rows), [rows]);
   return {
     rows, summary, state: uploadsReady(rows), loading: q.isLoading,
+    /** Fichiers du brouillon serveur (source de vérité, y compris ceux supprimés après la durée de conservation). */
+    assets: q.data ?? [],
     uploads,
     refresh: () => qc.invalidateQueries({ queryKey: draftQueryKey(projectId) }),
   };

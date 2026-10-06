@@ -5,12 +5,18 @@ import { loadConfig } from "../src/config.ts";
 import { Orchestrator } from "../src/orchestrator.ts";
 import { PgStore } from "../src/pg-store.ts";
 import { sendPushes } from "../src/push.ts";
+import { runRetention } from "../src/retention.ts";
 import { pgAvailable, startPg, type PgHarness } from "./pg-harness.ts";
 
 const d = pgAvailable ? describe : describe.skip;
 let h: PgHarness;
 let store: PgStore;
-beforeAll(async () => { if (pgAvailable) { h = await startPg(); store = new PgStore(h.pool); } }, 60_000);
+beforeAll(async () => {
+  if (!pgAvailable) return;
+  h = await startPg(); store = new PgStore(h.pool);
+  // Ces scénarios testent l'orchestration ; le consentement IA est couvert par supabase/tests/60_ai_consent.test.sql.
+  await h.pool.query("update public.app_settings set value='false' where key='features.third_party_ai'");
+}, 60_000);
 afterAll(async () => { if (h) await h.stop(); });
 
 const cfg = (over: Record<string, string> = {}) => loadConfig({
@@ -139,10 +145,11 @@ d("orchestrateur ⇄ moteur ⇄ Postgres (schéma réel)", () => {
     expect(await wal(s.wallet)).toEqual({ b: "2640", h: "0" });
   });
 
-  it("révision : texte libre mappé sur les commandes supportées ; non supporté → échec propre, rien prélevé", async () => {
+  it("révision (réglage activé) : texte libre mappé sur les commandes supportées ; non supporté → échec propre, rien prélevé", async () => {
+    await h.pool.query("update public.app_settings set value='true' where key='features.revisions'");
     const s = await scenario(); s.release();
     const engine = new FakeEngine();
-    const { orch } = mk(engine);
+    const { orch } = mk(engine, new MemoryBlobs(), { ENGINE_PURGE_AFTER_DELIVERY: "false" });
     await orch.syncCapabilities();
     await orch.drain();
     const as = async (sql: string, p: unknown[]) => { const c = await h.pool.connect(); try { await c.query(`select set_config('request.jwt.claim.sub','${s.uid}', false)`); return (await c.query(sql, p)).rows[0].r; } finally { c.release(); } };
@@ -160,6 +167,57 @@ d("orchestrateur ⇄ moteur ⇄ Postgres (schéma réel)", () => {
     expect(await jobRow(bad.job_id)).toMatchObject({ status: "failed", error_code: "revision_unsupported" });
     expect(await wal(s.wallet)).toEqual(before);
     expect((await h.pool.query("select status from public.projects where id=$1", [s.proj])).rows[0].status).toBe("ready");   // la version 1 reste lisible
+  });
+
+  it("modifications désactivées par défaut : refusées côté serveur, rien n'est réservé", async () => {
+    await h.pool.query("update public.app_settings set value='false' where key='features.revisions'");
+    const s = await scenario(); s.release();
+    const { orch } = mk(new FakeEngine());
+    await orch.drain();
+    const c = await h.pool.connect();
+    await c.query(`select set_config('request.jwt.claim.sub','${s.uid}', false)`);
+    const ver = (await h.pool.query("select current_version_id v from public.projects where id=$1", [s.proj])).rows[0].v;
+    const r = (await c.query("select public.submit_revision($1,$2,'plus court',$3) as r", [s.proj, ver, "rev-off-" + s.uid])).rows[0].r;
+    c.release();
+    expect(r).toEqual({ ok: false, code: "revisions_disabled" });
+    expect(await wal(s.wallet)).toEqual({ b: "2156", h: "0" });
+  });
+
+  it("conservation : fichiers du moteur purgés après livraison", async () => {
+    const s = await scenario(); s.release();
+    const engine = new FakeEngine();
+    await mk(engine).orch.drain();
+    expect(engine.purged).toHaveLength(1);
+  });
+
+  it("conservation 24 h : vidéo expirée supprimée du Storage et marquée expirée ; objet déjà absent toléré", async () => {
+    const s = await scenario(); s.release();
+    const { orch, blobs } = mk(new FakeEngine());
+    await orch.drain();
+    const path = `renders/${s.uid}/${s.proj}/${s.version}/render.mp4`;
+    expect(blobs.files.has(path)).toBe(true);
+    // Pas encore expirée : rien ne bouge.
+    expect(await runRetention(store, blobs)).toMatchObject({ versions: 0 });
+    expect(blobs.files.has(path)).toBe(true);
+    await h.pool.query("update public.project_versions set expires_at = now() - interval '1 minute' where id=$1", [s.version]);
+    // Un objet déjà supprimé à la main ne doit pas bloquer la purge.
+    const failing = Object.assign(Object.create(blobs), { remove: async (b: string, p: string) => { if (p.endsWith(".jpg")) throw new Error("Object not found"); return blobs.remove(b, p); } });
+    expect(await runRetention(store, failing)).toMatchObject({ versions: 1 });
+    expect(blobs.files.has(path)).toBe(false);
+    const v = (await h.pool.query("select status, render_path from public.project_versions where id=$1", [s.version])).rows[0];
+    expect(v).toEqual({ status: "expired", render_path: null });
+    expect(await runRetention(store, blobs)).toMatchObject({ versions: 0 });                // idempotent
+  });
+
+  it("conservation 24 h : fichiers envoyés trop anciens supprimés, jamais ceux d'un job actif", async () => {
+    const s = await scenario(); s.release();                       // job en file (actif) : ses rushs doivent survivre
+    const blobs = new MemoryBlobs();
+    await h.pool.query("update public.assets set created_at = now() - interval '48 hours' where project_id=$1", [s.proj]);
+    expect(await runRetention(store, blobs)).toMatchObject({ assets: 0 });
+    expect((await h.pool.query("select status from public.assets where project_id=$1", [s.proj])).rows[0].status).toBe("uploaded");
+    await mk(new FakeEngine(), blobs).orch.drain();                // job terminé → plus protégé
+    expect(await runRetention(store, blobs)).toMatchObject({ assets: 1 });
+    expect(blobs.removed.some((x) => x.startsWith("raw/"))).toBe(true);
   });
 
   it("deux orchestrateurs en parallèle ne traitent jamais le même job", async () => {
@@ -203,5 +261,5 @@ d("orchestrateur ⇄ moteur ⇄ Postgres (schéma réel)", () => {
 });
 
 function bind(e: FakeEngine): EngineClient {
-  return { capabilities: () => e.capabilities(), submit: (r) => e.submit(r), status: (i) => e.status(i), cancel: (i) => e.cancel(i), result: () => e.result(), thumbnail: () => e.thumbnail() };
+  return { capabilities: () => e.capabilities(), submit: (r) => e.submit(r), status: (i) => e.status(i), cancel: (i) => e.cancel(i), result: () => e.result(), thumbnail: () => e.thumbnail(), purge: (i) => e.purge(i) };
 }

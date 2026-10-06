@@ -20,6 +20,7 @@ import { RecentGrid } from "@/features/home/RecentGrid";
 import { greetingText, recentProjects, unreadA11y, unreadBadgeLabel, RECENT_COUNT } from "@/features/home/logic";
 import { formatRelativeDate, projectTitle, thumbnailPaths } from "@/features/projects/logic";
 import { useThumbnailUrls } from "@/features/projects/useThumbnailUrls";
+import { useExpiredProjects } from "@/features/projects/useExpiredProjects";
 
 export default function HomeRoute() {
   return <RequireAuth><HomeScreen /></RequireAuth>;
@@ -38,7 +39,8 @@ function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const recentList = useMemo(() => recentProjects(recent.data ?? []), [recent.data]);
-  const { urls, reset } = useThumbnailUrls(useMemo(() => thumbnailPaths(recentList), [recentList]));
+  const expired = useExpiredProjects(recentList);
+  const { urls, reset } = useThumbnailUrls(useMemo(() => thumbnailPaths(recentList, expired), [recentList, expired]));
 
   const refresh = async () => {
     setRefreshing(true);
@@ -108,7 +110,7 @@ function HomeScreen() {
               <Text variant="secondary" style={{ color: colors.accentPressed, fontWeight: "600" }}>Voir tous les projets</Text>
             </Pressable>
           </View>
-          <RecentGrid projects={recentList} thumbs={urls} onOpen={(p) => router.push(href(`/project/${p.id}`))} />
+          <RecentGrid projects={recentList} thumbs={urls} expired={expired} onOpen={(p) => router.push(href(`/project/${p.id}`))} />
         </View>
       ) : recent.isError ? (
         <Notice tone="error" icon="alert-circle-outline" title="Vos vidéos n'ont pas pu être chargées." body="Elles sont en sécurité. Tirez vers le bas pour réessayer." />

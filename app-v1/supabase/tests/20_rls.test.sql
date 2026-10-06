@@ -1,4 +1,5 @@
 -- TEST CRITIQUE : USER A ne doit JAMAIS lire/écrire rush, projet, wallet, rendu de USER B.
+update public.app_settings set value = 'false' where key = 'features.third_party_ai';   -- le consentement IA est testé dans 60_ai_consent
 do $$
 declare
   a uuid; b uuid; wa uuid; wb uuid; proj_a uuid; proj_b uuid; ast jsonb; rule uuid; meth uuid; job_a uuid; r jsonb;

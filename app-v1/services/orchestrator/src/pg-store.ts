@@ -1,5 +1,5 @@
 import pg from "pg";
-import type { ClaimedJob, PendingEmail, PendingPush, PurgeItem, Store } from "./store.ts";
+import type { ClaimedJob, PendingEmail, PendingPush, PurgeItem, Store, VersionPurge } from "./store.ts";
 
 /** Même contrat que SupabaseStore, via une connexion Postgres directe (tests d'intégration, déploiement auto-hébergé). */
 export class PgStore implements Store {
@@ -34,4 +34,8 @@ export class PgStore implements Store {
   async markEmailSent(kind: string, ref: string) { await this.pool.query("select public.svc_mark_email_sent($1,$2)", [kind, ref]); }
   assetsToPurge(limit: number) { return this.rows<PurgeItem>("select * from public.svc_assets_to_purge($1)", [limit]); }
   async assetPurged(id: string) { await this.pool.query("select public.svc_asset_purged($1)", [id]); }
+  expireContent() { return this.one<{ assets_marked: number }>("select public.svc_expire_content() as v"); }
+  versionsToPurge(limit: number) { return this.rows<VersionPurge>("select * from public.svc_versions_to_purge($1)", [limit]); }
+  async versionPurged(id: string) { await this.pool.query("select public.svc_version_purged($1)", [id]); }
+  async notifyExpiring(h: number) { return Number(await this.one<number>("select public.svc_notify_expiring($1) as v", [h])); }
 }

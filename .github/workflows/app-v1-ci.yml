@@ -20,6 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run legal:check          # pages juridiques générées = configuration
       - run: npm test
         env: { PGBIN: /usr/lib/postgresql/16/bin }       # active les tests d'intégration orchestrateur ⇄ Postgres
 

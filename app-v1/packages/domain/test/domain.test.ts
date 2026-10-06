@@ -240,3 +240,18 @@ describe("révisions (§23)", () => {
     expect(planRevision("plus rapide mais plus lent", sup).commands).toHaveLength(1);
   });
 });
+
+import { formatExpiry, isExpired } from "../src/format";
+describe("conservation 24 h", () => {
+  it("formate l'échéance en langage humain", () => {
+    const now = new Date(2026, 9, 6, 10, 0);
+    expect(formatExpiry(new Date(2026, 9, 6, 18, 5).toISOString(), now)).toBe("aujourd'hui 18 h 05");
+    expect(formatExpiry(new Date(2026, 9, 7, 9, 30).toISOString(), now)).toBe("demain 9 h 30");
+  });
+  it("une vidéo expirée n'est plus disponible", () => {
+    const now = new Date(2026, 9, 6, 10, 0);
+    expect(isExpired({ status: "ready", expires_at: new Date(2026, 9, 6, 9, 0).toISOString() }, now)).toBe(true);
+    expect(isExpired({ status: "expired" }, now)).toBe(true);
+    expect(isExpired({ status: "ready", expires_at: new Date(2026, 9, 6, 11, 0).toISOString() }, now)).toBe(false);
+  });
+});

@@ -1,0 +1,2 @@
+{ "name": "web-public", "private": true, "version": "1.0.0", "type": "module",
+  "scripts": { "legal:build": "node build.mjs", "legal:strict": "node build.mjs --strict", "legal:check": "node build.mjs --check" } }

@@ -58,6 +58,8 @@ export interface EngineClient {
   /** Flux du MP4 final. */
   result(engineJobId: string): Promise<{ stream: ReadableStream<Uint8Array>; size: number }>;
   thumbnail(engineJobId: string): Promise<Uint8Array>;
+  /** Supprime TOUS les fichiers du job côté moteur (rushs téléchargés, intermédiaires, rendus). Idempotent. */
+  purge(engineJobId: string): Promise<void>;
 }
 
 export class EngineError extends Error {
@@ -97,6 +99,7 @@ export function createHttpEngineClient(o: { baseUrl: string; token: string; fetc
       return { stream: res.body, size: Number(res.headers.get("content-length") ?? 0) };
     },
     thumbnail: async (id) => new Uint8Array(await (await req(`/jobs/${encodeURIComponent(id)}/thumbnail`)).arrayBuffer()),
+    purge: async (id) => { await req(`/jobs/${encodeURIComponent(id)}`, { method: "DELETE" }); },
   };
 }
 

@@ -73,6 +73,8 @@ try {
   }
   const rule = (await q("select id from public.pricing_rules where mode='edit_rushes' and bucket_key='lt_30s'")).rows[0].id;
   const meth = (await q("select id from public.editing_methods where slug='automatique'")).rows[0].id;
+  await q("update public.app_settings set value='true' where key='features.revisions'");
+  await q("update public.app_settings set value='false' where key='features.third_party_ai'");
   const sub = (await c.query("select public.submit_video_job($1,$2,$3,'9:16','Rythme dynamique, pub produit',$4) as r", [proj, rule, meth, "e2e-key-" + uid])).rows[0].r;
   assert(sub.ok && sub.price_cents === 242, "job créé au prix serveur 2,42 €");
   const job = sub.job_id as string;
@@ -82,7 +84,7 @@ try {
   const blobs = new MemoryBlobs();
   blobs.signedDownloadUrl = async (_b, p) => `http://127.0.0.1:${FILES}/${p.split("/").pop()!}`;
   const cfg = loadConfig({ SUPABASE_URL: "https://x.supabase.co", SB_SECRET_KEY: "sb_secret_xxxxxxxxxxxxxx", ENGINE_URL: `http://127.0.0.1:${GW}`, ENGINE_TOKEN: TOKEN,
-    STATUS_POLL_MS: "2000", JOB_TIMEOUT_MS: String(25 * 60_000), LEASE_SECONDS: "900" });
+    STATUS_POLL_MS: "2000", ENGINE_PURGE_AFTER_DELIVERY: "false", JOB_TIMEOUT_MS: String(25 * 60_000), LEASE_SECONDS: "900" });
   const orch = new Orchestrator({ store, engine, blobs, cfg, log: (l, m, d) => { if (l !== "info") log(`[orch:${l}]`, m, JSON.stringify(d ?? {})); } });
   await orch.syncCapabilities();
   let lastP = -1;

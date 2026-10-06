@@ -13,6 +13,7 @@ import { useDebounced } from "@/features/common/hooks";
 import { href } from "@/features/common/nav";
 import { PAGE_SIZE, PROJECT_FILTERS, SEARCH_DEBOUNCE_MS, columnsForWidth, nextCursor, padGrid, thumbnailPaths, type ProjectFilter } from "@/features/projects/logic";
 import { useThumbnailUrls } from "@/features/projects/useThumbnailUrls";
+import { useExpiredProjects } from "@/features/projects/useExpiredProjects";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const MAX_WIDTH = 720;
@@ -39,7 +40,8 @@ function ProjectsScreen() {
   });
 
   const items = useMemo(() => q.data?.pages.flat() ?? [], [q.data]);
-  const { urls, reset } = useThumbnailUrls(useMemo(() => thumbnailPaths(items), [items]));
+  const expired = useExpiredProjects(items);
+  const { urls, reset } = useThumbnailUrls(useMemo(() => thumbnailPaths(items, expired), [items, expired]));
   const data = useMemo(() => padGrid(items, columns), [items, columns]);
 
   const refresh = useCallback(() => { reset(); void q.refetch(); }, [q, reset]);
@@ -96,7 +98,7 @@ function ProjectsScreen() {
         keyExtractor={(p, i) => p?.id ?? `s${i}`}
         renderItem={({ item }) => item ? (
           <View style={styles.cell}>
-            <ProjectCard project={item} thumbnailUrl={item.thumbnail_path ? urls[item.thumbnail_path] : null} onPress={() => open(item)} />
+            <ProjectCard project={item} expired={expired.has(item.id)} thumbnailUrl={item.thumbnail_path ? urls[item.thumbnail_path] : null} onPress={() => open(item)} />
           </View>
         ) : <View style={styles.cell} />}
         columnWrapperStyle={{ gap: spacing.md }}

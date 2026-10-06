@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { REVISION_COMMAND_LABEL, formatEuros, humanizeError, newIdempotencyKey, planRevision, revisionRule, type HumanError, type RevisionCommand } from "@app/domain";
@@ -14,10 +14,24 @@ import { ErrorNotice, codeOfThrown, errorFromCode } from "@/features/common/Erro
 import { RequireAuth } from "@/features/common/RequireAuth";
 import { href } from "@/features/common/nav";
 import { pickInitialVersion } from "@/features/result/logic";
+import { reviseGuard, revisionsEnabled } from "@/features/result/flags";
 import { canSubmitPlan, composeInstructions, describePlan, quickCommands, topupHref } from "@/features/result/revision";
 
 export default function ReviseRoute() {
-  return <RequireAuth><ReviseScreen /></RequireAuth>;
+  return <RequireAuth><ReviseGate /></RequireAuth>;
+}
+
+/**
+ * Garde : tant que le réglage serveur `features.revisions` est faux, cet écran n'est pas atteignable
+ * (lien direct, favori, notification) : retour au projet. Tout le reste du code est conservé pour la réactivation.
+ */
+function ReviseGate() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { settings, settingsLoaded } = useConfig();
+  const guard = reviseGuard(settingsLoaded, revisionsEnabled(settings));
+  if (guard === "loading") return <Screen><Skeleton height={34} width="70%" /><Skeleton height={140} radius={20} /></Screen>;
+  if (guard === "redirect") return <Redirect href={href(typeof id === "string" && id ? `/project/${id}` : "/projects")} />;
+  return <ReviseScreen />;
 }
 
 function ReviseScreen() {

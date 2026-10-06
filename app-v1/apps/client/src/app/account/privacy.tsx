@@ -1,5 +1,5 @@
 import React from "react";
-import { Linking, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, Row, Screen, Section, Text, colors, spacing } from "@app/ui";
@@ -7,6 +7,8 @@ import { RequireAuth } from "@/features/shared/RequireAuth";
 import { BackRow } from "@/features/shared/BackRow";
 import { useConfig } from "@/providers/ConfigProvider";
 import { href } from "@/lib/href";
+import { RETENTION_QUESTION, retentionAnswer, retentionHours } from "@/features/retention/logic";
+import { openLink } from "@/features/legal/openLink";
 
 export default function PrivacyRoute() {
   return <RequireAuth><PrivacyScreen /></RequireAuth>;
@@ -23,7 +25,7 @@ const GUARANTEES = [
 function PrivacyScreen() {
   const router = useRouter();
   const { settings } = useConfig();
-  const open = (url: string) => () => { void Linking.openURL(url); };
+  const open = (url: string) => () => { void openLink(url); };
   return (
     <Screen>
       <BackRow />
@@ -39,10 +41,17 @@ function PrivacyScreen() {
         ))}
       </Card>
 
+      <Card tone="surface" style={{ gap: spacing.sm }}>
+        <Text variant="bodyStrong" accessibilityRole="header">{RETENTION_QUESTION}</Text>
+        <Text variant="secondary" color="textSecondary">{retentionAnswer(retentionHours(settings))}</Text>
+      </Card>
+
       <Section title="Documents">
-        <Row title="Politique de confidentialité" onPress={open(settings["urls.privacy"])} />
+        <Row title="Mentions légales" onPress={open(settings["urls.legal_notice"])} />
         <Row title="Conditions d'utilisation" onPress={open(settings["urls.terms"])} />
-        <Row title="Gestion de mes données" onPress={open(settings["urls.manage_data"])} />
+        <Row title="Conditions de vente" onPress={open(settings["urls.sales_terms"])} />
+        <Row title="Politique de confidentialité" onPress={open(settings["urls.privacy"])} />
+        <Row title="Gestion des données" onPress={open(settings["urls.manage_data"])} />
       </Section>
 
       <Section footer="Cette action est définitive. Nous vous expliquons ce qui est supprimé avant toute confirmation.">

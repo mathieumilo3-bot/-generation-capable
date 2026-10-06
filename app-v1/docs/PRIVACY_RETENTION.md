@@ -18,8 +18,14 @@
 4. Page publique : `web-public/supprimer-mon-compte.html` (URL exigée par Google Play).
 Testé : `30_admin_payments.test.sql` (profil/projets supprimés, ledger conservé anonymisé, invariants comptables intacts).
 
-## Rétention configurable
-`app_settings.retention.raw_days` / `retention.renders_days` valent `null` (conservation illimitée) : **durée à décider par le business**. Aucune purge automatique n'est active tant qu'une valeur n'est pas fixée ; l'implémentation de la purge planifiée doit être ajoutée au moment de cette décision (la fonction `svc_assets_to_purge` / `svc_asset_purged` gère déjà la purge Storage des assets marqués supprimés).
+## Rétention : 24 heures maximum (active)
+| Contenu | Durée | Mécanisme |
+|---|---|---|
+| Fichiers envoyés (rushs, références, voix, images) | **24 h après l'envoi** | `svc_expire_content` marque les assets, l'orchestrateur supprime l'objet Storage puis la ligne (`runRetention`, toutes les 5 min). Jamais pendant qu'un job les utilise. |
+| Vidéos produites + miniatures | **24 h après la création** (`project_versions.expires_at`) | `svc_versions_to_purge` → suppression Storage → version `expired`, chemins effacés. L'utilisateur est prévenu 3 h avant (notification, dédupliquée). |
+| Copies côté moteur (rushs téléchargés, intermédiaires, rendus) | supprimées **dès la livraison** ; balayage de secours à 24 h | `DELETE /api/engine/v1/jobs/:id` + `sweepExpired()` |
+| Projet supprimé par l'utilisateur | rendus purgés immédiatement | `delete_project` |
+L'historique (titre, date, statut « Expirée ») reste visible. Réglages : `app_settings.retention.raw_hours` / `retention.renders_hours` (valeur affichée dans l'app et à remettre à jour dans `web-public/legal.config.json`). Testé : `50_retention_flags.test.sql`, `orchestrator.test.ts`.
 
 ## Déclarations stores (entrées)
 - **App Store — App Privacy** : e-mail et nom (lié à l'identité, fonctionnalités de l'app), contenu utilisateur (vidéos/audio, lié à l'identité), identifiants d'achat, données d'usage non liées. Pas de pistage publicitaire.

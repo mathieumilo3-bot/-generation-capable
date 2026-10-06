@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Linking, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +10,7 @@ import { BackButton } from "@/features/common/BackButton";
 import { BrandMark } from "@/features/common/BrandMark";
 import { href } from "@/features/common/nav";
 import { describeAuthError, authErrorKind } from "@/features/auth/logic";
+import { LegalLink } from "@/features/legal/LegalLink";
 import { isNativeAppleAvailable, signInWith, type Provider } from "@/features/auth/oauth";
 
 export default function SignInScreen() {
@@ -78,11 +79,13 @@ export default function SignInScreen() {
             onPress={() => { analytics.track("signup_started", { method: "email" }); router.push(href("/email")); }} />
         </View>
 
-        <Text variant="caption" color="textSecondary" align="center">
+        <Text variant="secondary" color="textSecondary" align="center">
           {"En continuant, vous acceptez les "}
-          <Text variant="caption" accessibilityRole="link" style={{ textDecorationLine: "underline" }} onPress={() => void Linking.openURL(settings["urls.terms"])}>conditions d'utilisation</Text>
+          <LegalLink url={settings["urls.terms"]} label="Conditions d'utilisation" />
+          {", les "}
+          <LegalLink url={settings["urls.sales_terms"]} label="Conditions de vente" />
           {" et la "}
-          <Text variant="caption" accessibilityRole="link" style={{ textDecorationLine: "underline" }} onPress={() => void Linking.openURL(settings["urls.privacy"])}>politique de confidentialité</Text>
+          <LegalLink url={settings["urls.privacy"]} label="Politique de confidentialité" />
           {"."}
         </Text>
       </View>

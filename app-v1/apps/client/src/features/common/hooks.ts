@@ -21,3 +21,13 @@ export function useDebounced<T>(value: T, delayMs: number): T {
   }, [value, delayMs]);
   return v;
 }
+
+/** Heure courante, rafraîchie à intervalle régulier (états qui dépendent du temps : « bientôt supprimée »). */
+export function useNow(intervalMs = 60_000): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs]);
+  return now;
+}

@@ -1,0 +1,93 @@
+{
+  "_aide": "Renseignez UNE fois ces informations (aucune ne peut être inventée par le développeur), puis `npm run legal:build -w web-public` (ou `npm run legal:build` à la racine). Tant qu'un champ vaut \"\" la page affiche « [À COMPLÉTER : …] » et `--strict` (CI de production) échoue.",
+  "effectiveDate": "2026-10-06",
+  "termsVersion": "2026-10-06",
+  "brand": {
+    "productName": "Montage",
+    "appUrl": "https://app.example.com",
+    "supportEmail": "support@example.com"
+  },
+  "company": {
+    "name": "",
+    "legalForm": "",
+    "shareCapital": "",
+    "address": "",
+    "postalCode": "",
+    "city": "",
+    "country": "France",
+    "siren": "",
+    "rcs": "",
+    "vatNumber": "",
+    "publicationDirector": "",
+    "email": "",
+    "phone": ""
+  },
+  "dpo": {
+    "name": "",
+    "email": ""
+  },
+  "mediator": {
+    "name": "",
+    "address": "",
+    "website": "",
+    "email": ""
+  },
+  "hosting": [
+    {
+      "name": "Supabase Inc.",
+      "address": "970 Toa Payoh North #07-04, Singapore 318992",
+      "role": "Base de données, authentification, stockage des fichiers (région : à préciser dans le projet Supabase)"
+    },
+    {
+      "name": "",
+      "address": "",
+      "role": "Moteur de montage et orchestrateur (ex. Fly.io Inc., 2 Toronto Road, Suite 302, Toronto, Canada ; région à préciser)"
+    },
+    {
+      "name": "",
+      "address": "",
+      "role": "Hébergement du site web et de l'application web (ex. Netlify, Inc., 512 2nd Street, Suite 200, San Francisco, CA 94107, États-Unis)"
+    }
+  ],
+  "processors": [
+    {
+      "name": "Supabase",
+      "purpose": "Base de données, authentification, stockage privé des fichiers",
+      "location": "[région du projet — UE recommandée]"
+    },
+    {
+      "name": "Stripe Payments Europe, Ltd.",
+      "purpose": "Paiement par carte et moyens de paiement (web)",
+      "location": "Irlande / États-Unis (clauses contractuelles types)"
+    },
+    {
+      "name": "Apple Inc. / Google LLC",
+      "purpose": "Achats in-app, Sign in with Apple / Google, notifications",
+      "location": "États-Unis (cadre de protection des données UE-États-Unis / clauses contractuelles types)"
+    },
+    {
+      "name": "Resend",
+      "purpose": "Envoi des e-mails transactionnels",
+      "location": "États-Unis (clauses contractuelles types)"
+    },
+    {
+      "name": "Expo (650 Industries, Inc.)",
+      "purpose": "Acheminement des notifications push",
+      "location": "États-Unis (clauses contractuelles types)"
+    },
+    {
+      "name": "Anthropic PBC, Deepgram, Inc., Google LLC (fournisseurs d'intelligence artificielle du moteur de montage — uniquement ceux activés)",
+      "purpose": "Transcription de la parole, analyse visuelle et aide à la sélection des passages pour réaliser le montage que vous demandez — sur la base de votre consentement explicite",
+      "location": "États-Unis (cadre de protection des données UE-États-Unis / clauses contractuelles types)"
+    }
+  ],
+  "retention": {
+    "filesHours": 24,
+    "videosHours": 24,
+    "accountingYears": 10
+  },
+  "vat": {
+    "pricesNote": "Les prix sont indiqués en euros, toutes taxes comprises (TTC) pour les consommateurs. [À CONFIRMER avec votre expert-comptable : régime de TVA applicable à la vente de crédits prépayés et aux services numériques.]"
+  },
+  "consumerBusiness": "Le service s'adresse aux consommateurs comme aux professionnels."
+}

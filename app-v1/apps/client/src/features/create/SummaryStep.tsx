@@ -16,6 +16,11 @@ import { api } from "@/lib/supabase";
 import { uploadManager } from "@/lib/uploads";
 import { platform } from "@/lib/platform";
 import { href } from "@/lib/href";
+import { ConsentCheckbox } from "@/features/legal/ConsentCheckbox";
+import { LegalLink } from "@/features/legal/LegalLink";
+import { useAiConsent } from "@/features/legal/useAiConsent";
+import { AI_CONSENT_HELP, SALES_TERMS_LABEL, WAIVER_TEXT, aiConsentLabel, canCreateWithConsent, needsAiConsent } from "@/features/legal/logic";
+import { retentionHours, summaryRetentionLine } from "@/features/retention/logic";
 import { FlowScreen } from "./FlowScreen";
 import { useCreateDraft } from "./draft";
 import { useDraftFiles } from "./useDraftFiles";
@@ -46,6 +51,12 @@ function SummaryScreen({ projectId, mode, step, total, routes }: { projectId: st
   const { draft, patch, ready, forget } = useCreateDraft(projectId);
   const wallet = useWallet();
   const files = useDraftFiles(projectId);
+  // Consentement explicite à l'analyse par des services d'IA tiers (réglage serveur ; la case n'est jamais cochée d'office).
+  const aiOn = settings["features.third_party_ai"];
+  const aiVersion = settings["legal.ai_consent_version"];
+  const aiConsent = useAiConsent(aiVersion);
+  const consentNeeded = needsAiConsent({ enabled: aiOn, granted: aiConsent.ready && aiConsent.granted });
+  const [consentChecked, setConsentChecked] = useState(false);
 
   const usable = usableMethods(methods, mode, capabilities);
   const method = mode === "autonomous" ? pickAutonomousMethod(usable) : usable.find((m) => m.id === draft.methodId);
@@ -108,8 +119,20 @@ function SummaryScreen({ projectId, mode, step, total, routes }: { projectId: st
 
   const submit = async () => {
     if (inFlight.current || !quote || !ruleId || !method || !draft.idempotencyKey) return;
+    if (!canCreateWithConsent(true, { needsConsent: consentNeeded, checked: consentChecked })) return;
     inFlight.current = true; setSubmitting(true); setSubmitError(null);
     try {
+      // Consentement enregistré AVANT la soumission ; en cas d'échec (réseau…), rien n'est soumis.
+      if (consentNeeded) {
+        const accepted = await api.account.acceptAiProcessing(aiVersion);
+        if (!accepted.ok) {
+          haptics.error();
+          setSubmitError(humanizeError(accepted.code));
+          inFlight.current = false; setSubmitting(false);
+          return;
+        }
+        aiConsent.remember();
+      }
       const res = await api.jobs.submit({ projectId, pricingRuleId: ruleId, editingMethodId: method.id, aspectRatio: aspect, instructions, idempotencyKey: draft.idempotencyKey });
       if (res.ok) {
         analytics.track("job_submitted", { mode, price_cents: res.price_cents, method: method.slug, replayed: res.replayed === true });
@@ -123,7 +146,12 @@ function SummaryScreen({ projectId, mode, step, total, routes }: { projectId: st
         return; // on laisse le bouton désactivé pendant la navigation
       }
       if (res.code === "insufficient_funds") { void refetchQuote(); void wallet.refetch(); }
-      else { haptics.error(); setSubmitError(humanizeError(res.code, { shortfallCents: Number(res.shortfall_cents) || undefined })); }
+      else if (res.code === "ai_consent_required") {
+        // Version des conditions changée côté serveur : on redemande l'autorisation.
+        haptics.error();
+        aiConsent.forget(); setConsentChecked(false);
+        setSubmitError(humanizeError(res.code));
+      } else { haptics.error(); setSubmitError(humanizeError(res.code, { shortfallCents: Number(res.shortfall_cents) || undefined })); }
     } catch (e) {
       haptics.error();
       setSubmitError(humanizeError(errorCodeOf(e)));
@@ -137,7 +165,9 @@ function SummaryScreen({ projectId, mode, step, total, routes }: { projectId: st
 
   const blockedReason = maintenance ? "maintenance" : noFiles ? "no_files" : null;
   const filesOk = mode === "autonomous" ? state === "ready" || state === "empty" : state === "ready";
-  const canSubmit = !!quote && quote.can_afford && filesOk;
+  const canSubmit = canCreateWithConsent(!!quote && quote.can_afford && filesOk, { needsConsent: consentNeeded, checked: consentChecked });
+  const consentBlocking = consentNeeded && aiConsent.ready && !consentChecked && !!quote && quote.can_afford;
+  const renders = retentionHours(settings).renders;
   const label = quote ? `Créer ma vidéo · ${formatEuros(quote.price_cents)}` : "Créer ma vidéo";
 
   return (
@@ -151,9 +181,16 @@ function SummaryScreen({ projectId, mode, step, total, routes }: { projectId: st
               <Button label="Autre montant" variant="secondary" onPress={() => goTopup(null)} />
             </>
           ) : (
-            <Button label={label} loading={submitting} disabled={!canSubmit || blockedReason !== null || !draft.idempotencyKey || !method} onPress={() => void submit()} />
+            <>
+              {consentBlocking ? <Text variant="caption" color="textSecondary" align="center">{AI_CONSENT_HELP}</Text> : null}
+              <Text variant="caption" color="textSecondary" align="center">
+                {WAIVER_TEXT}{" "}<LegalLink url={settings["urls.sales_terms"]} label={SALES_TERMS_LABEL} variant="caption" />
+              </Text>
+              <Button label={label} loading={submitting} disabled={!canSubmit || blockedReason !== null || !draft.idempotencyKey || !method} onPress={() => void submit()} />
+            </>
           )}
           <Text variant="caption" color="textSecondary" align="center">En cas d'échec définitif du rendu, le montant réservé est automatiquement libéré.</Text>
+          <Text variant="caption" color="textSecondary" align="center">{summaryRetentionLine(renders)}</Text>
         </View>
       }
     >
@@ -178,6 +215,11 @@ function SummaryScreen({ projectId, mode, step, total, routes }: { projectId: st
           <Row title="Solde actuel" value={formatEuros(quote.available_cents)} />
           {quote.can_afford ? <Row title="Après création" value={formatEuros(quote.after_cents)} /> : null}
         </Section>
+      ) : null}
+
+      {quote && consentNeeded && aiConsent.ready ? (
+        <ConsentCheckbox checked={consentChecked} onChange={setConsentChecked}
+          label={aiConsentLabel(settings["legal.ai_providers"])} moreUrl={settings["urls.privacy"]} />
       ) : null}
 
       {quote && !quote.can_afford ? (

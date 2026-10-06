@@ -35,6 +35,12 @@ export function createApi(sb: SupabaseClient, opts: { platform: "ios" | "android
       if (error) throw toApiError(error);
       return data.session;
     },
+    /** Connexion par mot de passe : réservée au compte de test App Review (réglage `features.password_login`). */
+    async signInWithPassword(email: string, password: string) {
+      const { data, error } = await sb.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      if (error) throw toApiError(error);
+      return data.session;
+    },
     /** iOS natif : l'identity token vient d'expo-apple-authentication (nonce = hash côté Apple, brut ici). */
     async signInWithAppleIdToken(idToken: string, rawNonce: string) {
       const { data, error } = await sb.auth.signInWithIdToken({ provider: "apple", token: idToken, nonce: rawNonce });
@@ -111,6 +117,10 @@ export function createApi(sb: SupabaseClient, opts: { platform: "ios" | "android
       unwrap(await sb.from("profiles").update({ billing }).eq("id", u.user?.id ?? ""));
     },
     async touch() { await sb.rpc("touch_profile", { p_app_version: opts.appVersion, p_platform: opts.platform }); },
+    /** Enregistre l'acceptation (versionnée, horodatée) des conditions courantes. Best effort. */
+    acceptTerms: (version: string) => rpc("accept_terms", { p_version: version }),
+    /** Consentement EXPLICITE à l'envoi des contenus à des IA tierces (App Store 5.1.2(i)) — exigé par le serveur avant tout montage. */
+    acceptAiProcessing: (version: string) => rpc("accept_ai_processing", { p_version: version }),
     peekInvitation: (token: string) => sb.rpc("peek_invitation", { p_token: token }).then(({ data, error }) => {
       if (error) throw toApiError(error);
       return data as { valid: boolean; kind?: string; credit_cents?: number; name?: string; company?: string | null };

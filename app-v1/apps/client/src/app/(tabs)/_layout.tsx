@@ -8,6 +8,7 @@ import { useLiveSync } from "@/features/common/useLiveSync";
 import { AppTabBar } from "@/features/common/AppTabBar";
 import { href } from "@/features/common/nav";
 import { InviteBanner } from "@/features/account/InviteBanner";
+import { useAcceptTerms } from "@/features/account/useAcceptTerms";
 
 export default function TabsLayout() {
   const { state } = useAuth();
@@ -19,6 +20,7 @@ export default function TabsLayout() {
 function SignedInTabs() {
   useLiveSync();
   usePushRegistration();
+  useAcceptTerms();
   const { width } = useWindowDimensions();
   const desktop = Platform.OS === "web" && width >= 900;
   return (

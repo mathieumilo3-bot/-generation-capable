@@ -25,7 +25,7 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier: BUNDLE_ID,
     buildNumber: env("APP_BUILD_NUMBER", "1"),
-    supportsTablet: true,
+    supportsTablet: false,   // V1 iPhone uniquement : pas de captures ni de tests iPad à fournir à App Review
     usesAppleSignIn: true,
     associatedDomains: [`applinks:${LINK_DOMAIN}`],
     config: { usesNonExemptEncryption: false },

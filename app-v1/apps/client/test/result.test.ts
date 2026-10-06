@@ -8,7 +8,7 @@ import { describeJob, planRevision } from "@app/domain";
 
 const ver = (n: number, over: Partial<VersionRow> = {}): VersionRow => ({
   id: `v${n}`, project_id: "p", version_number: n, parent_version_id: null, job_id: null, status: "ready", instructions: null,
-  render_path: `r/${n}.mp4`, thumbnail_path: null, duration_sec: 30, width: 1080, height: 1920, size_bytes: 1, created_at: "2026-01-01T00:00:00Z", ready_at: "2026-01-01T00:01:00Z", ...over,
+  render_path: `r/${n}.mp4`, thumbnail_path: null, duration_sec: 30, width: 1080, height: 1920, size_bytes: 1, created_at: "2026-01-01T00:00:00Z", ready_at: "2026-01-01T00:01:00Z", expires_at: null, ...over,
 });
 const job = (over: Partial<JobRow> = {}): JobRow => ({
   id: "j", project_id: "p", version_id: "v1", kind: "create", status: "editing", progress: 0, current_stage: null, price_cents: 484, requested_duration_sec: 30,

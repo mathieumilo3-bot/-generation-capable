@@ -6,7 +6,7 @@ import { resolveStorageRoot } from "../storage";
  * Table de liaison externalJobId (video_jobs.id côté produit) ⇄ projet moteur. Fichier SQLite SÉPARÉ de la
  * base du moteur : le moteur reste intact, la passerelle est une couche d'adaptation autonome.
  */
-export type LinkState = "queued" | "running" | "succeeded" | "failed" | "cancelled";
+export type LinkState = "queued" | "running" | "succeeded" | "failed" | "cancelled" | "purged";
 
 export interface Link {
   externalJobId: string;
@@ -50,6 +50,7 @@ const row = (r: Record<string, unknown> | undefined): Link | null => r ? ({
 
 export const links = {
   byExternal: (id: string) => row(handle().prepare("SELECT * FROM links WHERE external_job_id=?").get(id) as Record<string, unknown> | undefined),
+  all: () => (handle().prepare("SELECT * FROM links").all() as Record<string, unknown>[]).map((r) => row(r)!),
   byEngine: (id: string) => row(handle().prepare("SELECT * FROM links WHERE engine_job_id=?").get(id) as Record<string, unknown> | undefined),
   upsert(l: Omit<Link, "createdAt">): void {
     handle().prepare(`INSERT INTO links (external_job_id, engine_job_id, kind, project_id, attempt, render_queue_job_id, baseline, render_id, state, error_code, error_message, retryable, created_at)

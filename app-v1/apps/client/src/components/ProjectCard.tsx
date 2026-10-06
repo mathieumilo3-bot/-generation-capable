@@ -6,16 +6,19 @@ import { Thumbnail } from "./Thumbnail";
 import { formatRelativeDate, projectA11yLabel, projectBadge, projectTitle } from "@/features/projects/logic";
 
 /** Carte de projet (grille « Mes vidéos », accueil). Toute la carte est le bouton (≥ 48 de zone tactile). */
-export function ProjectCard({ project, thumbnailUrl, onPress, compact }: {
+export function ProjectCard({ project, thumbnailUrl, onPress, compact, expired = false }: {
   project: ProjectRow; thumbnailUrl?: string | null; onPress: () => void; compact?: boolean;
+  /** La vidéo a été supprimée (conservation limitée) : vignette neutre + badge « Expirée ». */
+  expired?: boolean;
 }) {
-  const badge = projectBadge(project.status);
+  const isExpired = expired && project.status === "ready";
+  const badge = projectBadge(project.status, isExpired);
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={projectA11yLabel(project)} onPress={onPress}
+    <Pressable accessibilityRole="button" accessibilityLabel={projectA11yLabel(project, new Date(), isExpired)} onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}>
       <View>
-        <Thumbnail url={thumbnailUrl} processing={project.status === "processing"} />
-        {project.status !== "ready" ? (
+        <Thumbnail url={isExpired ? null : thumbnailUrl} processing={project.status === "processing"} expired={isExpired} />
+        {project.status !== "ready" || isExpired ? (
           <View style={styles.badge}><Badge label={badge.label} tone={badge.tone} /></View>
         ) : null}
       </View>

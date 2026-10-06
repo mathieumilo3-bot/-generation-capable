@@ -1,0 +1,87 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "version": "1.0.0",
+    "copyright": "2026 REMPLACER: nom de la société",
+    "release": {
+      "automaticRelease": false,
+      "phasedRelease": true
+    },
+    "categories": [
+      "PHOTO_AND_VIDEO",
+      "PRODUCTIVITY"
+    ],
+    "advisory": {
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "contests": "NONE",
+      "gamblingSimulated": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "matureOrSuggestiveThemes": "NONE",
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "violenceRealistic": "NONE",
+      "gunsOrOtherWeapons": "NONE",
+      "unrestrictedWebAccess": false,
+      "gambling": false,
+      "kidsAgeBand": null,
+      "ageRatingOverride": "NONE",
+      "koreaAgeRatingOverride": "NONE",
+      "seventeenPlus": false,
+      "lootBox": false,
+      "advertising": false,
+      "ageAssurance": false,
+      "healthOrWellnessTopics": false,
+      "messagingAndChat": false,
+      "parentalControls": false,
+      "userGeneratedContent": false
+    },
+    "info": {
+      "fr-FR": {
+        "title": "Montage",
+        "subtitle": "Vos vidéos, montées pour vous",
+        "description": "Envoyez vos vidéos, choisissez la durée : nous nous occupons du montage.\n\nMontage transforme vos rushs en une vidéo courte, verticale et prête à publier, sans logiciel à apprendre.\n\nCOMMENT ÇA MARCHE\n• Ajoutez vos vidéos depuis votre galerie ou vos fichiers.\n• Choisissez la durée : le prix est affiché en euros avant de valider, sans surprise.\n• Choisissez le résultat : Automatique, Mode Référence ou Personnalisé.\n• Fermez l'application : vous êtes prévenu dès que votre vidéo est prête. Regardez-la, téléchargez-la, partagez-la.\n\nUN SOLDE SIMPLE, EN EUROS\n• Rechargez votre solde, dépensez-le vidéo par vidéo.\n• Le prix est réservé au lancement, encaissé à la livraison et automatiquement libéré si le rendu échoue : vous ne payez jamais une vidéo qui n'existe pas.\n• Historique clair de chaque mouvement.\n\nVOS DONNÉES, VOTRE CONTRÔLE\n• Vos fichiers sont privés et supprimés automatiquement 24 heures après leur envoi ; vos vidéos terminées 24 heures après leur création. Pensez à les télécharger.\n• Votre accord explicite est demandé avant l'analyse de vos vidéos par des services d'intelligence artificielle.\n• Suppression du compte et des données en un geste, depuis l'application.\n• Connexion avec Apple, Google ou un simple code par e-mail : aucun mot de passe à retenir.\n\nUn service numérique de montage vidéo. Les prix et le solde sont exprimés en euros.",
+        "keywords": [
+          "montage vidéo",
+          "montage automatique",
+          "vidéo courte",
+          "reels",
+          "tiktok",
+          "shorts",
+          "sous-titres",
+          "ia",
+          "vertical",
+          "rushs"
+        ],
+        "promoText": "Envoyez vos rushs, choisissez la durée, récupérez une vidéo prête à publier. Prix affiché avant de valider.",
+        "releaseNotes": "Première version.",
+        "marketingUrl": "https://REMPLACER-domaine-de-l-app",
+        "supportUrl": "https://REMPLACER-domaine-de-l-app/aide",
+        "privacyPolicyUrl": "https://REMPLACER-domaine-de-l-app/confidentialite.html",
+        "screenshots": {
+          "APP_IPHONE_69": [
+            "./store-assets/ios/6.9/01.png",
+            "./store-assets/ios/6.9/02.png",
+            "./store-assets/ios/6.9/03.png",
+            "./store-assets/ios/6.9/04.png",
+            "./store-assets/ios/6.9/05.png",
+            "./store-assets/ios/6.9/06.png"
+          ]
+        }
+      }
+    },
+    "review": {
+      "firstName": "REMPLACER",
+      "lastName": "REMPLACER",
+      "email": "REMPLACER@domaine.fr",
+      "phone": "+33REMPLACER",
+      "demoRequired": true,
+      "demoUsername": "REMPLACER-par-le-compte-de-test",
+      "demoPassword": "REMPLACER-par-le-mot-de-passe-genere",
+      "notes": "DEMO ACCOUNT: use \"Continuer avec mon e-mail\" > the small link \"Se connecter avec un mot de passe\" and enter the credentials provided above (the account already has a balance, so a video can be created without any purchase). Our back end is live for the duration of the review.\n\nHOW TO TEST THE MAIN FLOW: Create > \"J'ai mes rushs\" > add 1-2 short videos from the photo library > choose a duration (the price is shown) > \"Automatique\" > review summary > tick the AI-processing consent box > \"Créer ma vidéo\". A result is delivered in a few minutes (a push notification is sent if allowed); the video can then be played and downloaded.\n\nIN-APP PURCHASES: the wallet balance is topped up ONLY with consumable in-app purchases (Account > Paiements > Ajouter de l'argent; packs 10/20/50/100 EUR). No external payment link or button exists in the iOS app. Sandbox purchases are accepted for the review. The balance is credited by our server after it verifies the transaction with the App Store Server API, and never expires.\n\nSIGN IN WITH APPLE is offered alongside Google and e-mail (guideline 4.8).\nACCOUNT DELETION is in-app: Compte > Confidentialité > Supprimer mon compte (guideline 5.1.1(v)); Sign in with Apple tokens are revoked on deletion.\nTHIRD-PARTY AI (5.1.2(i)): before the first video is processed the user must explicitly tick a consent box naming the AI providers; processing is blocked server-side without it.\nDATA RETENTION: uploaded files and produced videos are automatically deleted 24 hours after upload / creation (disclosed in the app and in the privacy policy).\nThe app does not contain user-generated content shared with other users, ads, or tracking.\nContact: see fields above."
+    }
+  }
+}

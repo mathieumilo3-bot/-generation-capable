@@ -28,3 +28,19 @@ export function greetingName(p: { first_name?: string | null; email?: string | n
   const first = p.first_name?.trim();
   return first && first.length > 0 ? first : null;
 }
+
+/** « Disponible jusqu'à demain 14 h 32 » / « jusqu'au 12 oct. 14 h 32 » (heure locale). */
+export function formatExpiry(iso: string, now: Date = new Date(), locale = "fr-FR"): string {
+  const d = new Date(iso);
+  const time = `${d.getHours()} h ${String(d.getMinutes()).padStart(2, "0")}`;
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(d) - startOf(now)) / 86_400_000);
+  if (days === 0) return `aujourd'hui ${time}`;
+  if (days === 1) return `demain ${time}`;
+  return `${d.toLocaleDateString(locale, { day: "numeric", month: "short" })} ${time}`;
+}
+
+/** Vrai si la vidéo a dépassé sa durée de conservation. */
+export function isExpired(v: { status: string; expires_at?: string | null }, now: Date = new Date()): boolean {
+  return v.status === "expired" || (!!v.expires_at && new Date(v.expires_at) <= now);
+}

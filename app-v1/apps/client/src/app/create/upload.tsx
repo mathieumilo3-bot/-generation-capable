@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Button, ProgressBar, Text, spacing } from "@app/ui";
+import { Button, Notice, ProgressBar, Text, spacing } from "@app/ui";
 import { RequireAuth } from "@/features/shared/RequireAuth";
 import { HumanErrorNotice } from "@/features/shared/HumanErrorNotice";
 import { FlowScreen } from "@/features/create/FlowScreen";
@@ -11,6 +11,8 @@ import { useCreateDraft } from "@/features/create/draft";
 import { useDraftFiles } from "@/features/create/useDraftFiles";
 import { useAddFiles } from "@/features/create/useAddFiles";
 import { summaryLabel, type FileRow } from "@/features/create/logic";
+import { useConfig } from "@/providers/ConfigProvider";
+import { hasPurgedFiles, purgedDraftMessage, retentionHours, uploadRetentionCaption } from "@/features/retention/logic";
 import { analytics } from "@/lib/analytics";
 import { api } from "@/lib/supabase";
 import { href } from "@/lib/href";
@@ -24,6 +26,7 @@ export default function UploadRoute() {
 function UploadScreen() {
   const { projectId: param } = useLocalSearchParams<{ projectId?: string }>();
   const router = useRouter();
+  const { settings } = useConfig();
   const draft = useCreateDraft(param);
   const projectId = param ?? null;
   const files = useDraftFiles(projectId, RAW);
@@ -59,6 +62,8 @@ function UploadScreen() {
 
   const canContinue = projectId !== null && files.rows.some((r) => r.status !== "failed");
   const { summary } = files;
+  const rawHours = retentionHours(settings).raw;
+  const purged = files.rows.length === 0 && hasPurgedFiles(files.assets.filter((a) => a.kind === "raw"), rawHours);
 
   return (
     <FlowScreen
@@ -75,6 +80,8 @@ function UploadScreen() {
         onFiles={add}
         compact={files.rows.length > 0}
       />
+      <Text variant="caption" color="textSecondary">{uploadRetentionCaption(rawHours)}</Text>
+      {purged ? <Notice tone="warning" icon="time-outline" title={purgedDraftMessage(rawHours)} /> : null}
       {rejection ? <HumanErrorNotice error={rejection} /> : null}
       {files.rows.length > 0 ? (
         <View style={{ gap: spacing.md }}>

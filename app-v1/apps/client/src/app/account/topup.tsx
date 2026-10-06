@@ -18,6 +18,8 @@ import { useConfig } from "@/providers/ConfigProvider";
 import { analytics } from "@/lib/analytics";
 import { platform } from "@/lib/platform";
 import { href } from "@/lib/href";
+import { LegalLink } from "@/features/legal/LegalLink";
+import { SALES_TERMS_LABEL } from "@/features/legal/logic";
 
 export default function TopupRoute() {
   return <RequireAuth><TopupScreen /></RequireAuth>;
@@ -103,7 +105,14 @@ function TopupScreen() {
 
   return (
     <Screen
-      footer={noOption ? undefined : <Button label={cta} loading={busy} disabled={!amount || !provider} onPress={() => void pay()} />}
+      footer={noOption ? undefined : (
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="caption" color="textSecondary" align="center">
+            {"Paiement sécurisé. "}<LegalLink url={settings["urls.sales_terms"]} label={SALES_TERMS_LABEL} variant="caption" />
+          </Text>
+          <Button label={cta} loading={busy} disabled={!amount || !provider} onPress={() => void pay()} />
+        </View>
+      )}
     >
       <BackRow fallback="/account/wallet" />
       <View style={{ gap: 6 }}>

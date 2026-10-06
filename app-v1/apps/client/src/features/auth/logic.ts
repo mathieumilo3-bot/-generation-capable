@@ -133,3 +133,24 @@ export function appleFirstName(fullName: { givenName?: string | null } | null | 
 }
 
 export const bytesToHex = (bytes: Uint8Array): string => Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+
+// ── Connexion par mot de passe (réservée au compte de test App Review) ─────────────────────────────
+
+/** Le lien « Se connecter avec un mot de passe » n'existe que si le réglage serveur l'active (faux par défaut). */
+export function showPasswordLogin(settings: { "features.password_login"?: boolean }): boolean {
+  return settings["features.password_login"] === true;
+}
+
+export function canSubmitPassword(email: string, password: string): boolean {
+  return isValidEmail(email) && password.length > 0;
+}
+
+/** Identifiants refusés : message précis ; toute autre erreur passe par le texte humain habituel. */
+export function describePasswordError(err: unknown): { title: string; detail: string } {
+  const e = (err ?? {}) as { code?: unknown; message?: unknown };
+  const hay = `${typeof e.code === "string" ? e.code : ""} ${typeof e.message === "string" ? e.message : ""}`.toLowerCase();
+  if (/invalid_credentials|invalid login credentials/.test(hay)) {
+    return { title: "E-mail ou mot de passe incorrect.", detail: "Vérifiez vos informations et réessayez." };
+  }
+  return describeAuthError(err);
+}

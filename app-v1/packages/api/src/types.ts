@@ -47,7 +47,7 @@ export interface VersionRow {
   version_number: number;
   parent_version_id: string | null;
   job_id: string | null;
-  status: "pending" | "ready" | "failed";
+  status: "pending" | "ready" | "failed" | "expired";
   instructions: string | null;
   render_path: string | null;
   thumbnail_path: string | null;
@@ -57,6 +57,7 @@ export interface VersionRow {
   size_bytes: number | null;
   created_at: string;
   ready_at: string | null;
+  expires_at: string | null;
 }
 
 export interface AssetRow {

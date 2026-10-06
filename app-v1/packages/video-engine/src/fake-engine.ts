@@ -15,6 +15,7 @@ export interface FakeEngineOptions {
 export class FakeEngine implements EngineClient {
   readonly submitted: EngineJobRequest[] = [];
   readonly cancelled: string[] = [];
+  readonly purged: string[] = [];
   private jobs = new Map<string, { req: EngineJobRequest; step: number; cancelled: boolean }>();
   private byExternal = new Map<string, string>();
   private flaky: number;
@@ -66,4 +67,5 @@ export class FakeEngine implements EngineClient {
     return { stream: new Blob([bytes as BlobPart]).stream() as ReadableStream<Uint8Array>, size: bytes.length };
   }
   async thumbnail() { return new Uint8Array([9, 9]); }
+  async purge(id: string) { this.purged.push(id); }
 }

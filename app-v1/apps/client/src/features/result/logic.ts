@@ -1,4 +1,4 @@
-import { isActiveJob } from "@app/domain";
+import { isActiveJob, isExpired } from "@app/domain";
 import type { JobRow, ProjectRow, VersionRow } from "@app/api";
 
 /** Logique pure de la page résultat (testable sans React Native). */
@@ -13,6 +13,28 @@ export function pickInitialVersion(project: Pick<ProjectRow, "current_version_id
   const current = playable.find((v) => v.id === project.current_version_id);
   if (current) return current;
   return [...playable].sort((a, b) => b.version_number - a.version_number)[0] ?? null;
+}
+
+export interface ResolvedVersion {
+  version: VersionRow;
+  /** Vrai si la vidéo n'existe plus (purgée, ou date de conservation dépassée avant la purge). */
+  expired: boolean;
+}
+
+/**
+ * Version à afficher sur la page résultat. Une version lisible passe en premier (choix explicite, puis version
+ * courante) ; sinon, s'il n'en reste qu'une supprimée, on la renvoie pour afficher « n'est plus disponible » au lieu de « pas encore prête ».
+ */
+export function resolveVersion(
+  project: Pick<ProjectRow, "current_version_id">, versions: readonly VersionRow[], selectedId: string | null, now: Date = new Date(),
+): ResolvedVersion | null {
+  const chosen = versions.find((v) => v.id === selectedId && isPlayable(v));
+  const playable = chosen ?? pickInitialVersion(project, versions);
+  if (playable) return { version: playable, expired: isExpired(playable, now) };
+  const gone = versions.filter((v) => v.status === "expired");
+  const current = gone.find((v) => v.id === project.current_version_id);
+  const latest = current ?? [...gone].sort((a, b) => b.version_number - a.version_number)[0];
+  return latest ? { version: latest, expired: true } : null;
 }
 
 export function versionLabel(n: number): string {
