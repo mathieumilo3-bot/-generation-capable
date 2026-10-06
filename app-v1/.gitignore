@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+ios/
+android/
+.DS_Store
+supabase/.temp/
+supabase/functions/.env
