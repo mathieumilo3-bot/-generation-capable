@@ -105,7 +105,10 @@ const CRF = opt('crf', '16');
 // métadonnées + repères son
 const browser0 = await launch();
 const { page: p0 } = await openScene(browser0);
-const meta = await p0.evaluate(() => ({ duration: MP.duration, cues: MP.cues, bpm: MP.bpm || 0, tune: MP.meta.tune || 'animation' }));
+const meta = await p0.evaluate(() => ({
+  duration: MP.duration, cues: MP.cues, bpm: MP.bpm || 0,
+  tune: MP.meta.tune || 'animation', bitrate: MP.meta.bitrate || null,
+}));
 await browser0.close();
 fs.writeFileSync(path.join(BUILD, 'cues.json'), JSON.stringify({ duration: meta.duration, bpm: meta.bpm, cues: meta.cues }, null, 1));
 
@@ -127,7 +130,8 @@ const total = Math.round(meta.duration * FPS);
 const from = Math.round(Number(opt('from', 0)) * FPS);
 const to = opt('to') ? Math.round(Number(opt('to')) * FPS) : total;
 const framesDir = path.join(BUILD, 'frames');
-if (from === 0) fs.rmSync(framesDir, { recursive: true, force: true });
+const encodeOnly = flag('encode-only'); // réencode à partir des images déjà rendues
+if (from === 0 && !encodeOnly) fs.rmSync(framesDir, { recursive: true, force: true });
 fs.mkdirSync(framesDir, { recursive: true });
 
 let done = 0;
@@ -174,17 +178,19 @@ async function worker(a, b) {
   await browser.close();
 }
 
-console.log(`▶ ${scene} : ${to - from} images @${FPS} fps, motion blur ${SUB} sous-images, ${WORKERS} workers`);
-const chunk = Math.ceil((to - from) / WORKERS);
-const jobs = [];
-for (let w = 0; w < WORKERS; w++) {
-  const a = from + w * chunk;
-  const b = Math.min(to, a + chunk);
-  if (a < b) jobs.push(worker(a, b));
+if (!encodeOnly) {
+  console.log(`▶ ${scene} : ${to - from} images @${FPS} fps, motion blur ${SUB} sous-images, ${WORKERS} workers`);
+  const chunk = Math.ceil((to - from) / WORKERS);
+  const jobs = [];
+  for (let w = 0; w < WORKERS; w++) {
+    const a = from + w * chunk;
+    const b = Math.min(to, a + chunk);
+    if (a < b) jobs.push(worker(a, b));
+  }
+  await Promise.all(jobs);
+  console.log(`\n  images OK en ${((Date.now() - t0) / 1000).toFixed(0)}s`);
 }
-await Promise.all(jobs);
 srv.close();
-console.log(`\n  images OK en ${((Date.now() - t0) / 1000).toFixed(0)}s`);
 
 const audioCode = await audioJob;
 const n = fs.readdirSync(framesDir).filter((f) => f.endsWith('.png')).length;
@@ -198,19 +204,37 @@ const outDir = path.join(ROOT, 'renders');
 fs.mkdirSync(outDir, { recursive: true });
 const out = path.join(outDir, `${scene}.mp4`);
 const hasAudio = audioCode === 0 && fs.existsSync(wav);
-const args = [
-  '-hide_banner', '-loglevel', 'error', '-y',
-  '-framerate', String(FPS), '-i', path.join(framesDir, '%05d.png'),
-  ...(hasAudio ? ['-i', wav] : []),
+// Débit : CRF (qualité constante) par défaut ; les scènes très granuleuses (02) fixent un
+// débit cible en deux passes, sinon le grain aléatoire ferait exploser la taille du fichier.
+const rate = meta.bitrate
+  ? ['-b:v', meta.bitrate, '-maxrate', `${Math.round(parseFloat(meta.bitrate) * 1.6)}M`, '-bufsize', `${Math.round(parseFloat(meta.bitrate) * 2.2)}M`]
+  : ['-crf', CRF];
+const video = [
   '-vf', 'scale=out_color_matrix=bt709:out_range=tv:flags=lanczos+accurate_rnd+full_chroma_int,format=yuv420p',
-  '-c:v', 'libx264', '-preset', 'slow', '-crf', CRF, '-tune', meta.tune,
+  '-c:v', 'libx264', '-preset', 'slow', ...rate, '-tune', meta.tune, '-x264-params', 'aq-mode=3',
   '-profile:v', 'high', '-level', '4.2',
   '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
+];
+const input = ['-hide_banner', '-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(framesDir, '%05d.png')];
+const passlog = path.join(BUILD, 'x264pass');
+if (meta.bitrate) {
+  const p1 = spawnSync('ffmpeg', [...input, ...video, '-pass', '1', '-passlogfile', passlog, '-an', '-f', 'mp4', '/dev/null'], { stdio: 'inherit' });
+  if (p1.status !== 0) {
+    console.error('✖ échec ffmpeg (passe 1)');
+    process.exit(1);
+  }
+}
+const args = [
+  ...input,
+  ...(hasAudio ? ['-i', wav] : []),
+  ...video,
+  ...(meta.bitrate ? ['-pass', '2', '-passlogfile', passlog] : []),
   '-movflags', '+faststart',
   ...(hasAudio ? ['-c:a', 'aac', '-b:a', '320k', '-ar', '48000', '-shortest'] : []),
   out,
 ];
 const r = spawnSync('ffmpeg', args, { stdio: 'inherit' });
+for (const f of fs.readdirSync(BUILD)) if (f.startsWith('x264pass')) fs.rmSync(path.join(BUILD, f));
 if (r.status === 0) {
   const mb = (fs.statSync(out).size / 1048576).toFixed(1);
   console.log(`✔ ${path.relative(process.cwd(), out)} (${mb} Mo)`);

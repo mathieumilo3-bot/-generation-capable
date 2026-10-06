@@ -8,6 +8,7 @@
   const $ = (s) => document.querySelector(s);
   const sig = MP.signature();
   MP.meta.tune = 'film'; // encodage x264 adapté au grain / dégradés
+  MP.meta.bitrate = '14M'; // deux passes à débit cible (le grain aléatoire coûte très cher en CRF)
 
   // état lu par le shader à chaque image (animé par GSAP)
   const U = {

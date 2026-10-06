@@ -11,6 +11,10 @@ entièrement par code : aucune banque d'images, aucun sample audio.
 
 Les marques « VIF—ARGENT » et « forma » sont fictives (projets concept).
 
+Bonus : `renders/posters/*.jpg` (couvertures pour Behance / Instagram) et
+`renders/showreel-45s.mp4` (les trois pièces bout à bout, généré par `bash engine/extras.sh`,
+non versionné car c'est un simple assemblage).
+
 ## Mettre ton nom
 
 Ouvre `config.js` et remplis `name` (et `handle` si tu veux) :
@@ -46,6 +50,8 @@ node engine/render.mjs 02-liquid --sub 2 --workers 2     # ~45 min (WebGL logici
 node engine/render.mjs 03-shapes                         # ~6 min
 node engine/render.mjs 01-kinetic --stills 1,4.5,9       # images fixes de contrôle → build/01-kinetic/stills
 node engine/render.mjs 01-kinetic --audio-only           # régénère seulement le son
+node engine/render.mjs 02-liquid --encode-only           # réencode la vidéo depuis les images déjà rendues
+bash engine/extras.sh                                    # couvertures + showreel 45 s
 ```
 
 Prérequis : Node 18+, Python 3 avec `numpy` et `scipy`, FFmpeg, Chromium
