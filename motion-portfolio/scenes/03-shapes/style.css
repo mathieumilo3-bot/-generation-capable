@@ -1,0 +1,61 @@
+:root {
+  --cream: #f2ebdd;
+  --ink: #161616;
+  --red: #e5412d;
+  --blue: #2547d0;
+  --yellow: #f4b91a;
+}
+#bg { background: var(--cream); }
+#cam { transform-origin: 50% 50%; }
+#svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.red { fill: var(--red); }
+.blue { fill: var(--blue); }
+.yellow { fill: var(--yellow); }
+.ink { fill: var(--ink); }
+.cream { fill: var(--cream); }
+#ground { stroke: var(--ink); stroke-width: 6; stroke-linecap: round; }
+#loop { stroke: var(--cream); stroke-width: 16; stroke-linecap: round; stroke-linejoin: round; }
+.orbit { fill: none; stroke: var(--cream); stroke-width: 2; opacity: 0.35; }
+.string { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.ring { fill: none; }
+
+#word {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  font-family: 'Bricolage Grotesque Variable', sans-serif;
+  font-variation-settings: 'opsz' 96, 'wdth' 100;
+  font-weight: 800;
+  font-size: 220px;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  white-space: nowrap;
+  visibility: hidden;
+}
+#word .ch { display: inline-block; }
+#tagline {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  font-family: 'JetBrains Mono Variable', monospace;
+  font-weight: 500;
+  font-size: 21px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+  visibility: hidden;
+}
+#iris { background: var(--cream); visibility: hidden; z-index: 60; }
+#endcard { position: absolute; left: 56px; bottom: 50px; z-index: 85; color: var(--ink); visibility: hidden; }
+#ecName {
+  font-family: 'Bricolage Grotesque Variable', sans-serif;
+  font-variation-settings: 'opsz' 48;
+  font-weight: 800;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+#ecRole { font-family: 'JetBrains Mono Variable', monospace; font-weight: 500; font-size: 17px; letter-spacing: 0.1em; text-transform: uppercase; }

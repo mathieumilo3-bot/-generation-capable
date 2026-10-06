@@ -1,0 +1,22 @@
+{
+  "name": "motion-portfolio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Trois pièces de motion design (15 s) rendues image par image : HTML/CSS/WebGL + GSAP, capture Playwright, son synthétisé, encodage FFmpeg.",
+  "type": "module",
+  "scripts": {
+    "render": "node engine/render.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/anybody": "^5.3.0",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/roboto-flex": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource-variable/syne": "^5.3.0",
+    "@fontsource-variable/unbounded": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "gsap": "^3.15.0",
+    "playwright-core": "^1.56.1"
+  }
+}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>01 — Kinetic Type</title>
+<link rel="stylesheet" href="../../engine/base.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-scene="01-kinetic">
+<div id="stage">
+  <div id="bg" class="full"></div>
+  <div id="cam" class="full">
+    <div id="zoom" class="full">
+
+      <!-- A · ignition -->
+      <section class="sec" id="sA">
+        <div class="hair" id="aHairT"></div>
+        <div class="hair" id="aHairB"></div>
+        <div class="slot" id="aSlot"><div class="word flex" id="aWord"></div></div>
+      </section>
+
+      <!-- B · IS NOT / JUST / MOVEMENT. -->
+      <section class="sec" id="sB1"><div class="word flex" id="bIsNot"></div></section>
+      <section class="sec" id="sB2"><div class="word serif" id="bJust"></div></section>
+      <section class="sec" id="sB3">
+        <div class="speed" id="bSpeed"></div>
+        <div class="word flex" id="bMove"></div>
+      </section>
+      <div class="dot" id="dot"></div>
+
+      <!-- C · IT'S TIMING. -->
+      <section class="sec" id="sC">
+        <svg id="cClock" width="1920" height="1080" viewBox="-960 -540 1920 1080">
+          <circle id="cRing" r="380" fill="none" stroke="currentColor" stroke-width="2"/>
+          <g id="cTicks"></g>
+          <line id="cHand" x1="0" y1="0" x2="0" y2="-380" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <div class="word serif" id="cIts">it’s</div>
+        <div class="word flex" id="cTiming"></div>
+        <div class="mono" id="cFrame"></div>
+      </section>
+
+      <!-- D · TENSION. / RELEASE. -->
+      <section class="sec" id="sD1">
+        <div class="word flex" id="dTension"></div>
+        <div class="meter" id="dMeter"></div>
+      </section>
+      <section class="sec" id="sD2"><div class="word flex" id="dRelease"></div></section>
+
+      <!-- E · RHYTHM marquee -->
+      <section class="sec" id="sE"><div id="ePlane"></div></section>
+
+      <!-- F · vague typographique -->
+      <section class="sec" id="sF"><div id="fStack"></div></section>
+
+      <!-- G · IT'S … MOTION (glitch) -->
+      <section class="sec" id="sG">
+        <div class="word serif" id="gIts">it’s</div>
+        <div id="gWrap">
+          <div class="word flex gl" id="gWordA"></div>
+          <div class="word flex gl" id="gWordB"></div>
+          <div class="word flex" id="gWord"></div>
+        </div>
+      </section>
+
+      <!-- H · E·MOTION -->
+      <section class="sec" id="sH">
+        <div id="hBurst"></div>
+        <div class="word serif" id="hPre">motion is</div>
+        <div class="word flex" id="hWord"></div>
+      </section>
+    </div>
+  </div>
+  <div id="flash" class="full"></div>
+  <div id="endcard">
+    <div id="ecName"></div>
+    <div id="ecRole"></div>
+  </div>
+</div>
+<script src="../../node_modules/gsap/dist/gsap.min.js"></script>
+<script src="../../engine/runtime.js"></script>
+<script src="../../config.js"></script>
+<script src="scene.js"></script>
+</body>
+</html>

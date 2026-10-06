@@ -1,0 +1,116 @@
+:root {
+  --ink: #0b0b0c;
+  --bone: #eeeae2;
+  --sig: #ff4b1f;
+}
+#bg { background: var(--ink); }
+#cam, #zoom { transform-origin: 50% 50%; }
+
+.word {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  white-space: nowrap;
+  line-height: 1;
+  color: var(--bone);
+  text-box: trim-both cap alphabetic;
+}
+.flex {
+  font-family: 'Roboto Flex Variable', sans-serif;
+  --wd: 100;
+  --wg: 900;
+  --op: 144;
+  letter-spacing: -0.01em;
+}
+.flex .ch,
+.row.flexrow .ch {
+  font-variation-settings: 'wdth' var(--wd), 'wght' var(--wg), 'opsz' var(--op);
+}
+.serif {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.mono {
+  position: absolute;
+  font-family: 'JetBrains Mono Variable', monospace;
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  color: var(--bone);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* A */
+.hair { position: absolute; left: 56px; width: 1808px; top: 539px; height: 2px; background: var(--bone); }
+.slot { position: absolute; left: 0; width: 1920px; top: 540px; height: 0; overflow: hidden; }
+
+/* B */
+.speed { position: absolute; inset: 0; }
+.speed i { position: absolute; height: 2px; background: var(--bone); display: block; }
+.dot { position: absolute; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: var(--sig); visibility: hidden; }
+
+/* C */
+#cClock { position: absolute; left: 0; top: 0; color: var(--bone); overflow: visible; }
+#cFrame { left: 50%; top: 732px; transform: translateX(-50%); opacity: 0.75; font-variant-numeric: tabular-nums; }
+
+/* D */
+.meter { position: absolute; left: 180px; width: 1560px; top: 880px; height: 10px; background: var(--sig); transform-origin: 0 50%; }
+
+/* E */
+#ePlane { position: absolute; left: 50%; top: 50%; width: 4200px; height: 2200px; }
+.row {
+  position: absolute;
+  left: 0;
+  white-space: nowrap;
+  font-size: 150px;
+  line-height: 1;
+  height: 170px;
+  color: var(--bone);
+  font-family: 'Roboto Flex Variable', sans-serif;
+  font-variation-settings: 'wdth' 120, 'wght' 900, 'opsz' 144;
+  letter-spacing: -0.01em;
+}
+.row.outline { color: transparent; -webkit-text-stroke: 2.5px var(--bone); }
+.row.serifrow { font-family: 'Instrument Serif', serif; font-style: italic; font-variation-settings: normal; font-size: 168px; }
+.row.hot { color: var(--sig); -webkit-text-stroke: 0; }
+
+/* F */
+#fStack { position: absolute; left: 0; top: 50%; width: 1920px; }
+.frow {
+  display: block;
+  text-align: center;
+  white-space: nowrap;
+  font-family: 'Roboto Flex Variable', sans-serif;
+  font-size: 116px;
+  line-height: 0.86;
+  color: var(--bone);
+  text-box: trim-both cap alphabetic;
+  margin-bottom: 22px;
+}
+.frow .ch { font-variation-settings: 'wdth' var(--wd, 100), 'wght' var(--wg, 600), 'opsz' 144; }
+
+/* G */
+#gWrap { position: absolute; inset: 0; }
+.gl { opacity: 0; }
+
+/* H */
+#hBurst { position: absolute; inset: 0; }
+#hBurst i { position: absolute; left: 0; top: 0; width: 160px; height: 6px; margin-top: -3px; background: var(--ink); transform-origin: 0 50%; display: block; }
+
+#flash { background: var(--sig); visibility: hidden; z-index: 70; }
+#endcard { position: absolute; left: 56px; bottom: 50px; z-index: 85; color: var(--ink); visibility: hidden; }
+#ecName {
+  font-family: 'Roboto Flex Variable', sans-serif;
+  font-variation-settings: 'wdth' 130, 'wght' 800, 'opsz' 144;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+#ecRole { font-family: 'JetBrains Mono Variable', monospace; font-weight: 500; font-size: 17px; letter-spacing: 0.1em; text-transform: uppercase; }
+.beats { display: inline-flex; gap: 6px; margin-left: 14px; vertical-align: -1px; }
+.beats b { width: 13px; height: 13px; border: 1.5px solid currentColor; display: block; }
+.beats b.on { background: currentColor; }

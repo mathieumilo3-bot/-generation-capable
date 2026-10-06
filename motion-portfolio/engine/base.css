@@ -1,0 +1,41 @@
+@import url('../node_modules/@fontsource-variable/roboto-flex/full.css');
+@import url('../node_modules/@fontsource/instrument-serif/400.css');
+@import url('../node_modules/@fontsource/instrument-serif/400-italic.css');
+@import url('../node_modules/@fontsource-variable/jetbrains-mono/wght.css');
+@import url('../node_modules/@fontsource-variable/unbounded/wght.css');
+@import url('../node_modules/@fontsource-variable/space-grotesk/wght.css');
+@import url('../node_modules/@fontsource-variable/bricolage-grotesque/standard.css');
+@import url('../node_modules/@fontsource-variable/syne/wght.css');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+#stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  isolation: isolate;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+.abs { position: absolute; }
+.full { position: absolute; inset: 0; }
+.sec { position: absolute; inset: 0; visibility: hidden; }
+.ch { display: inline-block; white-space: pre; }
+
+/* HUD : petits repères techniques dans les coins */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 80; color: var(--hud); }
+.hud-item {
+  position: absolute;
+  font-family: 'JetBrains Mono Variable', monospace;
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+.hud-tl { left: 56px; top: 52px; }
+.hud-tr { right: 56px; top: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+.hud-bl { left: 56px; bottom: 52px; }
+.hud-br { right: 56px; bottom: 52px; text-align: right; }

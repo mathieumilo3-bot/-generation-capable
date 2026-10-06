@@ -1,0 +1,49 @@
+:root { --fg: #efeeeb; }
+#stage { background: #000; }
+#gl { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+
+#tagline { position: absolute; left: 150px; top: 430px; color: var(--fg); visibility: hidden; }
+.tl1 {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 104px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.tl1 span { display: inline-block; }
+.tl2 {
+  margin-top: 30px;
+  font-family: 'JetBrains Mono Variable', monospace;
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+#brand { position: absolute; left: 0; width: 1920px; top: 790px; text-align: center; color: var(--fg); visibility: hidden; }
+#brandName {
+  font-family: 'Instrument Serif', serif;
+  font-size: 118px;
+  line-height: 1;
+  letter-spacing: 0.3em;
+  padding-left: 0.3em;
+  white-space: nowrap;
+}
+#brandName .ch { display: inline-block; }
+#brandRule { width: 520px; height: 1px; margin: 30px auto 24px; background: var(--fg); opacity: 0.55; transform-origin: 50% 50%; }
+#brandSub {
+  font-family: 'Space Grotesk Variable', sans-serif;
+  font-weight: 400;
+  font-size: 19px;
+  letter-spacing: 0.62em;
+  padding-left: 0.62em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+#endcard { position: absolute; left: 56px; bottom: 50px; z-index: 85; color: var(--fg); visibility: hidden; }
+#ecName { font-family: 'Instrument Serif', serif; font-size: 50px; line-height: 1; margin-bottom: 14px; }
+#ecRole { font-family: 'JetBrains Mono Variable', monospace; font-weight: 500; font-size: 17px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; }
+#hud { opacity: 0.85; }
