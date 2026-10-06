@@ -1,0 +1,11 @@
+{
+  "name": "@app/functions",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "check:deno": "deno check --no-lock */index.ts"
+  }
+}

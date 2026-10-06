@@ -86,6 +86,10 @@ export function humanizeError(code: string | undefined | null, ctx: ErrorContext
       return { title: "Votre banque demande une confirmation.", detail: "Terminez la validation pour finaliser le paiement.", money: "Votre solde n'a pas été modifié.", action: "retry", actionLabel: "Continuer" };
     case "amount_too_low":
       return { title: "Montant trop faible.", detail: "Choisissez un montant supérieur au minimum de recharge.", money: null, action: "none", actionLabel: null };
+    case "reauth_required":
+      return { title: "Confirmez que c'est bien vous.", detail: "Pour votre sécurité, saisissez le code envoyé par e-mail avant de continuer.", money: null, action: "sign_in", actionLabel: "Recevoir un code" };
+    case "revision_unsupported":
+      return { title: "Cette modification n'est pas encore possible.", detail: "Essayez : plus court, plus rapide, plus lent, plus ou moins de zooms.", money: NO_CHARGE, action: "none", actionLabel: null };
     case "transfer_ownership_first":
       return { title: "Transférez d'abord la propriété de votre équipe.", detail: "Vous êtes propriétaire d'une équipe avec d'autres membres.", money: null, action: "contact_support", actionLabel: "Contacter le support" };
     case "invalid_invitation":

@@ -245,15 +245,15 @@ create or replace function public.svc_payment_upsert(
   p_provider text, p_provider_ref text, p_wallet_id uuid, p_kind text, p_amount_cents bigint,
   p_status text, p_platform text default null, p_idempotency_key text default null,
   p_metadata jsonb default '{}'::jsonb, p_failure_code text default null,
-  p_failure_detail text default null, p_receipt_url text default null)
+  p_failure_detail text default null, p_receipt_url text default null, p_id uuid default null)
 returns public.payments language plpgsql security definer set search_path = '' as $$
 declare w public.wallets; pay public.payments;
 begin
   select * into w from public.wallets where id = p_wallet_id;
   if not found then raise exception 'wallet_not_found' using errcode = 'P0002'; end if;
-  insert into public.payments (user_id, organization_id, wallet_id, provider, provider_ref, kind, amount_cents,
+  insert into public.payments (id, user_id, organization_id, wallet_id, provider, provider_ref, kind, amount_cents,
     status, platform, idempotency_key, metadata, failure_code, failure_detail_internal, receipt_url)
-  values (w.user_id, w.organization_id, w.id, p_provider, p_provider_ref, p_kind, p_amount_cents,
+  values (coalesce(p_id, gen_random_uuid()), w.user_id, w.organization_id, w.id, p_provider, p_provider_ref, p_kind, p_amount_cents,
     p_status, p_platform, p_idempotency_key, p_metadata, p_failure_code, left(p_failure_detail, 1000), p_receipt_url)
   on conflict (provider, provider_ref) where provider_ref is not null do update set
     -- Jamais de régression d'un paiement déjà abouti/remboursé.

@@ -1,0 +1,70 @@
+# Configuration Supabase CLI (développement local + déploiement des fonctions).
+# Les clés API récentes (sb_publishable_/sb_secret_) ne sont pas des JWT : le contrôle `verify_jwt` de la
+# plateforme est donc désactivé pour toutes les fonctions et REMPLACÉ, dans le code, par
+#   - requireUser()      : vérifie le JWT utilisateur auprès de Supabase Auth ;
+#   - isCronCaller()     : secret partagé à temps constant (appels planifiés) ;
+#   - la signature Stripe pour le webhook.
+project_id = "app-v1"
+
+[api]
+enabled = true
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+site_url = "http://localhost:8081"
+additional_redirect_urls = ["montage://auth/callback", "http://localhost:8081/auth/callback", "https://app.example.com/auth/callback"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+minimum_password_length = 12
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+otp_length = 6
+otp_expiry = 600
+max_frequency = "60s"
+
+[auth.email.template.magic_link]
+subject = "Votre code de connexion"
+content_path = "./templates/otp.html"
+
+[auth.email.template.confirmation]
+subject = "Votre code de connexion"
+content_path = "./templates/otp.html"
+
+[auth.external.apple]
+enabled = true
+client_id = "env(APPLE_CLIENT_IDS)"
+secret = "env(APPLE_OAUTH_SECRET)"
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_OAUTH_CLIENT_ID)"
+secret = "env(GOOGLE_OAUTH_SECRET)"
+skip_nonce_check = false
+
+[storage]
+enabled = true
+file_size_limit = "2GiB"
+
+[functions.stripe-webhook]
+verify_jwt = false
+[functions.create-topup-checkout]
+verify_jwt = false
+[functions.create-card-setup]
+verify_jwt = false
+[functions.auto-reload-run]
+verify_jwt = false
+[functions.delete-account]
+verify_jwt = false
+[functions.apple-link]
+verify_jwt = false
+[functions.verify-store-purchase]
+verify_jwt = false
+[functions.send-invitation-email]
+verify_jwt = false

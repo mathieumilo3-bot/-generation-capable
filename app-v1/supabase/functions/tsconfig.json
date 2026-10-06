@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "_shared/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "**/index.ts",
+    "_shared/runtime.ts"
+  ]
+}

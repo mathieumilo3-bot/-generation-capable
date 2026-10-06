@@ -65,9 +65,13 @@ export function createApi(sb: SupabaseClient, opts: { platform: "ios" | "android
       const { error } = await sb.auth.signOut();
       if (error) throw toApiError(error);
     },
-    /** Réauthentification avant une action sensible (suppression de compte) : nouveau code par e-mail. */
-    async reauthenticate() {
-      const { error } = await sb.auth.reauthenticate();
+    /**
+     * Réauthentification avant une action sensible (suppression de compte) : on renvoie un code
+     * par e-mail (signInWithOtp) puis `verifyEmailOtp` ouvre une session FRAÎCHE ; le serveur
+     * (Edge Function delete-account) exige une authentification de moins de 10 minutes.
+     */
+    async sendReauthCode(email: string) {
+      const { error } = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: false } });
       if (error) throw toApiError(error);
     },
   };
@@ -108,7 +112,16 @@ export function createApi(sb: SupabaseClient, opts: { platform: "ios" | "android
       return data as { valid: boolean; kind?: string; credit_cents?: number; name?: string; company?: string | null };
     }),
     acceptInvitation: (token: string) => rpc<{ credited_cents: number }>("accept_invitation", { p_token: token }),
-    /** Suppression (§31) : Edge Function côté serveur ; réauth par jeton récent. */
+    /**
+     * Sign in with Apple : le serveur échange l'authorizationCode (natif) ou conserve le refresh token OAuth
+     * pour pouvoir RÉVOQUER le jeton Apple à la suppression du compte (guideline 5.1.1(v)).
+     */
+    async linkAppleAuth(input: { authorizationCode?: string; refreshToken?: string }) {
+      const { data, error } = await sb.functions.invoke("apple-link", { body: input });
+      if (error) throw toApiError(error);
+      return data as { ok: boolean };
+    },
+    /** Suppression (§31) : Edge Function côté serveur ; exige une authentification < 10 min (sinon code 'reauth_required'). */
     async deleteAccount(confirmation: "SUPPRIMER") {
       const { data, error } = await sb.functions.invoke("delete-account", { body: { confirmation } });
       if (error) throw toApiError(error);

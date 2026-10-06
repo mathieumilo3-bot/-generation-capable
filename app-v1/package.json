@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "Application client (iOS/Android/Web) + back-office + services, au-dessus du moteur vidéo existant (video-editor/).",
-  "workspaces": ["apps/*", "packages/*", "services/*"],
+  "workspaces": ["apps/*", "packages/*", "services/*", "supabase/functions"],
   "engines": { "node": ">=20" },
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
