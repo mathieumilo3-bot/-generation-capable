@@ -355,7 +355,7 @@
         let j = 0;
         for (const hit of [17, 18, 19]) {
           const d = tb - hit;
-          if (d > 0) j += 1.8 * Math.exp(-d * 9) * Math.sin(d * 42) * (i % 2 ? 1 : -1);
+          if (d > 0) j += 0.45 * Math.exp(-d * 10) * Math.sin(d * 46); // frisson commun : les billes ne s'interpénètrent pas
         }
         return j;
       };
