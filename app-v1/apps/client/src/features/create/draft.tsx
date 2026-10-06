@@ -55,14 +55,16 @@ export function CreateDraftProvider({ children }: { children: React.ReactNode })
     return creating.current;
   }, []);
 
-  const value = useMemo<DraftContextValue>(() => ({
-    draft,
-    patch: (p) => dispatch({ type: "patch", patch: p }),
-    reset: () => dispatch({ type: "reset" }),
-    hydrate,
-    ensureProject,
-    forget: async (projectId) => { try { await AsyncStorage.removeItem(draftStorageKey(projectId)); } catch { /* sans importance */ } },
-  }), [draft, hydrate, ensureProject]);
+  const patch = useCallback((p: Partial<CreateDraft>) => dispatch({ type: "patch", patch: p }), []);
+  const reset = useCallback(() => dispatch({ type: "reset" }), []);
+  const forget = useCallback(async (projectId: string) => {
+    try { await AsyncStorage.removeItem(draftStorageKey(projectId)); } catch { /* sans importance */ }
+  }, []);
+
+  const value = useMemo<DraftContextValue>(
+    () => ({ draft, patch, reset, hydrate, ensureProject, forget }),
+    [draft, patch, reset, hydrate, ensureProject, forget],
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

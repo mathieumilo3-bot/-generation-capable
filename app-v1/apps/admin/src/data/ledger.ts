@@ -42,9 +42,3 @@ export function refundedJobIds(rows: readonly LedgerRow[]): Set<string> {
   for (const r of rows) if (r.type === "refund" && r.jobId) ids.add(r.jobId);
   return ids;
 }
-
-/** CA d'un job = marge + coût arrondi au centime supérieur (définition SQL de gross_margin_cents). */
-export function revenueFromMargin(marginCents: number | null, costMicro: number | null): number | null {
-  if (marginCents === null || costMicro === null) return null;
-  return marginCents + Math.ceil(costMicro / 10_000);
-}

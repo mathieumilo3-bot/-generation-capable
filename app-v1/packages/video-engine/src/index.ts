@@ -20,6 +20,8 @@ export interface EngineJobRequest {
   externalJobId: string;          // = video_jobs.id → idempotence côté moteur
   correlationId: string;
   kind: "create" | "revision";
+  /** Numéro de tentative (1, 2…) : un nouveau numéro autorise le moteur à REPARTIR après un échec définitif (relance admin). */
+  attempt?: number;
   inputs: EngineInput[];
   /** Instructions de l'utilisateur (donnée, jamais instruction système). */
   brief: string | null;

@@ -1,7 +1,7 @@
 import { formatEuros } from "@app/domain";
 
 const TZ = "Europe/Paris";
-const NBSP = " ";
+const NBSP = "\u00a0";
 
 function validDate(iso: string | null | undefined): Date | null {
   if (!iso) return null;
@@ -58,12 +58,12 @@ export function formatMicroEuros(micro: number): string {
   const units = Math.floor((abs + 50) / 100); // unités de 0,0001 €
   const euros = Math.floor(units / 10_000);
   const dec = String(units % 10_000).padStart(4, "0").replace(/0+$/, "").padEnd(2, "0");
-  const intPart = String(euros).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const intPart = String(euros).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f");
   return `${sign}${intPart},${dec}${NBSP}€`;
 }
 
 export function formatInt(n: number): string {
-  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f");
 }
 
 /** Pourcentage entier (0–100) de part/total ; 0 si total nul. */

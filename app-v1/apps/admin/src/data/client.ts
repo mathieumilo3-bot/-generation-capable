@@ -7,7 +7,7 @@ export interface Backend {
   db: AdminDb;
 }
 
-/** Client navigateur : clé PUBLISHABLE + session de l'utilisateur staff. Jamais de service_role. */
+/** Client navigateur : clé PUBLISHABLE + session de l'utilisateur staff. Jamais de clé serveur. */
 export function createBackend(env: AdminEnv): Backend {
   const client = createClient(env.client.supabaseUrl, env.client.supabasePublishableKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },

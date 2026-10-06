@@ -95,6 +95,7 @@ export interface CustomerJob {
   priceCents: number;
   errorCode: string | null;
   createdAt: string;
+  revenueCents: number | null;
   costMicro: number | null;
   marginCents: number | null;
 }
@@ -153,7 +154,7 @@ export function decodeCustomerDetail(raw: unknown): CustomerDetail | null {
     jobs: mapRows(r.jobs, (x) => ({
       id: str(x.id), status: str(x.status), kind: str(x.kind), priceCents: num(x.price_cents),
       errorCode: strOrNull(x.error_code), createdAt: str(x.created_at),
-      costMicro: numOrNull(x.total_actual_cost_micro), marginCents: numOrNull(x.gross_margin_cents),
+      revenueCents: numOrNull(x.revenue_cents), costMicro: numOrNull(x.total_actual_cost_micro), marginCents: numOrNull(x.gross_margin_cents),
     })),
     totals: { revenueCents: num(t.revenue_cents), costMicro: num(t.cost_micro), marginCents: num(t.margin_cents) },
     notes: mapRows(r.notes, (x) => ({ id: str(x.id), authorId: strOrNull(x.author_id), note: str(x.note), createdAt: str(x.created_at) })),

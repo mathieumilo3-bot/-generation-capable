@@ -1,0 +1,22 @@
+name: app-v1 déploiement backend (manuel, par environnement)
+on:
+  workflow_dispatch:
+    inputs:
+      environment: { description: "staging | production", required: true, default: staging }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}          # secrets séparés par environnement GitHub
+    defaults: { run: { working-directory: app-v1 } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - run: bash supabase/tests/run.sh                               # on ne déploie jamais un schéma dont les tests échouent
+        env: { PGBIN: /usr/lib/postgresql/16/bin }
+      - run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+        env: { SUPABASE_ACCESS_TOKEN: "${{ secrets.SUPABASE_ACCESS_TOKEN }}", SUPABASE_DB_PASSWORD: "${{ secrets.SUPABASE_DB_PASSWORD }}" }
+      - run: supabase db push
+        env: { SUPABASE_ACCESS_TOKEN: "${{ secrets.SUPABASE_ACCESS_TOKEN }}", SUPABASE_DB_PASSWORD: "${{ secrets.SUPABASE_DB_PASSWORD }}" }
+      - run: supabase functions deploy
+        env: { SUPABASE_ACCESS_TOKEN: "${{ secrets.SUPABASE_ACCESS_TOKEN }}" }

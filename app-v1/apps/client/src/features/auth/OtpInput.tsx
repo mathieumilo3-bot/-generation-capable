@@ -47,5 +47,5 @@ const styles = StyleSheet.create({
   wrap: { width: "100%" },
   row: { flexDirection: "row", gap: 8 },
   box: { flex: 1, minHeight: 60, borderRadius: radii.md, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: "transparent", alignItems: "center", justifyContent: "center" },
-  hidden: { ...StyleSheet.absoluteFillObject, opacity: 0.02, color: "transparent" },
+  hidden: { ...StyleSheet.absoluteFill, opacity: 0.02, color: "transparent" },
 });

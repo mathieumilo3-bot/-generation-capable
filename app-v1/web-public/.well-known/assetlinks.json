@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.montage",
+      "sha256_cert_fingerprints": ["REMPLACER:PAR:LEMPREINTE:SHA256:DU:CERTIFICAT:DE:SIGNATURE:PLAY"]
+    }
+  }
+]

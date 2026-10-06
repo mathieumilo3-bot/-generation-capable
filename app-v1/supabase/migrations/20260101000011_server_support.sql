@@ -95,7 +95,8 @@ grant execute on function
   public.admin_revoke_invitation(uuid), public.admin_retry_job(uuid, text), public.admin_job_detail(uuid),
   public.admin_list_jobs(text, integer, integer), public.admin_dashboard(text),
   public.admin_customers(text, integer, integer), public.admin_customer_detail(uuid),
-  public.admin_set_setting(text, jsonb, text), public.admin_change_price(uuid, integer, text)
+  public.admin_set_setting(text, jsonb, text), public.admin_change_price(uuid, integer, text),
+  public.admin_update_support_request(uuid, text, text)
   to authenticated;
 grant execute on function public.peek_invitation(text) to anon, authenticated;
 grant all on all tables in schema public to service_role;

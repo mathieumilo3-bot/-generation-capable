@@ -38,10 +38,6 @@ export function decodeSupportRequest(r: JsonObject): SupportRequest {
 
 export interface SupportFilter { status: string; category: string }
 
-/**
- * Lecture seule : aucun RPC ni droit d'UPDATE n'existe pour changer le statut d'une demande
- * (voir README « Besoins côté serveur »).
- */
 export async function listSupportRequests(db: AdminDb, filter: SupportFilter, req: PageRequest): Promise<Page<SupportRequest>> {
   const eq: Record<string, string> = {};
   if (filter.status) eq.status = filter.status;
@@ -56,4 +52,18 @@ export async function listSupportRequests(db: AdminDb, filter: SupportFilter, re
 export async function countOpenSupportRequests(db: AdminDb): Promise<number> {
   const res = await db.select({ table: "support_requests", columns: "id", eq: { status: "open" }, limit: 1, count: true });
   return res.count ?? 0;
+}
+
+export type SupportStatus = "open" | "in_progress" | "resolved";
+
+export const STAFF_NOTES_MAX = 4000;
+
+/** Changement de statut / note interne (RPC ouvert aux rôles support et admin ; aucune action financière). */
+export async function updateSupportRequest(db: AdminDb, id: string, status: SupportStatus, staffNotes: string | null): Promise<void> {
+  const notes = staffNotes === null ? null : staffNotes.trim();
+  await db.rpc("admin_update_support_request", {
+    p_id: id,
+    p_status: status,
+    p_staff_notes: notes === "" ? null : notes,
+  });
 }

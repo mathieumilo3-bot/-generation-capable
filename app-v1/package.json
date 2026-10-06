@@ -2,12 +2,19 @@
   "name": "app-v1",
   "private": true,
   "version": "1.0.0",
-  "description": "Application client (iOS/Android/Web) + back-office + services, au-dessus du moteur vidéo existant (video-editor/).",
-  "workspaces": ["apps/*", "packages/*", "services/*", "supabase/functions"],
-  "engines": { "node": ">=20" },
+  "description": "Application client (iOS/Android/Web) + back-office + services, au-dessus du moteur vid\u00e9o existant (video-editor/).",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*",
+    "supabase/functions"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
+    "lint": "node scripts/guard.mjs",
     "test": "npm run test --workspaces --if-present",
     "test:sql": "bash supabase/tests/run.sh",
     "test:all": "npm run test && npm run test:sql",

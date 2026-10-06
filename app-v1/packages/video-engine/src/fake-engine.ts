@@ -20,7 +20,12 @@ export class FakeEngine implements EngineClient {
   private flaky: number;
   constructor(private o: FakeEngineOptions = {}) { this.flaky = o.flakyStatus ?? 0; }
 
-  async capabilities() { return { autonomous_creation: false }; }
+  async capabilities() {
+    return {
+      engine_version: "fake-1", autonomous_creation: false, aspect_ratios: ["9:16"], max_duration_sec: 180, reference_mode: true,
+      revisions: { enabled: true, commands: ["shorter", "faster", "slower", "more_zooms", "less_zooms"] }, voice_instructions: true,
+    };
+  }
 
   async submit(req: EngineJobRequest) {
     const existing = this.byExternal.get(req.externalJobId);

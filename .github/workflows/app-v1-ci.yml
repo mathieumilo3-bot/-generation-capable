@@ -1,0 +1,82 @@
+name: app-v1 CI
+on:
+  push:
+    paths: ["app-v1/**", "video-editor/**", ".github/workflows/app-v1-ci.yml"]
+  pull_request:
+    paths: ["app-v1/**", "video-editor/**"]
+concurrency:
+  group: app-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typescript:
+    name: Typecheck + tests (packages, client, admin, orchestrateur, functions)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: app-v1 } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app-v1/package-lock.json }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+        env: { PGBIN: /usr/lib/postgresql/16/bin }       # active les tests d'intégration orchestrateur ⇄ Postgres
+
+  sql:
+    name: Tests SQL (RLS, ledger, idempotence) sur Postgres 16
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash app-v1/supabase/tests/run.sh
+        env: { PGBIN: /usr/lib/postgresql/16/bin }
+
+  deno:
+    name: Edge Functions (deno check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with: { deno-version: v2.x }
+      - run: deno check --no-lock */index.ts
+        working-directory: app-v1/supabase/functions
+
+  web-build:
+    name: Builds web (client Expo + admin)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: app-v1 } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app-v1/package-lock.json }
+      - run: npm ci
+      - run: npm run build:web -w @app/client
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://ci.supabase.co
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_key
+      - run: npm run build -w @app/admin
+        env:
+          VITE_SUPABASE_URL: https://ci.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_key
+
+  engine:
+    name: Moteur + passerelle (build)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: video-editor } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: video-editor/pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  secrets-scan:
+    name: Aucun secret committé
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }

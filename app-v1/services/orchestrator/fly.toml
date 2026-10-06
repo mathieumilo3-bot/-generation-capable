@@ -1,0 +1,10 @@
+# Exemple de déploiement Fly.io de l'orchestrateur (même région que le moteur ; aucune IP publique requise).
+app = "REMPLACE-MOI-orchestrator"
+primary_region = "cdg"
+[build]
+  dockerfile = "Dockerfile"
+[processes]
+  app = "npx tsx services/orchestrator/src/index.ts"
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

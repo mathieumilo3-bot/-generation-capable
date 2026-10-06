@@ -8,8 +8,8 @@ import { Button, Text, radii, spacing } from "@app/ui";
  * Lecteur de la vidéo finale. L'URL signée est fournie par l'écran (jamais de fichier public).
  * Contrôles natifs (lecture, plein écran, volume) : rien à réinventer, accessibles par défaut.
  */
-export function VideoPlayer({ uri, aspectRatio = 9 / 16, maxHeight, onPlay, onRetry }: {
-  uri: string | null; aspectRatio?: number; maxHeight?: number; onPlay?: () => void; onRetry?: () => void;
+export function VideoPlayer({ uri, aspectRatio = 9 / 16, width, onPlay, onRetry }: {
+  uri: string | null; aspectRatio?: number; width?: number; onPlay?: () => void; onRetry?: () => void;
 }) {
   const player = useVideoPlayer(uri, (p) => { p.loop = false; });
   const [failed, setFailed] = useState(false);
@@ -22,7 +22,7 @@ export function VideoPlayer({ uri, aspectRatio = 9 / 16, maxHeight, onPlay, onRe
   }, [player, onPlay]);
 
   return (
-    <View style={[styles.frame, { aspectRatio, maxHeight }]}>
+    <View style={[styles.frame, { aspectRatio }, width ? { width } : null]}>
       {uri ? (
         <VideoView player={player} style={StyleSheet.absoluteFill} nativeControls contentFit="contain"
           accessibilityLabel="Lecteur de votre vidéo" />
@@ -33,7 +33,7 @@ export function VideoPlayer({ uri, aspectRatio = 9 / 16, maxHeight, onPlay, onRe
         <View style={[StyleSheet.absoluteFill, styles.center, styles.errorLayer]}>
           <Text variant="bodyStrong" style={{ color: "#fff" }} align="center">La lecture n'a pas pu démarrer.</Text>
           <Text variant="secondary" style={{ color: "#D1D1D6" }} align="center">Votre vidéo est en sécurité.</Text>
-          {onRetry ? <Button label="Réessayer" variant="secondary" size="small" fullWidth={false} onPress={onRetry} /> : null}
+          {onRetry ? <Button label="Réessayer" variant="secondary" size="small" fullWidth={false} style={{ alignSelf: "center" }} onPress={onRetry} /> : null}
         </View>
       ) : null}
     </View>

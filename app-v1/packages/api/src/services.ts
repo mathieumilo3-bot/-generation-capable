@@ -14,6 +14,10 @@ type HistoryRowRaw = import("@app/domain").HistoryRow;
  * (prix, solde, droits) vivent dans Postgres (RPC + RLS). Le client ne fait
  * qu'appeler et afficher.
  */
+let channelSeq = 0;
+/** Nom de canal UNIQUE par abonnement : supabase-js réutilise un canal de même nom, ce qui casserait les abonnements multiples. */
+const chan = (base: string) => `${base}:${++channelSeq}`;
+
 export function createApi(sb: SupabaseClient, opts: { platform: "ios" | "android" | "web"; appVersion: string; functionsBaseUrl?: string }) {
   const rpc = async <T extends object>(fn: string, args?: Record<string, unknown>): Promise<RpcResult<T>> => {
     const { data, error } = await sb.rpc(fn, args);
@@ -164,7 +168,7 @@ export function createApi(sb: SupabaseClient, opts: { platform: "ios" | "android
       }),
     /** Mises à jour en direct du solde (Realtime ; RLS appliquée). */
     subscribe(userId: string, cb: () => void) {
-      const ch = sb.channel(`wallet:${userId}`)
+      const ch = sb.channel(chan(`wallet:${userId}`))
         .on("postgres_changes", { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${userId}` }, cb)
         .subscribe();
       return () => { void sb.removeChannel(ch); };
@@ -253,7 +257,7 @@ export function createApi(sb: SupabaseClient, opts: { platform: "ios" | "android
     },
     /** Temps réel ; l'appelant doit AUSSI prévoir un polling de repli (Realtime peut être coupé). */
     subscribe(userId: string, cb: (job: JobRow) => void) {
-      const ch = sb.channel(`jobs:${userId}`)
+      const ch = sb.channel(chan(`jobs:${userId}`))
         .on("postgres_changes", { event: "*", schema: "public", table: "video_jobs", filter: `user_id=eq.${userId}` },
           (payload) => { if (payload.new && "id" in payload.new) cb(payload.new as JobRow); })
         .subscribe();
@@ -273,7 +277,7 @@ export function createApi(sb: SupabaseClient, opts: { platform: "ios" | "android
     async markRead(ids?: string[]) { unwrap(await sb.rpc("mark_notifications_read", { p_ids: ids ?? null })); },
     async registerPushToken(token: string) { unwrap(await sb.rpc("register_push_token", { p_token: token, p_platform: opts.platform })); },
     subscribe(userId: string, cb: (n: NotificationRow) => void) {
-      const ch = sb.channel(`notifs:${userId}`)
+      const ch = sb.channel(chan(`notifs:${userId}`))
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
           (p) => cb(p.new as NotificationRow))
         .subscribe();

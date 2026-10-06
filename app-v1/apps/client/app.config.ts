@@ -79,6 +79,7 @@ const config: ExpoConfig = {
       cameraPermission: "Filmez une vidéo directement depuis l'application.",
       microphonePermission: false,
     }],
+    ["expo-media-library", { savePhotosPermission: "Enregistrez votre vidéo terminée dans votre galerie.", photosPermission: false, isAccessMediaLocationEnabled: false, granularPermissions: ["video"] }],
     ["expo-audio", { microphonePermission: "Dictez vos instructions de montage à voix haute." }],
     ["expo-notifications", { color: "#FF3B30" }],
     "expo-iap",

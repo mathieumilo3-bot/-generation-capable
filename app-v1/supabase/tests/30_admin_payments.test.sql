@@ -111,3 +111,25 @@ begin
   perform test.check_ledger_invariants();
   perform test.logout();
 end $$;
+
+-- Support : un agent « support » traite les demandes mais ne touche pas aux soldes ; motif obligatoire pour relancer un job.
+do $$
+declare sup uuid; cli uuid; adm uuid; req uuid;
+begin
+  sup := test.mkuser('sup@adm2.test'); cli := test.mkuser('cli@adm2.test'); adm := test.mkuser('adm@adm2.test');
+  perform test.as_service();
+  insert into public.staff_roles (user_id, role) values (sup, 'support'), (adm, 'admin');
+  perform test.login(cli);
+  req := public.create_support_request('video_problem', 'Ma vidéo est floue', null, null, null, '1.0.0', 'ios');
+  perform test.throws(format('select public.admin_update_support_request(%L, ''resolved'', ''x'')', req), 'forbidden', 'un client ne traite pas le support');
+  perform test.login(sup);
+  perform public.admin_update_support_request(req, 'in_progress', 'Pris en charge');
+  perform test.eq((select status from public.support_requests where id = req), 'in_progress', 'statut mis à jour');
+  perform test.eq((select staff_notes from public.support_requests where id = req), 'Pris en charge', 'note interne');
+  perform test.throws(format('select public.admin_update_support_request(%L, ''bidon'', null)', req), 'invalid_status', 'statut validé');
+  perform test.login(adm);
+  perform test.throws(format('select public.admin_retry_job(%L, ''ok'')', gen_random_uuid()), 'reason_required', 'relance : motif obligatoire');
+  perform test.login(cli);
+  perform test.eq((select count(*) from public.support_requests where staff_notes is not null)::int, 1, 'le client voit sa demande (RLS)');
+  perform test.logout();
+end $$;

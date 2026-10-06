@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "./AuthProvider";
 import { ConfigProvider } from "./ConfigProvider";
+import { PaymentProviderRoot } from "./PaymentProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,7 +18,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <ConfigProvider>{children}</ConfigProvider>
+            <ConfigProvider>
+              <PaymentProviderRoot>{children}</PaymentProviderRoot>
+            </ConfigProvider>
           </AuthProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

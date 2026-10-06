@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.example.montage"],
+        "components": [
+          { "/": "/invite/*" }, { "/": "/project/*" }, { "/": "/video/*" }, { "/": "/payment/*" }, { "/": "/auth/callback" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": { "apps": ["TEAMID.com.example.montage"] }
+}

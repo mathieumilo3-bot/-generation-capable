@@ -1,0 +1,26 @@
+{
+  "name": "@app/orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "e2e": "tsx e2e/real-engine.e2e.ts"
+  },
+  "dependencies": {
+    "@app/api": "*",
+    "@app/config": "*",
+    "@app/domain": "*",
+    "@app/video-engine": "*",
+    "@supabase/supabase-js": "^2.117.2",
+    "pg": "^8.13.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "tsx": "^4.19.0"
+  }
+}

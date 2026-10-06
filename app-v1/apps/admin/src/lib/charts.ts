@@ -1,13 +1,12 @@
 import { percentOf } from "./format";
 
 export interface BarDatum { key: string; label: string; value: number }
-export interface BarLayout extends BarDatum { pct: number }
 
 /**
  * Largeur relative (0–100) de chaque barre par rapport au maximum. Une valeur non nulle
  * garde au moins 2 % pour rester visible ; une valeur nulle reste à 0 (aucune donnée inventée).
  */
-export function layoutBars(data: readonly BarDatum[]): BarLayout[] {
+export function layoutBars<T extends BarDatum>(data: readonly T[]): Array<T & { pct: number }> {
   const max = data.reduce((m, d) => Math.max(m, d.value), 0);
   return data.map((d) => {
     const raw = percentOf(d.value, max);

@@ -170,9 +170,11 @@ function buildBlurFilter(effect: any): string {
 }
 
 function buildVignetteFilter(effect: any): string {
-  const intensity = effect.intensity ?? 0.5;
-  const radius = 0.5 + intensity * 0.3;
-  return `vignette=angle=PI/4:mode=backward:radius=${radius}`;
+  // Le filtre FFmpeg `vignette` n'a PAS d'option `radius` (le graphe entier était rejeté et l'habillage
+  // retombait sur « aucun effet »). L'intensité pilote l'angle de l'objectif : plus il est petit, plus le vignettage est marqué.
+  const intensity = Math.min(1, Math.max(0, effect.intensity ?? 0.5));
+  const angle = (Math.PI / 2 - intensity * (Math.PI / 2 - Math.PI / 8)).toFixed(3);
+  return `vignette=angle=${angle}`;
 }
 
 function buildSpeedRampFilter(effect: any): string {

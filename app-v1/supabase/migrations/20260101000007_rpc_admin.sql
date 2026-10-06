@@ -160,6 +160,7 @@ declare
   v_admin uuid := private.require_admin();
   j public.video_jobs; h public.wallet_holds; v_hold uuid; v_avail bigint; w public.wallets; v_has_hold boolean;
 begin
+  if coalesce(char_length(trim(p_reason)), 0) < 5 then raise exception 'reason_required' using errcode = '22023'; end if;
   select * into j from public.video_jobs where id = p_job_id for update;
   if not found then raise exception 'job_not_found' using errcode = 'P0002'; end if;
   if j.status <> 'failed' then return jsonb_build_object('ok', false, 'code', 'not_retryable'); end if;
@@ -287,7 +288,7 @@ begin
         select id, title, status, source_mode, created_at from public.projects where owner_user_id = p_user_id and deleted_at is null
          order by created_at desc limit 50) x), '[]'::jsonb),
     'jobs', coalesce((select jsonb_agg(to_jsonb(x) order by x.created_at desc) from (
-        select j.id, j.status, j.kind, j.price_cents, j.error_code, j.created_at, c.total_actual_cost_micro, c.gross_margin_cents
+        select j.id, j.status, j.kind, j.price_cents, j.error_code, j.created_at, c.total_actual_cost_micro, c.gross_margin_cents, c.revenue_cents
           from public.video_jobs j left join public.usage_costs c on c.job_id = j.id
          where j.user_id = p_user_id order by j.created_at desc limit 50) x), '[]'::jsonb),
     'totals', (select jsonb_build_object(
@@ -329,4 +330,15 @@ begin
   perform private.audit('pricing.changed', 'pricing_rule', v_new::text, jsonb_build_object('price_cents', r.price_cents),
     jsonb_build_object('price_cents', p_price_cents), p_reason);
   return v_new;
+end $$;
+
+-- Support : statut + notes internes (le staff « support » peut traiter, seul l'admin modifie finances/config).
+create or replace function public.admin_update_support_request(p_id uuid, p_status text, p_staff_notes text default null)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform private.require_staff();
+  if p_status not in ('open', 'in_progress', 'resolved') then raise exception 'invalid_status' using errcode = '22023'; end if;
+  update public.support_requests set status = p_status, staff_notes = coalesce(left(p_staff_notes, 4000), staff_notes) where id = p_id;
+  if not found then raise exception 'not_found' using errcode = 'P0002'; end if;
+  perform private.audit('support.updated', 'support_request', p_id::text, null, jsonb_build_object('status', p_status), 'traitement support');
 end $$;
