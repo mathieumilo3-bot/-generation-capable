@@ -1,0 +1,350 @@
+<title>Montage, démo de l'application</title>
+<style>
+  /* Mise en page : une coque de téléphone centrée avec l'application dedans, bandeau de démo au-dessus. */
+  :root {
+    --bg: #f5f5f7; --fg: #1d1d1f; --muted: #6e6e73; --line: #e5e5ea; --accent: #ff3b30; --card: #ffffff;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #101012; --fg: #f5f5f7; --muted: #a1a1a6; --line: #2c2c2e; --card: #1c1c1e; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg: #101012; --fg: #f5f5f7; --muted: #a1a1a6; --line: #2c2c2e; --card: #1c1c1e; color-scheme: dark; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); overflow: hidden; }
+  .stage { height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-inline: 16px; padding-block: 10px; }
+  .demo-bar { width: 100%; max-width: 430px; display: flex; align-items: center; gap: 10px; font-size: 12.5px; line-height: 1.35; color: var(--muted); }
+  .demo-bar b { color: var(--fg); font-weight: 600; }
+  .demo-bar button { margin-left: auto; flex: none; font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+  .demo-bar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .phone { flex: 1; min-height: 0; width: 100%; max-width: 430px; background: #fff; border: 1px solid var(--line); border-radius: 28px; overflow: hidden; position: relative; transform: translateZ(0); color-scheme: light; }
+  #root { display: flex; height: 100%; flex: 1; position: absolute; inset: 0; }
+  #boot { position: absolute; inset: 0; display: grid; place-items: center; color: #6e6e73; font-size: 14px; background: #fff; z-index: 5; }
+  @media (max-width: 480px) {
+    .stage { padding-inline: 0; padding-block: 0; gap: 0; }
+    .demo-bar { padding: 6px 12px; box-sizing: border-box; }
+    .phone { border: 0; border-radius: 0; max-width: none; }
+  }
+  /* Fenêtre de paiement simulé */
+  .pay-back { position: absolute; inset: 0; background: rgba(0,0,0,.45); z-index: 50; display: flex; align-items: flex-end; font-family: var(--font); }
+  .pay-sheet { width: 100%; box-sizing: border-box; background: #fff; color: #1d1d1f; border-radius: 22px 22px 0 0; padding: 22px 20px 26px; display: flex; flex-direction: column; gap: 12px; }
+  .pay-sheet h2 { margin: 0; font-size: 20px; }
+  .pay-sheet p { margin: 0; font-size: 14px; line-height: 1.45; color: #6e6e73; }
+  .pay-amount { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pay-sheet button { font: inherit; font-size: 16px; font-weight: 600; border: 0; border-radius: 14px; padding: 15px; cursor: pointer; }
+  .pay-ok { background: #ff3b30; color: #fff; }
+  .pay-no { background: #f5f5f7; color: #1d1d1f; }
+</style>
+
+<div class="stage">
+  <div class="demo-bar">
+    <span><b>Démo interactive.</b> Les données, les paiements et la vidéo produite sont simulés. Rien n'est envoyé ni débité.</span>
+    <button id="reset" type="button">Recommencer</button>
+  </div>
+  <div class="phone"><div id="root"></div><div id="boot">Chargement de l'application…</div></div>
+</div>
+
+<script>
+/* ============================================================
+ * Faux backend de démonstration.
+ * Il remplace UNIQUEMENT les appels vers l'URL Supabase de l'application et garde un état en mémoire.
+ * Il n'existe que dans cette page de démo : le vrai backend applique les mêmes règles côté serveur.
+ * ============================================================ */
+(function () {
+  var HOST = "https://example.supabase.co";
+  var BASE = (function () { try { return new URL(".", location.href).href; } catch (e) { return "./"; } })();
+  var KEY = "montage-demo-state-v3";
+  var UID = "11111111-1111-4111-8111-111111111111";
+  var realFetch = window.fetch.bind(window);
+  var now = function () { return Date.now(); };
+  var iso = function (ms) { return new Date(ms).toISOString(); };
+  var uuid = function () { return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (c) { return (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16); }); };
+
+  var RULES = [["lt_30s", "Moins de 30 s", 0, 30, 242], ["30_60s", "30–60 s", 30, 60, 484], ["1_2min", "1–2 min", 60, 120, 700], ["2_3min", "2–3 min", 120, 180, 950]].map(function (r, i) {
+    return { id: "rule" + i, mode: "edit_rushes", bucket_key: r[0], label: r[1], duration_min_sec: r[2], duration_max_sec: r[3], price_cents: r[4], currency: "EUR", active: true, effective_from: "2020-01-01T00:00:00Z", effective_to: null, sort_order: i + 1 };
+  });
+  var METHODS = [
+    { id: "m1", slug: "automatique", name: "Automatique", description: "L'IA choisit le montage le plus adapté à vos vidéos.", advanced: false, recommended: true, sort_order: 1, capabilities: { modes: ["edit_rushes"] }, configuration: {} },
+    { id: "m2", slug: "mode-reference", name: "Mode Référence", description: "Reproduit le style de montage de vidéos que vous aimez.", advanced: false, recommended: false, sort_order: 2, capabilities: { modes: ["edit_rushes"], requires_references: true }, configuration: {} },
+    { id: "m3", slug: "personnalise", name: "Personnalisé", description: "Expliquez exactement ce que vous voulez.", advanced: false, recommended: false, sort_order: 3, capabilities: { modes: ["edit_rushes"], requires_instructions: true }, configuration: {} }
+  ];
+  var CAPS = { autonomous_creation: false, aspect_ratios: ["9:16"], reference_mode: true, revisions: { enabled: false, commands: [] } };
+
+  function seed() {
+    var t = now();
+    var mk = function (id, title, hAgo) {
+      return {
+        p: { id: "p_" + id, title: title, status: "ready", source_mode: "edit_rushes", current_version_id: "v_" + id, thumbnail_path: UID + "/thumb_" + id + ".jpg", owner_user_id: UID, organization_id: null, created_at: iso(t - hAgo * 36e5), updated_at: iso(t - hAgo * 36e5) },
+        v: { id: "v_" + id, project_id: "p_" + id, version_number: 1, parent_version_id: null, job_id: null, status: "ready", instructions: null, render_path: UID + "/render_" + id + ".mp4", thumbnail_path: UID + "/thumb_" + id + ".jpg", duration_sec: 24, width: 1080, height: 1920, size_bytes: 9e6, created_at: iso(t - hAgo * 36e5), ready_at: iso(t - hAgo * 36e5), expires_at: iso(t + (24 - hAgo) * 36e5) }
+      };
+    };
+    var a = mk("lisbonne", "Week-end à Lisbonne", 5), b = mk("mia", "Anniversaire de Mia", 9);
+    return {
+      balance: 2640, held: 0,
+      profile: { id: UID, email: "lea@example.fr", first_name: "Léa", last_name: null, company: null, locale: "fr", avatar_path: null, status: "active", billing: {} },
+      projects: [a.p, b.p], versions: [a.v, b.v], assets: [], jobs: [], notifs: [],
+      history: [{ id: "h0", type: "topup", available_delta_cents: 2640, amount_cents: 2640, reference: null, created_at: iso(t - 30 * 36e5), metadata: {} }],
+      payments: [], uploads: {}
+    };
+  }
+  var S;
+  try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { S = null; }
+  if (!S || !S.projects) S = seed();
+  var save = function () { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+  // Session déjà ouverte pour la démo (aucune vraie connexion).
+  try {
+    localStorage.setItem("sb-example-auth-token", JSON.stringify({ access_token: "demo.demo.demo", refresh_token: "demo", token_type: "bearer", expires_in: 31536000, expires_at: Math.floor(now() / 1000) + 31536000, user: { id: UID, aud: "authenticated", role: "authenticated", email: "lea@example.fr", app_metadata: { provider: "email" }, user_metadata: {}, created_at: "2026-01-01T00:00:00Z", last_sign_in_at: iso(now()) } }));
+  } catch (e) {}
+
+  /* --- Déroulé d'une création : états du moteur dans le temps --- */
+  var STAGES = [["created", 0], ["queued", 1.5], ["preparing", 3.5], ["analyzing", 7], ["editing", 12], ["rendering", 19], ["quality_check", 23], ["completed", 26]];
+  function tick() {
+    var changed = false;
+    S.jobs.forEach(function (j) {
+      if (j.status === "completed" || j.status === "failed" || j.status === "cancelled") return;
+      var el = (now() - j.t0) / 1000, st = STAGES[0][0];
+      STAGES.forEach(function (s) { if (el >= s[1]) st = s[0]; });
+      var pr = Math.min(99, Math.round((el / 26) * 100));
+      if (st !== j.status || pr !== j.progress) { j.status = st; j.progress = st === "completed" ? 100 : pr; changed = true; }
+      if (st === "completed") finish(j);
+    });
+    if (changed) save();
+  }
+  function finish(j) {
+    var p = S.projects.filter(function (x) { return x.id === j.project_id; })[0];
+    var vid = j.version_id;
+    S.balance -= j.price_cents; S.held -= j.price_cents;
+    S.history.unshift({ id: uuid(), type: "capture", available_delta_cents: 0, amount_cents: -j.price_cents, reference: p ? p.title : "Montage vidéo", created_at: iso(now()), metadata: {}, job_id: j.id, project_id: j.project_id });
+    S.versions.push({ id: vid, project_id: j.project_id, version_number: 1, parent_version_id: null, job_id: j.id, status: "ready", instructions: null, render_path: UID + "/render_new.mp4", thumbnail_path: UID + "/thumb_new.jpg", duration_sec: j.requested_duration_sec, width: 1080, height: 1920, size_bytes: 9e6, created_at: iso(now()), ready_at: iso(now()), expires_at: iso(now() + 24 * 36e5) });
+    if (p) { p.status = "ready"; p.current_version_id = vid; p.thumbnail_path = UID + "/thumb_new.jpg"; }
+    j.completed_at = iso(now());
+    S.notifs.unshift({ id: uuid(), kind: "video_ready", title: "Votre vidéo est prête", body: (p ? p.title : "Votre vidéo") + " est disponible pendant 24 h.", data: { project_id: j.project_id, job_id: j.id }, read_at: null, created_at: iso(now()) });
+  }
+  setInterval(tick, 1000);
+
+  /* --- Mini moteur de requêtes PostgREST (eq, neq, in, not.in, is, lt, gt, ilike, order, limit) --- */
+  function parseList(v) { return v.replace(/^\(|\)$/g, "").split(",").map(function (x) { return x.replace(/^"|"$/g, ""); }); }
+  function filterRows(rows, sp) {
+    var out = rows.slice();
+    sp.forEach(function (v, k) {
+      if (["select", "order", "limit", "offset", "columns"].indexOf(k) >= 0) return;
+      var m = /^(not\.)?(eq|neq|in|is|lt|gt|lte|gte|ilike)\.(.*)$/.exec(v); if (!m) return;
+      var neg = !!m[1], op = m[2], val = m[3];
+      out = out.filter(function (r) {
+        var x = r[k], res;
+        if (op === "eq") res = String(x) === val;
+        else if (op === "neq") res = String(x) !== val;
+        else if (op === "in") res = parseList(val).indexOf(String(x)) >= 0;
+        else if (op === "is") res = val === "null" ? (x === null || x === undefined) : (x !== null && x !== undefined);
+        else if (op === "lt") res = String(x) < val; else if (op === "gt") res = String(x) > val;
+        else if (op === "lte") res = String(x) <= val; else if (op === "gte") res = String(x) >= val;
+        else if (op === "ilike") { var re = new RegExp("^" + val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*") + "$", "i"); res = re.test(String(x)); }
+        return neg ? !res : res;
+      });
+    });
+    var ord = sp.get("order");
+    if (ord) { var pr = ord.split(".")[0], dsc = ord.indexOf(".desc") > 0; out.sort(function (a, b) { return (a[pr] > b[pr] ? 1 : a[pr] < b[pr] ? -1 : 0) * (dsc ? -1 : 1); }); }
+    if (sp.get("limit")) out = out.slice(0, Number(sp.get("limit")));
+    return out;
+  }
+
+  function table(name) {
+    switch (name) {
+      case "profiles": return [S.profile];
+      case "wallet_balances": return [{ wallet_id: "w1", user_id: UID, currency: "EUR", status: "active", balance_cents: S.balance, held_cents: S.held, available_cents: S.balance - S.held }];
+      case "wallet_history": return S.history;
+      case "payments_public": return S.payments;
+      case "pricing_rules": return RULES;
+      case "editing_methods_public": return METHODS;
+      case "engine_capabilities": return [{ capabilities: CAPS, active: true }];
+      case "app_settings": return [];
+      case "projects": return S.projects;
+      case "project_versions": return S.versions;
+      case "assets": return S.assets;
+      case "video_jobs": return S.jobs;
+      case "notifications": return S.notifs;
+      default: return [];
+    }
+  }
+
+  var JSONH = { "content-type": "application/json" };
+  var J = function (b, s, h) { return new Response(b === undefined ? null : JSON.stringify(b), { status: s || 200, headers: Object.assign({}, JSONH, h || {}) }); };
+  var NC = function (h) { return new Response(null, { status: 204, headers: h || {} }); };
+
+  /* --- RPC --- */
+  function projectOf(id) { return S.projects.filter(function (p) { return p.id === id; })[0]; }
+  function rpc(fn, a) {
+    a = a || {};
+    switch (fn) {
+      case "create_draft_project": var id = "p_" + uuid(); S.projects.unshift({ id: id, title: a.p_title || "Sans titre", status: "draft", source_mode: a.p_source_mode || "edit_rushes", current_version_id: null, thumbnail_path: null, owner_user_id: UID, organization_id: null, created_at: iso(now()), updated_at: iso(now()) }); save(); return id;
+      case "register_asset": var aid = "a_" + uuid(); var path = UID + "/" + a.p_project_id + "/" + aid; S.assets.push({ id: aid, project_id: a.p_project_id, kind: a.p_kind, bucket: "raw", path: path, filename: a.p_filename, mime_type: a.p_mime_type, size_bytes: a.p_size_bytes, duration_sec: a.p_duration_sec, status: "pending", created_at: iso(now()) }); save(); return { ok: true, asset_id: aid, bucket: "raw", path: path };
+      case "complete_asset": S.assets.forEach(function (x) { if (x.id === a.p_asset_id) x.status = "uploaded"; }); save(); return { ok: true };
+      case "delete_asset": S.assets = S.assets.filter(function (x) { return x.id !== a.p_asset_id; }); save(); return { ok: true };
+      case "quote_video_job": {
+        var rule = RULES.filter(function (r) { return r.id === a.p_pricing_rule_id; })[0];
+        if (!rule) return { ok: false, code: "no_pricing_rule" };
+        var av = S.balance - S.held, short = Math.max(rule.price_cents - av, 0);
+        return { ok: true, pricing_rule_id: rule.id, label: rule.label, price_cents: rule.price_cents, available_cents: av, after_cents: av - rule.price_cents, shortfall_cents: short, can_afford: short === 0 };
+      }
+      case "submit_video_job": {
+        var ex = S.jobs.filter(function (j) { return j.idem === a.p_idempotency_key; })[0];
+        if (ex) return { ok: true, job_id: ex.id, project_id: ex.project_id, version_id: ex.version_id, price_cents: ex.price_cents, replayed: true };
+        var r = RULES.filter(function (x) { return x.id === a.p_pricing_rule_id; })[0];
+        if (!r) return { ok: false, code: "no_pricing_rule" };
+        if (S.balance - S.held < r.price_cents) return { ok: false, code: "insufficient_funds" };
+        var pr = projectOf(a.p_project_id); if (!pr) return { ok: false, code: "not_found" };
+        var jid = uuid(), vid = "v_" + uuid();
+        S.held += r.price_cents;
+        S.history.unshift({ id: uuid(), type: "hold", available_delta_cents: -r.price_cents, amount_cents: r.price_cents, reference: pr.title, created_at: iso(now()), metadata: {}, job_id: jid, project_id: pr.id });
+        pr.status = "processing";
+        S.jobs.unshift({ id: jid, project_id: pr.id, version_id: vid, kind: "create", status: "created", progress: 0, current_stage: null, price_cents: r.price_cents, requested_duration_sec: Math.round((r.duration_min_sec + r.duration_max_sec) / 2) || 25, aspect_ratio: "9:16", error_code: null, cancel_requested: false, created_at: iso(now()), started_at: iso(now()), completed_at: null, t0: now(), idem: a.p_idempotency_key });
+        save(); return { ok: true, job_id: jid, project_id: pr.id, version_id: vid, price_cents: r.price_cents, remaining_cents: S.balance - S.held };
+      }
+      case "cancel_video_job": S.jobs.forEach(function (j) { if (j.id === a.p_job_id && ["completed", "failed", "cancelled"].indexOf(j.status) < 0) { j.status = "cancelled"; S.held -= j.price_cents; S.history.unshift({ id: uuid(), type: "release", available_delta_cents: j.price_cents, amount_cents: j.price_cents, reference: null, created_at: iso(now()), metadata: {} }); var p = projectOf(j.project_id); if (p) p.status = "draft"; } }); save(); return { ok: true, status: "cancelled" };
+      case "rename_project": S.projects.forEach(function (p) { if (p.id === a.p_project_id) p.title = a.p_title; }); save(); return { ok: true };
+      case "duplicate_project": return a.p_project_id;
+      case "delete_project": S.projects = S.projects.filter(function (p) { return p.id !== a.p_project_id; }); save(); return { ok: true };
+      case "mark_notifications_read": S.notifs.forEach(function (n) { if (!n.read_at) n.read_at = iso(now()); }); save(); return { ok: true };
+      case "accept_ai_processing": case "accept_terms": case "touch_profile": case "register_push_token": case "create_support_request": return { ok: true };
+      default: return { ok: true };
+    }
+  }
+
+  /* --- Téléversement (TUS) simulé --- */
+  function tus(method, url, init) {
+    var h = {};
+    if (method === "POST") { var id = uuid(); S.uploads[id] = 0; h.Location = HOST + "/storage/v1/upload/resumable/" + id; h["Tus-Resumable"] = "1.0.0"; return new Response(null, { status: 201, headers: h }); }
+    var id2 = url.split("/").pop().split("?")[0];
+    if (method === "HEAD") return new Response(null, { status: 200, headers: { "Upload-Offset": String(S.uploads[id2] || 0), "Tus-Resumable": "1.0.0" } });
+    if (method === "PATCH") { var b = init && init.body; var size = b && (b.size || b.byteLength || b.length) || 0; S.uploads[id2] = (S.uploads[id2] || 0) + size; return new Response(null, { status: 204, headers: { "Upload-Offset": String(S.uploads[id2]), "Tus-Resumable": "1.0.0" } }); }
+    return new Response(null, { status: 204 });
+  }
+
+  var DEMO_MP4 = null;
+  function mp4() { return DEMO_MP4 || (DEMO_MP4 = realFetch(BASE + "demo.mp4").then(function (r) { return r.blob(); })); }
+
+  async function handle(req, url, init) {
+    if (window.__DBG) console.log("DBG", (req.method||"GET"), url.slice(0,120), init && init.body && (init.body.size||init.body.length));
+    var u = new URL(url), p = u.pathname, m = (req.method || "GET").toUpperCase(), sp = u.searchParams;
+    if (p.indexOf("/auth/v1/user") === 0) return J({ id: UID, aud: "authenticated", role: "authenticated", email: "lea@example.fr", app_metadata: { provider: "email" }, user_metadata: {} });
+    if (p.indexOf("/auth/v1/token") === 0) return J({ access_token: "demo.demo.demo", refresh_token: "demo", token_type: "bearer", expires_in: 31536000, expires_at: Math.floor(now() / 1000) + 31536000, user: { id: UID, email: "lea@example.fr", aud: "authenticated", role: "authenticated", app_metadata: {}, user_metadata: {}, created_at: "2026-01-01T00:00:00Z" } });
+    if (p.indexOf("/auth/v1/logout") === 0) return NC();
+    if (p.indexOf("/rest/v1/rpc/") === 0) {
+      var body = {}; try { body = JSON.parse(init && init.body || "{}"); } catch (e) {}
+      tick(); return J(rpc(p.split("/").pop(), body));
+    }
+    if (p.indexOf("/rest/v1/") === 0) {
+      tick();
+      var tb = p.split("/").pop();
+      if (m === "PATCH" && tb === "profiles") { try { Object.assign(S.profile, JSON.parse(init.body)); save(); } catch (e) {} return NC(); }
+      if (m === "PATCH" || m === "POST" || m === "DELETE") return NC();
+      var rows = filterRows(table(tb), sp);
+      var acc = (req.headers.get && req.headers.get("accept")) || "";
+      if (m === "HEAD") return new Response(null, { status: 200, headers: { "content-range": "0-" + Math.max(rows.length - 1, 0) + "/" + rows.length } });
+      if ((req.headers.get && (req.headers.get("prefer") || "").indexOf("count=exact") >= 0)) return J(rows, 200, { "content-range": "0-" + Math.max(rows.length - 1, 0) + "/" + rows.length });
+      if (acc.indexOf("vnd.pgrst.object") >= 0) { return rows[0] ? J(rows[0]) : J({ code: "PGRST116", details: "0 rows", hint: null, message: "JSON object requested, multiple (or no) rows returned" }, 406); }
+      return J(rows);
+    }
+    if (p.indexOf("/storage/v1/upload/resumable") === 0) return tus(m, url, init);
+    if (p.indexOf("/storage/v1/object/sign/") === 0) {
+      var rest = p.slice("/storage/v1/object/sign/".length), bucket = rest.split("/")[0];
+      if (m === "POST") {
+        var bd = {}; try { bd = JSON.parse(init.body || "{}"); } catch (e) {}
+        if (bd.paths) return J(bd.paths.map(function (x) { return { path: x, signedURL: "/object/sign/" + bucket + "/" + x + "?token=demo", error: null }; }));
+        return J({ signedURL: "/object/sign/" + rest + "?token=demo" });
+      }
+      if (bucket === "renders") { return new Response(await mp4(), { status: 200, headers: { "content-type": "video/mp4" } }); }
+      return NC();
+    }
+    if (p.indexOf("/functions/v1/") === 0) {
+      var fn = p.split("/").pop(), fb = {}; try { fb = JSON.parse(init.body || "{}"); } catch (e) {}
+      if (fn === "create-topup-checkout") return J({ ok: true, url: "https://checkout.stripe.com/demo?amount=" + fb.amountCents, payment_id: uuid() });
+      return J({ ok: true });
+    }
+    return J({}, 404);
+  }
+
+  window.fetch = function (input, init) {
+    var url = typeof input === "string" ? input : (input && input.url) || String(input);
+    // Test de connexion de l'application (requête HEAD sur « / ») : toujours en ligne dans la démo.
+    if (init && init.method === "HEAD" && (url === "/" || url === location.origin + "/")) return Promise.resolve(new Response(null, { status: 200 }));
+    if (url.indexOf(HOST) !== 0) return realFetch(input, init);
+    var req = typeof input === "string" ? { method: (init && init.method) || "GET", headers: new Headers((init && init.headers) || {}) } : input;
+    if (init && init.method) req = { method: init.method, headers: new Headers(init.headers || (req.headers) || {}) };
+    return handle(req, url, init || {});
+  };
+  // WebSocket (temps réel) : non disponible dans la démo, l'application passe sur son rafraîchissement régulier.
+  var RealWS = window.WebSocket;
+  window.WebSocket = function (u, p) { if (String(u).indexOf("example.supabase.co") >= 0) { var fake = { readyState: 3, close: function () {}, send: function () {}, addEventListener: function () {} }; setTimeout(function () { if (fake.onerror) fake.onerror({}); if (fake.onclose) fake.onclose({ code: 1006 }); }, 30); return fake; } return new RealWS(u, p); };
+  window.WebSocket.CONNECTING = 0; window.WebSocket.OPEN = 1; window.WebSocket.CLOSING = 2; window.WebSocket.CLOSED = 3;
+
+  /* --- Médias : les URL signées du faux backend sont remplacées par la vidéo et la miniature de démo --- */
+  var POSTER = BASE + "poster.jpg", VIDEO_URL = null;
+  mp4().then(function (b) { VIDEO_URL = URL.createObjectURL(b); });
+  // Dès qu'un lecteur reçoit une URL du faux backend, on lui donne la vidéo de démonstration à la place.
+  (function () {
+    var d = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "src");
+    var swap = function (el, v, apply) {
+      if (typeof v === "string" && v.indexOf("example.supabase.co") >= 0) { mp4().then(function () { apply(VIDEO_URL); }); } else apply(v);
+    };
+    if (d && d.set) Object.defineProperty(HTMLMediaElement.prototype, "src", { configurable: true, get: d.get, set: function (v) { var el = this; swap(el, v, function (x) { d.set.call(el, x); }); } });
+    var sa = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function (k, v) { var el = this; if (k === "src" && (el.tagName === "VIDEO" || el.tagName === "SOURCE")) { swap(el, v, function (x) { sa.call(el, k, x); }); return; } return sa.call(el, k, v); };
+  })();
+  function fixEl(el) {
+    try {
+      if (el.tagName === "VIDEO" || el.tagName === "SOURCE") {
+        var s = el.getAttribute("src") || "";
+        if (s.indexOf("example.supabase.co") >= 0 && !el.__demo) { el.__demo = 1; mp4().then(function (b) { var o = URL.createObjectURL(b); el.setAttribute("src", o); if (el.tagName === "SOURCE" && el.parentNode && el.parentNode.load) el.parentNode.load(); }); }
+      } else if (el.tagName === "IMG") {
+        var s2 = el.getAttribute("src") || ""; if (s2.indexOf("example.supabase.co") >= 0) el.setAttribute("src", POSTER);
+      }
+      var bg = el.style && el.style.backgroundImage;
+      if (bg && bg.indexOf("example.supabase.co") >= 0) el.style.backgroundImage = 'url("' + POSTER + '")';
+    } catch (e) {}
+  }
+  new MutationObserver(function (list) {
+    list.forEach(function (r) {
+      if (r.type === "attributes") fixEl(r.target);
+      r.addedNodes && r.addedNodes.forEach(function (n) { if (n.nodeType === 1) { fixEl(n); n.querySelectorAll && n.querySelectorAll("img,video,source,div").forEach(fixEl); } });
+    });
+  }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["src", "style"] });
+
+  /* --- Paiement : fenêtre simulée à la place de la page Stripe --- */
+  function navigate(path) { try { history.pushState(null, "", path); window.dispatchEvent(new PopStateEvent("popstate")); } catch (e) {} }
+  window.__demoOpen = function (u) {
+    var amount = 0; try { amount = Number(new URL(u).searchParams.get("amount")) || 0; } catch (e) {}
+    var eur = (amount / 100).toFixed(2).replace(".", ",") + " €";
+    var back = document.createElement("div"); back.className = "pay-back";
+    back.innerHTML = '<div class="pay-sheet" role="dialog" aria-label="Paiement simulé"><p>Paiement simulé (démo)</p><div class="pay-amount"></div><p>Dans la vraie application, cette étape est la page de paiement sécurisée Stripe. Ici, aucune carte n\'est demandée et rien n\'est débité.</p><button class="pay-ok" type="button">Simuler le paiement</button><button class="pay-no" type="button">Annuler</button></div>';
+    back.querySelector(".pay-amount").textContent = eur;
+    document.querySelector(".phone").appendChild(back);
+    back.querySelector(".pay-ok").onclick = function () {
+      S.balance += amount; var pid = uuid();
+      S.history.unshift({ id: uuid(), type: "topup", available_delta_cents: amount, amount_cents: amount, reference: null, created_at: iso(now()), metadata: {}, payment_id: pid });
+      S.payments.unshift({ id: pid, provider: "stripe", kind: "topup", amount_cents: amount, status: "succeeded", refunded_cents: 0, failure_code: null, receipt_url: null, invoice_url: null, created_at: iso(now()), succeeded_at: iso(now()) });
+      save(); back.remove(); navigate("/payment-result?status=success&payment_id=" + pid);
+    };
+    back.querySelector(".pay-no").onclick = function () { back.remove(); navigate("/payment-result?status=cancelled"); };
+  };
+
+  document.getElementById("reset").onclick = function () { try { localStorage.removeItem(KEY); Object.keys(localStorage).forEach(function (k) { if (k.indexOf("create:draft") === 0 || k.indexOf("ai_consent") === 0) localStorage.removeItem(k); }); } catch (e) {} location.reload(); };
+
+  /* --- Chargement de l'application (le chemin d'accès est neutralisé pour que le routeur parte de « / ») --- */
+  // L'application se met en page selon la taille de son cadre (téléphone), pas celle de la fenêtre.
+  var phoneEl = document.querySelector(".phone");
+  try {
+    Object.defineProperty(window, "innerWidth", { configurable: true, get: function () { return phoneEl.clientWidth || 390; } });
+    Object.defineProperty(window, "innerHeight", { configurable: true, get: function () { return phoneEl.clientHeight || 800; } });
+    new ResizeObserver(function () { window.dispatchEvent(new Event("resize")); }).observe(phoneEl);
+  } catch (e) {}
+  window.__DEMO_BASE = BASE; window.__DBG = /dbg/.test(location.search);
+  realFetch(BASE + "app/entry.js").then(function (r) { return r.text(); }).then(function (code) {
+    try { history.replaceState(null, "", "/"); } catch (e) {}
+    var s = document.createElement("script");
+    s.textContent = code.split("__BASE__").join(BASE);
+    document.body.appendChild(s);
+    setTimeout(function () { var b = document.getElementById("boot"); if (b) b.remove(); }, 900);
+  }).catch(function (e) { document.getElementById("boot").textContent = "Impossible de charger la démo : " + e.message; });
+})();
+</script>
