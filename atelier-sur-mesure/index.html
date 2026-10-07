@@ -64,7 +64,8 @@ a{color:inherit}
 .zoom{height:260vh;position:relative}
 .zoom .stage{position:sticky;top:0;height:100svh;display:grid;place-items:center;overflow:hidden}
 .zoom figure{margin:0;width:100%;height:100%;position:relative;will-change:clip-path}
-.zoom figure img{width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;will-change:transform}
+.zoom figure .media{position:absolute;inset:0}
+.zoom figure .media>*{width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;will-change:transform}
 .zoom .cap{position:absolute;left:var(--gut);right:var(--gut);bottom:7vh;color:#ECEBE6;display:grid;gap:10px;text-shadow:0 1px 30px rgba(0,0,0,.35)}
 .zoom .cap h2{font-family:var(--f-display);font-weight:400;font-size:clamp(38px,8vw,130px);line-height:.92;letter-spacing:-.03em;margin:0;max-width:12ch}
 .zoom .cap h2 em{font-style:italic}
@@ -80,8 +81,9 @@ a{color:inherit}
 .track{display:flex;gap:clamp(20px,4vw,64px);padding-inline:var(--gut);will-change:transform;align-items:flex-end}
 .work{flex:0 0 auto;margin:0;display:grid;gap:14px}
 .work .frame{height:min(56svh,560px);overflow:hidden;background:#d9d7d0;box-shadow:0 30px 60px -30px rgba(20,20,24,.45)}
-.work img{height:100%;width:auto;display:block;transition:transform 1.2s cubic-bezier(.2,.8,.1,1)}
-.work:hover img{transform:scale(1.04)}
+.work .media{height:100%}
+.work .media>*{height:100%;width:auto;display:block;transition:transform 1.2s cubic-bezier(.2,.8,.1,1)}
+.work:hover .media>*{transform:scale(1.04)}
 .cartel{display:grid;gap:2px;font-size:13px;line-height:1.45;max-width:30ch}
 .cartel b{font-family:var(--f-display);font-style:italic;font-weight:400;font-size:19px}
 .cartel span{color:var(--stone)}
@@ -184,7 +186,7 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;paddin
   <section class="zoom" id="zoom" aria-label="Pièce unique">
     <div class="stage">
       <figure id="zoomFig">
-        <img data-slot="0" alt="Œuvre originale de l'atelier">
+        <div class="media" data-slot="0" data-alt="Œuvre originale de l'atelier"></div>
         <div class="cap">
           <span class="label">Exemplaire n° 1 sur 1</span>
           <h2>Il n'en existera <em>jamais</em> une seconde.</h2>
@@ -251,13 +253,14 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;paddin
   <span class="label">Pièces uniques · Peintes à la main · Certificat d'authenticité</span>
 </footer>
 
-<input type="file" id="files" accept="image/*" multiple hidden>
+<input type="file" id="files" accept="image/*,video/*" multiple hidden>
 <button class="import" id="importBtn" type="button">Importer les œuvres</button>
 
 <script>
 /* ── À personnaliser ─────────────────────────────── */
 const ATELIER = { nom: "Atelier", handle: "@atelier" };
-/* Œuvres : remplacer src par les photos (ex. "oeuvres/1.jpg") ou utiliser le bouton « Importer ». */
+/* Œuvres : src = photo (oeuvres/1.jpg) ou vidéo (oeuvres/1.mp4, avec poster = image d'attente).
+   Un fichier absent est remplacé par une peinture générée. Le bouton « Importer » charge photos ou vidéos depuis l'appareil. */
 const WORKS = [
   { src:"oeuvres/1.jpg", titre:"Commande n° 01", tech:"Huile sur toile de lin", fmt:"50F" },
   { src:"oeuvres/2.jpg", titre:"Commande n° 02", tech:"Acrylique et huile", fmt:"20F" },
@@ -340,28 +343,55 @@ const track=document.getElementById("track");
 WORKS.forEach((wk,i)=>{
   const f=FORMATS.find(x=>x.code===wk.fmt);
   const fig=document.createElement("figure");fig.className="work";
-  fig.innerHTML=`<div class="frame"><img data-slot="${i}" alt="${wk.titre}"></div>
+  fig.innerHTML=`<div class="frame"><div class="media" data-slot="${i}" data-alt="${wk.titre}"></div></div>
   <figcaption class="cartel"><b>${wk.titre}</b><span>${wk.tech}</span><span>Format ${wk.fmt}${f?` — ${f.h} × ${f.w} cm`:""} · Pièce unique</span></figcaption>`;
   track.appendChild(fig);
 });
-const userImgs=[];
-function setSlots(){
-  document.querySelectorAll("img[data-slot]").forEach(img=>{
-    const i=+img.dataset.slot;
-    if(userImgs[i]){img.src=userImgs[i];return}
-    if(img.dataset.tried){img.src=placeholder(i);return}
-    img.dataset.tried=1;img.onerror=()=>{img.onerror=null;img.src=placeholder(i)};img.src=WORKS[i].src;
-  });
+/* médias : photo ou vidéo, avec repli sur une peinture générée */
+const isVideo=s=>/\.(mp4|webm|mov|m4v)(\?|$)/i.test(s);
+const userMedia=[];
+const io="IntersectionObserver" in window?new IntersectionObserver(es=>es.forEach(e=>{
+  if(reduce)return;e.isIntersecting?e.target.play().catch(()=>{}):e.target.pause();
+}),{rootMargin:"300px"}):null;
+const toDataURL=f=>new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(f)});
+function mediaEl(kind,src,i,box){
+  const alt=box.dataset.alt;let el;
+  if(kind==="video"){
+    el=document.createElement("video");
+    el.muted=true;el.loop=true;el.playsInline=true;el.preload=reduce?"auto":"metadata";
+    el.setAttribute("muted","");el.setAttribute("playsinline","");el.setAttribute("aria-label",alt);
+    if(!userMedia[i]&&WORKS[i].poster)el.poster=WORKS[i].poster;
+    el.addEventListener("loadedmetadata",()=>measure());
+  }else{
+    el=document.createElement("img");el.alt=alt;el.decoding="async";
+    el.addEventListener("load",()=>measure());
+  }
+  el.addEventListener("error",()=>{
+    const u=userMedia[i];
+    // certains cadres refusent les adresses blob: : on retente en data:
+    if(u&&u.url.startsWith("blob:")){u.data=u.data||toDataURL(u.file);u.data.then(d=>{u.url=d;renderBox(box)});return}
+    if(kind==="img"&&src===placeholder(i))return;
+    box.replaceChildren(mediaEl("img",placeholder(i),i,box));
+  },{once:true});
+  el.src=src;
+  return el;
 }
-setSlots();
+function renderBox(box){
+  const i=+box.dataset.slot,u=userMedia[i],src=u?u.url:WORKS[i].src;
+  const kind=u?u.kind:(isVideo(src)?"video":"img");
+  const old=box.firstElementChild;if(old&&old.tagName==="VIDEO"&&io)io.unobserve(old);
+  const el=mediaEl(kind,src,i,box);box.replaceChildren(el);
+  if(kind==="video"&&io)io.observe(el);
+}
+const renderSlots=()=>document.querySelectorAll(".media[data-slot]").forEach(renderBox);
+renderSlots();
 
-/* import local des photos (restent sur l'appareil) */
+/* import local (photos ou vidéos, restent sur l'appareil) */
 const input=document.getElementById("files");
 document.getElementById("importBtn").addEventListener("click",()=>input.click());
-input.addEventListener("change",async()=>{
-  const files=[...input.files].slice(0,9);
-  const urls=await Promise.all(files.map(f=>new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(f)})));
-  urls.forEach((u,i)=>userImgs[i]=u);setSlots();measure();
+input.addEventListener("change",()=>{
+  [...input.files].slice(0,9).forEach((f,i)=>{userMedia[i]={kind:f.type.startsWith("video")?"video":"img",file:f,url:URL.createObjectURL(f)}});
+  renderSlots();measure();
   document.getElementById("importBtn").hidden=true;
 });
 
@@ -407,7 +437,7 @@ const man=document.getElementById("manifest");
 const words=[...man.querySelectorAll(".w")];
 
 /* ── Moteur de scroll lissé ── */
-const zoom=document.getElementById("zoom"),zfig=document.getElementById("zoomFig"),zimg=zfig.querySelector("img"),zcap=zfig.querySelector(".cap");
+const zoom=document.getElementById("zoom"),zfig=document.getElementById("zoomFig"),zcap=zfig.querySelector(".cap");
 const hgal=document.getElementById("hgal"),bar=document.getElementById("bar"),counter=document.getElementById("counter");
 const reveals=[...document.querySelectorAll(".reveal")];
 let trackDist=0;
@@ -429,7 +459,7 @@ function frame(){
   const zt=zoom.offsetTop,zp=clamp((cur-zt)/(zoom.offsetHeight-vh));
   const ix=(1-ease(clamp(zp/.7)))*28,iy=(1-ease(clamp(zp/.7)))*18;
   zfig.style.clipPath=`inset(${iy}% ${ix}% ${iy}% ${ix}% round ${(1-zp)*6}px)`;
-  zimg.style.transform=`scale(${1.35-.35*ease(clamp(zp/.85))})`;
+  const zm=zfig.querySelector(".media>*");if(zm)zm.style.transform=`scale(${1.35-.35*ease(clamp(zp/.85))})`;
   zcap.style.opacity=clamp((zp-.45)/.25);zcap.style.transform=`translateY(${(1-clamp((zp-.45)/.3))*40}px)`;
 
   // galerie horizontale
