@@ -6,11 +6,20 @@ import { BrollLayer, GfxLayer, Grain, ProgressBar, Vignette } from '../component
 import { Edit } from '../lib/edit';
 import { themeFor } from '../lib/theme';
 
-export type ReelProps = { edit: Edit; variant?: CaptionVariant; progress?: boolean; grain?: number };
+export type ReelProps = { edit: Edit; variant?: CaptionVariant; progress?: boolean; grain?: number; bare?: boolean };
 
 // Reel / TikTok / Short vertical : face caméra recadré, sous-titres mot à mot, habillage.
-export const Reel: React.FC<ReelProps> = ({ edit, variant = 'bold', progress = true, grain = 0.07 }) => {
+// bare : mêmes coupes et même cadrage, mais image brute sans habillage (curseur avant/après du site).
+export const Reel: React.FC<ReelProps> = ({ edit, variant = 'bold', progress = true, grain = 0.07, bare = false }) => {
   const theme = themeFor(edit);
+  if (bare) {
+    const raw = { ...edit, clips: edit.clips.map((c) => ({ ...c, src: c.src.replace(/\.mp4$/, '_raw.mp4') })) };
+    return (
+      <AbsoluteFill style={{ background: '#000', overflow: 'hidden' }}>
+        <ClipsTrack edit={raw} />
+      </AbsoluteFill>
+    );
+  }
   const endAt = edit.gfx.find((g) => g.type === 'end')?.start ?? Infinity;
   const words = edit.words.filter((w) => w.s < endAt - 0.1);
   return (
