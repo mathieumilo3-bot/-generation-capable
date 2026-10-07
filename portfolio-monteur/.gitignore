@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+sources/
+work/
+renders/test-*
+projects/test-*
+public/*
+!public/fx/
+!public/sfx/
