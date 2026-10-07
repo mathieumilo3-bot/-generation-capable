@@ -66,8 +66,9 @@ a{color:inherit}
 .zoom figure{margin:0;width:100%;height:100%;position:relative;will-change:clip-path}
 .zoom figure .media{position:absolute;inset:0}
 .zoom figure .media>*{width:100%;height:100%;object-fit:cover;display:block;transform-origin:center;will-change:transform}
-.zoom .cap{position:absolute;left:var(--gut);right:var(--gut);bottom:7vh;color:#ECEBE6;display:grid;gap:10px;text-shadow:0 1px 30px rgba(0,0,0,.35)}
-.zoom .cap h2{font-family:var(--f-display);font-weight:400;font-size:clamp(38px,8vw,130px);line-height:.92;letter-spacing:-.03em;margin:0;max-width:12ch}
+.zoom figure::after{content:"";position:absolute;left:0;right:0;bottom:0;height:60%;background:linear-gradient(to top,rgba(20,20,24,.72),rgba(20,20,24,0));pointer-events:none}
+.zoom .cap{position:absolute;z-index:1;left:var(--gut);right:var(--gut);bottom:7vh;color:#ECEBE6;display:grid;gap:10px;text-shadow:0 1px 30px rgba(0,0,0,.35)}
+.zoom .cap h2{font-family:var(--f-display);font-weight:400;font-size:clamp(36px,7vw,112px);line-height:.92;letter-spacing:-.03em;margin:0;max-width:14ch}
 .zoom .cap h2 em{font-style:italic}
 .zoom .cap .label{color:#ECEBE6;opacity:.85}
 
@@ -183,13 +184,13 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;paddin
   </section>
 
   <!-- PIÈCE UNIQUE -->
-  <section class="zoom" id="zoom" aria-label="Pièce unique">
+  <section class="zoom" id="zoom" aria-label="L'atelier">
     <div class="stage">
       <figure id="zoomFig">
-        <div class="media" data-slot="0" data-alt="Œuvre originale de l'atelier"></div>
+        <div class="media" data-slot="z" data-alt="L'entrée de l'atelier, une toile passe la porte"></div>
         <div class="cap">
-          <span class="label">Exemplaire n° 1 sur 1</span>
-          <h2>Il n'en existera <em>jamais</em> une seconde.</h2>
+          <span class="label">L'atelier</span>
+          <h2>Chaque toile qui sort d'ici <em>n'existe qu'une fois.</em></h2>
         </div>
       </figure>
     </div>
@@ -272,6 +273,8 @@ const WORKS = [
   { src:"oeuvres/8.jpg", titre:"Commande n° 08", tech:"Technique mixte", fmt:"50F" },
   { src:"oeuvres/9.jpg", titre:"Commande n° 09", tech:"Huile sur toile de lin", fmt:"30F" },
 ];
+/* Plein écran « L'atelier » (sans import, sinon le premier fichier importé) */
+const ZOOM = { src:"oeuvres/atelier.mp4", poster:"oeuvres/atelier.jpg" };
 /* Formats Figure (F) normalisés, en cm (hauteur × largeur) */
 const FORMATS = [
   { code:"10F",  h:55,  w:46,  use:"Chambre, bureau, entrée" },
@@ -354,13 +357,14 @@ const io="IntersectionObserver" in window?new IntersectionObserver(es=>es.forEac
   if(reduce)return;e.isIntersecting?e.target.play().catch(()=>{}):e.target.pause();
 }),{rootMargin:"300px"}):null;
 const toDataURL=f=>new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(f)});
-function mediaEl(kind,src,i,box){
-  const alt=box.dataset.alt;let el;
+const slotDef=s=>s==="z"?ZOOM:WORKS[+s],slotIdx=s=>s==="z"?0:+s;
+function mediaEl(kind,src,box){
+  const s=box.dataset.slot,i=slotIdx(s),alt=box.dataset.alt;let el;
   if(kind==="video"){
     el=document.createElement("video");
     el.muted=true;el.loop=true;el.playsInline=true;el.preload=reduce?"auto":"metadata";
     el.setAttribute("muted","");el.setAttribute("playsinline","");el.setAttribute("aria-label",alt);
-    if(!userMedia[i]&&WORKS[i].poster)el.poster=WORKS[i].poster;
+    if(!userMedia[i]&&slotDef(s).poster)el.poster=slotDef(s).poster;
     el.addEventListener("loadedmetadata",()=>measure());
   }else{
     el=document.createElement("img");el.alt=alt;el.decoding="async";
@@ -371,16 +375,16 @@ function mediaEl(kind,src,i,box){
     // certains cadres refusent les adresses blob: : on retente en data:
     if(u&&u.url.startsWith("blob:")){u.data=u.data||toDataURL(u.file);u.data.then(d=>{u.url=d;renderBox(box)});return}
     if(kind==="img"&&src===placeholder(i))return;
-    box.replaceChildren(mediaEl("img",placeholder(i),i,box));
+    box.replaceChildren(mediaEl("img",placeholder(i),box));
   },{once:true});
   el.src=src;
   return el;
 }
 function renderBox(box){
-  const i=+box.dataset.slot,u=userMedia[i],src=u?u.url:WORKS[i].src;
+  const s=box.dataset.slot,u=userMedia[slotIdx(s)],src=u?u.url:slotDef(s).src;
   const kind=u?u.kind:(isVideo(src)?"video":"img");
   const old=box.firstElementChild;if(old&&old.tagName==="VIDEO"&&io)io.unobserve(old);
-  const el=mediaEl(kind,src,i,box);box.replaceChildren(el);
+  const el=mediaEl(kind,src,box);box.replaceChildren(el);
   if(kind==="video"&&io)io.observe(el);
 }
 const renderSlots=()=>document.querySelectorAll(".media[data-slot]").forEach(renderBox);
