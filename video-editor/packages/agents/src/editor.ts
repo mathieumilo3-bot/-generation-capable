@@ -122,6 +122,8 @@ export function runEditor(
       query: words || `b-roll ${clip.role}`,
       resolvedSource: null,
       resolvedMediaId: null,
+      resolvedPath: null,
+      license: null,
     };
   });
 

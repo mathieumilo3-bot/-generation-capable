@@ -1,4 +1,4 @@
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type {
   BriefSpec,
@@ -25,6 +25,7 @@ import {
   runStoryDirector,
   runEditor,
   runBrollDirector,
+  runBrollDirectorWithStock,
   runCaptionDirector,
   runSoundDesigner,
   runCreativeDirector,
@@ -291,7 +292,15 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
     });
 
     await runStage("broll", async () => {
-      editBlueprint = runBrollDirector(db, editBlueprint);
+      const r = await runBrollDirectorWithStock(db, editBlueprint, { cacheDir: join(resolveStorageRoot(), "stock-cache") });
+      editBlueprint = r.editBlueprint;
+      for (const w of r.warnings) warnings.push(w);
+      if (r.ledger.length > 0) {
+        const ledgerFile = join(resolveStorageRoot(), "ledgers", `${input.projectId}.json`);
+        await mkdir(dirname(ledgerFile), { recursive: true });
+        await writeFile(ledgerFile, JSON.stringify(r.ledger, null, 1));
+        console.log(`[pipeline] B-roll : ${r.ledger.length} plan(s) sous licence → ${ledgerFile}`);
+      }
     });
 
     await runStage("captions", async () => {

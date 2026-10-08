@@ -149,6 +149,19 @@ export const BrollSlotSchema = z.object({
   query: z.string(),
   resolvedSource: z.enum(["user_media", "stock", "generated"]).nullable().default(null),
   resolvedMediaId: z.string().nullable().default(null),
+  /** Fichier vidéo local du plan résolu (téléchargé depuis une source autorisée). */
+  resolvedPath: z.string().nullable().default(null),
+  /** Droits du plan : sans owner + license + proof, le plan n'est PAS inséré au rendu. */
+  license: z
+    .object({
+      provider: z.string(),
+      owner: z.string(),
+      license: z.string(),
+      proof: z.string(),
+      attribution: z.string().nullable().default(null),
+    })
+    .nullable()
+    .default(null),
 });
 export type BrollSlot = z.infer<typeof BrollSlotSchema>;
 

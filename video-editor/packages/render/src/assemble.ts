@@ -1,7 +1,7 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import type { EditBlueprint } from "@video-editor/shared-types";
-import { cutClip, concatClips, finalizeOutput, mixAudioWithMusic, probe } from "./ffmpeg.js";
+import { cutClip, concatClips, finalizeOutput, mixAudioWithMusic, overlayBroll, probe, type BrollOverlay } from "./ffmpeg.js";
 import { renderHabillage, type HabillageCaptionStyle } from "./remotion.js";
 import { renderHabillageFFmpeg, type FfmpegHabillageSpec } from "./ffmpeg-habillage.js";
 
@@ -94,8 +94,39 @@ export async function assembleFromBlueprint(
   const tConcat = Date.now();
   const concatPath = join(opts.workDir, "base_concat.mp4");
   await concatClips(clipPaths, concatPath);
-  const concatInfo = await probe(concatPath);
+  let concatInfo = await probe(concatPath);
   const concatMs = Date.now() - tConcat;
+
+  // ÉTAPE 2b: B-roll réel — uniquement les plans AVEC droits renseignés
+  // (owner + license + proof) et un fichier présent ; jamais de plan sans droits.
+  const brollOverlays: BrollOverlay[] = [];
+  const clipStart = new Map<string, number>();
+  {
+    let t = 0;
+    for (let i = 0; i < blueprint.clips.length; i++) {
+      clipStart.set(blueprint.clips[i]!.id, t);
+      t += (await probe(clipPaths[i]!)).durationSec;
+    }
+  }
+  for (const slot of blueprint.brollSlots) {
+    const l = slot.license;
+    if (!slot.resolvedPath || !l || !l.owner || !l.license || !l.proof) continue;
+    const at = clipStart.get(slot.afterClipId);
+    if (at === undefined) continue;
+    const start = Math.min(Math.max(0, at), Math.max(0, concatInfo.durationSec - slot.durationSec - 0.05));
+    brollOverlays.push({ filePath: slot.resolvedPath, start, duration: slot.durationSec });
+  }
+  if (brollOverlays.length > 0) {
+    try {
+      const withBroll = join(opts.workDir, "base_broll.mp4");
+      await overlayBroll(concatPath, brollOverlays, withBroll, { width: opts.width, height: opts.height });
+      await rename(withBroll, concatPath);
+      concatInfo = await probe(concatPath);
+      console.log(`[assemble] B-roll : ${brollOverlays.length} plan(s) insérés`);
+    } catch (err) {
+      warnings.push(`B-roll non inséré, montage conservé sans: ${(err as Error).message}`);
+    }
+  }
 
   // ÉTAPE 3: Audio mix (musique optionnelle) — appliquer ICI si musique présente
   console.log(`[assemble] ${opts.musicFilePath ? "Mixing audio with music…" : "No music to mix"}`);
