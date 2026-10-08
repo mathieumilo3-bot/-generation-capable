@@ -142,6 +142,18 @@ section.block { padding-block: clamp(56px, 8vw, 110px); }
   .specs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+/* découpage : un photogramme par temps fort, cliquable */
+.shots-wrap { margin: 0; display: grid; gap: 12px; width: min(100%, 540px); }
+.shots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.shot { display: grid; gap: 7px; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; text-align: left; min-width: 0; }
+.shot img { width: 100%; height: auto; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 10px; box-shadow: 0 0 0 1px var(--line); transition: box-shadow .2s, transform .2s; }
+.shot:hover img { box-shadow: 0 0 0 2px var(--accent); transform: translateY(-2px); }
+.shot span { display: flex; justify-content: space-between; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 0; }
+.shot span b { color: var(--accent); font-weight: 500; font-variant-numeric: tabular-nums; }
+.shot span i { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shots-wrap figcaption { font-size: 11.5px; }
+@media (prefers-reduced-motion: reduce) { .shot img { transition: none; } .shot:hover img { transform: none; } }
+
 /* avant / après interactif */
 .ba-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr); gap: clamp(26px, 5vw, 70px); align-items: center; }
 .ba { position: relative; width: min(100%, 380px); justify-self: center; aspect-ratio: 9 / 16; border-radius: 30px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line), 0 40px 90px rgba(0,0,0,.55); touch-action: pan-y; cursor: ew-resize; user-select: none; }
@@ -190,11 +202,10 @@ footer p { margin: 0; max-width: 90ch; }
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#top">{{NAME}}</a>
+    <a class="brand" href="#top">{{BRAND}}</a>
     <nav aria-label="Sections">
       <a href="#projets">Projets</a>
-      <a href="#avant-apres">Avant / Après</a>
-      <a href="#methode">Méthode</a>
+      {{NAV_BA}}      <a href="#methode">Méthode</a>
       <a href="#contact">Contact</a>
     </nav>
     <span class="tc" id="tc" title="Timecode de la page">00:00:00:00</span>
@@ -205,10 +216,10 @@ footer p { margin: 0; max-width: 90ch; }
   <section class="hero">
     <div class="wrap">
       <div class="hero-text">
-        <p class="mono">Portfolio {{YEAR}} · {{CITY}}</p>
+        <p class="mono">{{EYEBROW}}</p>
         <h1 class="name">{{NAME_LINES}}</h1>
         <div class="role mono"><span>Montage vidéo</span><span>Motion design</span><span>Sound design</span></div>
-        <p class="thesis">Tes rushs face caméra, montés pour être regardés jusqu’à la dernière seconde.</p>
+        <p class="thesis">{{THESIS}}</p>
         <div class="cta-row">
           <a class="btn primary" href="#projets">Voir les projets</a>
           <a class="btn" href="#contact">Me contacter</a>
@@ -228,9 +239,9 @@ footer p { margin: 0; max-width: 90ch; }
   <section class="block" id="projets">
     <div class="wrap">
       <div class="sec-head">
-        <p class="mono">{{PROJECT_COUNT}} projets · 9:16 et 16:9</p>
+        <p class="mono">{{PROJECTS_EYEBROW}}</p>
         <h2>Ce que je fais <em>de tes rushs</em></h2>
-        <p>Chaque montage part d’une vraie vidéo publique, face caméra. Tout est fait à la main et réglé à l’image : le choix des phrases, le rythme, les sous-titres, les animations et le son.</p>
+        <p>{{PROJECTS_INTRO}}</p>
       </div>
       <div class="projects">
         {{PROJECTS}}
@@ -270,8 +281,7 @@ footer p { margin: 0; max-width: 90ch; }
 
 <footer>
   <div class="wrap">
-    <p>© {{YEAR}} {{NAME}}. {{DISCLAIMER}}</p>
-    <p>{{CREDITS}}</p>
+    {{FOOTER}}
   </div>
 </footer>
 
@@ -365,6 +375,14 @@ footer p { margin: 0; max-width: 90ch; }
       });
     }));
   }
+
+  // Découpage : un clic sur un temps fort relance la vidéo d'ouverture à cet instant.
+  const heroVideo = document.getElementById('hero-video');
+  document.querySelectorAll('[data-seek]').forEach((b) => b.addEventListener('click', () => {
+    heroVideo.currentTime = Number(b.dataset.seek);
+    heroVideo.play().catch(() => {});
+    document.querySelector('.hero').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+  }));
 
   // Copier les coordonnées.
   document.querySelectorAll('.copy').forEach((b) => b.addEventListener('click', async () => {

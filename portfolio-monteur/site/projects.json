@@ -1,0 +1,72 @@
+[
+  {
+    "id": "coeur2migrant-peace",
+    "kind": "phone",
+    "format": "Teaser de marque · Reels · TikTok · Shorts · 9:16",
+    "title": "Cœur 2 Migrant · Drop 01 « PEACE »",
+    "desc": "Le teaser de lancement du premier drop de la marque, en 20 secondes. Le logo des deux mains en cœur, Paris, le collage du t-shirt PEACE, les mots « Soin. », « Ensemble. », « Fierté. », puis la signature « Par le peuple, pour le peuple. » avant la révélation du logo.",
+    "specs": [
+      [
+        "Durée",
+        "0:20"
+      ],
+      [
+        "Format",
+        "9:16"
+      ],
+      [
+        "Cadence",
+        "30 i/s"
+      ],
+      [
+        "Son",
+        "-13,6 LUFS"
+      ]
+    ],
+    "tags": [
+      "Teaser de marque",
+      "Typographie animée",
+      "Collage photo",
+      "Animation de logo",
+      "Étalonnage"
+    ],
+    "credit": "Marque : Cœur 2 Migrant · coeur2migrant.com",
+    "poster": 3.5,
+    "crf": 19,
+    "maxRate": "5M",
+    "shots": [
+      [
+        3.5,
+        "Titre"
+      ],
+      [
+        5.8,
+        "Collage"
+      ],
+      [
+        8.5,
+        "Soin."
+      ],
+      [
+        9.1,
+        "Ensemble."
+      ],
+      [
+        9.7,
+        "Fierté."
+      ],
+      [
+        11.5,
+        "Par le peuple,"
+      ],
+      [
+        14.0,
+        "pour le peuple."
+      ],
+      [
+        18.8,
+        "Signature"
+      ]
+    ]
+  }
+]

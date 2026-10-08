@@ -108,19 +108,36 @@ def strip_svg(ap):
   </section>'''
 
 
-def project_html(p, idx):
+def shots_html(p, src):
+    """Découpage : un photogramme par temps fort ; un clic relance la vidéo d'ouverture à cet instant."""
+    cells = []
+    for i, (t, label) in enumerate(p['shots']):
+        f = MEDIA / f"{p['id']}-shot{i}.jpg"
+        poster(src, t, f, width=360)
+        cells.append(f'<button class="shot" type="button" data-seek="{t}" aria-label="Lire depuis {mmss(t)} : {e(label)}">'
+                     f'<img src="media/{f.name}" alt="" loading="lazy" width="360" height="640">'
+                     f'<span><b>{mmss(t)}</b><i>{e(label)}</i></span></button>')
+    return (f'<figure class="shots-wrap"><div class="shots">{"".join(cells)}</div>'
+            f'<figcaption class="mono">Découpage · clique un plan pour le revoir en haut</figcaption></figure>')
+
+
+def project_html(p, idx, hero=None):
     pid = p['id']
     meta = json.loads((PUBLIC / pid / 'props.json').read_text())['edit']['meta'] if (PUBLIC / pid / 'props.json').exists() else {}
     src = ROOT / 'renders' / f"{p.get('render', pid)}.mp4"
     dst = MEDIA / f'{pid}.mp4'
-    encode(src, dst)
+    encode(src, dst, crf=p.get('crf', 21), max_rate=p.get('maxRate', '3.2M'))
     poster(src, p.get('poster', 2.0), MEDIA / f'{pid}.jpg', width=900 if p['kind'] == 'phone' else 1280)
     dur = probe(dst)['duration']
     vid = f'v-{pid}'
-    media = (f'<div class="phone"><video id="{vid}" data-auto src="media/{pid}.mp4" poster="media/{pid}.jpg" muted loop playsinline preload="none"></video>'
-             f'<button class="sound" type="button" aria-pressed="false" data-for="{vid}">Activer le son</button></div>') if p['kind'] == 'phone' else (
-             f'<div class="frame"><video id="{vid}" data-auto src="media/{pid}.mp4" poster="media/{pid}.jpg" muted loop playsinline preload="none"></video>'
-             f'<button class="sound" type="button" aria-pressed="false" data-for="{vid}">Activer le son</button></div>')
+    if pid == hero and p.get('shots'):
+        media = shots_html(p, src)  # la vidéo joue déjà en ouverture : ici, son découpage
+    elif p['kind'] == 'phone':
+        media = (f'<div class="phone"><video id="{vid}" data-auto src="media/{pid}.mp4" poster="media/{pid}.jpg" muted loop playsinline preload="none"></video>'
+                 f'<button class="sound" type="button" aria-pressed="false" data-for="{vid}">Activer le son</button></div>')
+    else:
+        media = (f'<div class="frame"><video id="{vid}" data-auto src="media/{pid}.mp4" poster="media/{pid}.jpg" muted loop playsinline preload="none"></video>'
+                 f'<button class="sound" type="button" aria-pressed="false" data-for="{vid}">Activer le son</button></div>')
     specs = p.get('specs') or [
         ['Durée', mmss(dur)],
         ['Rush', human_min(meta['rush']) if meta.get('rush') else '—'],
@@ -200,40 +217,55 @@ def main():
         for f in DIST.glob('*.html'):
             f.unlink()
     MEDIA.mkdir(parents=True, exist_ok=True)
+    hero = cfg['hero']
     total = 0.0
     rows = []
+    ratios = []
     for i, p in enumerate(projects):
         if p.get('pending'):
             continue
-        d, h = project_html(p, i)
+        d, h = project_html(p, i, hero)
         total += d
         rows.append(h)
-    hero = cfg['hero']
+        r = '9:16' if p['kind'] == 'phone' else '16:9'
+        if r not in ratios:
+            ratios.append(r)
     if not (MEDIA / f'{hero}.mp4').exists():
         encode(ROOT / 'renders' / f'{hero}.mp4', MEDIA / f'{hero}.mp4')
         poster(ROOT / 'renders' / f'{hero}.mp4', 1.0, MEDIA / f'{hero}.jpg')
     strip = ''
     if cfg.get('strip') and (PUBLIC / cfg['strip'] / 'avantapres.json').exists():
         strip = strip_svg(json.loads((PUBLIC / cfg['strip'] / 'avantapres.json').read_text()))
-    name = cfg['name'].strip()
-    parts = name.split(' ', 1)
-    name_lines = ''.join(f'<span>{e(x)}</span>' for x in (parts if len(parts) == 2 else [name]))
+    name = (cfg.get('name') or '').strip()
+    if cfg.get('heroLines'):
+        lines = cfg['heroLines']
+    else:
+        parts = name.split(' ', 1)
+        lines = parts if len(parts) == 2 else [name]
+    name_lines = ''.join(f'<span>{e(x)}</span>' for x in lines)
+    year = str(cfg.get('year', 2026))
+    n = len(rows)
+    footer = [f"<p>© {year}{' ' + e(name) if name else ''}.{' ' + e(cfg['disclaimer']) if cfg.get('disclaimer') else ''}</p>"]
+    if cfg.get('credits'):
+        footer.append(f"<p>{e(cfg['credits'])}</p>")
+    ba_html = before_after_html(cfg)
     page = (HERE / 'template.html').read_text()
     rep = {
         '{{TITLE}}': e(cfg.get('title', name)),
-        '{{NAME}}': e(name),
+        '{{BRAND}}': e(cfg.get('brand', name)),
         '{{NAME_LINES}}': name_lines,
-        '{{YEAR}}': str(cfg.get('year', 2026)),
-        '{{CITY}}': e(cfg.get('city', 'France')),
+        '{{EYEBROW}}': e(cfg.get('eyebrow', f'Portfolio {year} · France')),
+        '{{THESIS}}': e(cfg['thesis']),
         '{{HERO_VIDEO}}': f'media/{hero}.mp4',
         '{{HERO_POSTER}}': f'media/{hero}.jpg',
         '{{STRIP}}': strip,
-        '{{PROJECT_COUNT}}': str(len(rows)),
+        '{{PROJECTS_EYEBROW}}': f"{n} projet{'s' if n > 1 else ''} · {' et '.join(ratios)}",
+        '{{PROJECTS_INTRO}}': e(cfg['projectsIntro']),
         '{{PROJECTS}}': '\n        '.join(rows),
-        '{{BEFORE_AFTER}}': before_after_html(cfg),
+        '{{BEFORE_AFTER}}': ba_html,
+        '{{NAV_BA}}': '<a href="#avant-apres">Avant / Après</a>\n' if ba_html else '',
         '{{CHANNELS}}': channels_html(cfg.get('contact', {})),
-        '{{DISCLAIMER}}': e(cfg.get('disclaimer', '')),
-        '{{CREDITS}}': e(cfg.get('credits', '')),
+        '{{FOOTER}}': '\n    '.join(footer),
         '{{TOTAL_RUNTIME}}': f'{total:.2f}',
     }
     for k, v in rep.items():

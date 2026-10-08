@@ -7,3 +7,4 @@ projects/test-*
 public/*
 !public/fx/
 !public/sfx/
+pipeline/models/asr/
