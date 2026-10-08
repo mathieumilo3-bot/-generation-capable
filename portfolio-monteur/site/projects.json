@@ -68,5 +68,113 @@
         "Signature"
       ]
     ]
+  },
+  {
+    "kind": "wide",
+    "crf": 20,
+    "maxRate": "5M",
+    "id": "01-kinetic",
+    "format": "Typographie cinétique · 16:9 · 60 i/s",
+    "title": "Motion is Emotion",
+    "desc": "Quinze secondes de typographie calée sur un tempo de 128 BPM : chaque coupe tombe sur un temps. Les lettres changent de graisse et de chasse en mouvement, les transitions se font en raccord, avec un vrai flou de mouvement.",
+    "specs": [
+      [
+        "Durée",
+        "0:15"
+      ],
+      [
+        "Image",
+        "1920×1080"
+      ],
+      [
+        "Cadence",
+        "60 i/s"
+      ],
+      [
+        "Son",
+        "-14 LUFS"
+      ]
+    ],
+    "tags": [
+      "Typographie cinétique",
+      "Police variable",
+      "Transitions raccord",
+      "Flou de mouvement",
+      "Musique originale"
+    ],
+    "credit": "Projet personnel. Image et son créés de zéro.",
+    "poster": 8.6
+  },
+  {
+    "kind": "wide",
+    "crf": 20,
+    "maxRate": "5M",
+    "id": "02-liquid",
+    "format": "Film produit 3D · 16:9 · 60 i/s",
+    "title": "VIF—ARGENT",
+    "desc": "Le film de lancement d'un parfum fictif : des gouttes de chrome liquide se rejoignent et forment le flacon. Éclairage de studio, reflets, halo lumineux et grain argentique, le tout sur un tempo de 96 BPM.",
+    "specs": [
+      [
+        "Durée",
+        "0:15"
+      ],
+      [
+        "Image",
+        "1920×1080"
+      ],
+      [
+        "Cadence",
+        "60 i/s"
+      ],
+      [
+        "Son",
+        "-14 LUFS"
+      ]
+    ],
+    "tags": [
+      "3D",
+      "Chrome liquide",
+      "Éclairage studio",
+      "Flare anamorphique",
+      "Sound design"
+    ],
+    "credit": "Marque fictive, projet concept.",
+    "poster": 14.9
+  },
+  {
+    "kind": "wide",
+    "crf": 20,
+    "maxRate": "5M",
+    "id": "03-shapes",
+    "format": "Animation de marque 2D · 16:9 · 60 i/s",
+    "title": "forma",
+    "desc": "L'identité animée d'une marque de jouets fictive. Un pendule de Newton, des formes qui rebondissent et se transforment : les douze principes de l'animation appliqués à un logo.",
+    "specs": [
+      [
+        "Durée",
+        "0:15"
+      ],
+      [
+        "Image",
+        "1920×1080"
+      ],
+      [
+        "Cadence",
+        "60 i/s"
+      ],
+      [
+        "Son",
+        "-14 LUFS"
+      ]
+    ],
+    "tags": [
+      "Animation 2D",
+      "Squash & stretch",
+      "Anticipation",
+      "Logo animé",
+      "Bruitages"
+    ],
+    "credit": "Marque fictive, projet concept.",
+    "poster": 4.27
   }
 ]
