@@ -1,7 +1,10 @@
 {
-  "title": "Portfolio Montage & Motion",
-  "brand": "Montage & Motion",
-  "heroLines": ["Montage", "& motion"],
+  "title": "Ledorvenenzo Portfolio",
+  "brand": "Ledorvenenzo",
+  "heroLines": [
+    "Montage",
+    "& motion"
+  ],
   "eyebrow": "Portfolio 2026 · France",
   "year": 2026,
   "thesis": "Des vidéos montées pour être regardées jusqu’à la dernière seconde.",
@@ -10,5 +13,6 @@
   "contact": {
     "email": "ledorvenenzo50@gmail.com"
   },
-  "credits": "Cœur 2 Migrant, Drop 01 « PEACE » : marque et vidéo Cœur 2 Migrant."
+  "credits": "Cœur 2 Migrant, Drop 01 « PEACE » : marque et vidéo Cœur 2 Migrant.",
+  "name": "Ledorvenenzo"
 }
