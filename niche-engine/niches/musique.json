@@ -1,0 +1,28 @@
+{
+ "id": "musique",
+ "name": "Production musicale",
+ "audience": "beatmakers",
+ "tone": "mixage, sound design, astuces",
+ "theme": {
+  "yel": "#E040FB"
+ },
+ "stockQueries": [
+  "music studio",
+  "synthesizer",
+  "dj mixing"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les packs de sons sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

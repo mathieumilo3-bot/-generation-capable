@@ -1,0 +1,27 @@
+{
+ "id": "minecraft",
+ "name": "Minecraft / sandbox",
+ "audience": "joueurs de survie et redstone",
+ "tone": "astuces, builds, seeds",
+ "theme": {
+  "yel": "#55FF55"
+ },
+ "stockQueries": [
+  "pixel art",
+  "building blocks"
+ ],
+ "sourcePriority": [
+  "local",
+  "pexels"
+ ],
+ "cta": "les seeds et schémas sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

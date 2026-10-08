@@ -1,0 +1,28 @@
+{
+ "id": "running",
+ "name": "Course à pied",
+ "audience": "coureurs réguliers",
+ "tone": "allure, plans, matériel",
+ "theme": {
+  "yel": "#2ECC71"
+ },
+ "stockQueries": [
+  "running outdoor",
+  "marathon",
+  "trail running"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "le plan d'entraînement est sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

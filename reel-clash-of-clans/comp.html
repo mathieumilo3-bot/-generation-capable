@@ -38,11 +38,11 @@ html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#111}
 </style></head>
 <body>
 <div id="stage"></div>
-<video id="clip" muted playsinline preload="auto" style="display:none"></video>
 <script>
 const S = /*SCRIPT*/null;
 const W = 1080, H = 1920;
 const stage = document.getElementById("stage");
+if (S.theme) for (const [k, v] of Object.entries(S.theme)) document.documentElement.style.setProperty("--" + k, v);
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeOut = x => 1 - Math.pow(1 - clamp(x), 3);
 const back = x => { x = clamp(x); const c1 = 2.2, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
@@ -64,6 +64,9 @@ const ICON = {
   star: `<svg viewBox="0 0 200 200"><path ${K} fill="#ffcc1f" d="M100 16l25 52 57 8-41 40 10 57-51-27-51 27 10-57-41-40 57-8z"/><path fill="#fff27a" d="M100 36l17 36 38 6-28 26 3 12-30-22-30 22 4-12-28-26 38-6z" opacity=".55"/><path fill="#fff" opacity=".9" d="M80 70l12-6 4 8-12 6z"/></svg>`,
   box: `<svg viewBox="0 0 200 200"><path ${K} fill="#7e3fd6" d="M30 86h140v94H30z"/><path ${K} fill="#9b5cf0" d="M22 66h156v28H22z"/><path ${K} fill="#ffd23f" d="M88 66h24v114H88z"/><g transform="translate(62 0) scale(.38)"><path ${K} fill="#d651ff" stroke-width="22" d="M100 22 168 70 146 160 100 182 54 160 32 70Z"/><path fill="#f6a8ff" d="M100 30 60 70h80Z"/></g></svg>`,
   hand: `<svg viewBox="0 0 200 200"><path stroke="#141414" stroke-width="8" stroke-linejoin="round" fill="#fff" d="M70 20c10 0 16 8 16 18v58l6-2c4-10 26-10 30 0 6-8 26-6 28 6 10-4 24 2 24 16v40c0 24-16 40-40 40H96c-14 0-22-6-30-16L28 128c-8-10 4-24 16-16l10 8V38c0-10 6-18 16-18z"/></svg>`,
+  shield: `<svg viewBox="0 0 200 200"><path ${K} fill="#3b82f6" d="M100 14 172 40v62c0 40-30 68-72 86-42-18-72-46-72-86V40Z"/><path fill="#7fb4ff" d="M100 30 156 50v52c0 30-22 52-56 68z" opacity=".5"/><path ${K} fill="none" d="M100 14v174"/></svg>`,
+  hammer: `<svg viewBox="0 0 200 200"><path ${K} fill="#b07a45" d="M92 70h24l8 118h-40Z"/><path ${K} fill="#c9c9c9" d="M44 40h112a10 10 0 0 1 10 10v34a10 10 0 0 1-10 10H44a10 10 0 0 1-10-10V50a10 10 0 0 1 10-10Z"/></svg>`,
+  bolt: `<svg viewBox="0 0 200 200"><path ${K} fill="#ffd23f" d="M116 12 44 112h44l-14 76 82-104H110Z"/></svg>`,
   chat: `<svg viewBox="0 0 200 200"><path fill="#5865F2" d="M30 40h140a20 20 0 0 1 20 20v76a20 20 0 0 1-20 20H90l-40 30v-30H30a20 20 0 0 1-20-20V60a20 20 0 0 1 20-20z"/><circle cx="72" cy="98" r="16" fill="#fff"/><circle cx="128" cy="98" r="16" fill="#fff"/></svg>`
 };
 
@@ -115,6 +118,15 @@ const R = {
     const c = lastCap(sc.captions, lt);
     let h = sc.clip ? "" : dusk(lt);
     if (c) h += c.logo ? logo(lt - c.t) : cap(c.text, 820, lt - c.t);
+    return h;
+  },
+  shot(sc, lt) {
+    let h = `<div class="fill" style="background:linear-gradient(transparent 55%,rgba(0,0,0,.45))"></div>`;
+    const c = lastCap(sc.captions || [], lt);
+    const bigOn = sc.big && lt >= sc.big.t;
+    if (c && !bigOn) h += cap(c.text, sc.capTop || 1230, lt - c.t, `font-size:${sc.capSize || 104}px`);
+    if (bigOn) h += `<div class="big" style="top:${sc.capTop || 1180}px;font-size:${sc.big.size || 112}px;transform:scale(${pop(lt - sc.big.t, .26)}) rotate(-2deg)">${rich(sc.big.text)}</div>`;
+    if (sc.badge) h += `<div class="abs" style="left:50px;top:70px;transform:scale(${pop(lt, .3)});font:400 54px 'Luckiest Guy';color:#fff;background:#000a;border:6px solid var(--yel);border-radius:22px;padding:8px 26px;-webkit-text-stroke:8px #000;paint-order:stroke fill">${rich(sc.badge)}</div>`;
     return h;
   },
   teaser(sc, lt) {
@@ -197,20 +209,20 @@ function cutFx(t) {
   return { f, sh };
 }
 
-const clipEl = document.getElementById("clip");
+const imgCache = new Map();
+const loadImg = src => { if (!imgCache.has(src)) { imgCache.set(src, new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("image " + src)); im.src = src; })); if (imgCache.size > 12) imgCache.delete(imgCache.keys().next().value); } return imgCache.get(src); };
+/* plan vidéo = images extraites par ffmpeg (sc.frames = {dir, n}) : pas de décodeur vidéo requis dans Chromium */
 async function seekClip(sc, lt) {
-  if (!sc.clip) { clipEl.style.display = "none"; return ""; }
-  if (!clipEl.src.endsWith(sc.clip)) { clipEl.src = sc.clip; await new Promise(r => clipEl.onloadeddata = r); }
-  const target = (sc.clipIn || 0) + lt;
-  if (Math.abs(clipEl.currentTime - target) > .001) { clipEl.currentTime = target; await new Promise(r => clipEl.onseeked = r); }
+  if (!sc.frames) return "";
+  const i = Math.min(sc.frames.n, Math.floor(lt * S.fps) + 1);
+  const el = await loadImg("file://" + sc.frames.dir + "/" + String(i).padStart(4, "0") + ".jpg");
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
-  const g = cv.getContext("2d"), vw = clipEl.videoWidth, vh = clipEl.videoHeight;
-  /* fond flouté plein écran + image nette centrée, zoom lent (comme la référence) */
-  const cover = Math.max(W / vw, H / vh), z = 1.04 + lt * .03;
-  g.filter = "blur(30px) brightness(.6)"; g.drawImage(clipEl, (W - vw * cover) / 2, (H - vh * cover) / 2, vw * cover, vh * cover);
+  const g = cv.getContext("2d"), vw = el.naturalWidth, vh = el.naturalHeight;
+  const cover = Math.max(W / vw, H / vh), z = 1.04 + lt * .03 + (sc.punch ? .12 * Math.exp(-lt * 9) : 0);
+  g.filter = "blur(30px) brightness(.6)"; g.drawImage(el, (W - vw * cover) / 2, (H - vh * cover) / 2, vw * cover, vh * cover);
   g.filter = "none";
   const fit = Math.min(W / vw, H / vh) * (sc.zoom || 1) * z;
-  g.drawImage(clipEl, (W - vw * fit) / 2 + (sc.panX || 0), (H - vh * fit) / 2 + (sc.panY || 0), vw * fit, vh * fit);
+  g.drawImage(el, (W - vw * fit) / 2 + (sc.panX || 0), (H - vh * fit) / 2 + (sc.panY || 0), vw * fit, vh * fit);
   return `<img class="fill" src="${cv.toDataURL("image/jpeg", .92)}">`;
 }
 

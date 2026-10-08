@@ -1,0 +1,28 @@
+{
+ "id": "immobilier",
+ "name": "Immobilier et investissement",
+ "audience": "investisseurs débutants",
+ "tone": "rendement, fiscalité, pièges",
+ "theme": {
+  "yel": "#2E7D32"
+ },
+ "stockQueries": [
+  "modern house",
+  "real estate",
+  "city skyline"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les simulateurs sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

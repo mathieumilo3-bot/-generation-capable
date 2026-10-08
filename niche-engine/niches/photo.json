@@ -1,0 +1,28 @@
+{
+ "id": "photo",
+ "name": "Photographie",
+ "audience": "photographes amateurs",
+ "tone": "réglages, lumière, composition",
+ "theme": {
+  "yel": "#00B0FF"
+ },
+ "stockQueries": [
+  "photographer camera",
+  "portrait photography",
+  "golden hour"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les presets Lightroom sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

@@ -1,0 +1,28 @@
+{
+ "id": "ecommerce",
+ "name": "E-commerce et dropshipping",
+ "audience": "vendeurs en ligne",
+ "tone": "produits, pubs, marges",
+ "theme": {
+  "yel": "#7C4DFF"
+ },
+ "stockQueries": [
+  "online shopping",
+  "packages shipping",
+  "warehouse"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les produits gagnants sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}
