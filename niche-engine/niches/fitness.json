@@ -1,0 +1,29 @@
+{
+ "id": "fitness",
+ "name": "Musculation et fitness",
+ "audience": "pratiquants intermédiaires",
+ "tone": "technique, erreurs, programmation",
+ "theme": {
+  "yel": "#FF5A1F"
+ },
+ "stockQueries": [
+  "gym workout",
+  "weight lifting",
+  "fitness training"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay",
+  "local"
+ ],
+ "cta": "le programme complet est sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

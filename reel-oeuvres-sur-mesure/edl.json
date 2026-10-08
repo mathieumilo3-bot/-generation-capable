@@ -1,0 +1,354 @@
+{
+ "fps": 30,
+ "duration": 16.8,
+ "shots": [
+  {
+   "id": "h1",
+   "src": "6",
+   "in": 6.27,
+   "dur": 1.15,
+   "start": 0.0,
+   "push": [
+    1.0,
+    1.03
+   ],
+   "punch": 1.14,
+   "punchDur": 0.4,
+   "frames": 35
+  },
+  {
+   "id": "h2",
+   "src": "6",
+   "in": 5.5,
+   "dur": 0.7,
+   "start": 1.15,
+   "push": [
+    1.0,
+    1.03
+   ],
+   "punch": 1.08,
+   "punchDur": 0.25,
+   "frames": 21
+  },
+  {
+   "id": "h3",
+   "src": "6",
+   "in": 8.62,
+   "dur": 1.15,
+   "start": 1.85,
+   "push": [
+    1.0,
+    1.06
+   ],
+   "punch": 1.08,
+   "punchDur": 0.25,
+   "frames": 35
+  },
+  {
+   "id": "t1",
+   "src": "6",
+   "in": 23.0,
+   "dur": 0.95,
+   "start": 3.0,
+   "push": [
+    1.0,
+    1.05
+   ],
+   "punch": 1.1,
+   "punchDur": 0.22,
+   "frames": 29
+  },
+  {
+   "id": "t2",
+   "src": "6",
+   "in": 13.45,
+   "dur": 0.75,
+   "start": 3.95,
+   "push": [
+    1.0,
+    1.05
+   ],
+   "punch": 1.1,
+   "punchDur": 0.2,
+   "frames": 23
+  },
+  {
+   "id": "t3",
+   "src": "6",
+   "in": 16.6,
+   "dur": 0.6,
+   "start": 4.7,
+   "push": [
+    1.0,
+    1.05
+   ],
+   "punch": 1.1,
+   "punchDur": 0.18,
+   "frames": 18
+  },
+  {
+   "id": "t4",
+   "src": "6",
+   "in": 20.95,
+   "dur": 0.5,
+   "start": 5.3,
+   "push": [
+    1.0,
+    1.05
+   ],
+   "punch": 1.12,
+   "punchDur": 0.16,
+   "frames": 15
+  },
+  {
+   "id": "t5",
+   "src": "6",
+   "in": 1.5,
+   "dur": 0.4,
+   "start": 5.8,
+   "push": [
+    1.0,
+    1.05
+   ],
+   "punch": 1.12,
+   "punchDur": 0.14,
+   "frames": 12
+  },
+  {
+   "id": "t6",
+   "src": "6",
+   "in": 4.55,
+   "dur": 0.32,
+   "start": 6.2,
+   "push": [
+    1.0,
+    1.05
+   ],
+   "punch": 1.14,
+   "punchDur": 0.12,
+   "frames": 10
+  },
+  {
+   "id": "t7",
+   "src": "6",
+   "in": 24.95,
+   "dur": 0.48,
+   "start": 6.52,
+   "push": [
+    1.0,
+    1.1
+   ],
+   "frames": 15
+  },
+  {
+   "id": "r1",
+   "src": "6",
+   "in": 26.3,
+   "dur": 1.8,
+   "slow": 0.6,
+   "start": 7.0,
+   "push": [
+    1.0,
+    1.06
+   ],
+   "frames": 90
+  },
+  {
+   "id": "e1",
+   "src": "3",
+   "in": 0.0,
+   "dur": 3.45,
+   "start": 10.0,
+   "push": [
+    1.0,
+    1.05
+   ],
+   "frames": 101
+  },
+  {
+   "id": "e2",
+   "src": "9",
+   "in": 5.1,
+   "dur": 3.35,
+   "start": 13.45,
+   "push": [
+    1.0,
+    1.05
+   ],
+   "frames": 101
+  }
+ ],
+ "transitions": [
+  {
+   "type": "flash",
+   "at": 7.0,
+   "d": 0.36
+  },
+  {
+   "type": "cloud",
+   "at": 10.0,
+   "d": 1.0
+  },
+  {
+   "type": "cloud",
+   "at": 13.45,
+   "d": 1.0
+  }
+ ],
+ "veil": [
+  [
+   0,
+   0
+  ],
+  [
+   7.9,
+   0
+  ],
+  [
+   8.4,
+   0.42
+  ],
+  [
+   9.4,
+   0.42
+  ],
+  [
+   11.0,
+   0
+  ],
+  [
+   12.0,
+   0
+  ],
+  [
+   12.5,
+   0.36
+  ],
+  [
+   13.0,
+   0.36
+  ],
+  [
+   14.2,
+   0.3
+  ],
+  [
+   15.3,
+   0.3
+  ],
+  [
+   16.1,
+   1.0
+  ],
+  [
+   16.8,
+   1.0
+  ]
+ ],
+ "vignette": [
+  [
+   0,
+   0
+  ],
+  [
+   2.9,
+   0.1
+  ],
+  [
+   6.95,
+   0.5
+  ],
+  [
+   7.0,
+   0
+  ],
+  [
+   16.8,
+   0
+  ]
+ ],
+ "shake": [
+  [
+   0,
+   0
+  ],
+  [
+   3.0,
+   1.5
+  ],
+  [
+   6.95,
+   7
+  ],
+  [
+   7.0,
+   0
+  ],
+  [
+   16.8,
+   0
+  ]
+ ],
+ "texts": [
+  {
+   "text": "Aimer",
+   "style": "big",
+   "color": "light",
+   "top": 1236,
+   "in": 0.1,
+   "out": 2.62,
+   "fast": true
+  },
+  {
+   "text": "laisse une trace.",
+   "style": "line",
+   "color": "light",
+   "top": 1438,
+   "in": 0.7,
+   "out": 2.72,
+   "fast": true
+  },
+  {
+   "text": "Un geste.",
+   "style": "big",
+   "color": "light",
+   "top": 1236,
+   "in": 3.2,
+   "out": 4.5,
+   "fast": true
+  },
+  {
+   "text": "Puis mille.",
+   "style": "big",
+   "color": "light",
+   "top": 1236,
+   "in": 4.72,
+   "out": 6.5,
+   "fast": true
+  },
+  {
+   "text": "La vôtre",
+   "style": "big",
+   "color": "ink",
+   "top": 1236,
+   "in": 8.0,
+   "out": 10.45
+  },
+  {
+   "text": "mérite une œuvre.",
+   "style": "line",
+   "color": "ink",
+   "top": 1438,
+   "in": 8.55,
+   "out": 10.55
+  },
+  {
+   "text": "Œuvres sur-mesure",
+   "style": "label",
+   "color": "ink",
+   "top": 1080,
+   "in": 12.35,
+   "out": 99
+  }
+ ]
+}

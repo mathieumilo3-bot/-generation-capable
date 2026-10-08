@@ -1,0 +1,28 @@
+{
+ "id": "foot",
+ "name": "Football",
+ "audience": "fans de foot",
+ "tone": "tactique, stats, transferts",
+ "theme": {
+  "yel": "#00C853"
+ },
+ "stockQueries": [
+  "soccer stadium",
+  "football match",
+  "soccer ball"
+ ],
+ "sourcePriority": [
+  "local",
+  "pexels"
+ ],
+ "cta": "les analyses tactiques sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

@@ -1,0 +1,29 @@
+{
+ "id": "histoire",
+ "name": "Histoire et culture générale",
+ "audience": "curieux",
+ "tone": "faits méconnus, chronologies",
+ "theme": {
+  "yel": "#8D6E63"
+ },
+ "stockQueries": [
+  "ancient ruins",
+  "old castle",
+  "museum"
+ ],
+ "sourcePriority": [
+  "wikimedia",
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les sources sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

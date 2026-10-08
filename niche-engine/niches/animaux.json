@@ -1,0 +1,30 @@
+{
+ "id": "animaux",
+ "name": "Animaux et nature",
+ "audience": "amoureux des animaux",
+ "tone": "comportements, records",
+ "theme": {
+  "yel": "#9CCC65"
+ },
+ "stockQueries": [
+  "wildlife",
+  "dog",
+  "cat",
+  "ocean fish"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay",
+  "wikimedia"
+ ],
+ "cta": "les fiches sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Génération Capable</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Génération Capable aide les créateurs et les entreprises à transformer leur savoir-faire en business : montage vidéo, monétisation, systèmes de vente et automatisation.">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:title" content="Génération Capable">
+<meta property="og:description" content="Ton talent mérite de rapporter. Montage vidéo, monétisation, scale et automatisation.">
+<meta property="og:image" content="atelier-sur-mesure/oeuvres/atelier.jpg">
+<link rel="icon" href="favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout : architecture « produit » à la Apple. Sections pleine largeur qui alternent
+   blanc et beige, titres centrés, contenu à 980 px, tuiles 2×2, boutons pilule.
+   Un seul monde visuel clair, assumé : pas de thème sombre. */
+:root{
+  --white:#ffffff;
+  --beige:#f3eee6;      /* sections alternées */
+  --sand:#e7dfd2;       /* filets, bords sur beige */
+  --ink:#1d1d1f;        /* texte et boutons */
+  --gray:#6e6e73;       /* texte secondaire */
+  --line:#e8e8ed;       /* filets sur blanc */
+  --bronze:#8a6a3c;     /* liens « En savoir plus » */
+  --f:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Manrope","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:56px}
+body{margin:0;background:var(--white);color:var(--ink);font:400 17px/1.47 var(--f);letter-spacing:-.011em;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img,video{display:block;max-width:100%}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+h1,h2,h3,h4,p{margin:0}
+h1,h2,h3{text-wrap:balance}
+:focus-visible{outline:2px solid var(--bronze);outline-offset:3px;border-radius:6px}
+
+.wrap{max-width:980px;margin:0 auto;padding-inline:max(16px,4vw)}
+.wide{max-width:1180px}
+.sec{padding-block:clamp(72px,10vw,120px)}
+.beige{background:var(--beige)}
+.center{text-align:center}
+
+.eyebrow{font-size:17px;font-weight:600;color:var(--bronze);margin-bottom:10px}
+.title{font-size:clamp(36px,5.6vw,56px);line-height:1.07;font-weight:700;letter-spacing:-.03em}
+.intro{font-size:clamp(19px,2.2vw,24px);line-height:1.38;color:var(--gray);font-weight:500;max-width:38ch;margin:16px auto 0;letter-spacing:-.015em}
+.center .intro{margin-inline:auto}
+
+/* Boutons */
+.actions{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;justify-content:center;margin-top:32px}
+.pill{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 24px;border-radius:999px;background:var(--ink);color:#fff;font-size:17px;font-weight:500;border:0;cursor:pointer;transition:background .2s}
+.pill:hover{background:#3a3a3d}
+.pill.sm{height:30px;padding:0 14px;font-size:13px}
+.more{color:var(--bronze);font-size:17px;font-weight:500;display:inline-flex;gap:4px;align-items:center}
+.more::after{content:"›";font-size:1.25em;line-height:1;transform:translateY(-1px)}
+.more:hover{text-decoration:underline}
+
+/* ───── Navigation ───── */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(255,255,255,.8);backdrop-filter:saturate(1.8) blur(20px);-webkit-backdrop-filter:saturate(1.8) blur(20px);border-bottom:1px solid rgba(0,0,0,.06)}
+.nav .wrap{display:flex;align-items:center;height:48px;gap:28px;max-width:1024px}
+.brand{font-weight:600;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.nav-links{display:flex;gap:28px;margin-left:auto;font-size:13px;color:#424245}
+.nav-links a:hover{color:var(--ink)}
+.nav .pill{margin-left:6px}
+
+/* ───── Hero ───── */
+.hero{padding-block:clamp(80px,12vw,150px) clamp(56px,8vw,96px)}
+.hero h1{font-size:clamp(44px,8.4vw,92px);line-height:1.02;font-weight:700;letter-spacing:-.045em}
+.hero h1 span{color:var(--bronze)}
+.hero .intro{max-width:34ch;font-size:clamp(20px,2.4vw,26px)}
+.trust{margin-top:28px;font-size:14px;color:var(--gray)}
+
+/* Sélecteur d'offres (rangée d'icônes) */
+.chooser{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-width:760px;margin:clamp(56px,8vw,88px) auto 0}
+.chooser a{display:grid;justify-items:center;gap:10px;padding:14px 6px;border-radius:14px;font-size:14px;font-weight:500;color:var(--ink);transition:background .2s}
+.chooser a:hover{background:var(--beige)}
+.chooser svg{width:40px;height:40px;stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.chooser small{display:block;color:var(--gray);font-size:12px;font-weight:400;margin-top:-6px}
+
+/* ───── Tuiles d'offres 2×2 ───── */
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px}
+.tile{border-radius:22px;padding:clamp(40px,6vw,64px) 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;min-height:440px}
+.tile.w{background:var(--white)}
+.tile.b{background:var(--beige)}
+.tile .for{font-size:13px;font-weight:600;color:var(--gray);letter-spacing:.02em;text-transform:uppercase}
+.tile h3{font-size:clamp(30px,3.6vw,40px);line-height:1.1;font-weight:700;letter-spacing:-.03em}
+.tile p{font-size:19px;color:var(--gray);max-width:30ch;line-height:1.4}
+.tile .actions{margin-top:14px;gap:12px 24px}
+.tile .actions .pill{height:38px;padding:0 18px;font-size:15px}
+.tile .actions .more{font-size:15px}
+.tile .figure{margin-top:auto;padding-top:28px;font-size:clamp(44px,5vw,56px);font-weight:700;letter-spacing:-.04em;line-height:1}
+.tile .figure small{display:block;font-size:14px;font-weight:500;color:var(--gray);letter-spacing:-.01em;margin-top:8px}
+.tiles-wrap{background:#f5f5f7}
+
+/* ───── Monétiser ───── */
+.steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-top:64px;border-top:1px solid var(--sand)}
+.step{padding:26px 18px 0 0;display:grid;gap:8px;align-content:start}
+.step .n{font-size:14px;font-weight:600;color:var(--bronze)}
+.step h4{font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.step p{font-size:15px;color:var(--gray);line-height:1.45}
+.included{margin-top:64px;background:var(--white);border-radius:22px;padding:clamp(28px,4vw,48px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:32px;align-items:center}
+.included h3{font-size:clamp(26px,3vw,32px);font-weight:700;letter-spacing:-.03em;line-height:1.12}
+.included .price{margin-top:14px;font-size:17px;color:var(--gray)}
+.included .price b{color:var(--ink);font-size:28px;font-weight:700;letter-spacing:-.03em}
+.included .actions{justify-content:flex-start;margin-top:24px}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.checks li{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:16px}
+.checks li:last-child{border-bottom:0}
+.checks li::before{content:"";flex:none;width:18px;height:18px;margin-top:2px;border-radius:50%;background:var(--beige) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 9.2l2.6 2.6L13 6.4' fill='none' stroke='%238a6a3c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/18px no-repeat}
+.fine{margin-top:22px;font-size:13px;color:var(--gray);text-align:center;max-width:70ch;margin-inline:auto}
+
+/* ───── Montage vidéo : l'exemple ───── */
+.showcase{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(32px,6vw,88px);align-items:center;margin-top:64px}
+.phone{justify-self:center;width:min(300px,72vw);aspect-ratio:9/19.2;border-radius:48px;background:var(--ink);padding:11px;box-shadow:0 30px 60px -20px rgba(60,40,10,.28),0 0 0 1px #3a3a3d inset;position:relative}
+.phone .screen{position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;background:#000}
+.phone video{width:100%;height:100%;object-fit:cover}
+.phone .island{position:absolute;top:21px;left:50%;transform:translateX(-50%);width:84px;height:24px;border-radius:20px;background:#000;z-index:2}
+.phone .sound{position:absolute;right:14px;bottom:14px;z-index:3;height:30px;padding:0 12px;border-radius:999px;border:0;background:rgba(255,255,255,.85);color:var(--ink);font-size:12.5px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.caption{font-size:14px;color:var(--gray);text-align:center;margin-top:18px}
+.feat{display:grid;gap:30px}
+.feat h3{font-size:clamp(28px,3.4vw,40px);font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.feat > p{font-size:19px;color:var(--gray);line-height:1.45}
+.feat ul{list-style:none;margin:0;padding:0;display:grid;gap:22px}
+.feat li b{display:block;font-size:17px;font-weight:600;margin-bottom:2px}
+.feat li span{color:var(--gray);font-size:16px}
+.feat .actions{justify-content:flex-start;margin-top:0}
+
+/* ───── Diagnostic ───── */
+.finder{margin:56px auto 0;max-width:760px;background:var(--white);border-radius:22px;padding:clamp(24px,4vw,44px);text-align:left}
+.qlabel{font-size:14px;font-weight:600;color:var(--gray);margin-bottom:12px}
+.seg{display:grid;gap:10px;margin-bottom:30px}
+.seg.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.seg.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.choice{border:1px solid #d2d2d7;background:var(--white);border-radius:14px;padding:16px 16px;text-align:left;font-size:15.5px;line-height:1.35;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.choice:hover{border-color:#86868b}
+.choice[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+.answer{border-top:1px solid var(--line);padding-top:28px;display:grid;gap:10px;min-height:150px}
+.answer .k{font-size:14px;font-weight:600;color:var(--bronze)}
+.answer h3{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.answer p{color:var(--gray);font-size:17px;max-width:52ch}
+.answer .actions{justify-content:flex-start;margin-top:10px}
+.answer.empty p{color:#86868b}
+
+/* ───── Process ───── */
+.process{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-top:64px;text-align:left}
+.process div{display:grid;gap:8px;align-content:start}
+.process .n{width:36px;height:36px;border-radius:50%;background:var(--beige);display:grid;place-items:center;font-size:15px;font-weight:600;color:var(--bronze);margin-bottom:8px}
+.process h4{font-size:19px;font-weight:600;letter-spacing:-.02em}
+.process p{font-size:15.5px;color:var(--gray)}
+
+/* ───── Tarifs (comparateur) ───── */
+.compare{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:56px;text-align:center}
+.plan{background:var(--white);border-radius:22px;padding:32px 22px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.plan.hi{box-shadow:0 0 0 2px var(--ink) inset}
+.plan .badge{font-size:12px;font-weight:600;color:var(--bronze);height:16px}
+.plan h4{font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.plan .who{font-size:14px;color:var(--gray)}
+.plan .amount{font-size:30px;font-weight:700;letter-spacing:-.03em;margin-top:12px}
+.plan .unit{font-size:13px;color:var(--gray);min-height:36px}
+.plan hr{width:100%;border:0;border-top:1px solid var(--line);margin:8px 0}
+.plan ul{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:14.5px;color:var(--ink)}
+.plan .pill{margin-top:auto;height:38px;font-size:15px;padding:0 18px}
+.plan .push{margin-top:auto;padding-top:20px}
+
+/* ───── Engagements ───── */
+.promise{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:56px;text-align:left}
+.promise > div{border-radius:22px;padding:clamp(26px,4vw,40px);background:var(--beige)}
+.promise h3{font-size:21px;font-weight:700;letter-spacing:-.02em;margin-bottom:14px}
+.promise ul{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:16.5px}
+.promise .no li{color:var(--gray);text-decoration:line-through;text-decoration-color:#b9b2a6}
+
+/* ───── FAQ ───── */
+.faq{margin-top:48px;text-align:left;border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:20px;padding:22px 0;font-size:19px;font-weight:600;letter-spacing:-.02em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-weight:300;font-size:26px;line-height:.9;color:var(--gray);transition:transform .25s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq .a{padding:0 40px 24px 0;color:var(--gray);font-size:17px}
+
+/* ───── Contact ───── */
+form{max-width:640px;margin:48px auto 0;display:grid;gap:14px;text-align:left}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field{display:grid;gap:6px;min-width:0}
+.field label,.field .lb{font-size:13px;font-weight:600;color:var(--gray);padding-left:4px}
+.field input,.field select,.field textarea{width:100%;height:52px;background:var(--white);border:1px solid #d2d2d7;border-radius:12px;padding:0 16px;font-size:17px;transition:border-color .15s,box-shadow .15s}
+.field textarea{height:auto;min-height:110px;padding:14px 16px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:#a1a1a6}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--bronze);box-shadow:0 0 0 4px rgba(138,106,60,.15)}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tags label{position:relative;display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:1px solid #d2d2d7;background:var(--white);font-size:15px;color:var(--ink);cursor:pointer;transition:all .15s}
+.tags input{position:absolute;opacity:0;pointer-events:none}
+.tags label:has(input:checked){background:var(--ink);border-color:var(--ink);color:#fff}
+.tags label:has(input:focus-visible){outline:2px solid var(--bronze);outline-offset:2px}
+.submit{display:grid;justify-items:center;gap:12px;margin-top:10px}
+.submit .pill{height:52px;padding:0 34px}
+.submit small{font-size:13px;color:var(--gray)}
+.done{max-width:640px;margin:48px auto 0;text-align:center;background:var(--white);border-radius:22px;padding:40px 24px}
+.done h3{font-size:28px;font-weight:700;letter-spacing:-.03em}
+.done p{color:var(--gray);margin-top:8px}
+.hp{position:absolute;left:-9999px}
+
+footer{background:#f5f5f7;font-size:12px;color:var(--gray)}
+footer .wrap{padding-block:20px 28px;display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;border-top:1px solid #d2d2d7}
+footer nav{display:flex;flex-wrap:wrap;gap:18px}
+footer a:hover{color:var(--ink);text-decoration:underline}
+
+.mbar{display:none}
+
+/* ───── Responsive ───── */
+@media (max-width:980px){
+  .steps{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:28px}
+  .compare{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .process{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:36px}
+}
+@media (max-width:780px){
+  .nav-links{display:none}
+  .nav .pill{margin-left:auto}
+  .tiles{grid-template-columns:minmax(0,1fr);padding:10px;gap:10px}
+  .tile{min-height:0}
+  .showcase,.included,.promise{grid-template-columns:minmax(0,1fr)}
+  .showcase .feat{order:-1;text-align:center}
+  .feat .actions{justify-content:center}
+  .seg.c3,.seg.c2{grid-template-columns:minmax(0,1fr)}
+  footer .wrap{padding-bottom:96px}
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.86);backdrop-filter:saturate(1.8) blur(20px);-webkit-backdrop-filter:saturate(1.8) blur(20px);border-top:1px solid rgba(0,0,0,.06)}
+  .mbar .pill{flex:1}
+}
+@media (max-width:560px){
+  .chooser{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .steps,.compare,.process,.two{grid-template-columns:minmax(0,1fr)}
+  .step{padding-right:0}
+  .faq .a{padding-right:0}
+  .faq summary{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">Génération Capable</a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#offres">Offres</a>
+      <a href="#monetiser">Monétiser</a>
+      <a href="#montage">Montage vidéo</a>
+      <a href="#tarifs">Tarifs</a>
+      <a href="#faq">Questions</a>
+    </nav>
+    <a class="pill sm" href="#contact">Appel gratuit</a>
+  </div>
+</header>
+
+<main id="top">
+  <!-- ───── HERO ───── -->
+  <section class="hero center">
+    <div class="wrap">
+      <p class="eyebrow">Génération Capable</p>
+      <h1>Ton talent.<br><span>Ton business.</span></h1>
+      <p class="intro">On aide les créateurs et les entreprises à transformer leur savoir-faire en revenus, et à gagner du temps au quotidien.</p>
+      <div class="actions">
+        <a class="pill" href="#contact">Réserver un appel gratuit</a>
+        <a class="more" href="#trouver">Trouver mon offre</a>
+      </div>
+      <p class="trust">20 minutes · Gratuit · Sans engagement</p>
+
+      <nav class="chooser" aria-label="Nos offres">
+        <a href="#montage">
+          <svg viewBox="0 0 40 40"><rect x="11" y="4" width="18" height="32" rx="4"/><path d="M18 17v7l6-3.5z"/></svg>
+          Montage vidéo<small>Attirer</small>
+        </a>
+        <a href="#monetiser">
+          <svg viewBox="0 0 40 40"><path d="M20 5v30"/><path d="M27 11.5c-1.2-2-3.8-3.2-7-3.2-4 0-6.6 2-6.6 4.9 0 7 13.6 3.6 13.6 10.6 0 3-2.9 5.2-7 5.2-3.3 0-6-1.3-7.3-3.6"/></svg>
+          Monétiser<small>Vendre</small>
+        </a>
+        <a href="#o-scaler">
+          <svg viewBox="0 0 40 40"><path d="M5 33h30"/><path d="M8 27l8-8 6 5 11-12"/><path d="M26 12h7v7"/></svg>
+          Scaler<small>Grandir</small>
+        </a>
+        <a href="#o-temps">
+          <svg viewBox="0 0 40 40"><circle cx="20" cy="21" r="13"/><path d="M20 13v8l5 3"/><path d="M16 4h8"/></svg>
+          Gagner du temps<small>Simplifier</small>
+        </a>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ───── OFFRES : tuiles ───── -->
+  <section id="offres" class="tiles-wrap">
+    <div class="tiles">
+      <article class="tile b" id="o-montage">
+        <span class="for">Créateurs · Marques</span>
+        <h3>Montage vidéo</h3>
+        <p>Des vidéos qui retiennent dès la première seconde.</p>
+        <div class="actions"><a class="pill" href="#contact" data-pick="montage">Demander un devis</a><a class="more" href="#montage">En savoir plus</a></div>
+        <div class="figure">3 s<small>pour accrocher. On travaille chaque seconde.</small></div>
+      </article>
+      <article class="tile w" id="o-monetiser">
+        <span class="for">Créateurs · Indépendants</span>
+        <h3>Apprendre à monétiser</h3>
+        <p>Savoir quoi vendre, à qui, à quel prix. Et le vendre.</p>
+        <div class="actions"><a class="pill" href="#contact" data-pick="monetiser">Commencer</a><a class="more" href="#monetiser">En savoir plus</a></div>
+        <div class="figure">67 €<small>par mois. Formation et coach inclus.</small></div>
+      </article>
+      <article class="tile w" id="o-scaler">
+        <span class="for">Entreprises</span>
+        <h3>Scaler son business</h3>
+        <p>Un système qui vend, suit et relance, sans que tout repose sur toi.</p>
+        <div class="actions"><a class="pill" href="#contact" data-pick="scaler">En parler</a><a class="more" href="#tarifs">Voir le détail</a></div>
+        <div class="figure">1 système<small>offre, vente, CRM et ambassadeurs.</small></div>
+      </article>
+      <article class="tile b" id="o-temps">
+        <span class="for">Tous profils</span>
+        <h3>Gagner du temps</h3>
+        <p>Relances, devis, messages, reporting : l'IA fait le répétitif.</p>
+        <div class="actions"><a class="pill" href="#contact" data-pick="temps">Automatiser</a><a class="more" href="#tarifs">Voir le détail</a></div>
+        <div class="figure">+ d'heures<small>pour ce qui compte vraiment.</small></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ───── MONÉTISER ───── -->
+  <section id="monetiser" class="sec beige">
+    <div class="wrap">
+      <div class="center">
+        <p class="eyebrow">Apprendre à monétiser</p>
+        <h2 class="title">Tu sais faire.<br>On t'apprend à vendre.</h2>
+        <p class="intro">Beaucoup ont une vraie compétence, mais pas d'offre, pas de prix, et pas de méthode. Voici le chemin qu'on te fait suivre.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step"><span class="n">Étape 1</span><h4>Trouver quoi vendre</h4><p>Ce que tu sais faire, croisé avec ce qu'on te demande déjà.</p></div>
+        <div class="step"><span class="n">Étape 2</span><h4>Construire l'offre</h4><p>Le format, le contenu, la promesse, et pour qui.</p></div>
+        <div class="step"><span class="n">Étape 3</span><h4>Fixer le prix</h4><p>Selon la valeur apportée, pas selon le temps passé.</p></div>
+        <div class="step"><span class="n">Étape 4</span><h4>Vendre sans forcer</h4><p>Prospection, découverte, objections, closing. Avec des scripts.</p></div>
+        <div class="step"><span class="n">Étape 5</span><h4>Faire durer</h4><p>Du contenu qui amène des clients et une routine quotidienne.</p></div>
+      </div>
+
+      <div class="included">
+        <div>
+          <h3>Tout ce qu'il faut pour vendre ce que tu sais faire.</h3>
+          <p class="price"><b>67 €</b> / mois · engagement 6 mois</p>
+          <div class="actions"><a class="pill" href="#contact" data-pick="monetiser">Commencer</a></div>
+        </div>
+        <ul class="checks">
+          <li>6 modules vidéo + PDF : prospection, découverte, closing</li>
+          <li>Diagnostic IA de ton profil vendeur</li>
+          <li>Un plan d'action chaque matin, une analyse chaque soir</li>
+          <li>Un coach IA disponible 24 h/24</li>
+          <li>La communauté et les opportunités commerciales</li>
+        </ul>
+      </div>
+      <p class="fine">Ce n'est pas une méthode pour devenir riche. C'est un accompagnement pour développer une compétence qui a de la valeur. Les résultats dépendent du travail fourni.</p>
+    </div>
+  </section>
+
+  <!-- ───── MONTAGE VIDÉO ───── -->
+  <section id="montage" class="sec">
+    <div class="wrap">
+      <div class="center">
+        <p class="eyebrow">Montage vidéo</p>
+        <h2 class="title">Des vidéos qu'on regarde jusqu'au bout.</h2>
+        <p class="intro">Tu filmes. On s'occupe du reste. Tu reçois des vidéos prêtes à publier.</p>
+      </div>
+
+      <div class="showcase">
+        <div>
+          <div class="phone">
+            <div class="screen">
+              <span class="island" aria-hidden="true"></span>
+              <video id="demo" src="atelier-sur-mesure/oeuvres/atelier.mp4" poster="atelier-sur-mesure/oeuvres/atelier.jpg" muted loop playsinline autoplay preload="metadata" aria-label="Exemple de vidéo montée par Génération Capable"></video>
+              <button class="sound" id="sound" type="button">Son</button>
+            </div>
+          </div>
+          <p class="caption">Exemple de notre travail : vidéo verticale montée pour l'Atelier Sur-Mesure.</p>
+        </div>
+        <div class="feat">
+          <ul>
+            <li><b>Une accroche dans les 3 premières secondes</b><span>Le moment où l'on décide de rester ou de scroller.</span></li>
+            <li><b>Des sous-titres synchronisés mot à mot</b><span>La plupart des vidéos sont regardées sans le son.</span></li>
+            <li><b>Le bon format pour chaque réseau</b><span>Reels, TikTok, Shorts, YouTube, publicité.</span></li>
+            <li><b>Ton identité respectée</b><span>Tes couleurs, tes polices, ton ton.</span></li>
+          </ul>
+          <div class="actions"><a class="pill" href="#contact" data-pick="montage">Demander un devis</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── TROUVER SON OFFRE ───── -->
+  <section id="trouver" class="sec beige">
+    <div class="wrap center">
+      <p class="eyebrow">Pas sûr de ce qu'il te faut ?</p>
+      <h2 class="title">Trouve ton offre en deux clics.</h2>
+
+      <div class="finder">
+        <p class="qlabel">Tu es…</p>
+        <div class="seg c3" data-q="who">
+          <button class="choice" type="button" data-v="createur" aria-pressed="false">Créateur de contenu</button>
+          <button class="choice" type="button" data-v="entreprise" aria-pressed="false">Une entreprise</button>
+          <button class="choice" type="button" data-v="independant" aria-pressed="false">Indépendant ou expert</button>
+        </div>
+        <p class="qlabel">Ce qui te bloque le plus…</p>
+        <div class="seg c2" data-q="pain">
+          <button class="choice" type="button" data-v="monetiser" aria-pressed="false">Je ne sais pas quoi vendre</button>
+          <button class="choice" type="button" data-v="montage" aria-pressed="false">Mes vidéos ne marchent pas</button>
+          <button class="choice" type="button" data-v="scaler" aria-pressed="false">Tout repose sur moi</button>
+          <button class="choice" type="button" data-v="temps" aria-pressed="false">Je perds trop de temps</button>
+        </div>
+        <div class="answer empty" id="answer" aria-live="polite">
+          <p>Ta recommandation s'affiche ici.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── COMMENT ÇA MARCHE ───── -->
+  <section class="sec">
+    <div class="wrap center">
+      <p class="eyebrow">Comment ça marche</p>
+      <h2 class="title">Simple, du début à la fin.</h2>
+      <div class="process">
+        <div><span class="n">1</span><h4>Appel gratuit</h4><p>20 minutes pour comprendre où tu en es. On te dit franchement si on peut t'aider.</p></div>
+        <div><span class="n">2</span><h4>Diagnostic</h4><p>On analyse ton contenu, ton offre, ta vente. Tu repars avec tes 3 priorités.</p></div>
+        <div><span class="n">3</span><h4>Proposition écrite</h4><p>Ce qu'on fait, les délais et le prix. Sans frais cachés.</p></div>
+        <div><span class="n">4</span><h4>On avance ensemble</h4><p>On livre, on mesure, on ajuste. Un point chaque semaine.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── TARIFS ───── -->
+  <section id="tarifs" class="sec beige">
+    <div class="wrap wide center">
+      <p class="eyebrow">Tarifs</p>
+      <h2 class="title">Choisis ce qui te correspond.</h2>
+      <p class="intro">Un prix fixe pour la formation. Un devis écrit pour le reste, après l'appel.</p>
+      <div class="compare">
+        <div class="plan">
+          <span class="badge"></span>
+          <h4>Montage vidéo</h4><span class="who">Créateurs, marques</span>
+          <span class="amount">Sur devis</span><span class="unit">à la vidéo ou au mois</span>
+          <hr>
+          <ul><li>Accroche travaillée</li><li>Sous-titres mot à mot</li><li>Tous les formats</li><li>Retouches incluses</li></ul>
+          <div class="push"><a class="pill" href="#contact" data-pick="montage">Demander un devis</a></div>
+        </div>
+        <div class="plan hi">
+          <span class="badge">Prix fixe</span>
+          <h4>Apprendre à monétiser</h4><span class="who">Créateurs, indépendants</span>
+          <span class="amount">67 €</span><span class="unit">par mois · 6 mois</span>
+          <hr>
+          <ul><li>6 modules vidéo + PDF</li><li>Coach IA au quotidien</li><li>Communauté</li><li>Accès immédiat</li></ul>
+          <div class="push"><a class="pill" href="#contact" data-pick="monetiser">Commencer</a></div>
+        </div>
+        <div class="plan">
+          <span class="badge"></span>
+          <h4>Scaler son business</h4><span class="who">Entreprises</span>
+          <span class="amount">Sur devis</span><span class="unit">sur plusieurs mois</span>
+          <hr>
+          <ul><li>Tunnel de vente</li><li>CRM et paiements</li><li>Réseau d'ambassadeurs</li><li>Formation de l'équipe</li></ul>
+          <div class="push"><a class="pill" href="#contact" data-pick="scaler">En parler</a></div>
+        </div>
+        <div class="plan">
+          <span class="badge"></span>
+          <h4>Gagner du temps</h4><span class="who">Tous profils</span>
+          <span class="amount">Sur devis</span><span class="unit">mise en place</span>
+          <hr>
+          <ul><li>Relances automatiques</li><li>Devis et factures</li><li>Réponses aux messages</li><li>Reporting hebdo</li></ul>
+          <div class="push"><a class="pill" href="#contact" data-pick="temps">Automatiser</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── ENGAGEMENTS ───── -->
+  <section class="sec">
+    <div class="wrap center">
+      <p class="eyebrow">Nos engagements</p>
+      <h2 class="title">Clair, dès le départ.</h2>
+      <div class="promise">
+        <div><h3>Ce qu'on promet</h3><ul><li>Des livrables de qualité, dans les délais</li><li>Un prix écrit avant de commencer</li><li>Un point d'avancement chaque semaine</li><li>Te dire non si on ne peut pas t'aider</li></ul></div>
+        <div class="no"><h3>Ce qu'on ne promet jamais</h3><ul><li>Un revenu garanti</li><li>Des résultats sans travail</li><li>Devenir riche en 30 jours</li><li>Des vues ou des abonnés achetés</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── FAQ ───── -->
+  <section id="faq" class="sec beige">
+    <div class="wrap center" style="max-width:820px">
+      <h2 class="title">Questions fréquentes.</h2>
+      <div class="faq">
+        <details><summary>Je n'ai pas encore d'audience. Vous pouvez m'aider ?</summary><p class="a">Oui. On commence par trouver quoi vendre et à qui. Beaucoup de premières ventes se font en direct, avant même d'avoir une grosse audience.</p></details>
+        <details><summary>Je ne sais vraiment pas quoi vendre.</summary><p class="a">C'est le cas de la plupart des gens qui nous appellent. On part de ce que tu sais faire et de ce qu'on te demande déjà. L'offre existe souvent, elle n'est simplement pas encore formulée.</p></details>
+        <details><summary>Vous garantissez des revenus ?</summary><p class="a">Non. On s'engage sur notre travail : la qualité des vidéos, la clarté de ton offre, les outils et l'accompagnement. Le reste dépend aussi de toi.</p></details>
+        <details><summary>En combien de temps je reçois une vidéo ?</summary><p class="a">Pour un format court, quelques jours ouvrés après réception des rushs. Le délai exact est écrit dans ton devis.</p></details>
+        <details><summary>Comment je vous envoie mes rushs ?</summary><p class="a">Par un lien de partage : Drive, WeTransfer ou Dropbox. On t'envoie ensuite un brief court pour cadrer le ton, la durée et la plateforme.</p></details>
+        <details><summary>Je peux arrêter la formation ?</summary><p class="a">L'abonnement est à 67 € par mois avec un engagement de 6 mois, le temps de suivre tout le parcours. Les conditions complètes te sont remises avant l'inscription.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── CONTACT ───── -->
+  <section id="contact" class="sec">
+    <div class="wrap center">
+      <h2 class="title">Parlons de ton projet.</h2>
+      <p class="intro">Laisse tes coordonnées. On te rappelle sous 24 h ouvrées pour un appel gratuit de 20 minutes.</p>
+
+      <form id="form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+        <input type="hidden" name="form-name" value="contact">
+        <p class="hp"><label>Ne pas remplir <input name="bot-field" id="botField" tabindex="-1" autocomplete="off"></label></p>
+        <div class="two">
+          <div class="field"><label for="fName">Prénom</label><input id="fName" name="prenom" required autocomplete="given-name" placeholder="Inès"></div>
+          <div class="field"><label for="fPhone">Téléphone</label><input id="fPhone" name="telephone" type="tel" required autocomplete="tel" placeholder="06 12 34 56 78"></div>
+        </div>
+        <div class="two">
+          <div class="field"><label for="fMail">E-mail</label><input id="fMail" name="email" type="email" required autocomplete="email" placeholder="ines@exemple.fr"></div>
+          <div class="field"><label for="fWho">Tu es</label>
+            <select id="fWho" name="profil">
+              <option value="createur">Créateur de contenu</option>
+              <option value="entreprise">Entreprise</option>
+              <option value="independant">Indépendant ou expert</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lb">Ce qui t'intéresse</span>
+          <div class="tags">
+            <label><input type="checkbox" name="offres" value="Montage vidéo" id="c-montage">Montage vidéo</label>
+            <label><input type="checkbox" name="offres" value="Apprendre à monétiser" id="c-monetiser">Monétiser</label>
+            <label><input type="checkbox" name="offres" value="Scaler son business" id="c-scaler">Scaler</label>
+            <label><input type="checkbox" name="offres" value="Gagner du temps" id="c-temps">Gagner du temps</label>
+          </div>
+        </div>
+        <div class="field"><label for="fMsg">Où en es-tu ? (facultatif)</label><textarea id="fMsg" name="message" placeholder="Ex. J'ai 8 000 abonnés en cuisine sur TikTok, mais je ne vends rien."></textarea></div>
+        <div class="submit">
+          <button class="pill" type="submit" id="fSend">Réserver mon appel gratuit</button>
+          <small>Tes informations servent uniquement à te rappeler.</small>
+        </div>
+      </form>
+      <div class="done" id="done" hidden>
+        <h3>Merci, c'est noté.</h3>
+        <p id="doneText">On te rappelle sous 24 h ouvrées.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="yr">2026</span> Génération Capable. Tous droits réservés.</span>
+    <nav aria-label="Pied de page"><a href="#offres">Offres</a><a href="#tarifs">Tarifs</a><a href="#faq">Questions</a><a href="index.html">Espace membres</a></nav>
+  </div>
+</footer>
+
+<div class="mbar"><a class="pill" href="#contact">Réserver un appel gratuit</a></div>
+
+<script>
+(function(){
+  document.getElementById('yr').textContent=new Date().getFullYear();
+
+  /* ── Vidéo d'exemple : son à la demande ── */
+  var v=document.getElementById('demo'),snd=document.getElementById('sound');
+  snd.addEventListener('click',function(){v.muted=!v.muted;snd.textContent=v.muted?'Son':'Couper';var p=v.play();if(p&&p.catch)p.catch(function(){});});
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){v.removeAttribute('autoplay');v.pause();}
+
+  /* ── Trouver son offre ── */
+  var OFFERS={
+    montage:{t:'Montage vidéo',p:'Ton contenu a du potentiel, mais il ne retient pas assez. On monte tes vidéos pour qu’elles accrochent dès la première seconde.',cta:'Demander un devis'},
+    monetiser:{t:'Apprendre à monétiser',p:'Tu as une compétence. Il te manque une offre, un prix et une méthode pour la vendre. C’est exactement ce qu’on t’apprend, pour 67 € par mois.',cta:'Commencer'},
+    scaler:{t:'Scaler son business',p:'Tu as prouvé que ça se vend. Il te faut maintenant un système qui vend sans que tout passe par toi.',cta:'En parler'},
+    temps:{t:'Gagner du temps',p:'Ton temps part dans des tâches qui pourraient tourner seules. On les automatise pour que tu te concentres sur ce qui rapporte.',cta:'Automatiser'}
+  };
+  var state={who:null,pain:null},ans=document.getElementById('answer');
+  [].forEach.call(document.querySelectorAll('.seg'),function(g){
+    g.addEventListener('click',function(e){
+      var b=e.target.closest('.choice');if(!b)return;
+      [].forEach.call(g.children,function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+      state[g.dataset.q]=b.dataset.v;render();
+    });
+  });
+  function render(){
+    if(!state.pain){ans.innerHTML='<p>Maintenant, dis-nous ce qui te bloque.</p>';return;}
+    var o=OFFERS[state.pain];
+    ans.className='answer';
+    ans.innerHTML='<span class="k">On te recommande</span><h3>'+o.t+'</h3><p>'+o.p+'</p><div class="actions"><a class="pill" href="#contact" id="go">'+o.cta+'</a></div>';
+    document.getElementById('go').addEventListener('click',function(){pick(state.pain);if(state.who)document.getElementById('fWho').value=state.who;});
+  }
+
+  /* ── Pré-sélection de l'offre dans le formulaire ── */
+  function pick(k){var c=document.getElementById('c-'+k);if(c)c.checked=true;}
+  [].forEach.call(document.querySelectorAll('[data-pick]'),function(a){a.addEventListener('click',function(){pick(a.dataset.pick);});});
+
+  /* ── Formulaire (Netlify Forms sur le site en ligne) ── */
+  var form=document.getElementById('form'),done=document.getElementById('done'),doneText=document.getElementById('doneText'),send=document.getElementById('fSend');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    if(!/generationcapable\.fr$|netlify\.app$/.test(location.hostname)){
+      doneText.textContent='Aperçu : le formulaire fonctionne. Sur le site en ligne, la demande arrive dans tes formulaires Netlify.';
+      form.hidden=true;done.hidden=false;return;
+    }
+    send.disabled=true;send.textContent='Envoi…';
+    fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(new FormData(form)).toString()})
+      .then(function(r){if(!r.ok)throw new Error(r.status);form.hidden=true;done.hidden=false;})
+      .catch(function(){send.disabled=false;send.textContent='Réessayer';});
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"Lilita One";src:url(fonts/fontsource-lilita-one-5.3.0/files/lilita-one-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Lilita One";src:url(fonts/fontsource-lilita-one-5.3.0/files/lilita-one-latin-ext-400-normal.woff2) format("woff2");unicode-range:U+0100-024F}
+@font-face{font-family:"Luckiest Guy";src:url(fonts/fontsource-luckiest-guy-5.3.0/files/luckiest-guy-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Nunito";src:url(fonts/fontsource-nunito-5.3.0/files/nunito-latin-800-normal.woff2) format("woff2");font-weight:800}
+@font-face{font-family:"Nunito";src:url(fonts/fontsource-nunito-5.3.0/files/nunito-latin-600-normal.woff2) format("woff2");font-weight:600}
+:root{--yel:#FFE11F;--red:#FF3B30;--pur:#E08CFF;--blurple:#5865F2}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#111}
+#stage{position:absolute;inset:0;overflow:hidden}
+.abs{position:absolute}
+.fill{position:absolute;inset:0}
+.cap{position:absolute;left:40px;right:40px;text-align:center;font-family:"Lilita One",sans-serif;color:#fff;
+  font-size:124px;line-height:1.02;letter-spacing:.01em;-webkit-text-stroke:20px #000;paint-order:stroke fill;
+  text-shadow:0 12px 0 rgba(0,0,0,.45);transform-origin:50% 60%}
+.cap .sm{font-size:.62em}
+.y{color:var(--yel)} .r{color:var(--red)} .p{color:var(--pur)}
+.num{font-family:"Luckiest Guy",sans-serif;color:var(--yel);font-size:330px;-webkit-text-stroke:26px #000;paint-order:stroke fill;
+  text-shadow:0 18px 0 rgba(0,0,0,.4);left:0;right:0;text-align:center;line-height:1}
+.panel{position:absolute;left:90px;right:90px;border-radius:44px;background:linear-gradient(#cfe9ff,#9fd0f5);
+  border:10px solid #1d1d1d;box-shadow:inset 0 -14px 0 rgba(0,0,0,.12),0 26px 0 rgba(0,0,0,.35);overflow:hidden}
+.panel .bar{height:120px;background:linear-gradient(#ffd25a,#f5a623);border-bottom:8px solid #1d1d1d;display:flex;align-items:center;justify-content:center;
+  font-family:"Lilita One";font-size:66px;color:#fff;-webkit-text-stroke:12px #000;paint-order:stroke fill}
+.panel .x{position:absolute;right:22px;top:22px;width:76px;height:76px;border-radius:18px;background:#ff4a3d;border:6px solid #1d1d1d;
+  color:#fff;font:400 54px/64px "Lilita One";text-align:center;-webkit-text-stroke:8px #000;paint-order:stroke fill}
+.big{position:absolute;left:60px;right:60px;text-align:center;padding:34px 20px;border-radius:40px;background:rgba(0,0,0,.72);
+  border:8px solid var(--yel);font-family:"Lilita One";font-size:112px;line-height:1.05;color:#fff;-webkit-text-stroke:16px #000;paint-order:stroke fill}
+.ginl{display:inline-block;width:.95em;height:.95em;vertical-align:-.12em}
+.invite{position:absolute;left:150px;right:150px;border-radius:36px;background:#313338;color:#fff;font-family:"Nunito";text-align:center;
+  padding:70px 50px 60px;box-shadow:0 40px 90px rgba(0,0,0,.55)}
+.invite .ico{width:200px;height:200px;margin:0 auto 34px;border-radius:56px;background:#1e1f22;display:flex;align-items:center;justify-content:center}
+.invite .lead{font-weight:600;font-size:36px;color:#b5bac1}
+.invite .nm{font-weight:800;font-size:68px;margin:14px 0 8px}
+.invite .ln{font-weight:600;font-size:34px;color:#b5bac1;margin-bottom:44px}
+.invite .btn{border-radius:20px;background:var(--blurple);font-weight:800;font-size:46px;padding:34px 0}
+.invite .brand{position:absolute;left:0;right:0;top:-110px;font:800 64px "Nunito";color:#fff;display:flex;justify-content:center;align-items:center;gap:20px}
+</style></head>
+<body>
+<div id="stage"></div>
+<script>
+const S = /*SCRIPT*/null;
+const W = 1080, H = 1920;
+const stage = document.getElementById("stage");
+if (S.theme) for (const [k, v] of Object.entries(S.theme)) document.documentElement.style.setProperty("--" + k, v);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const easeOut = x => 1 - Math.pow(1 - clamp(x), 3);
+const back = x => { x = clamp(x); const c1 = 2.2, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+/* entrée « pop » : 0 → 1 avec rebond, sur d secondes */
+const pop = (t, d = .22) => back(t / d);
+
+/* découpage du minutage : chaque scène a un début absolu */
+let acc = 0;
+for (const sc of S.scenes) { sc.start = acc; acc += sc.dur; }
+S.duration = acc;
+const sceneAt = t => { let s = S.scenes[0]; for (const x of S.scenes) if (t >= x.start) s = x; return s; };
+
+/* ---------- icônes dessinées (contour noir épais, style cartoon) ---------- */
+const K = 'stroke="#141414" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"';
+const ICON = {
+  gem: `<svg viewBox="0 0 200 200"><path ${K} fill="#d651ff" d="M100 22 168 70 146 160 100 182 54 160 32 70Z"/><path fill="#f6a8ff" d="M100 30 60 70h80Z"/><path fill="#a12fd8" d="M100 178 60 74h80Z" opacity=".55"/><path ${K} fill="none" d="M32 70h136M60 70l40 108 40-108M100 22 60 70M100 22l40 48"/><path fill="#fff" opacity=".85" d="M70 52l14-10 6 8-14 10z"/></svg>`,
+  tree: `<svg viewBox="0 0 200 200"><path ${K} fill="#8a5a2b" d="M88 118h24l6 62H82Z"/><circle ${K} fill="#3fae3a" cx="70" cy="96" r="44"/><circle ${K} fill="#3fae3a" cx="132" cy="96" r="44"/><circle ${K} fill="#55c94a" cx="100" cy="62" r="48"/><path fill="#8be36f" d="M78 46a30 26 0 0 1 34-10 30 30 0 0 0-30 22z"/><ellipse ${K} fill="#6b6b6b" cx="100" cy="184" rx="70" ry="10" stroke-width="0" opacity=".35"/></svg>`,
+  mine: `<svg viewBox="0 0 200 200"><path ${K} fill="#7a5233" d="M40 120h120l-12 64H52Z"/><path ${K} fill="#5a3b22" d="M30 112h140v18H30z"/><g transform="translate(58 34) scale(.42)"><path ${K} fill="#d651ff" d="M100 22 168 70 146 160 100 182 54 160 32 70Z" stroke-width="20"/><path fill="#f6a8ff" d="M100 30 60 70h80Z"/></g><g transform="translate(96 30) scale(.36)"><path ${K} fill="#4fd1ff" d="M100 22 168 70 146 160 100 182 54 160 32 70Z" stroke-width="22"/></g><path ${K} fill="#c9c9c9" d="M150 20c-40 0-74 14-96 34l10 10c24-16 52-26 86-26z"/><path ${K} fill="#b07a45" d="M98 40l12 8-38 74-12-8z"/></svg>`,
+  star: `<svg viewBox="0 0 200 200"><path ${K} fill="#ffcc1f" d="M100 16l25 52 57 8-41 40 10 57-51-27-51 27 10-57-41-40 57-8z"/><path fill="#fff27a" d="M100 36l17 36 38 6-28 26 3 12-30-22-30 22 4-12-28-26 38-6z" opacity=".55"/><path fill="#fff" opacity=".9" d="M80 70l12-6 4 8-12 6z"/></svg>`,
+  box: `<svg viewBox="0 0 200 200"><path ${K} fill="#7e3fd6" d="M30 86h140v94H30z"/><path ${K} fill="#9b5cf0" d="M22 66h156v28H22z"/><path ${K} fill="#ffd23f" d="M88 66h24v114H88z"/><g transform="translate(62 0) scale(.38)"><path ${K} fill="#d651ff" stroke-width="22" d="M100 22 168 70 146 160 100 182 54 160 32 70Z"/><path fill="#f6a8ff" d="M100 30 60 70h80Z"/></g></svg>`,
+  hand: `<svg viewBox="0 0 200 200"><path stroke="#141414" stroke-width="8" stroke-linejoin="round" fill="#fff" d="M70 20c10 0 16 8 16 18v58l6-2c4-10 26-10 30 0 6-8 26-6 28 6 10-4 24 2 24 16v40c0 24-16 40-40 40H96c-14 0-22-6-30-16L28 128c-8-10 4-24 16-16l10 8V38c0-10 6-18 16-18z"/></svg>`,
+  shield: `<svg viewBox="0 0 200 200"><path ${K} fill="#3b82f6" d="M100 14 172 40v62c0 40-30 68-72 86-42-18-72-46-72-86V40Z"/><path fill="#7fb4ff" d="M100 30 156 50v52c0 30-22 52-56 68z" opacity=".5"/><path ${K} fill="none" d="M100 14v174"/></svg>`,
+  hammer: `<svg viewBox="0 0 200 200"><path ${K} fill="#b07a45" d="M92 70h24l8 118h-40Z"/><path ${K} fill="#c9c9c9" d="M44 40h112a10 10 0 0 1 10 10v34a10 10 0 0 1-10 10H44a10 10 0 0 1-10-10V50a10 10 0 0 1 10-10Z"/></svg>`,
+  bolt: `<svg viewBox="0 0 200 200"><path ${K} fill="#ffd23f" d="M116 12 44 112h44l-14 76 82-104H110Z"/></svg>`,
+  chat: `<svg viewBox="0 0 200 200"><path fill="#5865F2" d="M30 40h140a20 20 0 0 1 20 20v76a20 20 0 0 1-20 20H90l-40 30v-30H30a20 20 0 0 1-20-20V60a20 20 0 0 1 20-20z"/><circle cx="72" cy="98" r="16" fill="#fff"/><circle cx="128" cy="98" r="16" fill="#fff"/></svg>`
+};
+
+/* texte balisé : *jaune*  !rouge!  ~violet~  | = retour ligne  {gem} = gemme */
+function rich(s) {
+  return s.replace(/\*(.+?)\*/g, '<span class="y">$1</span>').replace(/!(.+?)!/g, '<span class="r">$1</span>')
+    .replace(/~(.+?)~/g, '<span class="p">$1</span>').replace(/\{gem\}/g, `<span class="ginl">${ICON.gem}</span>`).replace(/\|/g, "<br>");
+}
+
+/* ---------- fonds ---------- */
+function checker(t, a = "#79c13f", b = "#6ab235", dark = 0) {
+  const sz = 150, off = (t * 40) % (sz * 2);
+  return `<div class="fill" style="background:conic-gradient(${a} 25%,${b} 0 50%,${a} 0 75%,${b} 0) ${off}px ${off}px/${sz * 2}px ${sz * 2}px"></div>
+  <div class="fill" style="background:radial-gradient(ellipse at 50% 45%,rgba(255,255,255,.18),rgba(0,0,0,${.35 + dark}) 80%)"></div>`;
+}
+function dusk(t) {
+  const z = 1.06 + t * .02;
+  let bokeh = "";
+  for (let i = 0; i < 14; i++) {
+    const x = (i * 173 + t * (20 + i * 3)) % 1180 - 50, y = 300 + (i * 337) % 1300, r = 30 + (i * 29) % 70;
+    bokeh += `<div class="abs" style="left:${x}px;top:${y}px;width:${r * 2}px;height:${r * 2}px;border-radius:50%;background:radial-gradient(rgba(255,210,140,.35),rgba(255,210,140,0) 70%)"></div>`;
+  }
+  return `<div class="fill" style="transform:scale(${z});background:linear-gradient(#2b1747 0%,#6b2c6b 38%,#ff8d4a 66%,#ffcf73 74%,#3a6b2a 75%,#24481b 100%)"></div>
+  <svg class="fill" viewBox="0 0 1080 1920" preserveAspectRatio="none" style="transform:scale(${z})"><path fill="#2a5420" d="M0 1430 C200 1360 330 1400 520 1380 S900 1330 1080 1400V1920H0Z"/><path fill="#1c3a16" d="M0 1560 C260 1500 500 1560 760 1520 S1000 1500 1080 1530V1920H0Z"/></svg>${bokeh}
+  <div class="fill" style="background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 40%,rgba(0,0,0,.55))"></div>`;
+}
+
+/* ---------- éléments ---------- */
+function cap(text, top, lt, extra = "") {
+  const s = pop(lt), o = clamp(lt / .06);
+  return `<div class="cap" style="top:${top}px;opacity:${o};transform:scale(${s}) rotate(${(1 - clamp(lt / .2)) * -4}deg);${extra}">${rich(text)}</div>`;
+}
+function icon(name, x, y, size, lt, bob = 0, style = "") {
+  const s = pop(lt, .3), dy = Math.sin(bob * 3) * 10;
+  return `<div class="abs" style="left:${x - size / 2}px;top:${y - size / 2 + dy}px;width:${size}px;height:${size}px;transform:scale(${s});${style}">${ICON[name]}</div>`;
+}
+function logo(lt) {
+  const s = pop(lt, .28);
+  return `<div class="abs" style="left:0;right:0;top:760px;text-align:center;transform:scale(${s}) rotate(-4deg)">
+    <div style="display:inline-block;font:400 170px/0.9 'Luckiest Guy';color:#ffd23f;-webkit-text-stroke:24px #3a1d00;paint-order:stroke fill;text-shadow:0 14px 0 #000">CLASH</div><br>
+    <div style="display:inline-block;font:400 70px/1 'Luckiest Guy';color:#fff;-webkit-text-stroke:14px #000;paint-order:stroke fill;margin-right:18px">OF</div><div style="display:inline-block;font:400 170px/0.9 'Luckiest Guy';color:#ffd23f;-webkit-text-stroke:24px #3a1d00;paint-order:stroke fill;text-shadow:0 14px 0 #000">CLANS</div></div>`;
+}
+/* légende active = la dernière dont le temps est passé */
+function lastCap(list, lt) { let c = null; for (const x of list) if (lt >= x.t) c = x; return c; }
+
+/* ---------- scènes ---------- */
+const R = {
+  hook(sc, lt) {
+    const c = lastCap(sc.captions, lt);
+    let h = sc.clip ? "" : dusk(lt);
+    if (c) h += c.logo ? logo(lt - c.t) : cap(c.text, 820, lt - c.t);
+    return h;
+  },
+  shot(sc, lt) {
+    let h = `<div class="fill" style="background:linear-gradient(transparent 55%,rgba(0,0,0,.45))"></div>`;
+    const c = lastCap(sc.captions || [], lt);
+    const bigOn = sc.big && lt >= sc.big.t;
+    if (c && !bigOn) h += cap(c.text, sc.capTop || 1230, lt - c.t, `font-size:${sc.capSize || 104}px`);
+    if (bigOn) h += `<div class="big" style="top:${sc.capTop || 1180}px;font-size:${sc.big.size || 112}px;transform:scale(${pop(lt - sc.big.t, .26)}) rotate(-2deg)">${rich(sc.big.text)}</div>`;
+    if (sc.badge) h += `<div class="abs" style="left:50px;top:70px;transform:scale(${pop(lt, .3)});font:400 54px 'Luckiest Guy';color:#fff;background:#000a;border:6px solid var(--yel);border-radius:22px;padding:8px 26px;-webkit-text-stroke:8px #000;paint-order:stroke fill">${rich(sc.badge)}</div>`;
+    return h;
+  },
+  teaser(sc, lt) {
+    let h = dusk(lt + 3) + `<div class="fill" style="backdrop-filter:blur(14px);background:rgba(20,10,30,.25)"></div>`;
+    h += cap(sc.caption, 360, lt);
+    sc.icons.forEach((n, i) => {
+      const at = .25 + i * .3, l = lt - at;
+      if (l < 0) return;
+      const x = 220 + i * 320 + (1 - easeOut(l / .25)) * 400;
+      h += `<div class="abs" style="left:${x - 140}px;top:${1050 - 140}px;width:280px;height:280px;transform:scale(${pop(l, .3)});filter:brightness(0) drop-shadow(0 0 18px #ffe11f) drop-shadow(0 0 6px #ffe11f)">${ICON[n]}</div>
+        <div class="abs" style="left:${x - 140}px;top:${1050 - 110}px;width:280px;text-align:center;font:400 170px 'Lilita One';color:#fff;-webkit-text-stroke:4px #888;opacity:${clamp(l / .15)}">?</div>`;
+    });
+    return h;
+  },
+  card(sc, lt) {
+    let h = checker(lt);
+    const d = clamp(lt / .3), y = -420 + back(d) * 680;
+    h += `<div class="abs num" style="top:${y}px;transform:rotate(-5deg)">#${sc.n}</div>`;
+    if (lt > .18) h += icon(sc.icon, 540, 1010, 380, lt - .18, lt);
+    if (lt > .4) h += cap(sc.title, 1290, lt - .4, "font-size:118px");
+    return h;
+  },
+  explain(sc, lt) {
+    let h = sc.clip ? `<div class="fill" style="background:rgba(0,0,0,.25)"></div>` : checker(lt, "#4f8f2c", "#447f25", .1);
+    if (!sc.clip) {
+      const s = .9 + .1 * easeOut(lt / .35);
+      h += `<div class="panel" style="top:330px;height:820px;transform:scale(${s});opacity:${clamp(lt / .12)}"><div class="bar">${sc.panel}</div><div class="x">X</div>
+        <div class="fill" style="top:120px;background:radial-gradient(circle at 50% 50%,#fff8,transparent 60%)"></div></div>`;
+      h += icon(sc.icon, 540, 790, 470, lt + .3, lt);
+    }
+    const c = lastCap(sc.captions, lt);
+    const bigOn = sc.big && lt >= sc.big.t;
+    if (c && !bigOn) h += cap(c.text, 1300, lt - c.t, "font-size:104px");
+    if (bigOn) {
+      const l = lt - sc.big.t;
+      h += `<div class="big" style="top:1260px;transform:scale(${pop(l, .28)}) rotate(-2deg)">${rich(sc.big.text)}</div>`;
+      if (sc.big.icon) h += icon(sc.big.icon, 860, 1200, 230, l - .15, lt);
+    }
+    return h;
+  },
+  cta(sc, lt) {
+    let h = checker(lt, "#5865F2", "#4d59e0", .05);
+    const cardL = lt - sc.cardAt;
+    if (cardL < 0) {
+      const c = lastCap(sc.captions, lt);
+      if (c) h += cap(c.text, 760, lt - c.t);
+      return h;
+    }
+    h += cap("est sur le ~DISCORD~", 200 - Math.min(cardL, .3) * 0, 1, "font-size:104px");
+    const y = 520 + (1 - easeOut(cardL / .35)) * 1300;
+    const tap = lt - sc.tapAt, pressed = tap > 0 && tap < .25;
+    const d = S.discord;
+    const stats = d.online != null ? `<div class="ln"><span style="color:#23a55a">●</span> ${d.online} en ligne &nbsp; <span style="color:#80848e">●</span> ${d.members} membres</div>` : `<div class="ln">${d.line}</div>`;
+    h += `<div class="invite" style="top:${y}px">
+      <div class="brand"><span style="width:84px;height:84px;display:inline-block">${ICON.chat}</span>Discord</div>
+      <div class="ico"><div style="width:150px;height:150px">${ICON.gem}</div></div>
+      <div class="lead">Tu as été invité(e) à rejoindre</div><div class="nm">${d.name}</div>${stats}
+      <div class="btn" style="transform:scale(${pressed ? .94 : 1});filter:brightness(${pressed ? 1.25 : 1})">Accepter l'invitation</div></div>`;
+    /* main qui monte et tape le bouton (≈ y 1143), puis disparaît quand « lien en bio » arrive */
+    const hp = easeOut((lt - sc.tapAt + .6) / .6), hy = 1920 - hp * (1920 - 1125);
+    if (lt > sc.tapAt - .6 && lt < sc.bioAt) h += `<div class="abs" style="left:520px;top:${hy}px;width:190px;height:190px;transform:rotate(-12deg) scale(${pressed ? .9 : 1});transform-origin:33% 10%">${ICON.hand}</div>`;
+    if (tap > 0 && tap < .6) h += `<div class="abs" style="left:${585 - tap * 600}px;top:${1143 - tap * 600}px;width:${tap * 1200}px;height:${tap * 1200}px;border-radius:50%;border:12px solid rgba(255,255,255,${clamp(1 - tap / .6) * .8})"></div>`;
+    if (lt > sc.bioAt) {
+      const l = lt - sc.bioAt, by = Math.abs(Math.sin(l * 7)) * -26;
+      h += `<div class="cap" style="top:1730px;font-size:120px;transform:scale(${pop(l)})"><span class="y">LIEN EN BIO</span></div>
+        <div class="abs" style="left:490px;top:${1640 + by}px;width:100px;height:100px;transform:scale(${pop(l)})"><svg viewBox="0 0 100 100"><path d="M50 8 90 52H64v40H36V52H10z" fill="#FFE11F" stroke="#000" stroke-width="7" stroke-linejoin="round"/></svg></div>`;
+    }
+    return h;
+  }
+};
+
+/* flash blanc + secousse à chaque changement de scène */
+function cutFx(t) {
+  let f = 0, sh = 0;
+  for (const sc of S.scenes) {
+    const d = t - sc.start;
+    if (d >= 0 && d < .14 && sc.start > 0) f = Math.max(f, 1 - d / .14);
+    if (d >= 0 && d < .2) sh = Math.max(sh, 1 - d / .2);
+  }
+  return { f, sh };
+}
+
+const imgCache = new Map();
+const loadImg = src => { if (!imgCache.has(src)) { imgCache.set(src, new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("image " + src)); im.src = src; })); if (imgCache.size > 12) imgCache.delete(imgCache.keys().next().value); } return imgCache.get(src); };
+/* plan vidéo = images extraites par ffmpeg (sc.frames = {dir, n}) : pas de décodeur vidéo requis dans Chromium */
+async function seekClip(sc, lt) {
+  if (!sc.frames) return "";
+  const i = Math.min(sc.frames.n, Math.floor(lt * S.fps) + 1);
+  const el = await loadImg("file://" + sc.frames.dir + "/" + String(i).padStart(4, "0") + ".jpg");
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const g = cv.getContext("2d"), vw = el.naturalWidth, vh = el.naturalHeight;
+  const cover = Math.max(W / vw, H / vh), z = 1.04 + lt * .03 + (sc.punch ? .12 * Math.exp(-lt * 9) : 0);
+  g.filter = "blur(30px) brightness(.6)"; g.drawImage(el, (W - vw * cover) / 2, (H - vh * cover) / 2, vw * cover, vh * cover);
+  g.filter = "none";
+  const fit = Math.min(W / vw, H / vh) * (sc.zoom || 1) * z;
+  g.drawImage(el, (W - vw * fit) / 2 + (sc.panX || 0), (H - vh * fit) / 2 + (sc.panY || 0), vw * fit, vh * fit);
+  return `<img class="fill" src="${cv.toDataURL("image/jpeg", .92)}">`;
+}
+
+window.renderFrame = async t => {
+  const sc = sceneAt(t), lt = t - sc.start;
+  const bg = await seekClip(sc, lt);
+  const { f, sh } = cutFx(t);
+  const dx = Math.sin(t * 90) * 14 * sh, dy = Math.cos(t * 77) * 14 * sh;
+  stage.innerHTML = `<div class="fill" style="transform:translate(${dx}px,${dy}px) scale(${1 + sh * .03})">${bg}${R[sc.type](sc, lt)}</div>
+    <div class="fill" style="background:#fff;opacity:${f * .85};pointer-events:none"></div>`;
+  await new Promise(r => requestAnimationFrame(() => r()));
+};
+window.ready = document.fonts.ready.then(() => [...document.fonts].filter(f => f.status === "loaded").map(f => f.family));
+window.duration = S.duration;
+</script>
+</body></html>

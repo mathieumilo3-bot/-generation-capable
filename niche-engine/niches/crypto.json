@@ -1,0 +1,28 @@
+{
+ "id": "crypto",
+ "name": "Crypto et bourse",
+ "audience": "investisseurs actifs",
+ "tone": "analyses, risques, erreurs",
+ "theme": {
+  "yel": "#F7931A"
+ },
+ "stockQueries": [
+  "stock market",
+  "trading screen",
+  "bitcoin"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les analyses sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

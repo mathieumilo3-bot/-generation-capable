@@ -11,7 +11,7 @@ import {
   type TimelineClip,
 } from "@video-editor/shared-types";
 import type { Db } from "@video-editor/db";
-import { computeClipOutDuration, planZoomIndices, planBrollIndices, transitionForClip, zoomScaleForRole } from "./rhythm-engine.js";
+import { computeClipOutDuration, planZoomIndices, planBrollIndices, transitionForClip, zoomScaleForRole, planEffectsForClip, planDynamicEffectIndices } from "./rhythm-engine.js";
 
 /**
  * Agent 04 — Editor. 100% déterministe, jamais un appel LLM (§5 et §22 du
@@ -61,6 +61,7 @@ export function runEditor(
       timelineStart: cursor,
       outDuration,
       zoomKeyframes: [],
+      effects: [],
       transitionIn: transitionForClip(i, styleProfile),
       role,
     };
@@ -92,6 +93,16 @@ export function runEditor(
     zoomIndices.has(i) ? { ...clip, zoomKeyframes: [{ atSec: 0, scale: zoomScaleForRole(clip.role), focusX: 0.5, focusY: 0.5 }] } : clip
   );
 
+  // Générer les effets vidéo pour chaque clip
+  clips = clips.map((clip) => {
+    const baseEffects = planEffectsForClip({
+      role: clip.role,
+      clipDurationSec: clip.outDuration,
+      styleProfile,
+    });
+    return { ...clip, effects: baseEffects };
+  });
+
   const brollIndices = planBrollIndices(
     clips.map((c) => {
       const seg = segmentsById.get(c.segmentId)!;
@@ -111,6 +122,8 @@ export function runEditor(
       query: words || `b-roll ${clip.role}`,
       resolvedSource: null,
       resolvedMediaId: null,
+      resolvedPath: null,
+      license: null,
     };
   });
 

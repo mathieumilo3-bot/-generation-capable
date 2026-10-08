@@ -15,6 +15,7 @@
     "test:captions": "node dist/test-captions-sync.js",
     "test:brain": "node dist/test-creative-brain.js",
     "test:duration": "node dist/test-duration-policy.js",
+    "test:broll": "node dist/test-broll-stock.js",
     "test:e2e": "node dist/test-e2e-facecam.js",
     "demo": "node dist/demo.js"
   },

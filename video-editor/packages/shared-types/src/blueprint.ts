@@ -52,6 +52,80 @@ export type ZoomKeyframe = z.infer<typeof ZoomKeyframeSchema>;
 
 export const TransitionSchema = z.enum(["hard_cut", "soft_fade", "whip_pan"]);
 
+export const EffectTypeSchema = z.enum([
+  "zoom",
+  "color_grade",
+  "shake",
+  "blur",
+  "vignette",
+  "speed_ramp",
+  "flash",
+  "dip_to_black",
+  "slide",
+]);
+export type EffectType = z.infer<typeof EffectTypeSchema>;
+
+export const EffectSpecSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("zoom"),
+    startSec: z.number().nonnegative(),
+    endSec: z.number().positive(),
+    keyframes: z.array(ZoomKeyframeSchema).min(1),
+  }),
+  z.object({
+    type: z.literal("color_grade"),
+    startSec: z.number().nonnegative(),
+    endSec: z.number().positive(),
+    saturation: z.number().min(-1).max(2).default(1),
+    brightness: z.number().min(-1).max(1).default(0),
+  }),
+  z.object({
+    type: z.literal("shake"),
+    startSec: z.number().nonnegative(),
+    endSec: z.number().positive(),
+    intensity: z.number().min(0).max(10).default(2),
+    frequency: z.number().min(1).max(30).default(8),
+  }),
+  z.object({
+    type: z.literal("blur"),
+    startSec: z.number().nonnegative(),
+    endSec: z.number().positive(),
+    radius: z.number().min(0).max(50).default(5),
+  }),
+  z.object({
+    type: z.literal("vignette"),
+    startSec: z.number().nonnegative(),
+    endSec: z.number().positive(),
+    intensity: z.number().min(0).max(1).default(0.5),
+  }),
+  z.object({
+    type: z.literal("speed_ramp"),
+    startSec: z.number().nonnegative(),
+    endSec: z.number().positive(),
+    startSpeed: z.number().min(0.1).max(3).default(1),
+    endSpeed: z.number().min(0.1).max(3).default(1),
+  }),
+  z.object({
+    type: z.literal("flash"),
+    startSec: z.number().nonnegative(),
+    durationSec: z.number().positive().default(0.1),
+    intensity: z.number().min(0).max(1).default(0.8),
+  }),
+  z.object({
+    type: z.literal("dip_to_black"),
+    startSec: z.number().nonnegative(),
+    durationSec: z.number().positive().default(0.3),
+  }),
+  z.object({
+    type: z.literal("slide"),
+    startSec: z.number().nonnegative(),
+    endSec: z.number().positive(),
+    direction: z.enum(["left", "right", "up", "down"]).default("left"),
+    distance: z.number().min(0).max(1).default(0.2),
+  }),
+]);
+export type EffectSpec = z.infer<typeof EffectSpecSchema>;
+
 export const TimelineClipSchema = z.object({
   id: z.string(),
   segmentId: z.string(),
@@ -61,6 +135,7 @@ export const TimelineClipSchema = z.object({
   timelineStart: z.number().nonnegative(),
   outDuration: z.number().positive(),
   zoomKeyframes: z.array(ZoomKeyframeSchema).default([]),
+  effects: z.array(EffectSpecSchema).default([]),
   transitionIn: TransitionSchema,
   role: StoryBeatRoleSchema,
 });
@@ -74,6 +149,19 @@ export const BrollSlotSchema = z.object({
   query: z.string(),
   resolvedSource: z.enum(["user_media", "stock", "generated"]).nullable().default(null),
   resolvedMediaId: z.string().nullable().default(null),
+  /** Fichier vidéo local du plan résolu (téléchargé depuis une source autorisée). */
+  resolvedPath: z.string().nullable().default(null),
+  /** Droits du plan : sans owner + license + proof, le plan n'est PAS inséré au rendu. */
+  license: z
+    .object({
+      provider: z.string(),
+      owner: z.string(),
+      license: z.string(),
+      proof: z.string(),
+      attribution: z.string().nullable().default(null),
+    })
+    .nullable()
+    .default(null),
 });
 export type BrollSlot = z.infer<typeof BrollSlotSchema>;
 
@@ -102,6 +190,34 @@ export const MusicTrackSchema = z.object({
 });
 export type MusicTrack = z.infer<typeof MusicTrackSchema>;
 
+export const AudioProcessingSchema = z.object({
+  voiceIsolation: z.boolean().default(false),
+  eq: z.boolean().default(false),
+  compression: z.boolean().default(false),
+  deEsser: z.boolean().default(false),
+  loudnessTarget: z.number().default(-16),
+  musicDucking: z.boolean().default(true),
+});
+export type AudioProcessing = z.infer<typeof AudioProcessingSchema>;
+
+export const MotionLayerSchema = z.object({
+  id: z.string(),
+  type: z.enum(["text_overlay", "graphic", "watermark"]),
+  startSec: z.number().nonnegative(),
+  endSec: z.number().positive(),
+  content: z.string(),
+});
+export type MotionLayer = z.infer<typeof MotionLayerSchema>;
+
+export const SfxSchema = z.object({
+  id: z.string(),
+  type: z.enum(["transition", "impact", "background", "voiceover_accent"]),
+  startSec: z.number().nonnegative(),
+  durationSec: z.number().positive(),
+  volumeDb: z.number().default(-12),
+});
+export type Sfx = z.infer<typeof SfxSchema>;
+
 export const EditBlueprintSchema = z.object({
   id: z.string(),
   projectId: z.string(),
@@ -112,6 +228,10 @@ export const EditBlueprintSchema = z.object({
   brollSlots: z.array(BrollSlotSchema).default([]),
   captions: z.array(CaptionCueSchema).default([]),
   music: MusicTrackSchema.nullable().default(null),
+  sfx: z.array(SfxSchema).default([]),
+  motionLayers: z.array(MotionLayerSchema).default([]),
+  audioProcessing: AudioProcessingSchema.default({}),
   totalDurationSec: z.number().positive(),
+  requestedDurationSec: z.number().nullable().default(null),
 });
 export type EditBlueprint = z.infer<typeof EditBlueprintSchema>;

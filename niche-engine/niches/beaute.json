@@ -1,0 +1,28 @@
+{
+ "id": "beaute",
+ "name": "Beauté et skincare",
+ "audience": "amateurs de routines",
+ "tone": "routines, ingrédients, mythes",
+ "theme": {
+  "yel": "#F8BBD0"
+ },
+ "stockQueries": [
+  "skincare",
+  "makeup",
+  "beauty routine"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les routines sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

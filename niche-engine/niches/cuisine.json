@@ -1,0 +1,28 @@
+{
+ "id": "cuisine",
+ "name": "Cuisine et recettes",
+ "audience": "amateurs de cuisine",
+ "tone": "techniques, erreurs, gestes",
+ "theme": {
+  "yel": "#FF7043"
+ },
+ "stockQueries": [
+  "cooking",
+  "chef kitchen",
+  "pasta"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les recettes sont dans la communauté",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}
