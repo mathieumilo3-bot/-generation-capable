@@ -1,0 +1,28 @@
+{
+ "id": "business",
+ "name": "Business et entrepreneuriat",
+ "audience": "freelances, e-commerçants",
+ "tone": "systèmes, chiffres, erreurs",
+ "theme": {
+  "yel": "#FFD600"
+ },
+ "stockQueries": [
+  "office startup",
+  "entrepreneur",
+  "laptop work"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les templates sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

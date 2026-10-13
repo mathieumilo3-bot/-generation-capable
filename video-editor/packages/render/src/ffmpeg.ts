@@ -580,3 +580,48 @@ export async function generateFastPreview(
     { operation: `fast_preview_${width}x${height}`, timeoutMs: 60000 }
   );
 }
+
+export interface BrollOverlay {
+  /** Plan à afficher (fichier local, déjà sous licence). */
+  filePath: string;
+  /** Position sur la timeline de la vidéo de base, en secondes. */
+  start: number;
+  duration: number;
+}
+
+/**
+ * Insère des plans B-roll PAR-DESSUS la vidéo de base (l'audio et la
+ * durée de la base ne changent pas, donc sous-titres et musique restent
+ * synchronisés). Chaque plan est recadré au format cible, muet, et
+ * n'est affiché que pendant sa fenêtre.
+ */
+export async function overlayBroll(
+  basePath: string,
+  overlays: BrollOverlay[],
+  outputPath: string,
+  size: { width: number; height: number }
+): Promise<void> {
+  if (overlays.length === 0) throw new Error("overlayBroll: aucun plan");
+  const args: string[] = ["-i", basePath];
+  for (const o of overlays) args.push("-i", o.filePath);
+  const parts: string[] = [];
+  let last = "0:v";
+  overlays.forEach((o, i) => {
+    const n = i + 1;
+    const end = o.start + o.duration;
+    // le plan démarre à PTS=start pour qu'il soit lu depuis son début dans sa fenêtre
+    parts.push(
+      `[${n}:v]trim=0:${o.duration.toFixed(3)},setpts=PTS-STARTPTS+${o.start.toFixed(3)}/TB,` +
+        `scale=${size.width}:${size.height}:force_original_aspect_ratio=increase,crop=${size.width}:${size.height},setsar=1[b${n}]`
+    );
+    parts.push(`[${last}][b${n}]overlay=enable='between(t,${o.start.toFixed(3)},${end.toFixed(3)})':eof_action=pass[v${n}]`);
+    last = `v${n}`;
+  });
+  args.push(
+    "-filter_complex", parts.join(";"),
+    "-map", `[${last}]`, "-map", "0:a?",
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+    "-c:a", "copy", "-movflags", "+faststart", outputPath
+  );
+  await runFfmpeg(args, { operation: "overlay-broll" });
+}

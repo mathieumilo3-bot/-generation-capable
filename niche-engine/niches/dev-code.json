@@ -1,0 +1,28 @@
+{
+ "id": "dev-code",
+ "name": "Programmation",
+ "audience": "développeurs juniors",
+ "tone": "astuces, erreurs, outils",
+ "theme": {
+  "yel": "#00D1B2"
+ },
+ "stockQueries": [
+  "coding programming",
+  "laptop code",
+  "server room"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "le code des vidéos est sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

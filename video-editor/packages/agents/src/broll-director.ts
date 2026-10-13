@@ -1,5 +1,6 @@
 import type { Db } from "@video-editor/db";
 import type { EditBlueprint } from "@video-editor/shared-types";
+import { resolveBrollFromStock, type StockProvider } from "./stock-sources.js";
 
 /**
  * Agent 05 — B-roll / Media Director. Ordre de priorité strict imposé
@@ -28,4 +29,19 @@ export function runBrollDirector(db: Db, editBlueprint: EditBlueprint): EditBlue
     return { ...slot, resolvedSource: "stock" as const, resolvedMediaId: bestMatch.id };
   });
   return { ...editBlueprint, brollSlots: resolvedSlots };
+}
+
+/**
+ * Version complète : bibliothèque locale d'abord, puis sources autorisées
+ * (Pexels / Pixabay / Wikimedia) pour les slots restés vides. Retourne le
+ * registre des droits : à conserver avec le projet.
+ */
+export async function runBrollDirectorWithStock(
+  db: Db,
+  editBlueprint: EditBlueprint,
+  opts: { cacheDir: string; providers?: StockProvider[] }
+): Promise<{ editBlueprint: EditBlueprint; ledger: Awaited<ReturnType<typeof resolveBrollFromStock>>["ledger"]; warnings: string[] }> {
+  const local = runBrollDirector(db, editBlueprint);
+  const r = await resolveBrollFromStock(local.brollSlots, opts);
+  return { editBlueprint: { ...local, brollSlots: r.slots }, ledger: r.ledger, warnings: r.warnings };
 }

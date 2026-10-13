@@ -1,0 +1,30 @@
+{
+ "id": "voyage",
+ "name": "Voyage et lifestyle",
+ "audience": "voyageurs budget",
+ "tone": "bons plans, itinéraires, erreurs",
+ "theme": {
+  "yel": "#00B3E6"
+ },
+ "stockQueries": [
+  "travel landscape",
+  "beach drone",
+  "city street",
+  "mountain hiking"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay",
+  "wikimedia"
+ ],
+ "cta": "les itinéraires détaillés sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

@@ -1,0 +1,28 @@
+{
+ "id": "montage-video",
+ "name": "Montage vidéo et création",
+ "audience": "créateurs de contenu",
+ "tone": "effets, workflows, presets",
+ "theme": {
+  "yel": "#FF3D71"
+ },
+ "stockQueries": [
+  "video editing",
+  "camera filming",
+  "studio lights"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les presets sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

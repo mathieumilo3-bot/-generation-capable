@@ -1,0 +1,20 @@
+{"niche":"clash-of-clans","fps":30,"title":"3 mécaniques que même un HDV 17 ne connaît pas",
+ "theme":{"yel":"#FFE11F"},
+ "discord":{"name":"TON_SERVEUR","line":"Bases, astuces et clan FR","online":null,"members":null},
+ "voiceover":"Tu joues depuis dix ans ? Parfait. Voilà trois mécaniques que t'as jamais remarquées. Un : ton bouclier. Quand tu attaques sous bouclier, il saute pas : tu perds trois heures, puis quatre, cinq, six, huit… jusqu'à vingt-quatre heures par attaque. Mais « Suivant », ça coûte zéro. Deux : l'ouvrier de combat. À partir de l'HDV 14, il répare tes défenses pendant l'attaque. Un gel sur sa hutte, il s'arrête net. Un poison, il répare au ralenti. Trois : le Scattershot. Il tire de trois à dix cases, pas en dessous. Et la quatrième, c'est la plus sale… elle est sur le Discord. Lien en bio.",
+ "scenes":[
+ {"type":"shot","dur":1.2,"want":{"tags":["cinematique","barbare"]},"punch":true,"captions":[{"t":0,"text":"TU JOUES DEPUIS|*10 ANS* ?"}]},
+ {"type":"shot","dur":1.8,"want":{"tags":["cinematique","explosion"]},"punch":true,"captions":[{"t":0,"text":"3 MÉCANIQUES"},{"t":0.8,"text":"QUE T'AS *JAMAIS VUES*"}]},
+ {"type":"card","dur":1.2,"n":1,"icon":"shield","title":"LE BOUCLIER"},
+ {"type":"shot","dur":1.8,"want":{"tags":["replay","bouclier","timer"]},"punch":true,"badge":"HDV 17","captions":[{"t":0,"text":"ATTAQUER = *−3 H*"}]},
+ {"type":"shot","dur":2.4,"want":{"tags":["bouclier","timer"],"reuse":true},"speed":1.5,"big":{"t":0.1,"size":72,"text":"3·4·5·6·8·10·12|16·20·*24 H*"}},
+ {"type":"shot","dur":1.6,"want":{"tags":["replay","suivant"]},"speed":2,"captions":[{"t":0,"text":"« SUIVANT » = *0 MIN*"}]},
+ {"type":"card","dur":1.2,"n":2,"icon":"hammer","title":"L'OUVRIER|DE COMBAT"},
+ {"type":"shot","dur":2.2,"want":{"tags":["replay","ouvrier","repare"]},"punch":true,"captions":[{"t":0,"text":"IL *RÉPARE* EN PLEIN COMBAT"}]},
+ {"type":"shot","dur":2.2,"want":{"tags":["replay","ouvrier","gel"]},"punch":true,"captions":[{"t":0,"text":"GEL = *STOP*"},{"t":1.1,"text":"POISON = *RALENTI*"}]},
+ {"type":"card","dur":1.2,"n":3,"icon":"bolt","title":"LE SCATTERSHOT"},
+ {"type":"shot","dur":2.2,"want":{"tags":["replay","scattershot","portee"]},"punch":true,"captions":[{"t":0,"text":"PORTÉE *3 → 10* CASES"}]},
+ {"type":"shot","dur":2.4,"want":{"tags":["replay","scattershot","colle"]},"punch":true,"captions":[{"t":0,"text":"COLLÉ À LUI = *INTOUCHABLE*"}]},
+ {"type":"shot","dur":1.6,"want":{"tags":["cinematique","barbare"],"reuse":true},"speed":0.6,"captions":[{"t":0,"text":"L'ASTUCE *#4* …"}]},
+ {"type":"cta","dur":5.6,"captions":[{"t":0,"text":"L'astuce *#4*|la plus sale..."},{"t":1.2,"text":"est sur le ~DISCORD~"}],"cardAt":1.9,"tapAt":3.4,"bioAt":4.1}
+ ]}

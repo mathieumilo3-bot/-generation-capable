@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/fontsource-cinzel-5.3.0/latin-500.css">
+<link rel="stylesheet" href="fonts/fontsource-cinzel-5.3.0/latin-ext-500.css">
+<link rel="stylesheet" href="fonts/fontsource-cormorant-garamond-5.3.0/latin-500-italic.css">
+<link rel="stylesheet" href="fonts/fontsource-cormorant-garamond-5.3.0/latin-ext-500-italic.css">
+<link rel="stylesheet" href="fonts/fontsource-shippori-mincho-b1-5.3.0/800.css">
+<style>
+:root{--sumi:#070605;--washi:#ede5d5;--dim:#a89f8f;--kin:#c8a25a;--hi:#f2dc9f;--lo:#6f5527}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:var(--sumi)}
+canvas.full{position:absolute;left:0;top:0}
+#stage{position:absolute;left:0;top:0;width:1080px;height:1920px;perspective:1800px;perspective-origin:50% 46%}
+.t{position:absolute;left:0;right:0;text-align:center;white-space:nowrap;line-height:1;display:none;color:var(--washi)}
+.cz{font-family:"Cinzel",serif;font-weight:500;text-transform:uppercase}
+.cg{font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:500}
+.jp{font-family:"Shippori Mincho B1",serif;font-weight:800}
+.k{color:var(--kin)} .dim{color:var(--dim)} .hi{color:var(--hi)} .sub{color:#d6ccba}
+.gold{background:linear-gradient(100deg,var(--lo) 0%,var(--kin) 20%,var(--hi) 34%,#fffaf0 40%,var(--hi) 46%,var(--kin) 60%,var(--lo) 78%,var(--kin) 100%);background-size:300% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent}
+.shadow{text-shadow:0 4px 24px rgba(0,0,0,.85)}
+.t span.gold{background-image:linear-gradient(100deg,var(--kin) 0%,var(--hi) 45%,#fff6dc 55%,var(--hi) 65%,var(--kin) 100%);background-size:100% 100%;background-position:0 0;padding-right:.08em}
+.card{position:absolute;left:90px;top:318px;width:900px;height:1125px;display:none;outline:1px solid rgba(200,162,90,.42);outline-offset:16px;box-shadow:0 70px 140px -20px rgba(0,0,0,.92)}
+.card .in{position:absolute;inset:0;overflow:hidden;background:#e6e4e8}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card .sh{position:absolute;inset:0;background:linear-gradient(105deg,rgba(255,246,222,0) 42%,rgba(255,246,222,.6) 50%,rgba(255,246,222,0) 58%);background-size:320% 100%;mix-blend-mode:soft-light;opacity:0}
+.el{position:absolute;display:none}
+#laser{left:0;top:0;width:1080px;height:1920px}
+#tiger{left:200px;top:360px;width:680px;filter:drop-shadow(0 40px 50px rgba(0,0,0,.75))}
+</style></head>
+<body>
+<canvas id="bg" class="full" width="1080" height="1920"></canvas>
+<div id="stage"></div>
+<canvas id="fx" class="full" width="1080" height="1920"></canvas>
+<script>
+const REEL = /*REEL*/null;
+const W = 1080, H = 1920, A = "../yokofuri/assets/";
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const easeOut = x => 1 - Math.pow(1 - clamp(x), 3);
+const easeOutExpo = x => { x = clamp(x); return x === 1 ? 1 : 1 - Math.pow(2, -10 * x); };
+const easeIn = x => Math.pow(clamp(x), 3);
+const easeInOut = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const win = (t, a, b, fi = .4, fo = .4) => smooth((t - a) / fi) * (1 - smooth((t - (b - fo)) / fo));
+
+const TH = {
+  kin: { lo: "#6f5527", t: "#c9a35a", hi: "#f6e0a3", rgb: [201, 163, 90] },
+  shu: { lo: "#5e0c0f", t: "#c3262a", hi: "#ff7a66", rgb: [195, 38, 42] },
+  sumi: { lo: "#121010", t: "#3b3836", hi: "#8a847c", rgb: [150, 140, 130] },
+  ruri: { lo: "#10265f", t: "#2c5be0", hi: "#8fb1ff", rgb: [44, 91, 224] },
+  shiro: { lo: "#8f8a80", t: "#e2ded6", hi: "#ffffff", rgb: [230, 226, 218] },
+  murasaki: { lo: "#2d1557", t: "#7a4fd0", hi: "#c3a6ff", rgb: [122, 79, 208] },
+};
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+/* ---------- kanji brodés : point satin en diagonale, relief et halo ---------- */
+function makeStitch(text, px, th, vertical = false) {
+  const pad = Math.round(px * .3), font = `800 ${px}px "Shippori Mincho B1"`, chars = [...text];
+  const m = document.createElement("canvas").getContext("2d"); m.font = font;
+  const w = vertical ? px : Math.ceil(m.measureText(text).width), h = vertical ? px * chars.length * 1.04 : px;
+  const flat = document.createElement("canvas"); flat.width = w + pad * 2; flat.height = Math.ceil(h + pad * 2);
+  const g = flat.getContext("2d"); g.font = font; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
+  if (vertical) chars.forEach((ch, i) => g.fillText(ch, flat.width / 2, pad + px * (i * 1.04 + .5)));
+  else g.fillText(text, flat.width / 2, flat.height / 2 + px * .03);
+  const P = Math.max(3, px / 85), tile = document.createElement("canvas"); tile.width = Math.ceil(P); tile.height = 4;
+  const tg = tile.getContext("2d");
+  [[0, .18, th.lo], [.18, .55, th.t], [.55, .72, th.hi], [.72, 1, th.t]].forEach(([a, b, c]) => { tg.fillStyle = c; tg.fillRect(a * P, 0, (b - a) * P + .6, 4); });
+  const pat = g.createPattern(tile, "repeat"); pat.setTransform(new DOMMatrix().rotate(62));
+  g.globalCompositeOperation = "source-in"; g.fillStyle = pat; g.fillRect(0, 0, flat.width, flat.height);
+  g.globalCompositeOperation = "source-atop";
+  const lg = g.createLinearGradient(0, 0, flat.width, flat.height);
+  lg.addColorStop(0, "rgba(255,255,255,.34)"); lg.addColorStop(.42, "rgba(255,255,255,0)"); lg.addColorStop(1, "rgba(0,0,0,.48)");
+  g.fillStyle = lg; g.fillRect(0, 0, flat.width, flat.height);
+  const out = document.createElement("canvas"); out.width = flat.width; out.height = flat.height;
+  const o = out.getContext("2d");
+  o.shadowColor = rgba(th.rgb, .55); o.shadowBlur = px * .14; o.drawImage(flat, 0, 0);
+  o.shadowColor = "rgba(0,0,0,.8)"; o.shadowBlur = px * .016; o.shadowOffsetY = px * .014; o.drawImage(flat, 0, 0);
+  return { out, flat };
+}
+
+/* ---------- éléments ---------- */
+const stage = document.getElementById("stage");
+const bg = document.getElementById("bg").getContext("2d"), fx = document.getElementById("fx").getContext("2d");
+const CARDS = [], KANJI = [], ELS = [];
+function T(html, cls, top, size, extra) {
+  const d = document.createElement("div"); d.className = "t " + cls; d.innerHTML = html;
+  d.style.top = top + "px"; d.style.fontSize = size + "px"; if (extra) Object.assign(d.style, extra);
+  stage.appendChild(d); return d;
+}
+function makeCard(src, geo) {
+  const c = document.createElement("div"); c.className = "card";
+  if (geo) Object.assign(c.style, { left: geo[0] + "px", top: geo[1] + "px", width: geo[2] + "px", height: geo[3] + "px" });
+  c.innerHTML = `<div class="in"><img src="${src}"></div><div class="sh"></div>`;
+  c.img = c.querySelector("img"); c.sh = c.querySelector(".sh");
+  stage.appendChild(c); CARDS.push(c); return c;
+}
+function makeKanji(text, px, thread, cx, cy, vertical) {
+  const k = makeStitch(text, px, TH[thread], vertical);
+  const d = document.createElement("div"); d.className = "el";
+  d.style.left = (cx - k.out.width / 2) + "px"; d.style.top = (cy - k.out.height / 2) + "px";
+  d.appendChild(k.out); stage.appendChild(d); KANJI.push(d); return d;
+}
+function pose(c, p) {
+  c.style.display = "block";
+  c.style.transform = `translate3d(${(p.tx || 0).toFixed(2)}px,${(p.ty || 0).toFixed(2)}px,0) rotateX(${(p.rx || 0).toFixed(3)}deg) rotateY(${(p.ry || 0).toFixed(3)}deg) scale(${(p.s || 1).toFixed(4)})`;
+  const f = [];
+  if (p.blur > .05) f.push(`blur(${p.blur.toFixed(2)}px)`);
+  if (p.bright != null && Math.abs(p.bright - 1) > .005) f.push(`brightness(${p.bright.toFixed(3)})`);
+  if (p.drop) f.push(p.drop);
+  c.style.filter = f.length ? f.join(" ") : "";
+  c.style.opacity = p.op == null ? 1 : p.op.toFixed(3);
+  if (c.img) {
+    const o = p.origin || [.5, .5];
+    c.img.style.transformOrigin = `${o[0] * 100}% ${o[1] * 100}%`;
+    c.img.style.transform = `scale(${(p.z || 1).toFixed(4)})`;
+  }
+  if (c.sh) {
+    if (p.sheen == null || p.sheen <= 0 || p.sheen >= 1) c.sh.style.opacity = 0;
+    else { c.sh.style.opacity = 1; c.sh.style.backgroundPosition = `${(112 - p.sheen * 124).toFixed(1)}% 0`; }
+  }
+}
+function slam(k, t, t0, t1, o = {}) {
+  const p = clamp((t - t0) / (o.d || .45));
+  if (t < t0 || t >= t1) return;
+  pose(k, { s: (o.base || 1) * (1 + (o.from || .55) * (1 - easeOutExpo(p))) * (1 + (o.push || .03) * clamp((t - t0) / (t1 - t0))),
+            blur: 14 * (1 - easeOut(p)) + 10 * smooth((t - (t1 - .12)) / .12), op: Math.min(1, p * 3) * (1 - smooth((t - (t1 - .12)) / .12)) * (o.op || 1),
+            bright: 1 + .9 * (1 - easeOut(p)) });
+}
+/* texte : entrée floue et resserrement de l'interlettrage, sortie brève */
+function anim(el, t, tin, tout, o = {}) {
+  const dIn = o.dIn ?? .7, dOut = o.dOut ?? .3;
+  const vis = t >= tin && t < tout + dOut;
+  el.style.display = vis ? "block" : "none"; if (!vis) return;
+  const pin = clamp((t - tin) / dIn), ein = easeOutExpo(pin), pout = smooth((t - tout) / dOut);
+  const blur = (1 - ein) * (o.blur ?? 14) + pout * 12;
+  el.style.opacity = (Math.min(1, pin * 2.2) * (1 - pout)).toFixed(3);
+  el.style.filter = blur > .05 ? `blur(${blur.toFixed(2)}px)` : "none";
+  el.style.transform = `translate3d(0,${((1 - ein) * (o.rise ?? 22) - pout * 16 - (o.drift ? (t - tin) * o.drift : 0)).toFixed(2)}px,0)`;
+  if (o.track) {
+    const ls = o.track[0] + (o.track[1] - o.track[0]) * easeOutExpo(clamp((t - tin) / (o.dTrack ?? 1.2)));
+    el.style.letterSpacing = ls.toFixed(4) + "em"; el.style.paddingLeft = ls.toFixed(4) + "em";
+  }
+  if (o.sheen != null) el.style.backgroundPosition = `${(100 - easeInOut((t - o.sheen) / 1.0) * 100).toFixed(1)}% 0`;
+}
+
+/* ---------- grille musicale : tous les plans tombent sur les temps (140 bpm) ---------- */
+const TM = REEL.T, BEAT = 60 / REEL.bpm, BAR = 4 * BEAT;
+
+/* ---------- poussière d'or (déterministe) ---------- */
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const DUST = Array.from({ length: 170 }, () => ({ x: rnd() * W, y: rnd() * H, v: .3 + rnd() * 1.1, z: rnd(), ph: rnd() * 6.28, r: .5 + rnd() * 1.6 }));
+const dustAmt = t => .45 * win(t, .1, TM.kanji, .6, .1) + .9 * win(t, TM.kanji, TM.suka, .1, .4) + .35 * win(t, TM.suka, TM.laser, .2, .2)
+  + .3 * win(t, TM.pend, TM.end, .1, .1) + 1 * win(t, TM.end, 99, .3, .1);
+
+/* ---------- impacts : tremblement ---------- */
+const HITS = REEL.hits;
+function shake(t) {
+  let x = 0, y = 0;
+  for (const [ht, sz] of HITS) {
+    const p = (t - ht) / .4; if (p < 0 || p >= 1) continue;
+    const a = { big: 16, mid: 6, small: 2 }[sz] * (1 - p) ** 2;
+    x += a * Math.sin(t * 93 + ht); y += a * Math.cos(t * 71 + ht * 3);
+  }
+  return { x, y };
+}
+
+const SUKA = [
+  { f: "sukajan-tora", jp: "虎", th: "kin", ro: "Tora", o: [.57, .63] },
+  { f: "sukajan-raijin", jp: "雷神", th: "shu", ro: "Raijin", o: [.34, .40] },
+  { f: "sukajan-kitsune", jp: "狐", th: "shiro", ro: "Kitsune", o: [.51, .33] },
+  { f: "sukajan-okinawa", jp: "沖縄", th: "ruri", ro: "Okinawa", o: [.41, .52] },
+  { f: "sukajan-ryuko", jp: "龍虎", th: "kin", ro: "Ryūko", o: [.44, .40] },
+];
+/* 4 vestes sur 2 temps, la dernière sur une mesure */
+const SUKA_T = [0, 2, 4, 6, 8].map(k => TM.suka + k * BEAT), SUKA_D = [2, 2, 2, 2, 4].map(k => k * BEAT);
+const TEES = [["shu", "朱", "Shu"], ["kin", "金", "Kin"], ["ruri", "瑠", "Ruri"], ["shiro", "白", "Shiro"], ["sumi", "墨", "Sumi"]];
+const SIG = ["wm-tee-sumi-shiro", "wm-hoodie-shiro-shu", "wm-tee-sumi-shu", "wm-hoodie-sumi-shiro"];
+
+let K, E = {};
+function build() {
+  K = makeStitch("横", 820, TH.kin);
+  E.sheenCv = document.createElement("canvas"); E.sheenCv.width = K.flat.width; E.sheenCv.height = K.flat.height;
+
+  E.laser = document.createElement("img"); E.laser.id = "laser"; E.laser.className = "el"; stage.appendChild(E.laser);
+  E.tiger = document.createElement("img"); E.tiger.id = "tiger"; E.tiger.className = "el"; E.tiger.src = A + "tora-emblem.webp"; stage.appendChild(E.tiger);
+
+  /* A : avant le motif, il y a le fil */
+  E.a1 = T("Avant le motif,", "cg", 740, 92);
+  E.a2 = T('il y a le <span class="gold">fil.</span>', "cg", 980, 92);
+  /* B */
+  E.b1 = T('<span class="jp" style="font-size:.8em;margin-right:.5em">横振り</span>l’aiguille qui danse', "cg hi", 1420, 54);
+  /* C : tigre, logotype, puis « avant le fil, il y a la main » */
+  E.c1 = T("YOKOFURI", "cz gold", 1268, 128);
+  E.c2 = T("Japan Inspired", "cz dim", 1438, 28);
+  E.c3 = T("Avant le fil,", "cg", 1250, 92);
+  E.c4 = T('il y a la <span class="gold">main.</span>', "cg", 1370, 92);
+  /* E */
+  E.e0 = T("Chaque point raconte une histoire.", "cg", 205, 58);
+  E.eCards = SUKA.map(s => makeCard(A + s.f + ".webp"));
+  E.eKanji = SUKA.map(s => makeKanji(s.jp, 180, s.th, 120, 330 + 180 * [...s.jp].length * .52 + 120, true));
+  E.eRo = SUKA.map(s => T(s.ro, "cz shadow", 1490, 60));
+  /* F */
+  E.f0 = T("Un seul signe. Cinq fils.", "cg", 205, 58);
+  E.fBig = TEES.map(([th]) => makeKanji("横", 1150, th, 540, 880));
+  E.fBig.push(makeKanji("横", 1150, "kin", 540, 880));
+  E.fCards = TEES.map(([th]) => makeCard(A + "tee-" + th + ".webp"));
+  E.fNames = TEES.map(([th, jp, ro]) => T(`<span class="jp" style="color:${TH[th].hi};letter-spacing:0;margin-right:.45em">${jp}</span>${ro}`, "cz shadow", 1488, 56));
+  E.fHood = makeCard(A + "hoodie-sumi-kin.webp");
+  E.f6 = T("Brodé en relief", "cz shadow", 1490, 52);
+  /* G */
+  E.g0 = T('Ce que tu portes <span class="gold">parle avant toi.</span>', "cg", 205, 58);
+  E.gCard = makeCard(A + "oni-hoodie-1.webp");
+  E.gKanji = makeKanji("鬼", 330, "murasaki", 210, 590);
+  E.g1 = T("Le Samouraï Oni", "cz shadow", 1490, 56);
+  /* H */
+  E.h1 = T('Gravé pour <span class="gold">durer.</span>', "cg shadow", 205, 64);
+  E.pCard = makeCard(A + "pendentif.webp", [300, 420, 720, 960]);
+  E.pKanji = ["加", "流", "呂"].map((ch, i) => makeKanji(ch, 170, "kin", 160, 560 + i * 300));
+  E.pRo = ["Ka", "Ru", "Ro"].map((r, i) => T(r, "cz k", 560 + i * 300 + 118, 28, { left: "70px", right: "auto", width: "180px" }));
+  /* I */
+  E.iCards = SIG.map(f => makeCard(A + f + ".webp"));
+  E.i1 = T("La Signature", "cz k", 232, 32);
+  E.i2 = T("YOKOFURI · Japan Inspired", "cz shadow", 1490, 40);
+  /* J */
+  E.j1 = T("YOKOFURI", "cz gold", 1130, 132);
+  E.j5 = T('Porte <span class="gold">la tienne.</span>', "cg", 1292, 96);
+  E.j3 = T("@yokofuriofficial", "cg hi", 1430, 56);
+  E.j4 = T("Lien en bio", "cz dim", 1510, 26);
+}
+
+/* ---------- fond : halos, poussière, fil, kanji ---------- */
+function radial(x, y, r, c, a) {
+  if (a <= .002) return;
+  const gr = bg.createRadialGradient(x, y, 0, x, y, r);
+  gr.addColorStop(0, rgba(c, a)); gr.addColorStop(.45, rgba(c, a * .35)); gr.addColorStop(1, rgba(c, 0));
+  bg.fillStyle = gr; bg.fillRect(x - r, y - r, 2 * r, 2 * r);
+}
+function teeThread(t) { const k = clamp(Math.floor((t - TM.tees) / (BEAT / 2)), 0, 5); return k < 5 ? TH[TEES[k][0]].rgb : TH.kin.rgb; }
+function hitAmt(t, d = .45) { let m = 0; for (const [ht, sz] of HITS) { const p = (t - ht) / d; if (p >= 0 && p < 1) m = Math.max(m, (1 - p) ** 2 * { big: 1, mid: .55, small: .25 }[sz]); } return m; }
+
+function drawBG(t, sh) {
+  bg.setTransform(1, 0, 0, 1, 0, 0); bg.globalCompositeOperation = "source-over"; bg.globalAlpha = 1; bg.filter = "none";
+  bg.fillStyle = "#070605"; bg.fillRect(0, 0, W, H);
+  bg.translate(sh.x, sh.y);
+  bg.globalCompositeOperation = "lighter";
+  const h = hitAmt(t);
+  radial(540, 900, 780, TH.kin.rgb, .3 * win(t, TM.kanji, TM.tiger, .08, .4) * (1 + h));
+  radial(540, 760, 720, TH.kin.rgb, .42 * win(t, TM.split + .2, TM.suka, .4, .35) * (1 - .45 * smooth((t - TM.breath) / .4)));
+  radial(540, 880, 1050, [220, 170, 110], .14 * win(t, TM.suka, TM.tees, .1, .1));
+  radial(540, 880, 1050, teeThread(t), .28 * win(t, TM.tees, TM.oni, .08, .1));
+  radial(400, 720, 1050, TH.murasaki.rgb, .42 * win(t, TM.oni, TM.laser, .08, .15));
+  radial(540, 900, 950, [230, 140, 60], .18 * win(t, TM.pend, TM.sig, .08, .1));
+  radial(540, 880, 1000, [200, 190, 180], .1 * win(t, TM.sig, TM.end, .08, .08));
+  radial(540, 740, 800, TH.kin.rgb, .46 * win(t, TM.end, 99, .3, .1) * (1 + h * .6));
+
+  const da = dustAmt(t);
+  if (da > .01) for (const d of DUST) {
+    const y = ((d.y - t * d.v * 44) % (H + 40) + H + 40) % (H + 40) - 20, x = d.x + Math.sin(t * .5 + d.ph) * 24 * d.z;
+    const a = da * (.25 + .75 * (Math.sin(t * 2.4 + d.ph * 3) * .5 + .5)) * (.3 + .7 * d.z);
+    bg.fillStyle = `rgba(242,220,159,${(a * .75).toFixed(3)})`;
+    bg.beginPath(); bg.arc(x, y, d.r * (.6 + d.z), 0, 6.283); bg.fill();
+  }
+
+  /* A : le fil d'or traverse l'écran */
+  if (t < TM.kanji + .4) {
+    const p = easeInOut((t - .15) / 1.35), y = 900, glow = smooth((t - 2.3) / (TM.kanji - 2.3)), fade = 1 - smooth((t - TM.kanji) / .3);
+    if (p > 0 && fade > 0) {
+      bg.save(); bg.globalAlpha = fade;
+      const lg = bg.createLinearGradient(0, 0, W, 0);
+      lg.addColorStop(0, "rgba(200,162,90,0)"); lg.addColorStop(.1, "rgba(200,162,90,.9)"); lg.addColorStop(.5, "rgba(255,244,214,1)"); lg.addColorStop(.9, "rgba(200,162,90,.9)"); lg.addColorStop(1, "rgba(200,162,90,0)");
+      bg.fillStyle = lg; bg.shadowColor = "rgba(242,220,159,.95)"; bg.shadowBlur = 14 + glow * 60;
+      const th = 1.8 + glow * 3.5; bg.fillRect(0, y - th / 2, W * p, th);
+      bg.shadowBlur = 0;
+      if (p < 1) {
+        const hx = W * p; bg.translate(hx, y); bg.scale(3, .32);
+        const rg = bg.createRadialGradient(0, 0, 0, 0, 0, 110);
+        rg.addColorStop(0, "rgba(255,255,255,1)"); rg.addColorStop(.18, "rgba(255,236,190,.75)"); rg.addColorStop(1, "rgba(255,236,190,0)");
+        bg.fillStyle = rg; bg.beginPath(); bg.arc(0, 0, 110, 0, 6.283); bg.fill();
+      }
+      bg.restore();
+    }
+  }
+
+  /* B : le kanji 横 claque, reçoit un reflet, puis se déchire le long du fil */
+  if (t >= TM.kanji && t < TM.tiger + .05) {
+    bg.globalCompositeOperation = "source-over";
+    const u = t - TM.kanji, pin = easeOutExpo(u / .55);
+    const s = (1.3 - .3 * pin) * (1 + .055 * clamp(u / 1.7));
+    const blur = 18 * (1 - easeOut(u / .3)), bright = 1 + 1.5 * (1 - easeOut(u / .45));
+    const split = easeIn((t - TM.split) / (TM.tiger - TM.split)) * 1150;
+    const dw = K.out.width * s, dh = K.out.height * s, x = 540 - dw / 2, y = 900 - dh / 2;
+    const f = []; if (blur > .1) f.push(`blur(${blur.toFixed(2)}px)`); if (bright > 1.01) f.push(`brightness(${bright.toFixed(3)})`);
+    bg.filter = f.length ? f.join(" ") : "none";
+    bg.save(); bg.beginPath(); bg.rect(-50, -50, W + 100, 950); bg.clip(); bg.drawImage(K.out, x, y - split, dw, dh); bg.restore();
+    bg.save(); bg.beginPath(); bg.rect(-50, 900, W + 100, H); bg.clip(); bg.drawImage(K.out, x, y + split, dw, dh); bg.restore();
+    bg.filter = "none";
+    const sp = clamp((t - (TM.kanji + .42)) / .7);
+    if (sp > 0 && sp < 1 && split === 0) {
+      const sc = E.sheenCv.getContext("2d"), cw = E.sheenCv.width, ch = E.sheenCv.height;
+      sc.globalCompositeOperation = "source-over"; sc.clearRect(0, 0, cw, ch); sc.drawImage(K.flat, 0, 0);
+      sc.globalCompositeOperation = "source-in";
+      const pos = -.25 + sp * 1.5, lg = sc.createLinearGradient(0, 0, cw, ch);
+      [[pos - .1, 0], [pos, .9], [pos + .1, 0]].forEach(([o, a]) => lg.addColorStop(clamp(o), `rgba(255,250,232,${clamp(o) === o ? a : 0})`));
+      sc.fillStyle = lg; sc.fillRect(0, 0, cw, ch);
+      bg.globalCompositeOperation = "lighter"; bg.drawImage(E.sheenCv, x, y, dw, dh); bg.globalCompositeOperation = "source-over";
+    }
+    if (t > TM.split - .12) {
+      const a = smooth((t - (TM.split - .12)) / .12) * (1 - smooth((t - (TM.tiger - .1)) / .2));
+      bg.save(); bg.globalCompositeOperation = "lighter"; bg.globalAlpha = a;
+      bg.shadowColor = "rgba(255,236,190,1)"; bg.shadowBlur = 50; bg.fillStyle = "rgba(255,244,214,1)"; bg.fillRect(0, 898, W, 4);
+      bg.restore();
+    }
+  }
+  bg.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+/* ---------- premier plan : vignette, flare anamorphique, flash, fondu ---------- */
+function drawFX(t) {
+  fx.setTransform(1, 0, 0, 1, 0, 0); fx.globalCompositeOperation = "source-over"; fx.globalAlpha = 1; fx.clearRect(0, 0, W, H);
+  const vg = t >= TM.laser && t < TM.pend ? .82 : .58;
+  const gr = fx.createRadialGradient(540, 900, 420, 540, 960, 1280);
+  gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, `rgba(0,0,0,${vg})`);
+  fx.fillStyle = gr; fx.fillRect(0, 0, W, H);
+  fx.globalCompositeOperation = "lighter";
+  for (const [ht, sz] of HITS) {
+    if (sz === "small") continue;
+    const p = (t - ht) / (sz === "big" ? 1.0 : .45); if (p < 0 || p >= 1) continue;
+    const a = (1 - p) ** 2 * (sz === "big" ? 1 : .45), y = ht >= TM.end ? 740 : 900;
+    fx.save(); fx.translate(540, y); fx.scale(9, .5);
+    const rg = fx.createRadialGradient(0, 0, 0, 0, 0, 120);
+    rg.addColorStop(0, `rgba(255,240,210,${.85 * a})`); rg.addColorStop(.3, `rgba(242,200,130,${.35 * a})`); rg.addColorStop(1, "rgba(242,200,130,0)");
+    fx.fillStyle = rg; fx.beginPath(); fx.arc(0, 0, 120, 0, 6.283); fx.fill(); fx.restore();
+    const lg = fx.createLinearGradient(0, 0, W, 0);
+    lg.addColorStop(0, "rgba(255,230,180,0)"); lg.addColorStop(.5, `rgba(255,248,230,${a})`); lg.addColorStop(1, "rgba(255,230,180,0)");
+    fx.fillStyle = lg; fx.fillRect(0, y - 1.5, W, 3);
+  }
+  fx.globalCompositeOperation = "source-over";
+  let fl = 0;
+  for (const [ht, sz] of HITS) {
+    const d = { big: .38, mid: .22, small: .13 }[sz], Am = { big: .9, mid: .38, small: .18 }[sz];
+    const p = (t - ht) / d; if (p >= -.001 && p < 1) fl = Math.max(fl, Am * (1 - p) ** 2);
+  }
+  if (fl > .003) { fx.fillStyle = `rgba(255,244,222,${fl.toFixed(3)})`; fx.fillRect(0, 0, W, H); }
+  const [f0, f1] = REEL.fadeOut, fade = Math.max(smooth((t - f0) / (f1 - f0)), 1 - smooth(t / .2));
+  if (fade > .002) { fx.fillStyle = `rgba(0,0,0,${fade.toFixed(3)})`; fx.fillRect(0, 0, W, H); }
+}
+
+/* ---------- plans ---------- */
+const TDROP = "drop-shadow(0 40px 50px rgba(0,0,0,.75))";
+const laserFrame = i => `shots/laser/${String(clamp(i, 1, 75)).padStart(4, "0")}.jpg`;
+let laserSrc = "";
+
+window.renderFrame = async function (t) {
+  const sh = shake(t);
+  stage.style.transform = `translate3d(${sh.x.toFixed(2)}px,${sh.y.toFixed(2)}px,0)`;
+  for (const c of CARDS) c.style.display = "none";
+  for (const k of KANJI) k.style.display = "none";
+  E.tiger.style.display = "none"; E.laser.style.display = "none";
+
+  /* A */
+  anim(E.a1, t, .3, TM.kanji - .12, { blur: 20, rise: 26, dIn: 1.0, drift: 5, dOut: .12 });
+  anim(E.a2, t, BAR + .05, TM.kanji - .12, { blur: 20, rise: 26, dIn: .9, drift: 5, dOut: .12 });
+  /* B */
+  anim(E.b1, t, TM.kanji + .3, TM.split - .05, { dIn: .6, dOut: .15, rise: 16 });
+  /* C */
+  if (t >= TM.split + .15 && t < TM.suka) {
+    const u = t - TM.tiger, e = easeOutExpo(u / 1.2), dim = smooth((t - TM.breath) / .45);
+    pose(E.tiger, { drop: TDROP, ry: -22 * (1 - e), rx: 9 * (1 - e), s: (.84 + .16 * e) * (1 + .05 * clamp((u - 1.2) / 2.2)) * (1 - .06 * dim), ty: -60 * dim,
+      bright: (t < TM.tiger ? .12 + .28 * smooth((t - TM.split - .15) / .3) : 1 + .9 * (1 - easeOut(u / .4))) * (1 - .55 * dim),
+      op: smooth((t - TM.split - .15) / .25) * (1 - smooth((t - (TM.suka - .25)) / .25)) });
+  }
+  anim(E.c1, t, TM.tiger + .15, TM.breath - .12, { track: [.85, .1], dTrack: 1.1, dIn: .8, sheen: TM.tiger + .45, blur: 18, rise: 0, dOut: .2 });
+  anim(E.c2, t, TM.tiger + .55, TM.breath - .12, { track: [1.3, .62], dTrack: 1.0, dOut: .2 });
+  anim(E.c3, t, TM.breath + .1, TM.suka - .15, { blur: 20, rise: 26, dIn: .9, drift: 5, dOut: .15 });
+  anim(E.c4, t, TM.breath + .1 + 2 * BEAT / 2, TM.suka - .15, { blur: 20, rise: 26, dIn: .9, drift: 5, dOut: .15 });
+  /* E : sukajan, macro puis recul, carte en 3D */
+  anim(E.e0, t, TM.suka + .08, TM.tees - .1, { dIn: .6, dOut: .1, rise: 14, blur: 12 });
+  SUKA.forEach((s, k) => {
+    const s0 = SUKA_T[k], D = SUKA_D[k], u = t - s0;
+    if (u >= 0 && u < D) {
+      const dir = k % 2 ? -1 : 1, zin = easeInOut((u - .08) / Math.min(.55, D * .6)), e3 = easeOut(u / D);
+      let tx = 0, blur = 0;
+      if (u < .09) { tx = -dir * 220 * (1 - easeOut(u / .09)); blur = 14 * (1 - u / .09); }
+      if (u > D - .08 && k < 4) { const p = (u - (D - .08)) / .08; tx = dir * 240 * easeIn(p); blur = 16 * p; }
+      pose(E.eCards[k], { tx, ry: dir * 11 * (1 - e3) - dir * 2.5 * clamp(u / D), rx: 4 * (1 - e3), blur,
+        z: (1.9 - .9 * zin) * (1 + .04 * clamp(u / D)), origin: s.o, sheen: clamp((u - .3) / Math.max(.5, D - .4)), bright: 1 + .3 * (1 - easeOut(u / .2)) });
+      slam(E.eKanji[k], t, s0 + .03, s0 + D, { from: .6, d: .32 });
+    }
+    anim(E.eRo[k], t, s0 + .06, s0 + D - .08, { track: [.95, .32], dTrack: .6, dIn: .35, dOut: .07, rise: 12 });
+  });
+  /* F : un seul signe, cinq fils (une couleur par croche) */
+  anim(E.f0, t, TM.tees + .04, TM.oni - .1, { dIn: .5, dOut: .1, rise: 14, blur: 12 });
+  TEES.forEach((x, k) => {
+    const s0 = TM.tees + k * BEAT / 2, u = t - s0;
+    if (u >= 0 && u < BEAT / 2) {
+      pose(E.fBig[k], { s: 1.02 + .05 * u, op: .32 });
+      pose(E.fCards[k], { s: 1 + .05 * (1 - easeOutExpo(u / .18)), ry: 3 * Math.sin(t * 1.3), bright: 1 + .3 * (1 - easeOut(u / .12)) });
+    }
+    anim(E.fNames[k], t, s0 + .01, s0 + BEAT / 2 - .02, { dIn: .12, dOut: .02, blur: 6, rise: 8 });
+  });
+  if (t >= TM.hood && t < TM.oni) {
+    const u = t - TM.hood;
+    pose(E.fBig[5], { s: 1.02 + .04 * u, op: .34 });
+    pose(E.fHood, { z: 1.5 - .5 * easeInOut((u - .05) / .45), origin: [.5, .42], s: 1 + .03 * u, ry: -6 * (1 - easeOut(u / .6)),
+      sheen: clamp((u - .1) / .5), bright: 1 + .3 * (1 - easeOut(u / .15)) });
+  }
+  anim(E.f6, t, TM.hood + .06, TM.oni - .06, { track: [.9, .34], dTrack: .5, dIn: .3, dOut: .06 });
+  /* G : samouraï oni */
+  anim(E.g0, t, TM.oni + .1, TM.laser - .1, { dIn: .6, dOut: .1, rise: 14, blur: 12 });
+  if (t >= TM.oni && t < TM.laser) {
+    const u = t - TM.oni, D = TM.laser - TM.oni;
+    let tx = 0, blur = 0;
+    if (u > D - .08) { const p = (u - (D - .08)) / .08; tx = -240 * easeIn(p); blur = 16 * p; }
+    pose(E.gCard, { tx, blur, z: 2.0 - 1.0 * easeInOut((u - .1) / .75), origin: [.47, .31], ry: 10 * (1 - easeOut(u / 1.2)), rx: 3 * (1 - easeOut(u / 1.2)),
+      sheen: clamp((u - .45) / .8), bright: 1 + .4 * (1 - easeOut(u / .25)) });
+    slam(E.gKanji, t, TM.oni + .03, TM.laser, { from: .7, push: .06, d: .35 });
+  }
+  anim(E.g1, t, TM.oni + .2, TM.laser - .08, { track: [.9, .26], dTrack: .8, dIn: .45, dOut: .08 });
+  /* H : gravure laser puis pendentif */
+  anim(E.h1, t, TM.laser + .08, TM.sig - .1, { dIn: .5, dOut: .1, rise: 14, blur: 12 });
+  if (t >= TM.laser && t < TM.pend) {
+    const u = t - TM.laser, src = laserFrame(Math.floor(u * REEL.fps * 1.5) + 18);
+    if (src !== laserSrc) { E.laser.src = src; laserSrc = src; await E.laser.decode(); }
+    pose(E.laser, { s: 1.02 + .08 * u, bright: .8, drop: "contrast(1.14) saturate(1.12)" });
+  }
+  if (t >= TM.pend && t < TM.sig) {
+    const u = t - TM.pend;
+    pose(E.pCard, { ry: -10 * (1 - easeOut(u / .8)), s: .96 + .04 * easeOutExpo(u / .4), sheen: clamp((u - .1) / .6), bright: 1 + .3 * (1 - easeOut(u / .2)) });
+    E.pKanji.forEach((k, i) => slam(k, t, TM.pend + i * BEAT / 2, TM.sig, { from: .6, push: .02, d: .25 }));
+  }
+  E.pRo.forEach((r, i) => anim(r, t, TM.pend + i * BEAT / 2 + .06, TM.sig - .08, { track: [1.2, .5], dTrack: .4, dIn: .25, dOut: .08, rise: 8 }));
+  /* I : la signature, une coupe par temps */
+  SIG.forEach((f, k) => {
+    const u = t - (TM.sig + k * BEAT);
+    if (u >= 0 && u < BEAT) pose(E.iCards[k], { s: 1 + .07 * (1 - easeOutExpo(u / .22)), z: 1.04 - .05 * u, bright: 1 + .35 * (1 - easeOut(u / .15)), ry: (k % 2 ? 3 : -3) * (1 - u) });
+  });
+  anim(E.i1, t, TM.sig + .04, TM.end - .08, { track: [1.1, .5], dTrack: .8, dOut: .08 });
+  anim(E.i2, t, TM.sig + .1, TM.end - .08, { track: [.8, .3], dTrack: .8, dOut: .08 });
+  /* J : signature finale */
+  if (t >= TM.end) {
+    const u = t - TM.end;
+    pose(E.tiger, { drop: TDROP, ty: -60, s: .88 * (1.12 - .12 * easeOutExpo(u / 1.2)) * (1 + .03 * clamp(u / 4)), ry: 4 * Math.sin(u * .9), bright: 1 + 1.2 * (1 - easeOut(u / .6)) });
+  }
+  anim(E.j1, t, TM.end + .25, 99, { track: [.9, .1], dTrack: 1.2, dIn: .9, sheen: TM.end + .9, blur: 18, rise: 0 });
+  anim(E.j5, t, TM.end + .95, 99, { blur: 20, rise: 24, dIn: .9 });
+  anim(E.j3, t, TM.end + 1.6, 99, { rise: 16 });
+  anim(E.j4, t, TM.end + 1.9, 99, { track: [1.1, .5], dTrack: .9 });
+
+  drawBG(t, sh);
+  drawFX(t);
+};
+
+window.ready = (async () => {
+  await Promise.all([
+    document.fonts.load('500 60px "Cinzel"', "YOKOFURI ŪÏÉ Ryūko"),
+    document.fonts.load('italic 500 60px "Cormorant Garamond"', "Avant le motif, il y a le fil. l’aiguille durer tienne"),
+    document.fonts.load('800 100px "Shippori Mincho B1"', "横振り刺繍虎雷神狐沖縄龍鬼加流呂朱金瑠白墨スカジャン"),
+  ]);
+  await document.fonts.ready;
+  build();
+  await Promise.all([...document.images].filter(i => i.src).map(i => i.decode().catch(() => { throw new Error("image " + i.src); })));
+  return [...document.fonts].filter(f => f.status === "loaded").length + " polices chargées";
+})();
+</script>
+</body></html>

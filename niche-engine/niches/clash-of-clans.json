@@ -1,0 +1,24 @@
+{
+ "id": "clash-of-clans",
+ "name": "Clash of Clans",
+ "audience": "joueurs confirmés (plusieurs années de jeu)",
+ "tone": "mécaniques niche, preuve en replay, chiffres précis",
+ "theme": {
+  "yel": "#FFE11F"
+ },
+ "stockQueries": [],
+ "sourcePriority": [
+  "local",
+  "official"
+ ],
+ "cta": "la 4e astuce / la base à copier est sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

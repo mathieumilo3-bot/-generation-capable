@@ -1,0 +1,4 @@
+_frames/
+cache/
+plans/*.resolved.json
+*.mp4

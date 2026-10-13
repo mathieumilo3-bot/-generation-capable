@@ -1,0 +1,28 @@
+{
+ "id": "auto",
+ "name": "Automobile et mécanique",
+ "audience": "passionnés",
+ "tone": "entretien, pièges, comparatifs",
+ "theme": {
+  "yel": "#FF1744"
+ },
+ "stockQueries": [
+  "sports car",
+  "car engine",
+  "road driving"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les guides sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

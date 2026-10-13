@@ -1,0 +1,28 @@
+{
+ "id": "ia-outils",
+ "name": "IA et outils productivité",
+ "audience": "créateurs, salariés",
+ "tone": "workflows, prompts, comparatifs",
+ "theme": {
+  "yel": "#6C5CE7"
+ },
+ "stockQueries": [
+  "artificial intelligence",
+  "futuristic technology",
+  "coding screen"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les prompts sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

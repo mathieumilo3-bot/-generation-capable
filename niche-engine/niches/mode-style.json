@@ -1,0 +1,28 @@
+{
+ "id": "mode-style",
+ "name": "Mode et style masculin/féminin",
+ "audience": "18-35 ans",
+ "tone": "looks, marques, erreurs",
+ "theme": {
+  "yel": "#F06292"
+ },
+ "stockQueries": [
+  "fashion style",
+  "streetwear",
+  "clothing store"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les looks sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}
