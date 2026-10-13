@@ -34,7 +34,7 @@ const path = require("path");
   execFileSync("python3", ["-I", path.join(R, "sfx.py"), path.join(R, "reel.json"), wav], { stdio: "inherit" });
   // grain fin + aq-mode 3 pour éviter les aplats en escalier dans les noirs et les halos
   const ff = spawn("ffmpeg", ["-v", "error", "-y", "-f", "image2pipe", "-framerate", String(fps), "-c:v", "mjpeg", "-i", "-",
-    "-vf", "noise=alls=4:allf=t,format=yuv420p", "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-x264-params", "aq-mode=3",
+    "-vf", "noise=alls=4:allf=t,format=yuv420p", "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-maxrate", "14M", "-bufsize", "28M", "-x264-params", "aq-mode=3",
     "-profile:v", "high", "-level", "4.2", "-r", String(fps), vid], { stdio: ["pipe", "inherit", "inherit"] });
   const done = new Promise(r => ff.on("close", r));
   const t0 = Date.now();
