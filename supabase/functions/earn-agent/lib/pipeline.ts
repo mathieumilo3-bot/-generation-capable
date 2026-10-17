@@ -123,7 +123,7 @@ export async function discover(deps: Deps) {
       }
       const tokenUsd = l.token ? prices[l.token.toUpperCase()]?.usd ?? null : null;
       const a = details
-        ? assess({ live: l, details, tokenUsd, now, settings, allowedRegions: settings.allowedRegions })
+        ? assess({ live: l, details, tokenUsd, now, settings, allowedRegions: settings.allowedRegions, relaxedBlockers: settings.relaxedBlockers })
         : null;
       if (a?.decision === 'candidate') candidates++;
       const job = await deps.store.getJobByListing(l.id);

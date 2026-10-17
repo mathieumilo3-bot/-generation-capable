@@ -177,6 +177,8 @@ export interface Settings {
   telegramUrl: string | null;
   /** Non-global listings are only taken in these regions (payout goes to the human claimant). */
   allowedRegions: string[];
+  /** Hard-blocker rule-id prefixes the worker should judge case by case instead. */
+  relaxedBlockers: string[];
   repoOwner: string;
   repoName: string;
   branch: string;
@@ -191,6 +193,7 @@ export const DEFAULT_SETTINGS: Settings = {
   minQaScore: 8,
   telegramUrl: null,
   allowedRegions: ['France'],
+  relaxedBlockers: ['hackathon_track'],
   repoOwner: 'mathieumilo3-bot',
   repoName: '-generation-capable',
   branch: 'earn-agent',

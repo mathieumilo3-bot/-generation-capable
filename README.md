@@ -69,7 +69,7 @@ attente, missions en cours, annonces analysées, derniers cycles).
 ## Worker IA
 
 Session Claude Code persistante `session_01VgpZyXif2bxw9MR17jkPfG` (dépôt en
-source, donc droit de push), réveillée **toutes les 2 heures** par la tâche
+source, donc droit de push), réveillée **toutes les heures** par la tâche
 planifiée `trig_01F4NHsjgeBrod3K8siWp3YG`. Quand la file est vide, elle s'arrête
 après la synchronisation. Le travail de l'IA est décompté du forfait Claude du
 compte (aucune clé API payante n'est utilisée).
@@ -103,12 +103,13 @@ insert into earn_agent.config (key, value) values ('settings', '{"autoSubmit": f
 on conflict (key) do update set value = earn_agent.config.value || excluded.value;
 ```
 
-`maxActiveJobs` (5), `dailySubmissionCap` (8), `minScore` (1 $/h espéré),
+`maxActiveJobs` (5), `dailySubmissionCap` (15), `minScore` (0,5 $/h espéré),
 `minHoursLeft` (4), `minQaScore` (8), `allowedRegions` (["France"]),
+`relaxedBlockers` (["hackathon_track"] — règles bloquantes laissées au jugement du worker),
 `telegramUrl` (null — requis par Earn pour les missions « project », non prises).
 
 Arrêt complet : `select cron.unschedule('earn-agent-tick');` et désactiver la tâche
-planifiée « Superteam Earn — worker IA (toutes les 2 h) » dans Claude.
+planifiée « Superteam Earn — worker IA (toutes les heures) » dans Claude.
 
 ## Contenu de la branche
 

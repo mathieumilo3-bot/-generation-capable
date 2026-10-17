@@ -211,13 +211,19 @@ const BLOCKER_RULES: BlockerRule[] = [
   },
 ];
 
-export function detectBlockers(d: Partial<ListingDetails>, cat: Category, allowedRegions: string[]) {
+/**
+ * `relaxed` lists rule-id prefixes downgraded from hard to soft (settings),
+ * so the worker reads the listing and decides instead of the hub skipping it.
+ */
+export function detectBlockers(d: Partial<ListingDetails>, cat: Category, allowedRegions: string[], relaxed: string[] = []) {
   const text = listingText(d);
   const title = (d.title ?? '').toLowerCase();
   const hard: string[] = [];
   const soft: string[] = [];
   for (const rule of BLOCKER_RULES) {
-    if (rule.test(text, title, d, cat)) (rule.hard ? hard : soft).push(rule.id);
+    if (!rule.test(text, title, d, cat)) continue;
+    const isHard = rule.hard && !relaxed.some((p) => rule.id.startsWith(p));
+    (isHard ? hard : soft).push(rule.id);
   }
   const region = (d.region ?? 'Global').trim();
   if (region && !/^global$/i.test(region) && !allowedRegions.some((r) => region.toLowerCase().includes(r.toLowerCase()))) {
@@ -263,6 +269,7 @@ export interface AssessInput {
   now: Date;
   settings: Pick<Settings, 'minScore' | 'minHoursLeft'>;
   allowedRegions?: string[];
+  relaxedBlockers?: string[];
 }
 
 export function assess(input: AssessInput): Assessment {
@@ -270,7 +277,7 @@ export function assess(input: AssessInput): Assessment {
   const d: Partial<ListingDetails> = { ...live, ...details } as Partial<ListingDetails>;
   const category = classify(d);
   const preferred = PREFERRED.has(category);
-  const { hard, soft } = detectBlockers(d, category, input.allowedRegions ?? []);
+  const { hard, soft } = detectBlockers(d, category, input.allowedRegions ?? [], input.relaxedBlockers ?? []);
   const estHours = estimateHours(d, category);
 
   const deadline = d.deadline ? new Date(d.deadline) : null;

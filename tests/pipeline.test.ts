@@ -38,6 +38,7 @@ function deliver(repo: { headSha: string; files: Record<string, string> }, slug:
 
 test('full cycle: register, select, wait, gate, submit, track a win', async () => {
   const { state, repo, store, deps, advance } = setup();
+  await store.setConfig('settings', { relaxedBlockers: [] });
 
   const first = await tick(deps);
   assert.equal((first as { ok: boolean }).ok, true, JSON.stringify(first));
@@ -121,6 +122,7 @@ test('full cycle: register, select, wait, gate, submit, track a win', async () =
 
 test('abandoned missions free their slot and are never retried', async () => {
   const { repo, store, deps, state } = setup();
+  await store.setConfig('settings', { relaxedBlockers: [] });
   state.listings.push(writingListing({ id: 'lst-b', slug: 'second-guide', title: 'Write a guide to compressed NFTs' }));
   await tick(deps);
   assert.equal((await store.listJobs()).length, 2);
@@ -227,4 +229,11 @@ test('selftest jobs run the whole gate but are never submitted nor expired', asy
   assert.equal(done.status, 'approved', done.last_error ?? '');
   assert.equal(state.submissions.length, 0);
   assert.equal((done.submission_response as { selftest: boolean }).selftest, true);
+});
+
+test('relaxed blockers let the worker judge hackathon tracks', async () => {
+  const { store, deps } = setup();
+  await tick(deps);
+  assert.equal((await store.getListing('lst-hack'))!.decision, 'selected');
+  assert.equal((await store.getListing('lst-project'))!.decision, 'skip');
 });

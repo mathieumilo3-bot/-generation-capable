@@ -31,6 +31,10 @@ test('hard-blocks work an AI agent cannot do honestly', () => {
   const h = assess({ live: hackathonListing(), details: hackathonListing(), tokenUsd: 1, now: NOW, settings });
   assert.equal(h.decision, 'skip');
   assert.match(h.reason, /hackathon/);
+  // Relaxed by settings: the worker reads it and decides.
+  const relaxed = assess({ live: hackathonListing(), details: hackathonListing(), tokenUsd: 1, now: NOW, settings, relaxedBlockers: ['hackathon_track'] });
+  assert.equal(relaxed.decision, 'candidate');
+  assert.ok(relaxed.softBlockers.some((b) => b.startsWith('hackathon_track')));
 
   const p = assess({ live: projectListing(), details: projectListing(), tokenUsd: 1, now: NOW, settings });
   assert.equal(p.decision, 'skip');
