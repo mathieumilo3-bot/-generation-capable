@@ -17,7 +17,8 @@
     "test:duration": "node dist/test-duration-policy.js",
     "test:broll": "node dist/test-broll-stock.js",
     "test:e2e": "node dist/test-e2e-facecam.js",
-    "demo": "node dist/demo.js"
+    "demo": "node dist/demo.js",
+    "test:e2e-speech": "node dist/test-e2e-speech.js"
   },
   "dependencies": {
     "@video-editor/shared-types": "workspace:*",

@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "echo 'no lint configured'",
-    "test": "echo 'no tests yet'"
+    "test": "node --test \"dist/**/*.test.js\""
   },
   "dependencies": {
     "@video-editor/shared-types": "workspace:*",

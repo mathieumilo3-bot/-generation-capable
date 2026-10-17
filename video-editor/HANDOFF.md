@@ -61,8 +61,9 @@ assistant (ou toi) puisse reprendre sans rien redécouvrir.
 
 ### ❗ Limites assumées (pas des oublis)
 
-- **Sous-titres parlés** = besoin d'une clé STT (`DEEPGRAM_API_KEY`). Sans
-  clé, le chemin déterministe **n'invente pas** de sous-titres.
+- **Sous-titres parlés** = STT local gratuit (Parakeet v3 via sherpa-onnx,
+  `VIDEO_EDITOR_STT_MODEL_DIR`, installé par le Dockerfile) ou Deepgram en
+  option. Sans STT, le chemin déterministe **n'invente pas** de sous-titres.
 - **Sélection éditoriale fine** = bien meilleure avec `ANTHROPIC_API_KEY`
   (Story Director LLM). Sans clé, heuristiques (déjà nettement améliorées).
 - **B-roll** résolu en métadonnées, pas encore splicé dans le rendu.
@@ -181,9 +182,9 @@ le montage (ce qui manque = "le sentiment") :
 4. **Learning** : enregistrer les commandes conversationnelles de
    l'utilisateur comme `FeedbackSignal` dans `CreativeLearningEngine` pour
    adapter les préférences au fil du temps.
-5. **Sous-titres** : propager les timestamps mot-à-mot du STT jusqu'au
-   Caption Director (le `Segment` ne garde aujourd'hui que le transcript
-   agrégé) pour des sous-titres karaoké synchronisés.
+5. ~~**Sous-titres** : timestamps mot-à-mot jusqu'au Caption Director~~ —
+   fait : sous-titres karaoké libass synchronisés (écart médian mesuré
+   0,06 s sur vraie voix, `test-e2e-speech.ts`).
 
 Chacune de ces étapes est additive et n'exige pas de casser l'existant.
 

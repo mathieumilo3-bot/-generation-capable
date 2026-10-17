@@ -9,6 +9,7 @@ import type { ModelRouter } from "@video-editor/model-router";
 import { recordProviderCall } from "@video-editor/cost-ledger";
 import { probe, detectSilence, nonSilentSegments, volumeStats, extractAudio, measureBrightness, type SilenceWindow } from "@video-editor/render";
 import { join, dirname } from "node:path";
+import { findRetakes, speechPhrases } from "./speech-segmentation.js";
 
 function dbToEnergy(meanVolumeDb: number): number {
   // -45dB (quasi silence) -> 0, -5dB (fort) -> 1, clampé
@@ -92,8 +93,19 @@ export async function runVideoAnalyzer(
   const analysisSource = rush.proxyPath ?? rush.storagePath;
   const info = await probe(analysisSource);
 
-  const silences = await detectSilence(analysisSource, { noiseDb: -32, minSilenceDurationSec: 0.45 });
-  const windows = nonSilentSegments(info.durationSec, silences);
+  // Rush parlé (STT présent) : l'unité de montage est la PHRASE — blancs et
+  // prises ratées retirés, aucune phrase coupée. Sans parole : fenêtres
+  // non silencieuses détectées par ffmpeg (comportement historique).
+  let windows: SilenceWindow[];
+  if (transcript.words.length > 0) {
+    const phrases = speechPhrases(transcript.words, info.durationSec);
+    const retakes = findRetakes(phrases);
+    for (const i of retakes) console.log(`[video_analyzer] Prise ratée retirée : « ${phrases[i]!.text} »`);
+    windows = phrases.filter((_, i) => !retakes.has(i)).map((p) => ({ start: p.start, end: p.end }));
+  } else {
+    const silences = await detectSilence(analysisSource, { noiseDb: -32, minSilenceDurationSec: 0.45 });
+    windows = nonSilentSegments(info.durationSec, silences);
+  }
   const resolutionQuality = visualQualityFromResolution(info.width, info.height);
 
   const segments: Segment[] = [];
@@ -111,7 +123,7 @@ export async function runVideoAnalyzer(
       Math.min(1, resolutionQuality * brightnessFactor(bright.yavg, bright.tooDark, bright.tooBright))
     );
     const segTranscript = transcript.words
-      .filter((word) => word.start >= w.start && word.end <= w.end)
+      .filter((word) => word.start >= w.start - 1e-6 && word.end <= w.end + 1e-6)
       .map((word) => word.word)
       .join(" ");
 

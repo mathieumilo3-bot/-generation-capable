@@ -22,21 +22,21 @@ async function runFfmpeg(args: string[], opts?: { timeoutMs?: number; operation?
   const opLabel = `[${operation}] `;
   const t0 = Date.now();
 
+  // Le minuteur est toujours annulé : sinon il garde le processus en vie
+  // jusqu'à timeoutMs après la fin du travail (10 min par défaut).
+  let timer: NodeJS.Timeout | undefined;
   try {
-    let completed = false;
-    const promise = execFileAsync("ffmpeg", ["-hide_banner", "-y", ...args], { maxBuffer: 1024 * 1024 * 64 });
+    // `timeout` tue réellement ffmpeg à la limite (pas seulement la promesse).
+    const promise = execFileAsync("ffmpeg", ["-hide_banner", "-y", ...args], { maxBuffer: 1024 * 1024 * 64, timeout: Math.ceil(timeoutMs) });
 
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        if (!completed) {
-          const elapsed = Date.now() - t0;
-          reject(new Error(`${operation} timeout après ${(elapsed / 1000).toFixed(1)}s (limite: ${(timeoutMs / 1000).toFixed(0)}s)`));
-        }
+      timer = setTimeout(() => {
+        const elapsed = Date.now() - t0;
+        reject(new Error(`${operation} timeout après ${(elapsed / 1000).toFixed(1)}s (limite: ${(timeoutMs / 1000).toFixed(0)}s)`));
       }, timeoutMs);
     });
 
     const result = await Promise.race([promise, timeoutPromise]);
-    completed = true;
     const elapsed = Date.now() - t0;
     console.log(`${opLabel}Succès (${(elapsed / 1000).toFixed(1)}s)`);
     return result;
@@ -45,6 +45,8 @@ async function runFfmpeg(args: string[], opts?: { timeoutMs?: number; operation?
     console.log(`${opLabel}Erreur après ${(elapsed / 1000).toFixed(1)}s`);
     const e = err as { stderr?: string; message: string };
     throw new FfmpegError(`${operation} a échoué: ${e.message}`, e.stderr ?? "");
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -332,8 +334,8 @@ export async function mixAudioWithMusic(
 ): Promise<void> {
   const musicGain = Math.pow(10, opts.musicVolumeDb / 20);
   const filter = opts.duckingEnabled
-    ? `[1:a]volume=${musicGain}[music];[music][0:a]sidechaincompress=threshold=0.05:ratio=8:attack=5:release=300[duckedmusic];[0:a][duckedmusic]amix=inputs=2:duration=first:dropout_transition=0[aout]`
-    : `[1:a]volume=${musicGain}[music];[0:a][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`;
+    ? `[1:a]volume=${musicGain}[music];[music][0:a]sidechaincompress=threshold=0.05:ratio=8:attack=5:release=300[duckedmusic];[0:a][duckedmusic]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]`
+    : `[1:a]volume=${musicGain}[music];[0:a][music]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]`;
   await runFfmpeg(
     [
       "-i",
@@ -354,6 +356,87 @@ export async function mixAudioWithMusic(
     ],
     { operation: "mix_audio_music", timeoutMs: 120000 }
   );
+}
+
+/** Cible des plateformes sociales (Instagram, TikTok, YouTube) : -14 LUFS intégrés, crête ≤ -1,5 dBTP. */
+export const SOCIAL_LOUDNESS = { integratedLufs: -14, truePeakDb: -1.5, lra: 11 } as const;
+
+export interface LoudnessMeasure {
+  inputI: number;
+  inputTp: number;
+  inputLra: number;
+  inputThresh: number;
+  targetOffset: number;
+}
+
+/**
+ * Traitement voix standard avant normalisation : coupe des graves parasites
+ * (souffle, vibrations) et compression douce (3:1 au-dessus de -24 dBFS) —
+ * les passages dits plus bas restent intelligibles sur un téléphone.
+ */
+export const VOICE_PREP_FILTER = "highpass=f=70,acompressor=threshold=0.063:ratio=3:attack=10:release=250";
+
+/**
+ * 1re passe loudnorm : mesure seule (décodage audio, aucune écriture).
+ * `prepFilter` = chaîne appliquée avant la mesure (la même qu'en 2e passe).
+ */
+export async function measureLoudness(inputPath: string, target = SOCIAL_LOUDNESS, prepFilter?: string): Promise<LoudnessMeasure> {
+  const { stderr } = await runFfmpeg(
+    [
+      "-i", inputPath, "-vn",
+      "-af", `${prepFilter ? `${prepFilter},` : ""}loudnorm=I=${target.integratedLufs}:TP=${target.truePeakDb}:LRA=${target.lra}:print_format=json`,
+      "-f", "null", "-",
+    ],
+    { operation: "loudness_measure", timeoutMs: 120000 }
+  );
+  const json = stderr.slice(stderr.lastIndexOf("{"), stderr.lastIndexOf("}") + 1);
+  const m = JSON.parse(json) as Record<string, string>;
+  const num = (k: string) => {
+    const raw = String(m[k]).trim();
+    // Audio silencieux : ffmpeg rapporte "-inf" (gérée par l'appelant, rien à normaliser).
+    const v = raw === "-inf" ? -Infinity : raw === "inf" ? Infinity : Number(raw);
+    if (Number.isNaN(v)) throw new FfmpegError(`loudnorm: valeur ${k} illisible (${m[k]})`, stderr);
+    return v;
+  };
+  return {
+    inputI: num("input_i"),
+    inputTp: num("input_tp"),
+    inputLra: num("input_lra"),
+    inputThresh: num("input_thresh"),
+    targetOffset: num("target_offset"),
+  };
+}
+
+/**
+ * Normalise le volume au standard des réseaux sociaux (loudnorm en deux
+ * passes, mode linéaire : le gain est constant, pas de pompage). La vidéo
+ * est copiée telle quelle, seul l'audio est ré-encodé.
+ * Renvoie la mesure d'entrée, ou null si le fichier n'a pas d'audio ou est
+ * silencieux (rien à normaliser : le fichier est simplement copié).
+ */
+export async function normalizeLoudness(inputPath: string, outputPath: string, target = SOCIAL_LOUDNESS): Promise<LoudnessMeasure | null> {
+  const info = await probe(inputPath);
+  const m = info.hasAudio ? await measureLoudness(inputPath, target, VOICE_PREP_FILTER) : null;
+  if (!m || !(m.inputI > -70) || !Number.isFinite(m.inputTp) || !Number.isFinite(m.targetOffset)) {
+    await runFfmpeg(["-i", inputPath, "-c", "copy", outputPath], { operation: "loudness_passthrough", timeoutMs: 60000 });
+    return null;
+  }
+  await runFfmpeg(
+    [
+      "-i", inputPath,
+      "-map", "0:v?", "-map", "0:a",
+      "-c:v", "copy",
+      "-af",
+      `${VOICE_PREP_FILTER},loudnorm=I=${target.integratedLufs}:TP=${target.truePeakDb}:LRA=${target.lra}` +
+        `:measured_I=${m.inputI}:measured_TP=${m.inputTp}:measured_LRA=${m.inputLra}` +
+        `:measured_thresh=${m.inputThresh}:offset=${m.targetOffset}:linear=true:print_format=none,aresample=48000`,
+      "-c:a", "aac", "-b:a", "192k",
+      "-movflags", "+faststart",
+      outputPath,
+    ],
+    { operation: "loudness_normalize", timeoutMs: 180000 }
+  );
+  return m;
 }
 
 /** Repli de sous-titres si le rendu Remotion (habillage) n'est pas disponible dans l'environnement — jamais livrer une vidéo sans sous-titres si le style demandé en attend. */
@@ -478,24 +561,6 @@ export async function detectSceneCuts(inputPath: string, threshold = 0.35): Prom
   }
   const re = /pts_time:([\d.]+)/g;
   return [...stderr.matchAll(re)].map((m) => parseFloat(m[1]!));
-}
-
-/** Normalisation de loudness (EBU R128) — améliore directement le critère QC "sound" sans aucune IA. */
-export async function normalizeLoudness(inputPath: string, outputPath: string): Promise<void> {
-  await runFfmpeg(
-    [
-      "-i",
-      inputPath,
-      "-af",
-      "loudnorm=I=-16:TP=-1.5:LRA=11",
-      "-c:v",
-      "copy",
-      "-c:a",
-      "aac",
-      outputPath,
-    ],
-    { operation: "normalize_loudness", timeoutMs: 120000 }
-  );
 }
 
 export interface ValidateRenderOptions {

@@ -158,20 +158,19 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
     const timeout = STAGE_TIMEOUTS[stage] ?? 300000;
     const t0 = Date.now();
 
+    // Minuteur toujours annulé (finally) : sinon chaque étape garde le
+    // processus en vie jusqu'à sa limite après la fin du montage.
+    let timer: NodeJS.Timeout | undefined;
     try {
-      let completed = false;
       const promise = fn();
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          if (!completed) {
-            const elapsed = Date.now() - t0;
-            reject(new Error(`Stage ${stage} timeout after ${(elapsed / 1000).toFixed(0)}s (limit: ${(timeout / 1000).toFixed(0)}s)`));
-          }
+        timer = setTimeout(() => {
+          const elapsed = Date.now() - t0;
+          reject(new Error(`Stage ${stage} timeout after ${(elapsed / 1000).toFixed(0)}s (limit: ${(timeout / 1000).toFixed(0)}s)`));
         }, timeout);
       });
 
       const result = await Promise.race([promise, timeoutPromise]);
-      completed = true;
       const elapsed = Date.now() - t0;
       db.finishJob(jobId, "completed");
       onProgress?.(stage, "done");
@@ -185,6 +184,8 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
       db.setProjectStatus(input.projectId, "failed");
       onProgress?.(stage, "failed");
       throw err;
+    } finally {
+      clearTimeout(timer);
     }
   };
 
@@ -448,7 +449,7 @@ export async function runPipeline(db: Db, router: ModelRouter, input: RunPipelin
     await runStage("correction", async () => {
       if (qcReport.passed || qcReport.corrections.length === 0) return;
       const correction = qcReport.corrections[0]!;
-      const applied = applyCorrection(db, editBlueprint, correction, styleProfile, segmentsById);
+      const applied = applyCorrection(db, editBlueprint, correction, styleProfile, segmentsById, transcripts);
       const candidateBlueprint = applied.blueprint;
       if (applied.musicFilePath) musicFilePath = applied.musicFilePath;
       const candidateRender = await renderVersion("proxy", candidateBlueprint);

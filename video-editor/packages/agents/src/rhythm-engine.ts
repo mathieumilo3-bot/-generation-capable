@@ -25,8 +25,11 @@ export function computeClipOutDuration(args: {
   role: StoryBeatRole;
   segmentDurationSec: number;
   styleProfile: StyleProfile;
+  /** Segment parlé : la phrase entière est gardée, le rythme vient des punch-ins (planSpeechPunchIns). */
+  isSpeech?: boolean;
 }): number {
   const { role, segmentDurationSec, styleProfile } = args;
+  if (args.isSpeech) return segmentDurationSec;
   const target = role === "hook" ? styleProfile.hookDuration : styleProfile.averageCutDuration * ROLE_DURATION_FACTOR[role];
   // jamais plus long que le segment source réellement disponible, jamais en dessous de 0.6s (imperceptible sinon)
   return Math.max(0.6, Math.min(target, segmentDurationSec));
@@ -161,4 +164,31 @@ export function planDynamicEffectIndices(
   }
 
   return indices;
+}
+
+/**
+ * Rythme d'un plan parlé long sans couper la phrase : alternance de cadrage
+ * large / serré (punch-in « jump zoom ») toutes les ~1,2 durées de coupe
+ * moyennes du style. Chaque changement se fait en une image, comme une coupe.
+ * `startScale` = cadrage d'ouverture du plan (1 = large).
+ */
+export function planSpeechPunchIns(args: {
+  clipDurationSec: number;
+  styleProfile: StyleProfile;
+  startScale: number;
+  punchScale?: number;
+}): { atSec: number; scale: number; focusX: number; focusY: number }[] {
+  const { clipDurationSec, styleProfile, startScale } = args;
+  const punch = args.punchScale ?? 1.12;
+  const step = Math.max(1.2, styleProfile.averageCutDuration * 1.2);
+  const frame = 1 / 30;
+  const kfs = [{ atSec: 0, scale: startScale, focusX: 0.5, focusY: 0.5 }];
+  let scale = startScale;
+  // Pas de changement dans la dernière seconde : la coupe suivante arrive déjà.
+  for (let t = step; t < clipDurationSec - 1; t += step) {
+    const next = scale > 1.0001 ? 1 : punch;
+    kfs.push({ atSec: t - frame, scale, focusX: 0.5, focusY: 0.5 }, { atSec: t, scale: next, focusX: 0.5, focusY: 0.5 });
+    scale = next;
+  }
+  return kfs.length > 1 ? kfs : [];
 }

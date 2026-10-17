@@ -1,5 +1,6 @@
 import { AnthropicLLMProvider, StubLLMProvider, type LLMProvider } from "./llm.js";
 import { DeepgramSttProvider, StubSttProvider, type SttProvider } from "./stt.js";
+import { LocalSttProvider, isLocalSttModelDir } from "./local-stt.js";
 import { GeminiVisionProvider, StubVisionProvider, type VisionProvider } from "./vision.js";
 import { StubTtvProvider, type TtvProvider } from "./ttv.js";
 
@@ -34,7 +35,7 @@ export class ModelRouter {
       ? new AnthropicLLMProvider({ apiKey: anthropicKey, baseUrl: env.ANTHROPIC_BASE_URL })
       : new StubLLMProvider();
     this.vision = geminiKey ? new GeminiVisionProvider(geminiKey) : new StubVisionProvider();
-    this.stt = deepgramKey ? new DeepgramSttProvider(deepgramKey) : new StubSttProvider();
+    this.stt = selectStt(env, deepgramKey);
     this.ttv = new StubTtvProvider(); // toujours stub au MVP, cf. §5 Agent 05
 
     this.capabilities = {
@@ -44,4 +45,20 @@ export class ModelRouter {
       ttv: this.ttv.isReal,
     };
   }
+}
+
+/**
+ * STT : le modèle local (gratuit) passe en premier dès qu'il est installé ;
+ * Deepgram (payant) seulement s'il n'y a pas de modèle local ou si
+ * VIDEO_EDITOR_STT=deepgram le demande explicitement.
+ */
+function selectStt(env: NodeJS.ProcessEnv, deepgramKey: string | undefined): SttProvider {
+  const choice = env.VIDEO_EDITOR_STT ?? "auto";
+  const modelDir = env.VIDEO_EDITOR_STT_MODEL_DIR;
+  const threads = Number(env.VIDEO_EDITOR_STT_THREADS) || 4;
+  if (choice === "off") return new StubSttProvider();
+  if (choice === "deepgram" && deepgramKey) return new DeepgramSttProvider(deepgramKey);
+  if (choice !== "deepgram" && isLocalSttModelDir(modelDir)) return new LocalSttProvider(modelDir, threads);
+  if (deepgramKey) return new DeepgramSttProvider(deepgramKey);
+  return new StubSttProvider();
 }

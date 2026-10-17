@@ -14,3 +14,4 @@ export * from "./creative-brain.js";
 export * from "./creative-critic.js";
 export { CreativeLearningEngine, applyLearningToStrategy } from "./creative-learning-engine.js";
 export * from "./stock-sources.js";
+export * from "./speech-segmentation.js";

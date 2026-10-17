@@ -43,9 +43,20 @@ export function runQualityControl(
   if (!roles.has("conclusion") && !roles.has("cta")) story -= 20;
   story = Math.max(0, story);
 
-  const avgClipDuration =
-    editBlueprint.clips.reduce((sum, c) => sum + c.outDuration, 0) / Math.max(1, editBlueprint.clips.length);
-  const rhythmDelta = Math.abs(avgClipDuration - styleProfile.averageCutDuration) / styleProfile.averageCutDuration;
+  // Rythme PERÇU : une coupe ou un changement de cadrage (punch-in en une
+  // image sur un plan parlé) renouvelle l'image de la même façon.
+  const totalSec = editBlueprint.clips.reduce((sum, c) => sum + c.outDuration, 0);
+  const reframes = editBlueprint.clips.reduce((n, c) => {
+    let changes = 0;
+    for (let i = 1; i < c.zoomKeyframes.length; i++) {
+      const a = c.zoomKeyframes[i - 1]!;
+      const b = c.zoomKeyframes[i]!;
+      if (b.atSec - a.atSec < 0.1 && Math.abs(b.scale - a.scale) > 0.05) changes++;
+    }
+    return n + changes;
+  }, 0);
+  const avgShotDuration = totalSec / Math.max(1, editBlueprint.clips.length + reframes);
+  const rhythmDelta = Math.abs(avgShotDuration - styleProfile.averageCutDuration) / styleProfile.averageCutDuration;
   const rhythm = Math.max(0, 100 - Math.min(100, rhythmDelta * 100));
 
   const visual =

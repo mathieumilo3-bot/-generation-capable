@@ -1,7 +1,7 @@
 import { mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import type { EditBlueprint } from "@video-editor/shared-types";
-import { cutClip, concatClips, finalizeOutput, mixAudioWithMusic, overlayBroll, probe, type BrollOverlay } from "./ffmpeg.js";
+import { cutClip, concatClips, finalizeOutput, mixAudioWithMusic, normalizeLoudness, overlayBroll, probe, type BrollOverlay } from "./ffmpeg.js";
 import { renderHabillage, type HabillageCaptionStyle } from "./remotion.js";
 import { renderHabillageFFmpeg, type FfmpegHabillageSpec } from "./ffmpeg-habillage.js";
 
@@ -142,6 +142,16 @@ export async function assembleFromBlueprint(
     } catch (err) {
       warnings.push(`Music mixing failed, continuing without music: ${(err as Error).message}`);
     }
+  }
+
+  // ÉTAPE 3b: Volume au standard des réseaux sociaux (-14 LUFS) — vidéo copiée, audio seul ré-encodé.
+  try {
+    const loudPath = join(opts.workDir, "loudnorm.mp4");
+    const measured = await normalizeLoudness(audioPath, loudPath);
+    audioPath = loudPath;
+    if (measured) console.log(`[assemble] Loudness : ${measured.inputI.toFixed(1)} LUFS → -14 LUFS`);
+  } catch (err) {
+    warnings.push(`Normalisation du volume impossible, volume d'origine conservé: ${(err as Error).message}`);
   }
 
   // ÉTAPE 4: Habillage (sous-titres animés + zoom) — FFmpeg hybride PAR DÉFAUT, Remotion en repli
