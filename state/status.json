@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-10-17T15:28:17.750Z",
+  "version": "earn-agent-hub/1.0.0",
+  "heartbeat": {
+    "status": "ok",
+    "agentName": "GenerationCapable AI Agent",
+    "time": "2026-10-17T15:28:17.750Z",
+    "version": "earn-agent-hub/1.0.0",
+    "capabilities": [
+      "register",
+      "listings",
+      "submit",
+      "claim"
+    ],
+    "lastAction": "ingest run #2 ok",
+    "nextAction": "next discovery cycle within 30 minutes"
+  },
+  "agent": {
+    "name": "GenerationCapable AI Agent",
+    "username": "generationcapable-greasy-14",
+    "agentId": "8a92a53d-650f-4886-8474-eceda612643c",
+    "profileUrl": "https://superteam.fun/earn/t/generationcapable-greasy-14",
+    "registeredAt": "2026-10-17T15:15:43.957Z",
+    "claimed": false
+  },
+  "settings": {
+    "autoSubmit": true,
+    "maxActiveJobs": 5,
+    "dailySubmissionCap": 8,
+    "minScore": 1,
+    "minHoursLeft": 4,
+    "minQaScore": 8,
+    "telegramUrl": null,
+    "allowedRegions": [
+      "France"
+    ],
+    "repoOwner": "mathieumilo3-bot",
+    "repoName": "-generation-capable",
+    "branch": "earn-agent"
+  },
+  "pipeline": {
+    "liveListings": 0,
+    "decisions": {},
+    "jobs": {},
+    "topCandidates": []
+  },
+  "jobs": [],
+  "ledger": [],
+  "totals": {
+    "submissions": 0,
+    "pendingResults": 0,
+    "pendingMaxUsd": 0,
+    "pendingExpectedUsd": 0,
+    "won": 0,
+    "wonUsd": 0,
+    "wonByToken": {},
+    "awaitingClaim": 0,
+    "lost": 0
+  },
+  "runs": [
+    {
+      "id": 2,
+      "kind": "ingest",
+      "startedAt": "2026-10-17T15:28:10.589Z",
+      "ok": true,
+      "error": null,
+      "stats": {
+        "ingest": {
+          "sha": "",
+          "failed": 0,
+          "checked": 0,
+          "waiting": 0,
+          "approved": 0,
+          "rejected": 0,
+          "abandoned": 0,
+          "submitted": 0
+        },
+        "enqueue": {
+          "active": 0,
+          "queued": [],
+          "expired": 0,
+          "submitted24h": 0
+        },
+        "registration": false
+      }
+    },
+    {
+      "id": 1,
+      "kind": "tick",
+      "startedAt": "2026-10-17T15:16:02.568Z",
+      "ok": true,
+      "error": null,
+      "stats": {
+        "track": {
+          "won": 0,
+          "lost": 0,
+          "checked": 0
+        },
+        "ingest": {
+          "sha": "",
+          "failed": 0,
+          "checked": 0,
+          "waiting": 0,
+          "approved": 0,
+          "rejected": 0,
+          "abandoned": 0,
+          "submitted": 0
+        },
+        "enqueue": {
+          "active": 0,
+          "queued": [],
+          "expired": 0,
+          "submitted24h": 0
+        },
+        "discover": {
+          "live": 0,
+          "candidates": 0,
+          "noLongerLive": 0,
+          "detailsFetched": 0
+        },
+        "registration": false
+      }
+    }
+  ]
+}

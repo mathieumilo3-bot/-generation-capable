@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-10-17T15:28:15.414Z",
+  "version": "earn-agent-hub/1.0.0",
+  "workspace": {
+    "owner": "mathieumilo3-bot",
+    "repo": "-generation-capable",
+    "branch": "earn-agent"
+  },
+  "rules": {
+    "minQaScore": 8,
+    "maxConcurrent": 5,
+    "linkAnswersMustPointTo": "https://github.com/mathieumilo3-bot/-generation-capable/"
+  },
+  "jobs": []
+}
