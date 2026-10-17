@@ -62,7 +62,8 @@ if (s.jobs?.length) {
   out.push('| Mission | État | Dernière erreur |', '|---|---|---|');
   for (const j of s.jobs) {
     const name = j.link ? `[${j.slug}](${j.link})` : j.slug;
-    out.push(`| ${name} | ${JOB[j.status] ?? j.status} | ${esc(j.lastError ?? '')} |`);
+    const state = j.slug.startsWith('selftest-') ? `test interne — ${JOB[j.status] ?? j.status} (jamais soumis)` : JOB[j.status] ?? j.status;
+    out.push(`| ${name} | ${state} | ${esc(j.lastError ?? '')} |`);
   }
 } else out.push('_Aucune mission sélectionnée pour l’instant._');
 out.push('');

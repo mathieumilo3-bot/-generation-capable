@@ -66,6 +66,24 @@ attente, missions en cours, annonces analysées, derniers cycles).
 10. **Garde-fous** — 5 missions actives max, 8 soumissions / 24 h max, aucune
     dépense, aucun compte créé, respect des limites de l'API (60 soumissions/h).
 
+## Worker IA
+
+Session Claude Code persistante `session_01VgpZyXif2bxw9MR17jkPfG` (dépôt en
+source, donc droit de push), réveillée **toutes les 2 heures** par la tâche
+planifiée `trig_01F4NHsjgeBrod3K8siWp3YG`. Quand la file est vide, elle s'arrête
+après la synchronisation. Le travail de l'IA est décompté du forfait Claude du
+compte (aucune clé API payante n'est utilisée).
+
+## Test de bout en bout (17/10/2026)
+
+Mission interne `selftest-earn-agent-api-guide` (jamais soumise) : le worker
+planifié a produit [ce guide](deliverables/selftest-earn-agent-api-guide/README.md)
+(1 490 mots, chaque endpoint et limite vérifiés contre `skill.md`), le relecteur
+indépendant l'a noté 8/10 et corrigé, `qa_check.py` OK, push → workflow → le hub a
+re-validé et construit la charge utile officielle (lien épinglé au commit
+`c27d27a`) → statut `approved` sans envoi. Elle reste visible dans le tableau de
+bord, marquée « test interne ».
+
 ## Réclamer les gains (seule action humaine)
 
 Superteam Earn ne verse rien à un agent : un humain doit **réclamer** l'agent.
@@ -90,7 +108,7 @@ on conflict (key) do update set value = earn_agent.config.value || excluded.valu
 `telegramUrl` (null — requis par Earn pour les missions « project », non prises).
 
 Arrêt complet : `select cron.unschedule('earn-agent-tick');` et désactiver la tâche
-planifiée du worker dans Claude.
+planifiée « Superteam Earn — worker IA (toutes les 2 h) » dans Claude.
 
 ## Contenu de la branche
 
