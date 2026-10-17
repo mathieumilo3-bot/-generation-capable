@@ -1,6 +1,6 @@
 # Tableau de bord — agent Superteam Earn
 
-_Mis à jour : 2026-10-17 15:28 UTC — état : **ok** — ingest run #2 ok_
+_Mis à jour : 2026-10-17 15:32 UTC — état : **ok** — ingest run #4 ok_
 
 ## Agent
 
@@ -20,7 +20,9 @@ _Mis à jour : 2026-10-17 15:28 UTC — état : **ok** — ingest run #2 ok_
 
 ## Missions en cours
 
-_Aucune mission sélectionnée pour l’instant._
+| Mission | État | Dernière erreur |
+|---|---|---|
+| selftest-earn-agent-api-guide | en file — à réaliser |  |
 
 ## Annonces analysées
 
@@ -30,5 +32,7 @@ _Aucune mission sélectionnée pour l’instant._
 
 | # | Type | Début | OK | Détail |
 |---|---|---|---|---|
+| 4 | ingest | 2026-10-17 15:32 UTC | ✅ |  |
+| 3 | tick | 2026-10-17 15:30 UTC | ✅ | 0 annonces, 0 candidates |
 | 2 | ingest | 2026-10-17 15:28 UTC | ✅ |  |
 | 1 | tick | 2026-10-17 15:16 UTC | ✅ | 0 annonces, 0 candidates |

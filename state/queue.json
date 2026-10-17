@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-17T15:28:33.794Z",
+  "generatedAt": "2026-10-17T15:32:14.691Z",
   "version": "earn-agent-hub/1.0.0",
   "workspace": {
     "owner": "mathieumilo3-bot",
@@ -11,5 +11,59 @@
     "maxConcurrent": 5,
     "linkAnswersMustPointTo": "https://github.com/mathieumilo3-bot/-generation-capable/"
   },
-  "jobs": []
+  "jobs": [
+    {
+      "jobId": "bb18446c-8a2f-4d54-8f92-3539ef33b039",
+      "status": "queued",
+      "listingId": "selftest-earn-agent-api-guide",
+      "slug": "selftest-earn-agent-api-guide",
+      "title": "SELFTEST — Write a developer guide to the Superteam Earn Agent API",
+      "type": "bounty",
+      "url": "https://superteam.fun/earn/listing/selftest-earn-agent-api-guide",
+      "deadline": "2026-10-24T15:29:10.000Z",
+      "token": "USDC",
+      "rewards": {
+        "1": 0
+      },
+      "rewardAmount": 0,
+      "maxBonusSpots": 0,
+      "agentAccess": "AGENT_ONLY",
+      "compensationType": "fixed",
+      "sponsor": {
+        "name": "Génération Capable (internal selftest — not a real listing)",
+        "isVerified": true
+      },
+      "skills": [
+        {
+          "skills": "Content",
+          "subskills": [
+            "Writing"
+          ]
+        }
+      ],
+      "eligibility": [
+        {
+          "type": "text",
+          "order": 1,
+          "question": "Title of your guide"
+        },
+        {
+          "type": "link",
+          "order": 2,
+          "question": "Link to the guide"
+        },
+        {
+          "type": "text",
+          "order": 3,
+          "optional": true,
+          "question": "Anything the reviewers should know?"
+        }
+      ],
+      "descriptionText": "Internal end-to-end test of the agent pipeline. Nothing is submitted to Superteam Earn.\nWrite a practical developer guide (900–1500 words, English, Markdown) explaining how an autonomous agent works with the Superteam Earn Agent API, based strictly on the official skill file (https://raw.githubusercontent.com/SuperteamDAO/earn/main/public/skill.md, mirror of https://superteam.fun/skill.md).\n- Cover registration, authentication, listing discovery and details, submission and editing, comments, the human claim flow, rate limits and error handling.\n- Include correct curl examples taken from the official file (no invented endpoints or fields).\n- Add a short section on agent eligibility rules (AGENT_ALLOWED / AGENT_ONLY).\n- End with a sources section.",
+      "requirementsText": "",
+      "descriptionHtml": "<p>Internal end-to-end test of the agent pipeline. Nothing is submitted to Superteam Earn.</p><p>Write a practical developer guide (900–1500 words, English, Markdown) explaining how an autonomous agent works with the Superteam Earn Agent API, based strictly on the official skill file (https://raw.githubusercontent.com/SuperteamDAO/earn/main/public/skill.md, mirror of https://superteam.fun/skill.md).</p><ul><li>Cover registration, authentication, listing discovery and details, submission and editing, comments, the human claim flow, rate limits and error handling.</li><li>Include correct curl examples taken from the official file (no invented endpoints or fields).</li><li>Add a short section on agent eligibility rules (AGENT_ALLOWED / AGENT_ONLY).</li><li>End with a sources section.</li></ul>",
+      "assessment": null,
+      "previousAttempt": null
+    }
+  ]
 }

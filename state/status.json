@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-17T15:28:36.156Z",
+  "generatedAt": "2026-10-17T15:32:16.204Z",
   "version": "earn-agent-hub/1.0.0",
   "heartbeat": {
     "status": "ok",
     "agentName": "GenerationCapable AI Agent",
-    "time": "2026-10-17T15:28:36.156Z",
+    "time": "2026-10-17T15:32:16.204Z",
     "version": "earn-agent-hub/1.0.0",
     "capabilities": [
       "register",
@@ -12,7 +12,7 @@
       "submit",
       "claim"
     ],
-    "lastAction": "ingest run #2 ok",
+    "lastAction": "ingest run #4 ok",
     "nextAction": "next discovery cycle within 30 minutes"
   },
   "agent": {
@@ -41,10 +41,21 @@
   "pipeline": {
     "liveListings": 0,
     "decisions": {},
-    "jobs": {},
+    "jobs": {
+      "queued": 1
+    },
     "topCandidates": []
   },
-  "jobs": [],
+  "jobs": [
+    {
+      "slug": "selftest-earn-agent-api-guide",
+      "status": "queued",
+      "queuedAt": "2026-10-17T15:29:10.480Z",
+      "submittedAt": null,
+      "link": null,
+      "lastError": null
+    }
+  ],
   "ledger": [],
   "totals": {
     "submissions": 0,
@@ -58,6 +69,69 @@
     "lost": 0
   },
   "runs": [
+    {
+      "id": 4,
+      "kind": "ingest",
+      "startedAt": "2026-10-17T15:32:11.744Z",
+      "ok": true,
+      "error": null,
+      "stats": {
+        "ingest": {
+          "sha": "ada21625cc5c14d049fc0947b9a81efecf048e15",
+          "failed": 0,
+          "checked": 1,
+          "waiting": 1,
+          "approved": 0,
+          "rejected": 0,
+          "abandoned": 0,
+          "submitted": 0
+        },
+        "enqueue": {
+          "active": 1,
+          "queued": [],
+          "expired": 0,
+          "submitted24h": 0
+        },
+        "registration": false
+      }
+    },
+    {
+      "id": 3,
+      "kind": "tick",
+      "startedAt": "2026-10-17T15:30:02.537Z",
+      "ok": true,
+      "error": null,
+      "stats": {
+        "track": {
+          "won": 0,
+          "lost": 0,
+          "checked": 0
+        },
+        "ingest": {
+          "sha": "329e35c2726915245c0c815aa2343fc997c22675",
+          "failed": 0,
+          "checked": 1,
+          "waiting": 1,
+          "approved": 0,
+          "rejected": 0,
+          "abandoned": 0,
+          "submitted": 0
+        },
+        "enqueue": {
+          "active": 1,
+          "queued": [],
+          "expired": 0,
+          "submitted24h": 0
+        },
+        "discover": {
+          "live": 0,
+          "candidates": 0,
+          "noLongerLive": 0,
+          "detailsFetched": 0
+        },
+        "registration": false
+      }
+    },
     {
       "id": 2,
       "kind": "ingest",
