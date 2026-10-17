@@ -1,5 +1,11 @@
 # Puissance de rendu — performance-16x + concurrence Remotion adaptative
 
+> **Mise à jour :** l'habillage passe désormais par FFmpeg (Remotion n'est
+> plus qu'un repli). `fly.toml` revient donc par défaut à `shared-cpu-4x /
+> 8gb` (≈ 43 $/mois au lieu de ≈ 500 $/mois) — voir les prix commentés dans
+> `fly.toml`. Ce document reste valable si l'on repasse sur Remotion.
+
+
 Objectif : exploiter au maximum la puissance CPU pour rendre le plus de
 frames Remotion possible EN PARALLÈLE, avec progression réelle et sans OOM.
 
