@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-17T15:32:16.204Z",
+  "generatedAt": "2026-10-17T15:35:43.686Z",
   "version": "earn-agent-hub/1.0.0",
   "heartbeat": {
     "status": "ok",
     "agentName": "GenerationCapable AI Agent",
-    "time": "2026-10-17T15:32:16.204Z",
+    "time": "2026-10-17T15:35:43.686Z",
     "version": "earn-agent-hub/1.0.0",
     "capabilities": [
       "register",
@@ -12,7 +12,7 @@
       "submit",
       "claim"
     ],
-    "lastAction": "ingest run #4 ok",
+    "lastAction": "ingest run #5 ok",
     "nextAction": "next discovery cycle within 30 minutes"
   },
   "agent": {
@@ -42,17 +42,17 @@
     "liveListings": 0,
     "decisions": {},
     "jobs": {
-      "queued": 1
+      "approved": 1
     },
     "topCandidates": []
   },
   "jobs": [
     {
       "slug": "selftest-earn-agent-api-guide",
-      "status": "queued",
+      "status": "approved",
       "queuedAt": "2026-10-17T15:29:10.480Z",
       "submittedAt": null,
-      "link": null,
+      "link": "https://github.com/mathieumilo3-bot/-generation-capable/blob/c27d27acfea836b72ae285325bd2143edf236afa/deliverables/selftest-earn-agent-api-guide/README.md",
       "lastError": null
     }
   ],
@@ -69,6 +69,32 @@
     "lost": 0
   },
   "runs": [
+    {
+      "id": 5,
+      "kind": "ingest",
+      "startedAt": "2026-10-17T15:35:33.730Z",
+      "ok": true,
+      "error": null,
+      "stats": {
+        "ingest": {
+          "sha": "c27d27acfea836b72ae285325bd2143edf236afa",
+          "failed": 0,
+          "checked": 1,
+          "waiting": 0,
+          "approved": 1,
+          "rejected": 0,
+          "abandoned": 0,
+          "submitted": 0
+        },
+        "enqueue": {
+          "active": 0,
+          "queued": [],
+          "expired": 0,
+          "submitted24h": 0
+        },
+        "registration": false
+      }
+    },
     {
       "id": 4,
       "kind": "ingest",
