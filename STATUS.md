@@ -22,7 +22,7 @@ _Mis à jour : 2026-10-17 15:38 UTC — état : **ok** — ingest run #6 ok_
 
 | Mission | État | Dernière erreur |
 |---|---|---|
-| [selftest-earn-agent-api-guide](https://github.com/mathieumilo3-bot/-generation-capable/blob/c27d27acfea836b72ae285325bd2143edf236afa/deliverables/selftest-earn-agent-api-guide/README.md) | test interne — validé (soumission auto désactivée) (jamais soumis) |  |
+| [selftest-earn-agent-api-guide](https://github.com/mathieumilo3-bot/-generation-capable/blob/c27d27acfea836b72ae285325bd2143edf236afa/deliverables/selftest-earn-agent-api-guide/README.md) | test interne — validé par le hub, non soumis |  |
 
 ## Annonces analysées
 

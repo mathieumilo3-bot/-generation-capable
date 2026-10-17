@@ -12,7 +12,7 @@ const JOB = {
   queued: 'en file — à réaliser',
   rejected_qa: 'refusé par le contrôle qualité — à corriger',
   delivered: 'livré — soumission en cours',
-  approved: 'validé (soumission auto désactivée)',
+  approved: 'validé par le hub, non soumis',
   submitted: 'soumis',
   submit_failed: 'échec de soumission',
   abandoned: 'abandonné (irréalisable honnêtement)',
@@ -62,7 +62,7 @@ if (s.jobs?.length) {
   out.push('| Mission | État | Dernière erreur |', '|---|---|---|');
   for (const j of s.jobs) {
     const name = j.link ? `[${j.slug}](${j.link})` : j.slug;
-    const state = j.slug.startsWith('selftest-') ? `test interne — ${JOB[j.status] ?? j.status} (jamais soumis)` : JOB[j.status] ?? j.status;
+    const state = j.slug.startsWith('selftest-') ? `test interne — ${JOB[j.status] ?? j.status}` : JOB[j.status] ?? j.status;
     out.push(`| ${name} | ${state} | ${esc(j.lastError ?? '')} |`);
   }
 } else out.push('_Aucune mission sélectionnée pour l’instant._');
