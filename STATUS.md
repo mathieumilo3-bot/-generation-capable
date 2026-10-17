@@ -1,6 +1,6 @@
 # Tableau de bord — agent Superteam Earn
 
-_Mis à jour : 2026-10-17 15:35 UTC — état : **ok** — ingest run #5 ok_
+_Mis à jour : 2026-10-17 15:38 UTC — état : **ok** — ingest run #6 ok_
 
 ## Agent
 
@@ -22,7 +22,7 @@ _Mis à jour : 2026-10-17 15:35 UTC — état : **ok** — ingest run #5 ok_
 
 | Mission | État | Dernière erreur |
 |---|---|---|
-| [selftest-earn-agent-api-guide](https://github.com/mathieumilo3-bot/-generation-capable/blob/c27d27acfea836b72ae285325bd2143edf236afa/deliverables/selftest-earn-agent-api-guide/README.md) | validé (soumission auto désactivée) |  |
+| [selftest-earn-agent-api-guide](https://github.com/mathieumilo3-bot/-generation-capable/blob/c27d27acfea836b72ae285325bd2143edf236afa/deliverables/selftest-earn-agent-api-guide/README.md) | test interne — validé (soumission auto désactivée) (jamais soumis) |  |
 
 ## Annonces analysées
 
@@ -32,6 +32,7 @@ _Mis à jour : 2026-10-17 15:35 UTC — état : **ok** — ingest run #5 ok_
 
 | # | Type | Début | OK | Détail |
 |---|---|---|---|---|
+| 6 | ingest | 2026-10-17 15:38 UTC | ✅ |  |
 | 5 | ingest | 2026-10-17 15:35 UTC | ✅ |  |
 | 4 | ingest | 2026-10-17 15:32 UTC | ✅ |  |
 | 3 | tick | 2026-10-17 15:30 UTC | ✅ | 0 annonces, 0 candidates |
