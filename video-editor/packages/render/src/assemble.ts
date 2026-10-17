@@ -157,6 +157,7 @@ export async function assembleFromBlueprint(
     startSec: c.timelineStart,
     endSec: c.timelineEnd,
     text: c.text,
+    words: c.words.map((w) => ({ word: w.word, startSec: w.start, endSec: w.end, emphasize: w.emphasize })),
   }));
 
   const tHabillage = Date.now();
@@ -208,11 +209,16 @@ export async function assembleFromBlueprint(
         durationSec: concatInfo.durationSec,
         effects: allEffects,
         captions: captionsForHabillage,
+        captionStyle: opts.captionStyle,
+        workDir: opts.workDir,
         preset: profile.finalPreset,
         crf: profile.finalCrf,
       };
 
       const r = await renderHabillageFFmpeg(ffmpegSpec);
+      if (r.unsupportedEffects.length > 0) {
+        warnings.push(`Effets non rendus par FFmpeg (ignorés) : ${[...new Set(r.unsupportedEffects)].join(", ")}`);
+      }
       habillagePath = hybridOut;
       usedRemotionHabillage = false;
       framesRendered = r.framesRendered;
