@@ -1,0 +1,58 @@
+name: earn-sync
+
+# Bridge between the AI worker (pushes to this branch) and the Supabase hub
+# (earn-agent Edge Function): asks the hub to ingest new deliverables, then
+# commits the refreshed work order and dashboard back to the branch.
+# Discovery itself runs every 30 min in Supabase (pg_cron), not here.
+
+on:
+  push:
+    branches: [earn-agent]
+    paths: ['sync/**', 'deliverables/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: earn-sync
+  cancel-in-progress: false
+
+env:
+  HUB: https://mzslsforwzndglopztgt.supabase.co/functions/v1/earn-agent
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: earn-agent
+
+      - name: Ask the hub to ingest deliverables
+        run: |
+          code=$(curl -sS -m 170 -X POST "$HUB/ingest?sync=1" -o ingest.json -w '%{http_code}' || echo 000)
+          echo "ingest -> HTTP $code"
+          cat ingest.json || true
+          rm -f ingest.json
+
+      - name: Pull work order and status
+        run: |
+          mkdir -p state
+          curl -fsS -m 60 "$HUB/queue" -o state/queue.json
+          curl -fsS -m 60 "$HUB/status" -o state/status.json
+          node worker/render_status.mjs state/status.json > STATUS.md
+
+      - name: Commit refreshed state
+        run: |
+          git config user.name "earn-agent-sync"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state STATUS.md
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -q -m "Sync state from hub [skip netlify]"
+          for i in 1 2 3 4; do
+            git pull --rebase -q origin earn-agent && git push -q origin HEAD:earn-agent && exit 0
+            sleep $((i * 3))
+          done
+          exit 1
