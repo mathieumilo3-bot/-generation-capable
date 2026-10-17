@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "listingId": "selftest-earn-agent-api-guide",
+  "slug": "selftest-earn-agent-api-guide",
+  "status": "ready",
+  "primaryFile": "README.md",
+  "linkTarget": "file",
+  "otherInfo": "A practical Markdown developer guide (about 1,490 words including code, about 1,250 words of prose, English) to the Superteam Earn Agent API, written strictly from the official skill file (superteam-earn v0.5.1, https://raw.githubusercontent.com/SuperteamDAO/earn/main/public/skill.md, fetched 2026-10-17). It covers registration, bearer authentication, listing discovery (take/type/deadline) and details, submission create/update with field rules (eligibilityAnswers, ask, telegram for projects), comments (read, post, reply), the human claim flow (claim page and optional claim API), the AGENT_ALLOWED / AGENT_ONLY eligibility rules, rate limits and error handling, and ends with a sources section. All curl examples are copied from the official file; where the file is silent (e.g. retry headers, which field holds the POC id) the guide says so rather than guessing. This work was produced by an AI agent (Claude) operated by a human at Génération Capable.",
+  "eligibilityAnswers": [
+    {
+      "question": "Title of your guide",
+      "answer": "Building an Autonomous Agent on the Superteam Earn Agent API"
+    },
+    {
+      "question": "Link to the guide",
+      "answer": "https://github.com/mathieumilo3-bot/-generation-capable/blob/earn-agent/deliverables/selftest-earn-agent-api-guide/README.md"
+    },
+    {
+      "question": "Anything the reviewers should know?",
+      "answer": "Written by an AI agent operated by a human, strictly from the official skill file (v0.5.1). No endpoint, field or limit was added beyond that file."
+    }
+  ],
+  "ask": null,
+  "qa": {
+    "score": 8,
+    "reviewer": "independent-reviewer-subagent",
+    "checklist": [
+      {
+        "requirement": "Practical developer guide, 900–1500 words, English, Markdown",
+        "met": true,
+        "evidence": "README.md: 1490 words by wc -w incl. code blocks, 1254 words prose only; both within 900–1500; English Markdown"
+      },
+      {
+        "requirement": "Based strictly on the official skill file",
+        "met": true,
+        "evidence": "All endpoints/fields/limits/errors copied from skill.md v0.5.1 fetched 2026-10-17; gaps flagged as undocumented"
+      },
+      {
+        "requirement": "Covers registration",
+        "met": true,
+        "evidence": "Section 2"
+      },
+      {
+        "requirement": "Covers authentication",
+        "met": true,
+        "evidence": "Section 3"
+      },
+      {
+        "requirement": "Covers listing discovery and details",
+        "met": true,
+        "evidence": "Section 4 (live: take/type/deadline; details by slug)"
+      },
+      {
+        "requirement": "Covers submission and editing",
+        "met": true,
+        "evidence": "Section 5 (create + update, field rules, telegram for projects)"
+      },
+      {
+        "requirement": "Covers comments",
+        "met": true,
+        "evidence": "Section 6 (read, post, reply)"
+      },
+      {
+        "requirement": "Covers the human claim flow",
+        "met": true,
+        "evidence": "Section 7 (claim page + optional /api/agents/claim)"
+      },
+      {
+        "requirement": "Covers rate limits",
+        "met": true,
+        "evidence": "Section 9 table"
+      },
+      {
+        "requirement": "Covers error handling",
+        "met": true,
+        "evidence": "Section 10 table"
+      },
+      {
+        "requirement": "Correct curl examples from the official file, no invented endpoints/fields",
+        "met": true,
+        "evidence": "All 11 bash blocks verified verbatim (substring match) against skill.md v0.5.1 independently fetched by reviewer 2026-10-17; no endpoint or field outside the file"
+      },
+      {
+        "requirement": "Short section on AGENT_ALLOWED / AGENT_ONLY",
+        "met": true,
+        "evidence": "Section 8"
+      },
+      {
+        "requirement": "Ends with a sources section",
+        "met": true,
+        "evidence": "Final 'Sources' section"
+      },
+      {
+        "requirement": "Eligibility: Title of your guide",
+        "met": true,
+        "evidence": "Answered"
+      },
+      {
+        "requirement": "Eligibility: Link to the guide",
+        "met": true,
+        "evidence": "Answered with the deliverable README link on earn-agent"
+      },
+      {
+        "requirement": "Eligibility (optional): Anything the reviewers should know?",
+        "met": true,
+        "evidence": "Answered; discloses AI authorship"
+      },
+      {
+        "requirement": "otherInfo accurate and discloses AI authorship",
+        "met": true,
+        "evidence": "States AI agent (Claude) operated by a human at Génération Capable; word count corrected"
+      }
+    ],
+    "originality": true,
+    "noFabrication": true,
+    "languageOk": true,
+    "notes": "Independent review against reviewer's own fetch of skill.md (identical to producer copy; superteam.fun mirror blocked by proxy 403, disclosed in Sources). Every endpoint, header, field, rate limit, status/error string and curl example matches the file. Fixes applied by reviewer: (1) removed 'One-time' claimCode claim (not in skill file); (2) intro no longer says 'everything' is from the file, and explicitly labels key handling/backoff/error reactions as the guide's own advice; (3) 'Load the key from env' framed as advice; (4) 'take' no longer described as documented page size; (5) trimmed one redundant sentence to keep length margin; otherInfo word count updated. Quality: accurate, well structured, honest about gaps; largely a faithful restructuring of the source with added tables and reactions, so 8 rather than higher."
+  },
+  "createdAt": "2026-10-17T15:33:51+00:00"
+}
