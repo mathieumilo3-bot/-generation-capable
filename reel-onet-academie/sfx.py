@@ -157,6 +157,27 @@ def riser(d):
     s = sweep(n, 200, 9000, .45) * p ** 2.2 + np.sin(2 * np.pi * np.cumsum(110 * 2 ** (2 * p)) / SR) * p ** 2.5 * .3
     return norm(s)
 
+def bubbles(d, n, f_lo=350, f_hi=1200, grow=False):
+    # bulles : petits sinus dont la hauteur remonte, plus nombreux vers la fin si grow
+    out = np.zeros(int(d * SR))
+    for _ in range(n):
+        p = rng.uniform(0, 1) ** (.5 if grow else 1)
+        i = int(p * (len(out) - 4000)); m = int(rng.uniform(1500, 3800)); f0 = rng.uniform(f_lo, f_hi)
+        x = np.arange(m) / SR
+        out[i:i + m] += np.sin(2 * np.pi * np.cumsum(f0 * (1 + 2.2 * x / (m / SR))) / SR) * np.exp(-x * 45) * rng.uniform(.3, 1)
+    return norm(out)
+
+def flush(d=0.8):
+    # chasse d'eau : souffle filtré qui gonfle puis retombe, plein de bulles
+    n = int(d * SR); x = tt(n); env = np.sin(np.pi * x / d) ** 1.4
+    s = sweep(n, 220, 2200, .7) * env + bubbles(d, 45) * .45 * env
+    s = norm(s)
+    return np.stack([s * np.linspace(.6, 1.2, n), s * np.linspace(1.2, .6, n)], 1)
+
+def subdrop(d=1.4):
+    n = int(d * SR); x = tt(n)
+    return norm(np.sin(2 * np.pi * np.cumsum(70 * (28 / 70) ** (x / d)) / SR) * np.exp(-x * 1.8) * np.minimum(x / .005, 1))
+
 # =============== ARRANGEMENT ===============
 CH = [("A3", "C4", "E4", "A4"), ("F3", "A3", "C4", "F4"), ("G3", "C4", "E4", "G4"), ("G3", "B3", "D4", "G4")]
 PADS = [("A2", "E3", "A3", "C4"), ("F2", "C3", "F3", "A3"), ("C3", "G3", "C4", "E4"), ("G2", "D3", "G3", "B3")]
@@ -248,6 +269,13 @@ for t in reel["clang"]: add("fx", t, clang(), 0.28, pan=rng.uniform(-.3, .3), re
 for t in reel["drops"]: add("fx", t - .02, bloop(), 0.3, rev=.5)
 for t in reel["whoosh"]: add("fx", t - .22, whoosh(), 0.3, rev=.3)
 for a, z in reel["risers"]: add("fx", a, riser(z - a - S16 * 2), 0.3, rev=.3)
+for t in reel["wipes"]: add("fx", t - .4, flush(), 0.42, rev=.35)
+for t in reel["reverse"]:                                 # cymbale à l'envers qui aspire vers l'impact
+    rv = crash()[::-1][-int(1.2 * SR):]
+    add("fx", t - 1.2, rv, 0.3, rev=.2)
+for t, size in reel["hits"]:
+    if size == "big": add("bass", t, subdrop(), 0.7)
+a, z = reel["fill"]; add("fx", a, bubbles(z - a + .4, 70, 300, 900, grow=True), 0.22, pan=-.1, rev=.4)
 
 # =============== MIXAGE ===============
 kenv = np.zeros(N)

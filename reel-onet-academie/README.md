@@ -8,7 +8,7 @@ Vidéo de 32,5 s qui présente l'académie et la formation « Les bases essentie
 Le montage est rendu image par image dans Chromium (Playwright), encodé en H.264 par ffmpeg, puis mixé avec une musique originale à 120 bpm et normalisé à −14 LUFS. Toutes les coupes tombent sur un temps.
 
 - `assets/` : photos de l'atelier, slides du support de cours, logo détouré depuis la couverture, et les deux rushs (coupe du cuivre, filasse). Le bon de commande client n'est pas utilisé, car il contient des données personnelles.
-- `reel.json` : tempo, temps de début de chaque scène (`T`), impacts, coups de tuyau, gouttes, whooshs, montées et fondu final. L'image et le son lisent tous les deux ce fichier.
+- `reel.json` : tempo, temps de début de chaque scène (`T`), impacts, coups de tuyau, gouttes, chasses d'eau (`wipes`), cymbales inversées, remplissage du « 21 », whooshs, montées et fondu final. L'image et le son lisent tous les deux ce fichier.
 - `extract.py` : extrait les deux rushs en images à 30 i/s, redressées (`shots/`).
 - `comp.html` : compositeur canvas. Il gère les deux mises en page : plein cadre en 9:16, carte verticale sur fond flouté en 16:9.
 - `sfx.py` : musique originale générée avec numpy (house/pop en la mineur, Am–F–C–G), avec un kick, un clap, des charleys, une basse en contretemps, un piano, un pluck et des nappes. S'y ajoutent les bruitages : coups métalliques de tuyau sur les gestes, gouttes d'eau sur le logo, impacts, whooshs et montées.
@@ -25,6 +25,15 @@ node render.js stills 16x9 --stills 0.5,6.4,10.8,19.5,27.5,31   # images de cont
 node render.js ONET-Academie-16x9.mp4 16x9
 node render.js ONET-Academie-9x16.mp4 9x16
 ```
+
+## Effets
+
+- **Chasse d'eau** : une vague bleue, avec mousse, rayons de lumière et bulles, monte, couvre l'écran sur la coupe puis repart vers le haut, aux passages 10 s, 16 s et 22 s. On l'entend avec un souffle d'eau et des bulles.
+- **Tuyau de cuivre** : il se pose autour du titre, avec ses manchons de raccord, puis une impulsion d'eau lumineuse circule dedans.
+- **« 21 » rempli d'eau** : l'eau monte dans les chiffres, avec des vagues, des bulles et un reflet quand c'est plein. On entend des bulles pendant le remplissage.
+- **Lettres qui tombent** : une par une, avec rebond, sur « La plomberie, ça s'apprend. », « Tahere Iliès » et « Novembre ».
+- **Impacts** : aberration chromatique, tremblement et flash. Un sub drop et une cymbale inversée amènent les deux gros impacts.
+- **Coupes** : flou de zoom à chaque coupe, halos de lumière orange et bleus sur les photos, et reflet qui balaie le logo.
 
 ## Structure (120 bpm, 1 mesure = 2 s)
 

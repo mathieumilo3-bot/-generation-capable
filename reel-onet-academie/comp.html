@@ -15,6 +15,8 @@ const REEL = /*REEL*/null, FMT = /*FMT*/null;
 const [W, H] = REEL.formats[FMT], V = H > W, A = "assets/", T = REEL.T, FPS = REEL.fps;
 const cv = document.getElementById("c"); cv.width = W; cv.height = H;
 const g = cv.getContext("2d");
+const layer = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return [c, c.getContext("2d")]; };
+const [wc, wg] = layer(), [sc, sg] = layer(), [rc, rg] = layer();
 
 /* ---------- charte O NET (couleurs relevées sur la couverture du support) ---------- */
 const C = { cream: "#EDE8DE", paper: "#F6F2EA", brown: "#5A4214", navy: "#0E1F3D", ink: "#081120",
@@ -26,6 +28,7 @@ const easeOut = x => 1 - Math.pow(1 - clamp(x), 3);
 const easeOutExpo = x => { x = clamp(x); return x === 1 ? 1 : 1 - Math.pow(2, -10 * x); };
 const easeOutBack = x => { x = clamp(x); const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
 const easeIn = x => Math.pow(clamp(x), 3);
+const easeInOut = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
 const fadeIO = (t, a, b, fi = .2, fo = .2) => smooth((t - a) / fi) * (1 - smooth((t - (b - fo)) / fo));
 function rnd(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
@@ -96,7 +99,20 @@ function water(t, a = 1) {
     gr.addColorStop(0, `rgba(30,95,180,${.22 - i * .025})`); gr.addColorStop(1, "rgba(30,95,180,0)");
     g.fillStyle = gr; g.fillRect(0, 0, W, H);
   }
+  g.globalCompositeOperation = "source-over";
+  bubbles(t, 0, 0, W, H, 34, 11);
   g.restore();
+}
+// bulles qui montent dans un rectangle, positions déterministes
+function bubbles(t, x, y, w, h, n, seed, speed = 1) {
+  const R = rnd(seed), s = Math.min(W, H) / 1080;
+  for (let i = 0; i < n; i++) {
+    const bx = x + R() * w, v = (.08 + R() * .16) * speed, r = (3 + R() * 9) * s, ph = R();
+    const by = y + h - ((t * v + ph) % 1) * (h + 40), wob = Math.sin(t * 3 + i) * 6 * s;
+    g.strokeStyle = "rgba(190,230,255,.35)"; g.lineWidth = 1.5 * s;
+    g.beginPath(); g.arc(bx + wob, by, r, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = "rgba(255,255,255,.45)"; g.beginPath(); g.arc(bx + wob - r * .35, by - r * .35, r * .25, 0, Math.PI * 2); g.fill();
+  }
 }
 function drop(x, y, r, a = 1) {
   g.save(); g.globalAlpha = a; g.translate(x, y);
@@ -131,6 +147,119 @@ function splash(x, y, t, t0, seed, n = 46, power = 1) {
   }
 }
 
+/* ---------- effets « waouh » ---------- */
+// lettres qui tombent une à une et rebondissent
+function stagger(s, x, y, size, t, t0, o = {}) {
+  if (t < t0) return;
+  g.save(); g.font = font(size, o.f || "Anton", o.w || 400); g.letterSpacing = (o.ls || 0) + "px"; g.textAlign = "left";
+  const total = g.measureText(s).width, chars = [...s];
+  const x0 = o.al === "left" ? x : x - total / 2;
+  chars.forEach((ch, i) => {
+    const q = (t - t0 - i * (o.step ?? .035)) / .5; if (q <= 0) return;
+    const e = easeOutBack(q), pre = g.measureText(chars.slice(0, i).join("")).width;
+    g.save(); g.globalAlpha *= clamp(q * 4) * (o.a ?? 1);
+    g.translate(x0 + pre + size * .2, y - (1 - e) * size * .9); g.rotate((1 - clamp(e)) * -.35);
+    if (o.sh) { g.shadowColor = o.sh; g.shadowBlur = size * .3; g.shadowOffsetY = size * .05; }
+    g.fillStyle = o.c || C.white; g.fillText(ch, -size * .2, 0);
+    g.restore();
+  });
+  g.restore();
+}
+// tuyau de cuivre qui se pose autour d'un bloc, puis l'eau y circule
+function pipe(x, y, w, h, r, p, t) {
+  if (p <= 0) return;
+  const k = Math.min(W, H) / 1080, L = 2 * (w + h) - 8 * r + 2 * Math.PI * r;
+  g.save(); g.lineCap = "round"; g.lineJoin = "round";
+  [[30, "#4a200c", 0], [22, "#a8562a", 0], [12, "#d9874f", -2], [4, "#ffd9b3", -5]].forEach(([lw, c, off]) => {
+    g.setLineDash([L * p, L * 2]); g.lineWidth = lw * k; g.strokeStyle = c;
+    g.beginPath(); g.roundRect(x + off * k, y + off * k, w, h, r); g.stroke();
+  });
+  // manchons de raccord au milieu de chaque côté
+  const side = [w - 2 * r, h - 2 * r], arc = Math.PI * r / 2;
+  const marks = [[side[0] / 2, x + w / 2, y, 0], [side[0] + arc + side[1] / 2, x + w, y + h / 2, 1],
+    [side[0] * 1.5 + 2 * arc + side[1], x + w / 2, y + h, 0], [side[0] * 2 + 3 * arc + side[1] * 1.5, x, y + h / 2, 1]];
+  marks.forEach(([d, mx, my, vert]) => {
+    if (L * p < d) return;
+    const q = easeOutBack((L * p - d) / (L * .05));
+    g.save(); g.translate(mx, my); if (vert) g.rotate(Math.PI / 2); g.scale(q, q);
+    const lg = g.createLinearGradient(0, -22 * k, 0, 22 * k); lg.addColorStop(0, "#ffd0a0"); lg.addColorStop(.5, "#b8622e"); lg.addColorStop(1, "#4a200c");
+    g.fillStyle = lg; g.beginPath(); g.roundRect(-24 * k, -22 * k, 48 * k, 44 * k, 6 * k); g.fill();
+    g.restore();
+  });
+  if (p >= 1) {                                          // impulsion d'eau dans le tuyau
+    g.setLineDash([L * .07, L]); g.lineDashOffset = -L * ((t * .55) % 1);
+    g.lineWidth = 7 * k; g.strokeStyle = "rgba(170,225,255,.95)"; g.shadowColor = C.sky; g.shadowBlur = 22;
+    g.beginPath(); g.roundRect(x - 2 * k, y - 2 * k, w, h, r); g.stroke();
+  }
+  g.restore();
+}
+// reflet qui balaie une image (logo)
+function shine(img, x, y, w, h, p) {
+  if (p <= 0 || p >= 1) return;
+  sg.setTransform(1, 0, 0, 1, 0, 0); sg.globalCompositeOperation = "source-over"; sg.clearRect(0, 0, W, H);
+  sg.setTransform(g.getTransform()); sg.drawImage(img, x, y, w, h);
+  sg.globalCompositeOperation = "source-in";
+  const bx = x - w * .3 + w * 1.6 * easeInOut(p), gr = sg.createLinearGradient(bx - w * .12, y, bx + w * .12, y + h * .25);
+  gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(.5, "rgba(255,255,255,.9)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+  sg.fillStyle = gr; sg.fillRect(x - w, y - h, w * 3, h * 3);
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(sc, 0, 0); g.restore();
+}
+// halos de lumière qui dérivent (look ciné)
+function leaks(t, a = 1) {
+  g.save(); g.globalCompositeOperation = "screen";
+  [[242, 104, 58, .55, .2, 1.3], [47, 143, 230, .25, .75, 1.7]].forEach(([r, gg, b, px, py, sp], i) => {
+    const x = W * (px + .25 * Math.sin(t * .5 * sp + i)), y = H * (py + .2 * Math.cos(t * .4 * sp + i * 2)), rad = Math.max(W, H) * .45;
+    const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, `rgba(${r},${gg},${b},${.22 * a})`); gr.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  });
+  g.restore();
+}
+// aberration chromatique sur les impacts : le rouge se décale
+function rgbSplit(t) {
+  let d = 0;
+  for (const [h, s] of REEL.hits) { const a = t - h; if (a >= 0 && a < .3) d = Math.max(d, { big: 28, mid: 12, small: 5 }[s] * Math.exp(-a * 12)); }
+  d *= Math.min(W, H) / 1080; if (d < 1) return;
+  rg.globalCompositeOperation = "copy"; rg.drawImage(cv, 0, 0);
+  rg.globalCompositeOperation = "multiply"; rg.fillStyle = "#f00"; rg.fillRect(0, 0, W, H);
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = "multiply"; g.fillStyle = "#0ff"; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = "lighter"; g.drawImage(rc, d, d * .3);
+  g.restore();
+}
+// chasse d'eau : une vague bleue monte, couvre l'écran sur la coupe, puis repart vers le haut
+function flush(t) {
+  for (const tc of REEL.wipes) {
+    const u = (t - tc + .38) / .76; if (u <= 0 || u >= 1) continue;
+    const A = Math.min(W, H) * .055;
+    const wave = (x, ph) => A * (.6 * Math.sin(x / W * 7 + t * 9 + ph) + .4 * Math.sin(x / W * 15 - t * 7 + ph * 2));
+    let top, bot;
+    if (u < .5) { top = H + A * 2 - (H + A * 4) * easeInOut(u / .5); bot = H + A * 3; }
+    else { top = -A * 3; bot = H + A * 2 - (H + A * 4) * easeInOut((u - .5) / .5); }
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+    g.beginPath(); g.moveTo(0, top + wave(0, 0));
+    for (let x = 0; x <= W; x += 16) g.lineTo(x, top + wave(x, 0));
+    for (let x = W; x >= 0; x -= 16) g.lineTo(x, bot + wave(x, 2));
+    g.closePath();
+    const gr = g.createLinearGradient(0, top, 0, bot); gr.addColorStop(0, "#7cc8ff"); gr.addColorStop(.18, C.blue); gr.addColorStop(1, "#06204a");
+    g.fillStyle = gr; g.fill();
+    g.save(); g.clip();
+    g.globalCompositeOperation = "screen";                  // rayons de lumière
+    for (let i = 0; i < 5; i++) {
+      const rx = W * (.1 + i * .2) + Math.sin(t * 2 + i) * W * .05, lg = g.createLinearGradient(rx - 60, 0, rx + 60, 0);
+      lg.addColorStop(0, "rgba(255,255,255,0)"); lg.addColorStop(.5, "rgba(200,235,255,.16)"); lg.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = lg; g.save(); g.translate(rx, 0); g.transform(1, 0, -.25, 1, 0, 0); g.translate(-rx, 0); g.fillRect(rx - 60, top, 120, bot - top); g.restore();
+    }
+    g.globalCompositeOperation = "source-over";
+    bubbles(t * 2.2, 0, Math.max(top, -A), W, Math.min(bot, H) - Math.max(top, -A), 70, tc * 10, 2.5);
+    g.restore();
+    g.lineWidth = 7 * Math.min(W, H) / 1080; g.strokeStyle = "rgba(255,255,255,.9)";
+    const edge = (yy, ph) => { g.beginPath(); for (let x = 0; x <= W; x += 16) x ? g.lineTo(x, yy + wave(x, ph)) : g.moveTo(x, yy + wave(x, ph)); g.stroke(); };
+    if (top > -A * 2) edge(top, 0);
+    if (bot < H + A) edge(bot, 2);
+    g.restore();
+  }
+}
+
 /* ---------- impacts : tremblement, flash ---------- */
 function shake(t) {
   let x = 0, y = 0;
@@ -153,8 +282,10 @@ function media(img, t, t0, dur, o = {}) {
   const p = clamp((t - t0) / dur), punch = 1 + .07 * (1 - easeOutExpo((t - t0) / .4));
   const z = (o.z0 ?? 1.04) + ((o.z1 ?? 1.12) - (o.z0 ?? 1.04)) * p;
   const dim = o.dim ?? .2;
+  const zb = 1 - clamp((t - t0) / .25);
   if (V || o.full) {
     cover(img, 0, 0, W, H, z * punch, o.fx ?? .5, o.fy ?? .5);
+    for (let k = 1; zb > 0 && k <= 3; k++) { g.save(); g.globalAlpha = .22 * zb; cover(img, 0, 0, W, H, z * punch * (1 + .05 * k * zb), o.fx ?? .5, o.fy ?? .5); g.restore(); }
     const gr = g.createLinearGradient(0, H * (V ? .38 : .2), 0, H);
     gr.addColorStop(0, "rgba(8,17,32,0)"); gr.addColorStop(1, `rgba(8,17,32,${o.grad ?? .92})`);
     g.fillStyle = gr; g.fillRect(0, 0, W, H);
@@ -170,6 +301,7 @@ function media(img, t, t0, dur, o = {}) {
     g.restore();
   }
   if (dim) { g.fillStyle = `rgba(8,17,32,${dim})`; g.fillRect(0, 0, W, H); }
+  leaks(t, .8);
 }
 // bloc de légende : sur-titre, titre, sous-titre (centré en bas en 9:16, à gauche en 16:9)
 function caption(t, c) {
@@ -223,8 +355,8 @@ async function renderFrame(t) {
     water(t);
     const s = fit("ÇA S'APPREND.", V ? 190 : 210, W * .8);
     const cy = H * .47;
-    rise("LA PLOMBERIE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - 5.55) / .3) });
-    rise("ÇA S'APPREND.", W / 2, cy + s * 1.08, s, t, T.learn2, { c: C.sky, a: 1 - smooth((t - 5.55) / .3) });
+    stagger("LA PLOMBERIE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - 5.55) / .3), sh: "rgba(0,0,0,.5)" });
+    stagger("ÇA S'APPREND.", W / 2, cy + s * 1.08, s, t, T.learn2, { c: C.sky, a: 1 - smooth((t - 5.55) / .3), sh: "rgba(0,0,0,.5)" });
     const p = clamp((t - 5.5) / .5);
     if (p > 0) drop(W / 2, -60 + easeIn(p) * (H / 2 + 60), Math.min(W, H) * .035);
   } else if (t < T.title) {                            // logo O NET sur le crème du support de cours
@@ -238,6 +370,7 @@ async function renderFrame(t) {
     g.globalAlpha = clamp((t - T.logo - .03) / .12);
     g.drawImage(IMG.logo, W / 2 - lw / 2, ly, lw, lh);
     g.globalAlpha = 1;
+    shine(IMG.logo, W / 2 - lw / 2, ly, lw, lh, (t - T.logo - .9) / .7);
     rise("ACADÉMIE", W / 2, ly + lh + (V ? 150 : 128), V ? 132 : 112, t, T.logo + .5, { c: C.brown, ls: V ? 26 : 30 });
     const lp = easeOutExpo((t - T.logo - .75) / .6);
     g.fillStyle = C.orange; g.fillRect(W / 2 - 120 * lp, ly + lh + (V ? 190 : 162), 240 * lp, 7);
@@ -247,10 +380,12 @@ async function renderFrame(t) {
     g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
     const L = V ? ["LES BASES", "ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"] : ["LES BASES ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"];
     const ts = V ? [8, 8.5, 9, 9.5] : [8, 9, 9.5];
-    const s = Math.min(...L.map(l => fit(l, V ? 170 : 175, W * .86)));
+    const s = Math.min(...L.map(l => fit(l, V ? 170 : 175, W * .76)));
     const y0 = H / 2 - (L.length - 1) * s * 1.06 / 2 + s * .36;
+    const fx = V ? 56 : W * .07, ft = y0 - s - (V ? 70 : 55), fb = y0 + (L.length - 1) * s * 1.06 + (V ? 80 : 65);
+    pipe(fx, ft, W - 2 * fx, fb - ft, V ? 60 : 50, easeInOut((t - T.title) / 1.6), t);
     L.forEach((l, i) => slam(l, W / 2, y0 + i * s * 1.06, s, t, ts[i], { c: i === L.length - 1 ? C.orange : C.brown }));
-    const lw = V ? W * .5 : W * .22, ly = V ? 230 : 120;
+    const lw = V ? W * .5 : W * .2, ly = V ? 230 : 92;
     g.globalAlpha = .9; g.drawImage(IMG.logo, W / 2 - lw * .22, ly - lw * .44 * .5, lw * .44, lw * .44 * IMG.logo.height / IMG.logo.width); g.globalAlpha = 1;
     txt("SUPPORT THÉORIQUE  ·  APPROCHE TERRAIN", W / 2, V ? 1640 : H - 90, V ? 34 : 34, { f: "Open Sans", w: 800, c: C.brown, ls: 4, a: smooth((t - 9.6) / .3) });
   } else if (t < T.theorie) {                          // approche terrain : un geste par coupe
@@ -311,7 +446,7 @@ async function renderFrame(t) {
     g.fillStyle = "rgba(8,17,32,.45)"; g.fillRect(0, 0, W, H);
     const s = fit("TAHERE ILIÈS", V ? 190 : 230, W * .86);
     rise("UNE FORMATION CONÇUE PAR", W / 2, H / 2 - s * .78, V ? 40 : 40, t, T.auteur + .05, { f: "Open Sans", w: 800, c: C.sky, ls: 6 });
-    slam("TAHERE ILIÈS", W / 2, H / 2 + s * .36, s, t, T.auteur + .25, { sh: "rgba(0,0,0,.5)" });
+    stagger("TAHERE ILIÈS", W / 2, H / 2 + s * .36, s, t, T.auteur + .25, { sh: "rgba(0,0,0,.5)", step: .045 });
     const lp = easeOutExpo((t - T.auteur - .5) / .6);
     g.fillStyle = C.orange; g.fillRect(W / 2 - 130 * lp, H / 2 + s * .36 + 38, 260 * lp, 8);
     rise("O NET ACADÉMIE", W / 2, H / 2 + s * .36 + 120, V ? 40 : 40, t, T.auteur + .7, { f: "Open Sans", w: 800, ls: 5 });
@@ -327,14 +462,38 @@ async function renderFrame(t) {
     ripples(W / 2, H / 2, t, T.date, "143,208,255", 4, Math.max(W, H) * .7);
     const n = V ? 620 : 560, p = easeOutExpo((t - T.date) / .45), k = 1 + .5 * (1 - p);
     g.save(); g.translate(W / 2, H * (V ? .44 : .5)); g.scale(k, k);
-    g.font = font(n); g.textAlign = "center"; g.textBaseline = "alphabetic";
-    const gr = g.createLinearGradient(0, -n * .75, 0, 0); gr.addColorStop(0, C.white); gr.addColorStop(1, C.sky);
-    g.fillStyle = gr; g.globalAlpha = clamp((t - T.date) / .05); g.shadowColor = "rgba(47,143,230,.7)"; g.shadowBlur = 80;
-    g.fillText("21", V ? 0 : -W * .2, V ? n * .3 : n * .36);
+    g.font = font(n); g.textAlign = "center"; g.textBaseline = "alphabetic"; g.globalAlpha = clamp((t - T.date) / .05);
+    const gx = V ? 0 : -W * .2, gy = V ? n * .3 : n * .36, m = g.measureText("21");
+    const top = gy - m.actualBoundingBoxAscent, bot = gy + m.actualBoundingBoxDescent, lft = gx - m.width / 2 - 20, rgt = gx + m.width / 2 + 20;
+    g.lineWidth = 5; g.strokeStyle = "rgba(143,208,255,.6)"; g.shadowColor = "rgba(47,143,230,.8)"; g.shadowBlur = 30; g.strokeText("21", gx, gy); g.shadowBlur = 0;
+    // l'eau monte dans les chiffres
+    const [fa, fz] = REEL.fill, lvl = easeOut((t - fa) / (fz - fa)), surf = bot + 30 - (bot - top + 90) * lvl, amp = 22 * (1 - .6 * lvl) + 6;
+    const wv = x => amp * (.6 * Math.sin(x / 90 + t * 8) + .4 * Math.sin(x / 41 - t * 11));
+    wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = "source-over"; wg.clearRect(0, 0, W, H); wg.setTransform(g.getTransform());
+    wg.beginPath(); wg.moveTo(lft, surf + wv(lft));
+    for (let x = lft; x <= rgt; x += 10) wg.lineTo(x, surf + wv(x));
+    wg.lineTo(rgt, bot + 40); wg.lineTo(lft, bot + 40); wg.closePath();
+    const wgr = wg.createLinearGradient(0, top, 0, bot); wgr.addColorStop(0, "#d9f1ff"); wgr.addColorStop(.35, C.sky); wgr.addColorStop(1, C.blue);
+    wg.fillStyle = wgr; wg.fill();
+    wg.lineWidth = 8; wg.strokeStyle = "rgba(255,255,255,.95)"; wg.beginPath();
+    for (let x = lft; x <= rgt; x += 10) x === lft ? wg.moveTo(x, surf + wv(x)) : wg.lineTo(x, surf + wv(x)); wg.stroke();
+    const BR = rnd(42);
+    for (let i = 0; i < 40; i++) {
+      const bx = lft + BR() * (rgt - lft), v = .3 + BR() * .5, ph = BR(), by = bot - ((t * v + ph) % 1) * (bot - surf), br = 4 + BR() * 10;
+      if (by > surf + 10) { wg.fillStyle = "rgba(255,255,255,.55)"; wg.beginPath(); wg.arc(bx, by, br, 0, Math.PI * 2); wg.fill(); }
+    }
+    const sp = (t - fz - .2) / .8;                          // reflet une fois plein
+    if (sp > 0 && sp < 1) {
+      const bx = lft + (rgt - lft + 400) * easeInOut(sp) - 200, sgr = wg.createLinearGradient(bx - 90, top, bx + 90, top + 160);
+      sgr.addColorStop(0, "rgba(255,255,255,0)"); sgr.addColorStop(.5, "rgba(255,255,255,.85)"); sgr.addColorStop(1, "rgba(255,255,255,0)");
+      wg.fillStyle = sgr; wg.fillRect(lft, top - 50, rgt - lft, bot - top + 100);
+    }
+    wg.globalCompositeOperation = "destination-in"; wg.fillStyle = "#000"; wg.font = font(n); wg.textAlign = "center"; wg.fillText("21", gx, gy);
     g.restore();
+    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.shadowColor = "rgba(47,143,230,.75)"; g.shadowBlur = 60; g.drawImage(wc, 0, 0); g.restore();
     const x = V ? W / 2 : W * .5, al = V ? "center" : "left";
     const ny = V ? H * .44 + 420 : H * .5 - 10, ns = V ? 210 : 190;
-    slam("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)" });
+    stagger("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)", step: .05 });
     rise("SAMEDI  ·  2026", x, ny + (V ? 100 : 96), V ? 56 : 52, t, T.date + .55, { f: "Open Sans", w: 800, c: C.orange, al, ls: 8 });
     rise("PRÉSENTATION DE LA FORMATION", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
     splash(W / 2, H / 2, t, T.date, 21, 70, 1.4);
@@ -342,7 +501,9 @@ async function renderFrame(t) {
     g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
     ripples(W / 2, V ? 560 : 300, t, T.end, "47,143,230", 3, Math.max(W, H) * .5);
     const lw = V ? W * .58 : W * .27, lh = lw * IMG.logo.height / IMG.logo.width, ly = V ? 330 : 70;
-    g.globalAlpha = clamp((t - T.end) / .2); g.drawImage(IMG.logo, W / 2 - lw / 2, ly + (1 - easeOutExpo((t - T.end) / .6)) * 30, lw, lh); g.globalAlpha = 1;
+    const lyy = ly + (1 - easeOutExpo((t - T.end) / .6)) * 30;
+    g.globalAlpha = clamp((t - T.end) / .2); g.drawImage(IMG.logo, W / 2 - lw / 2, lyy, lw, lh); g.globalAlpha = 1;
+    shine(IMG.logo, W / 2 - lw / 2, lyy, lw, lh, (t - T.end - 1.2) / .8);
     let y = ly + lh + (V ? 120 : 110);
     rise("ACADÉMIE", W / 2, y, V ? 96 : 92, t, T.end + .15, { c: C.brown, ls: V ? 22 : 24 });
     y += V ? 130 : 110;
@@ -367,6 +528,8 @@ async function renderFrame(t) {
 
   // finitions : flash d'impact, vignette, fondu final
   g.setTransform(1, 0, 0, 1, 0, 0);
+  rgbSplit(t);
+  flush(t);
   const f = flash(t); if (f > 0) { g.fillStyle = `rgba(255,255,255,${f})`; g.fillRect(0, 0, W, H); }
   const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .45, W / 2, H / 2, Math.hypot(W, H) * .62);
   vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.28)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
