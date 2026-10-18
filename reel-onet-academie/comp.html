@@ -12,7 +12,7 @@ canvas{display:block}
 <canvas id="c"></canvas>
 <script>
 const REEL = /*REEL*/null, FMT = /*FMT*/null;
-const [W, H] = REEL.formats[FMT], V = H > W, A = "assets/", T = REEL.T, FPS = REEL.fps;
+const [W, H] = REEL.formats[FMT], V = H > W, A = "assets/", T = REEL.T, FPS = REEL.fps, B = 60 / REEL.bpm;  // B : un temps
 const cv = document.getElementById("c"); cv.width = W; cv.height = H;
 const g = cv.getContext("2d");
 const layer = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return [c, c.getContext("2d")]; };
@@ -355,9 +355,9 @@ async function renderFrame(t) {
     water(t);
     const s = fit("ÇA S'APPREND.", V ? 190 : 210, W * .8);
     const cy = H * .47;
-    stagger("LA PLOMBERIE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - 5.55) / .3), sh: "rgba(0,0,0,.5)" });
-    stagger("ÇA S'APPREND.", W / 2, cy + s * 1.08, s, t, T.learn2, { c: C.sky, a: 1 - smooth((t - 5.55) / .3), sh: "rgba(0,0,0,.5)" });
-    const p = clamp((t - 5.5) / .5);
+    stagger("LA PLOMBERIE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - T.logo + .45) / .3), sh: "rgba(0,0,0,.5)" });
+    stagger("ÇA S'APPREND.", W / 2, cy + s * 1.08, s, t, T.learn2, { c: C.sky, a: 1 - smooth((t - T.logo + .45) / .3), sh: "rgba(0,0,0,.5)" });
+    const p = clamp((t - T.logo + B) / B);
     if (p > 0) drop(W / 2, -60 + easeIn(p) * (H / 2 + 60), Math.min(W, H) * .035);
   } else if (t < T.title) {                            // logo O NET sur le crème du support de cours
     const r = Math.hypot(W, H) * easeOutExpo((t - T.logo) / .55);
@@ -379,15 +379,15 @@ async function renderFrame(t) {
   } else if (t < T.coupe) {                            // titre de la formation, ligne par ligne sur les temps
     g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
     const L = V ? ["LES BASES", "ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"] : ["LES BASES ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"];
-    const ts = V ? [8, 8.5, 9, 9.5] : [8, 9, 9.5];
+    const ts = (V ? [0, 1, 2, 3] : [0, 2, 3]).map(k => T.title + k * B);
     const s = Math.min(...L.map(l => fit(l, V ? 170 : 175, W * .76)));
     const y0 = H / 2 - (L.length - 1) * s * 1.06 / 2 + s * .36;
     const fx = V ? 56 : W * .07, ft = y0 - s - (V ? 70 : 55), fb = y0 + (L.length - 1) * s * 1.06 + (V ? 80 : 65);
-    pipe(fx, ft, W - 2 * fx, fb - ft, V ? 60 : 50, easeInOut((t - T.title) / 1.6), t);
+    pipe(fx, ft, W - 2 * fx, fb - ft, V ? 60 : 50, easeInOut((t - T.title) / (3.2 * B)), t);
     L.forEach((l, i) => slam(l, W / 2, y0 + i * s * 1.06, s, t, ts[i], { c: i === L.length - 1 ? C.orange : C.brown }));
     const lw = V ? W * .5 : W * .2, ly = V ? 230 : 92;
     g.globalAlpha = .9; g.drawImage(IMG.logo, W / 2 - lw * .22, ly - lw * .44 * .5, lw * .44, lw * .44 * IMG.logo.height / IMG.logo.width); g.globalAlpha = 1;
-    txt("SUPPORT THÉORIQUE  ·  APPROCHE TERRAIN", W / 2, V ? 1640 : H - 90, V ? 34 : 34, { f: "Open Sans", w: 800, c: C.brown, ls: 4, a: smooth((t - 9.6) / .3) });
+    txt("SUPPORT THÉORIQUE  ·  APPROCHE TERRAIN", W / 2, V ? 1640 : H - 90, V ? 34 : 34, { f: "Open Sans", w: 800, c: C.brown, ls: 4, a: smooth((t - T.title - 3.2 * B) / .3) });
   } else if (t < T.theorie) {                          // approche terrain : un geste par coupe
     const S = [
       [T.coupe, T.sertir, "01", "COUPER", () => frame("coupe", 1.4 + (t - T.coupe) * 1.2), { fy: .45 }],
@@ -446,12 +446,12 @@ async function renderFrame(t) {
     g.fillStyle = "rgba(8,17,32,.45)"; g.fillRect(0, 0, W, H);
     const s = fit("TAHERE ILIÈS", V ? 190 : 230, W * .86);
     rise("UNE FORMATION CONÇUE PAR", W / 2, H / 2 - s * .78, V ? 40 : 40, t, T.auteur + .05, { f: "Open Sans", w: 800, c: C.sky, ls: 6 });
-    stagger("TAHERE ILIÈS", W / 2, H / 2 + s * .36, s, t, T.auteur + .25, { sh: "rgba(0,0,0,.5)", step: .045 });
+    stagger("TAHERE ILIÈS", W / 2, H / 2 + s * .36, s, t, T.auteur + .25, { sh: "rgba(0,0,0,.5)", step: .03 });
     const lp = easeOutExpo((t - T.auteur - .5) / .6);
     g.fillStyle = C.orange; g.fillRect(W / 2 - 130 * lp, H / 2 + s * .36 + 38, 260 * lp, 8);
     rise("O NET ACADÉMIE", W / 2, H / 2 + s * .36 + 120, V ? 40 : 40, t, T.auteur + .7, { f: "Open Sans", w: 800, ls: 5 });
   } else if (t < T.date) {                             // montée : quatre mots sur les temps
-    const k = Math.min(3, Math.floor((t - T.build) / .5)), t0 = T.build + k * .5;
+    const k = Math.min(3, Math.floor((t - T.build) / B)), t0 = T.build + k * B;
     const imgs = [IMG.coupeTube, IMG.raccords, IMG.sertisseuse, null];
     if (imgs[k]) media(imgs[k], t, t0, .5, { dim: .45, full: true, z0: 1.12, z1: 1.2 }); else water(t);
     const w = ["TON MÉTIER.", "TA FORMATION.", "TON ACADÉMIE.", "RENDEZ-VOUS LE"][k];
@@ -493,7 +493,7 @@ async function renderFrame(t) {
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.shadowColor = "rgba(47,143,230,.75)"; g.shadowBlur = 60; g.drawImage(wc, 0, 0); g.restore();
     const x = V ? W / 2 : W * .5, al = V ? "center" : "left";
     const ny = V ? H * .44 + 420 : H * .5 - 10, ns = V ? 210 : 190;
-    stagger("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)", step: .05 });
+    stagger("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)", step: .035 });
     rise("SAMEDI  ·  2026", x, ny + (V ? 100 : 96), V ? 56 : 52, t, T.date + .55, { f: "Open Sans", w: 800, c: C.orange, al, ls: 8 });
     rise("PRÉSENTATION DE LA FORMATION", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
     splash(W / 2, H / 2, t, T.date, 21, 70, 1.4);
@@ -522,7 +522,7 @@ async function renderFrame(t) {
       g.restore();
     }
     rise("Conçu par Tahere Iliès  ·  © 2026 O NET ACADÉMIE", W / 2, H - (V ? 330 : 50), V ? 30 : 26, t, T.end + 1.1, { f: "Open Sans", w: 700, c: "rgba(90,66,20,.75)" });
-    const dp = clamp((t - (T.end - .5)) / .5);
+    const dp = clamp((t - (T.end - B)) / B);
     if (t < T.end + .02) drop(W / 2, -60 + easeIn(dp) * 400, 20);
   }
 

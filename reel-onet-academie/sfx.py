@@ -1,7 +1,8 @@
 # Musique originale + bruitages, synthétisés à partir de reel.json : python3 -I sfx.py reel.json sortie.wav
-# House/pop à 120 bpm en la mineur (Am – F – C – G) : kick, clap, charleys, basse en contretemps, accords de piano,
-# pluck en mélodie, nappes. Signature sonore : coups métalliques de tuyau sur les gestes et gouttes d'eau sur le logo.
-# Structure : accroche (2 mesures), montée (1), drop (5), salle (3), relance (1), montée (1), drop final (2), fin.
+# Trap/phonk épique à 140 bpm en fa mineur (Fm – Ab – Bbm – C) : 808 saturée avec glissés, cloche phonk en mélodie,
+# caisse claire lourde au demi-temps, charleys en roulements, « BRAAAM » de bande-annonce et chœurs sur les impacts.
+# Signature plomberie : coups de tuyau sur les gestes, gouttes, chasses d'eau, bulles quand le « 21 » se remplit.
+# Structure (mesures) : accroche 0-1, montée 2, drop 3-7, coupure 8, groove 9-11, montée 12, drop final 13-14, fin.
 import json, sys, wave
 import numpy as np
 
@@ -13,7 +14,7 @@ DUR = reel["duration"] + 0.3
 N = int(DUR * SR)
 BUS = {k: np.zeros((N, 2)) for k in ("drums", "bass", "music", "fx")}
 send = np.zeros((N, 2))
-rng = np.random.default_rng(21)
+rng = np.random.default_rng(140)
 
 def freq(name):
     names = {"C": 0, "C#": 1, "Db": 1, "D": 2, "Eb": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "Ab": 8, "A": 9, "Bb": 10, "B": 11}
@@ -33,16 +34,14 @@ def add(bus, at, sig, gain=1.0, pan=0.0, rev=0.0):
     BUS[bus][i:j] += sig[: j - i] * gain
     send[i:j] += sig[: j - i] * gain * rev
 
-def band(sig, lo, hi):
-    S = np.fft.rfft(sig); f = np.fft.rfftfreq(len(sig), 1 / SR)
-    return np.fft.irfft(S * ((f >= lo) & (f <= hi)), len(sig))
-
-def lowpass(sig, fc):
-    S = np.fft.rfft(sig, axis=0); f = np.fft.rfftfreq(len(sig), 1 / SR)
-    h = 1 / np.sqrt(1 + (f / fc) ** 4)
+def filt(sig, h_of_f):
+    S = np.fft.rfft(sig, axis=0); f = np.fft.rfftfreq(len(sig), 1 / SR); h = h_of_f(np.maximum(f, 1))
     return np.fft.irfft(S * (h[:, None] if sig.ndim == 2 else h), len(sig), axis=0)
-
+def band(sig, lo, hi): return filt(sig, lambda f: ((f >= lo) & (f <= hi)).astype(float))
+def lowpass(sig, fc, o=4): return filt(sig, lambda f: 1 / np.sqrt(1 + (f / fc) ** o))
 def norm(s): return s / (np.abs(s).max() + 1e-9)
+def saw(f, n, ph=0.0): return 2 * ((np.cumsum(np.broadcast_to(f, (n,))) / SR + ph) % 1) - 1
+def square(f, n): return np.sign(np.sin(2 * np.pi * f * tt(n)))
 
 def sweep(n, f0, f1, width=0.5):
     win, hop = 2048, 512
@@ -54,29 +53,26 @@ def sweep(n, f0, f1, width=0.5):
     return norm(out[:n])
 
 # ---------------- batterie ----------------
-_kick = None
 def kick():
-    global _kick
-    if _kick is None:
-        n = int(0.38 * SR); x = tt(n)
-        f = 48 + 150 * np.exp(-x * 42)
-        s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-x * 7.5) + band(rng.standard_normal(n), 2500, 8000) * np.exp(-x * 350) * 0.35
-        _kick = norm(np.tanh(2.0 * s))
-    return _kick
-
-def clap():
-    n = int(0.35 * SR); x = tt(n)
-    nz = band(rng.standard_normal(n), 1000, 6000)
-    env = sum(np.exp(-np.maximum(x - d, 0) / 0.006) * (x >= d) for d in (0, .01, .02)) * 0.6 + np.exp(-x / 0.11) * (x >= .02) * 0.55
-    return norm(nz * env)
+    n = int(0.3 * SR); x = tt(n)
+    f = 52 + 180 * np.exp(-x * 55)
+    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-x * 11) + band(rng.standard_normal(n), 2500, 9000) * np.exp(-x * 400) * 0.6
+    return norm(np.tanh(3.0 * s))
+KICK = kick()
 
 def snare():
-    n = int(0.2 * SR); x = tt(n)
-    return norm(band(rng.standard_normal(n), 800, 9000) * np.exp(-x * 24) + np.sin(2 * np.pi * 200 * x) * np.exp(-x * 40) * 0.5)
+    # caisse claire trap lourde : corps + bruit + clap superposés
+    n = int(0.5 * SR); x = tt(n)
+    body = np.sin(2 * np.pi * np.cumsum(190 + 60 * np.exp(-x * 40)) / SR) * np.exp(-x * 22)
+    nz = band(rng.standard_normal(n), 1200, 11000) * np.exp(-x * 13)
+    cl = band(rng.standard_normal(n), 900, 5000) * sum(np.exp(-np.maximum(x - d, 0) / 0.006) * (x >= d) for d in (0, .009, .018))
+    return norm(np.tanh(1.8 * (body * .8 + nz * .9 + cl * .7)))
+SNARE = snare()
 
 def hat(open_=False):
-    n = int((0.24 if open_ else 0.045) * SR); x = tt(n)
-    return norm(band(rng.standard_normal(n), 7500, 17000) * np.exp(-x / (0.08 if open_ else 0.01)))
+    n = int((0.25 if open_ else 0.04) * SR); x = tt(n)
+    return norm(band(rng.standard_normal(n), 7500, 18000) * np.exp(-x / (0.07 if open_ else 0.008)))
+HAT, OHAT = hat(), hat(True)
 
 def crash():
     n = int(2.4 * SR); x = tt(n)
@@ -84,81 +80,76 @@ def crash():
 
 def boom(size):
     d = {"big": 2.2, "mid": 0.9, "small": 0.45}[size]; n = int(d * SR); x = tt(n)
-    f = (38 if size == "big" else 52) + 70 * np.exp(-x * 14)
-    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-x * {"big": 1.8, "mid": 4.5, "small": 9}[size])
-    s += band(rng.standard_normal(n), 150, 2500) * np.exp(-x * 30) * 0.5
-    return norm(np.tanh(1.6 * s) * np.minimum(x / 0.002, 1))
+    f = (36 if size == "big" else 50) + 80 * np.exp(-x * 14)
+    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-x * {"big": 1.6, "mid": 4.5, "small": 9}[size])
+    s += band(rng.standard_normal(n), 150, 3000) * np.exp(-x * 28) * 0.6
+    return norm(np.tanh(2.0 * s) * np.minimum(x / 0.002, 1))
 
-# ---------------- signature : tuyau et goutte ----------------
+# ---------------- 808 saturée ----------------
+def b808(f, d, glide_to=None):
+    n = int(d * SR); x = tt(n)
+    fr = f * (1 + 1.2 * np.exp(-x * 50))
+    if glide_to: fr = fr * np.where(x < d * .55, 1, (glide_to / f) ** np.clip((x - d * .55) / (d * .3), 0, 1))
+    s = np.sin(2 * np.pi * np.cumsum(fr) / SR)
+    env = np.minimum(x / 0.002, 1) * np.clip((d - x) / 0.025, 0, 1) * (0.75 + 0.25 * np.exp(-x * 4))
+    return np.tanh(4.0 * s * env) / np.tanh(4.0)
+
+# ---------------- cloche phonk ----------------
+_cb = {}
+def cowbell(name):
+    if name in _cb: return _cb[name]
+    f = freq(name); n = int(0.5 * SR); x = tt(n)
+    s = square(f, n) + 0.8 * square(f * 1.483, n)
+    s = band(s, 350, 6000) * (np.exp(-x * 22) + 0.22 * np.exp(-x * 5))
+    _cb[name] = norm(np.tanh(2.5 * norm(s)) * np.minimum(x / 0.001, 1))
+    return _cb[name]
+
+# ---------------- cuivres et chœurs de bande-annonce ----------------
+def braam(notes, d=2.6):
+    # « BRAAAM » : pile de dents de scie désaccordées, filtre qui s'ouvre d'un coup puis se referme, saturation
+    n = int(d * SR); x = tt(n); s = np.zeros(n)
+    for nm in notes:
+        f = freq(nm)
+        for det in (-11, -4, 4, 11): s += saw(f * 2 ** (det / 1200), n, rng.uniform())
+    dark, bright = lowpass(s, 260), lowpass(s, 2600)
+    e = np.minimum(x / 0.06, 1) * np.exp(-np.maximum(x - .06, 0) * 2.2)
+    out = dark * (1 - e) + bright * e
+    out = np.tanh(2.2 * norm(out)) * np.minimum(x / 0.02, 1) * np.clip((d - x) / 0.6, 0, 1)
+    return norm(out)
+
+def stab(notes, d=0.32):
+    n = int(d * SR); x = tt(n); s = np.zeros(n)
+    for nm in notes:
+        for det in (-9, 9): s += saw(freq(nm) * 2 ** (det / 1200), n, rng.uniform())
+    out = lowpass(s, 3200) * np.exp(-x * 9) + band(rng.standard_normal(n), 300, 5000) * np.exp(-x * 60) * 2
+    return norm(np.tanh(1.8 * norm(out)))
+
+def choir(notes, d):
+    # chœur « ah » : dents de scie avec vibrato, passées dans trois formants
+    n = int(d * SR); x = tt(n); s = np.zeros((n, 2))
+    for k, nm in enumerate(notes):
+        for c, det in ((0, -6), (1, 6)):
+            f = freq(nm) * 2 ** (det / 1200) * (1 + .005 * np.sin(2 * np.pi * (5 + k * .3) * x))
+            s[:, c] += saw(f, n, rng.uniform())
+    form = lambda f: sum(a * np.exp(-0.5 * ((f - c) / w) ** 2) for c, w, a in ((800, 110, 1), (1150, 130, .6), (2900, 250, .25)))
+    s = filt(s, form)
+    env = np.minimum(x / 0.5, 1) * np.clip((d - x) / 0.5, 0, 1)
+    return s / (np.abs(s).max() + 1e-9) * env[:, None]
+
+# ---------------- signature : tuyau, goutte, eau ----------------
 def clang():
-    # tuyau d'acier frappé : partiels inharmoniques, attaque métallique
     n = int(1.6 * SR); x = tt(n); s = np.zeros(n)
     for f, a, d in ((523, 1, .9), (1187, .7, .55), (1873, .55, .4), (2741, .4, .3), (3698, .3, .2), (4420, .2, .14)):
-        s += a * np.sin(2 * np.pi * f * x + rng.uniform(0, 6)) * np.exp(-x / d) * (1 + .004 * np.sin(2 * np.pi * 5 * x))
+        s += a * np.sin(2 * np.pi * f * x + rng.uniform(0, 6)) * np.exp(-x / d)
     s += band(rng.standard_normal(n), 3000, 12000) * np.exp(-x * 200) * 0.8
     return norm(s * np.minimum(x / 0.0008, 1))
 
 def bloop():
-    # goutte d'eau : sinus dont la hauteur remonte très vite
     n = int(0.35 * SR); x = tt(n)
     f = 650 + 1500 * (1 - np.exp(-x * 60))
     return norm(np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-x * 22) * np.minimum(x / 0.001, 1))
 
-# ---------------- basse ----------------
-def bass(f, d):
-    n = int(d * SR); x = tt(n); s = np.zeros(n)
-    for h in range(1, 9): s += np.sin(2 * np.pi * f * h * x) / h ** 1.3
-    s = lowpass(s, 1200)
-    env = np.minimum(x / 0.004, 1) * np.exp(-x * 5) * np.clip((d - x) / 0.02, 0, 1)
-    return np.tanh(1.8 * norm(s) * env) + 0.6 * np.sin(2 * np.pi * f * x) * env
-
-# ---------------- instruments mélodiques ----------------
-_ks = {}
-def ks(f, d=1.2, k=0.994, bright=0.55):
-    if (f, d) in _ks: return _ks[(f, d)]
-    n = int(d * SR); P = int(round(SR / f))
-    buf = rng.uniform(-1, 1, P).tolist(); out = np.empty(n)
-    for i in range(n):
-        j = i % P; v = buf[j]; out[i] = v
-        buf[j] = k * (bright * v + (1 - bright) * buf[(j + 1) % P])
-    _ks[(f, d)] = norm(out)
-    return _ks[(f, d)]
-
-def pluck(name): return ks(freq(name))
-
-def piano(notes, d=0.9):
-    n = int(d * SR); x = tt(n); s = np.zeros((n, 2))
-    for k, nm in enumerate(notes):
-        f0 = freq(nm); pan = (k / max(1, len(notes) - 1) - .5) * .6
-        v = sum(np.sin(2 * np.pi * f0 * h * (1 + .0004 * h * h) * x) * np.exp(-x * (2.2 + h * 1.3)) / h ** 1.1 for h in range(1, 9))
-        s[:, 0] += v * (1 - pan); s[:, 1] += v * (1 + pan)
-    env = np.minimum(x / 0.003, 1) * np.clip((d - x) / 0.05, 0, 1)
-    return s / (np.abs(s).max() + 1e-9) * env[:, None]
-
-def pad(notes, d, bright=1.0):
-    n = int(d * SR); x = tt(n); s = np.zeros((n, 2))
-    for nm in notes:
-        f0 = freq(nm)
-        for det, pan in ((-8, -.6), (0, 0), (8, .6)):
-            f = f0 * 2 ** (det / 1200); v = np.zeros(n)
-            for h in range(1, int(min(26, 2000 * bright / f)) + 1):
-                v += np.sin(2 * np.pi * f * h * x + h * 1.1) / h ** 1.6
-            s[:, 0] += v * (1 - pan) / 2; s[:, 1] += v * (1 + pan) / 2
-    env = np.minimum(x / 0.3, 1) * np.clip((d - x) / 0.4, 0, 1)
-    return s / (np.abs(s).max() + 1e-9) * env[:, None]
-
-# ---------------- effets ----------------
-def whoosh(d=0.5):
-    n = int(d * SR); x = tt(n); s = sweep(n, 300, 5000, .55) * np.sin(np.pi * x / d) ** 2.2
-    return np.stack([s * np.linspace(1.2, .5, n), s * np.linspace(.5, 1.2, n)], 1)
-
-def riser(d):
-    n = int(d * SR); x = tt(n); p = x / d
-    s = sweep(n, 200, 9000, .45) * p ** 2.2 + np.sin(2 * np.pi * np.cumsum(110 * 2 ** (2 * p)) / SR) * p ** 2.5 * .3
-    return norm(s)
-
 def bubbles(d, n, f_lo=350, f_hi=1200, grow=False):
-    # bulles : petits sinus dont la hauteur remonte, plus nombreux vers la fin si grow
     out = np.zeros(int(d * SR))
     for _ in range(n):
         p = rng.uniform(0, 1) ** (.5 if grow else 1)
@@ -168,121 +159,137 @@ def bubbles(d, n, f_lo=350, f_hi=1200, grow=False):
     return norm(out)
 
 def flush(d=0.8):
-    # chasse d'eau : souffle filtré qui gonfle puis retombe, plein de bulles
     n = int(d * SR); x = tt(n); env = np.sin(np.pi * x / d) ** 1.4
-    s = sweep(n, 220, 2200, .7) * env + bubbles(d, 45) * .45 * env
-    s = norm(s)
+    s = norm(sweep(n, 220, 2200, .7) * env + bubbles(d, 45) * .45 * env)
     return np.stack([s * np.linspace(.6, 1.2, n), s * np.linspace(1.2, .6, n)], 1)
 
-def subdrop(d=1.4):
+def whoosh(d=0.5):
+    n = int(d * SR); x = tt(n); s = sweep(n, 300, 5000, .55) * np.sin(np.pi * x / d) ** 2.2
+    return np.stack([s * np.linspace(1.2, .5, n), s * np.linspace(.5, 1.2, n)], 1)
+
+def riser(d):
+    n = int(d * SR); x = tt(n); p = x / d
+    s = sweep(n, 200, 10000, .45) * p ** 2 + np.sin(2 * np.pi * np.cumsum(110 * 2 ** (3 * p)) / SR) * p ** 2.5 * .35
+    return norm(s)
+
+def subdrop(d=1.6):
     n = int(d * SR); x = tt(n)
-    return norm(np.sin(2 * np.pi * np.cumsum(70 * (28 / 70) ** (x / d)) / SR) * np.exp(-x * 1.8) * np.minimum(x / .005, 1))
+    return norm(np.tanh(2 * np.sin(2 * np.pi * np.cumsum(75 * (28 / 75) ** (x / d)) / SR)) * np.exp(-x * 1.5) * np.minimum(x / .005, 1))
 
 # =============== ARRANGEMENT ===============
-CH = [("A3", "C4", "E4", "A4"), ("F3", "A3", "C4", "F4"), ("G3", "C4", "E4", "G4"), ("G3", "B3", "D4", "G4")]
-PADS = [("A2", "E3", "A3", "C4"), ("F2", "C3", "F3", "A3"), ("C3", "G3", "C4", "E4"), ("G2", "D3", "G3", "B3")]
-ROOT = ["A1", "F1", "C2", "G1"]
-LEAD = [[(0, "E5"), (2, "A5"), (4, "C6"), (6, "B5"), (7, "A5"), (10, "E5"), (12, "G5"), (14, "A5")],
-        [(0, "F5"), (2, "A5"), (4, "C6"), (6, "A5"), (7, "G5"), (10, "F5"), (12, "E5"), (14, "C5")],
-        [(0, "E5"), (2, "G5"), (4, "C6"), (6, "D6"), (7, "C6"), (10, "G5"), (12, "E5"), (14, "G5")],
-        [(0, "D5"), (2, "G5"), (4, "B5"), (6, "D6"), (8, "B5"), (10, "A5"), (12, "G5"), (14, "B5")]]
+ROOT = ["F1", "Ab1", "Bb1", "C2"]
+CHORD = [("F3", "Ab3", "C4"), ("Eb3", "Ab3", "C4"), ("F3", "Bb3", "Db4"), ("E3", "G3", "C4")]
+BELL = [[(0, "F5"), (3, "C5"), (6, "F5"), (8, "Ab5"), (10, "G5"), (11, "F5"), (14, "C5")],
+        [(0, "Eb5"), (3, "C5"), (6, "Eb5"), (8, "Ab5"), (10, "G5"), (11, "Eb5"), (14, "C5")],
+        [(0, "Db5"), (3, "Bb4"), (6, "Db5"), (8, "F5"), (10, "Eb5"), (11, "Db5"), (14, "Bb4")],
+        [(0, "E5"), (3, "C5"), (6, "E5"), (8, "G5"), (10, "F5"), (11, "E5"), (13, "Db5"), (14, "C5")]]
+BRAAM = ("F1", "F2", "C3", "F3", "Ab3")
 kick_times = []
 
-def groove(n, kick_=True, clap_=True, bass_=True, keys=True, lead=False, hats=True):
+def bar(n, drums=True, bass=True, bell=True, snare_=True, rolls=True, big=False, dark=False):
     t0 = n * BAR; c = n % 4
-    if kick_:
-        for s in (0, 4, 8, 12):
-            add("drums", t0 + s * S16, kick(), 0.9); kick_times.append(t0 + s * S16)
-    if clap_:
-        for s in (4, 12): add("drums", t0 + s * S16, clap(), 0.5, rev=.15)
-    if hats:
-        for s in range(16):
-            if s % 4 == 2: add("drums", t0 + s * S16, hat(True), 0.16, pan=-.15)
-            else: add("drums", t0 + s * S16, hat(), 0.09 + .05 * (s % 2 == 0), pan=.25)
-    if bass_:
-        for s in (2, 6, 10, 14):
-            add("bass", t0 + s * S16, bass(freq(ROOT[c]), 2 * S16 - .01), 0.7)
-        add("bass", t0 + 15 * S16, bass(freq(ROOT[c]) * 2, S16 - .01), 0.35)
-    if keys:
-        for s in (0, 3, 6, 10, 12):
-            add("music", t0 + s * S16, piano(CH[c], 0.32 if s else 0.5), 0.3, rev=.2)
-    if lead:
-        for s, nm in LEAD[c]:
-            add("music", t0 + s * S16, pluck(nm), 0.22, pan=.2, rev=.35)
-            add("music", t0 + s * S16 + 3 * S16, pluck(nm), 0.07, pan=-.4, rev=.4)   # écho
+    if drums:
+        for s in ((0, 10) if n % 2 == 0 else (0, 6, 10)):
+            add("drums", t0 + s * S16, KICK, 0.85); kick_times.append(t0 + s * S16)
+        # charleys : doubles croches, roulements en triolets ou en triples croches sur la fin de mesure
+        hs = [s * S16 for s in range(16)]
+        if rolls:
+            if n % 2 == 1: hs = [h for h in hs if h < 12 * S16] + [12 * S16 + k * S16 / 2 for k in range(8)]
+            else: hs = [h for h in hs if not (4 * S16 <= h < 8 * S16)] + [4 * S16 + k * b / 6 for k in range(6)]
+        for k, h in enumerate(sorted(hs)):
+            add("drums", t0 + h, HAT, 0.22 + 0.08 * (k % 2 == 0), pan=.22)
+        add("drums", t0 + 6 * S16, OHAT, 0.14, pan=-.25)
+    if snare_:
+        add("drums", t0 + 8 * S16, SNARE, 0.75, rev=.22)
+        if big: add("drums", t0 + 15 * S16, SNARE, 0.25, pan=.15, rev=.2)
+    if bass:
+        pat = [0, 3, 6, 10, 13]
+        for i, s in enumerate(pat):
+            nxt = pat[i + 1] if i + 1 < len(pat) else 16
+            f = freq(ROOT[c]); gl = f * 2 if (s == 13 and n % 2 == 1) else None
+            add("bass", t0 + s * S16, b808(f, (nxt - s) * S16 + .015, gl), 0.9)
+    if bell:
+        for s, nm in BELL[c]:
+            g = 0.3 if not dark else 0.16
+            add("music", t0 + s * S16, cowbell(nm), g, pan=-.1, rev=.2)
+            add("music", t0 + s * S16 + 3 * S16, cowbell(nm), g * .28, pan=.45, rev=.3)   # écho
+            if big: add("music", t0 + s * S16, cowbell(nm[:-1] + str(int(nm[-1]) + 1)), g * .45, pan=.2, rev=.2)
 
-def snare_roll(t0, d):
+def snare_roll(t0, d, gain=.5):
     t = t0
     while t < t0 + d - 1e-6:
         p = (t - t0) / d
-        add("drums", t, snare(), 0.1 + 0.35 * p ** 1.5, pan=.1, rev=.15)
-        t += S16 if p < .5 else S16 / 2
+        add("drums", t, SNARE, 0.08 + gain * p ** 1.6, pan=.1, rev=.15)
+        t += S16 if p < .5 else (S16 / 2 if p < .8 else S16 / 3)
 
-# --- nappes sur toute la durée ---
-for n in range(15):
-    add("music", n * BAR - .1, pad(PADS[n % 4], BAR + .4, .55 if n < 3 else .9), 0.14, rev=.3)
+# --- accroche (mesures 0-1) : ça cogne dès la première seconde ---
+add("music", 0, braam(BRAAM, 1.6), 0.5, rev=.3)
+for n in (0, 1): bar(n, snare_=n == 1, rolls=False)
 
-# --- accroche (mesures 0-1) : tic-tac de charleys, arpège en pluck filtré ---
-for s in range(32):
-    add("drums", s * S16, hat(), 0.05 + .04 * (s % 4 == 0), pan=.3)
-arp = ["A4", "C5", "E5", "A5", "E5", "C5", "F4", "A4", "C5", "F5", "C5", "A4", "G4", "C5", "E5", "G5"]
-for i, nm in enumerate(arp): add("music", i * b / 2, pluck(nm), 0.16, pan=-.2 + .05 * (i % 6), rev=.5)
-for t0 in (T["hook1"], T["hook2"], T["hook3"]): add("bass", t0, bass(freq("A1"), 0.9), 0.55)
-
-# --- montée (mesure 2) : piano, roulement, silence avant le drop ---
-add("music", T["learn"], piano(("A3", "C4", "E4", "A4"), 1.5), 0.35, rev=.5)
-add("music", T["learn2"], piano(("F3", "A3", "C4", "F4"), 0.75), 0.3, rev=.5)
-snare_roll(T["learn"] + b, 3 * b - S16 * 2)
+# --- montée (mesure 2) : roulement, chœur, 808 qui monte, silence avant le drop ---
+add("music", 2 * BAR, choir(("F4", "Ab4", "C5"), BAR + .3), 0.35, rev=.5)
+for s, nm in BELL[2]: add("music", 2 * BAR + s * S16, cowbell(nm), 0.14, rev=.4)
+snare_roll(2 * BAR, BAR - 2 * S16)
+add("bass", 2 * BAR, b808(freq("F1"), BAR - 2 * S16, freq("F2")), 0.6)
 
 # --- drop (mesures 3-7) ---
-for n in range(3, 8): groove(n, lead=n >= 4)
+add("music", T["logo"], braam(BRAAM), 0.6, rev=.35)
+for n in range(3, 8):
+    bar(n)
+    add("music", n * BAR, stab(CHORD[n % 4]), 0.32, rev=.25)
 
-# --- salle (mesures 8-10) : la batterie se retire puis revient ---
-groove(8, kick_=False, clap_=False, bass_=False, hats=False)
-for s, nm in LEAD[0]: add("music", 8 * BAR + s * S16, pluck(nm), 0.16, rev=.55)
-groove(9, clap_=False); groove(10, lead=True)
-# --- relance (mesure 11) ---
-groove(11, lead=True)
+# --- coupure (mesure 8) : la salle, chœur et 808 tenue ---
+add("music", 8 * BAR, choir(("F4", "Ab4", "C5", "F5"), BAR + .4), 0.4, rev=.5)
+add("bass", 8 * BAR, b808(freq("F1"), BAR * .9), 0.75)
+bar(8, drums=False, bass=False, snare_=False, dark=True)
+for k in range(8): add("drums", 8 * BAR + k * b / 2, HAT, 0.08, pan=.3)
 
-# --- montée (mesure 12) : kick à la croche, roulement, silence ---
-for s in range(0, 14, 2):
-    add("drums", 12 * BAR + s * S16, kick(), 0.5 + .03 * s); kick_times.append(12 * BAR + s * S16)
-snare_roll(12 * BAR, BAR - S16 * 2)
-for s in (0, 4, 8): add("music", 12 * BAR + s * S16, piano(CH[3], 0.4), 0.3, rev=.3)
+# --- groove (mesures 9-11) ---
+for n in (9, 10, 11): bar(n, big=n == 11)
+
+# --- montée (mesure 12) : kick à chaque temps puis à la croche, roulement serré, 808 qui glisse ---
+for k in range(7):
+    tk = 12 * BAR + k * b / 2; add("drums", tk, KICK, 0.45 + .06 * k); kick_times.append(tk)
+snare_roll(12 * BAR, BAR - 2 * S16, .6)
+add("bass", 12 * BAR, b808(freq("C2"), BAR - 2 * S16, freq("C3")), 0.6)
+add("music", 12 * BAR, choir(("E4", "G4", "C5"), BAR), 0.3, rev=.5)
 
 # --- drop final (mesures 13-14) ---
-for n in (13, 14): groove(n, lead=True)
-add("drums", T["date"], crash(), 0.3, rev=.3)
+add("music", T["date"], braam(BRAAM, 3.0), 0.7, rev=.4)
+add("music", T["date"], choir(("F4", "Ab4", "C5", "F5"), 2 * BAR), 0.25, rev=.5)
+add("drums", T["date"], crash(), 0.32, rev=.3)
+for n in (13, 14):
+    bar(n, big=True)
+    add("music", n * BAR, stab(CHORD[n % 4]), 0.36, rev=.25)
 
-# --- fin : accord tenu ---
-add("music", 15 * BAR, piano(("A3", "C4", "E4", "A4"), 2.5), 0.4, rev=.6)
-add("music", 15 * BAR, pad(("A2", "E3", "A3", "C4", "E4"), DUR - 15 * BAR, .7), 0.3, rev=.5)
-add("bass", 15 * BAR, bass(freq("A1"), 1.2), 0.6)
-for i, nm in enumerate(["E5", "A5", "C6", "E6"]):
-    add("music", 15 * BAR + b + i * b / 2, pluck(nm), 0.15, rev=.6)
+# --- fin : braam, chœur, 808 tenue, dernière phrase de cloche en écho ---
+t15 = 15 * BAR
+add("music", t15, braam(BRAAM, 3.2), 0.5, rev=.5)
+add("music", t15, choir(("F4", "Ab4", "C5", "F5"), DUR - t15), 0.3, rev=.6)
+add("bass", t15, b808(freq("F1"), 2.2), 0.8)
+add("drums", t15, SNARE, 0.5, rev=.4)
+for s, nm in BELL[0]:
+    add("music", t15 + s * S16, cowbell(nm), 0.2, rev=.5); add("music", t15 + (s + 3) * S16, cowbell(nm), 0.07, pan=.5, rev=.5)
 
-# --- impacts, gestes, gouttes, transitions ---
+# --- impacts, gestes, gouttes, eau, transitions ---
 for t, size in reel["hits"]:
     add("fx", t, boom(size), {"big": .9, "mid": .35, "small": .18}[size], rev=.25)
-    if size == "big": add("drums", t, crash(), 0.25, rev=.25)
-for t in reel["clang"]: add("fx", t, clang(), 0.28, pan=rng.uniform(-.3, .3), rev=.35)
+    if size == "big": add("bass", t, subdrop(), 0.7); add("drums", t, crash(), 0.25, rev=.25)
+for t in reel["clang"]: add("fx", t, clang(), 0.3, pan=rng.uniform(-.3, .3), rev=.35)
 for t in reel["drops"]: add("fx", t - .02, bloop(), 0.3, rev=.5)
 for t in reel["whoosh"]: add("fx", t - .22, whoosh(), 0.3, rev=.3)
-for a, z in reel["risers"]: add("fx", a, riser(z - a - S16 * 2), 0.3, rev=.3)
+for a, z in reel["risers"]: add("fx", a, riser(z - a - S16 * 2), 0.36, rev=.3)
 for t in reel["wipes"]: add("fx", t - .4, flush(), 0.42, rev=.35)
-for t in reel["reverse"]:                                 # cymbale à l'envers qui aspire vers l'impact
-    rv = crash()[::-1][-int(1.2 * SR):]
-    add("fx", t - 1.2, rv, 0.3, rev=.2)
-for t, size in reel["hits"]:
-    if size == "big": add("bass", t, subdrop(), 0.7)
+for t in reel["reverse"]:
+    add("fx", t - 1.2, crash()[::-1][-int(1.2 * SR):], 0.32, rev=.2)
 a, z = reel["fill"]; add("fx", a, bubbles(z - a + .4, 70, 300, 900, grow=True), 0.22, pan=-.1, rev=.4)
 
 # =============== MIXAGE ===============
 kenv = np.zeros(N)
 for kt in kick_times:
     i = int(kt * SR); m = min(N - i, int(.3 * SR))
-    if m > 0: kenv[i:i + m] = np.maximum(kenv[i:i + m], np.exp(-np.arange(m) / (.09 * SR)))
-duck = (1 - .55 * kenv)[:, None]
+    if m > 0: kenv[i:i + m] = np.maximum(kenv[i:i + m], np.exp(-np.arange(m) / (.08 * SR)))
+duck = (1 - .5 * kenv)[:, None]
 
 L = int(2.2 * SR); xi = tt(L)
 ir = rng.standard_normal((L, 2)) * np.exp(-xi / .5)[:, None]; ir[: int(.015 * SR)] = 0
@@ -292,15 +299,13 @@ ir /= np.abs(ir).sum(0).max() / 16
 M = 1 << int(np.ceil(np.log2(N + L)))
 wet = np.stack([np.fft.irfft(np.fft.rfft(send[:, c], M) * np.fft.rfft(ir[:, c], M), M)[:N] for c in range(2)], 1)
 
-G = {"drums": 0.8, "bass": 0.55, "music": 2.8, "fx": 0.9}
+G = {"drums": 1.0, "bass": 0.36, "music": 2.0, "fx": 0.85}
 for k, v in BUS.items():
     seg = v[int(T["coupe"] * SR):int(T["theorie"] * SR)]
     print(f"  {k:6s} RMS drop : {20 * np.log10(G[k] * np.sqrt((seg ** 2).mean()) + 1e-9):6.1f} dB")
-mix = BUS["drums"] * G["drums"] + BUS["bass"] * G["bass"] * duck + BUS["music"] * G["music"] * duck + BUS["fx"] * G["fx"] + wet * 0.45 * duck
-for c in range(2):
-    S = np.fft.rfft(mix[:, c]); f = np.fft.rfftfreq(N, 1 / SR)
-    mix[:, c] = np.fft.irfft(S / np.sqrt(1 + (28 / np.maximum(f, 1)) ** 8), N)
-mix = np.tanh(1.3 * mix / np.abs(mix).max()) / np.tanh(1.3) * 0.9
+mix = BUS["drums"] * G["drums"] + BUS["bass"] * G["bass"] + BUS["music"] * G["music"] * duck + BUS["fx"] * G["fx"] + wet * 0.4 * duck
+mix = filt(mix, lambda f: 1 / np.sqrt(1 + (28 / f) ** 8))            # coupe-bas sous 28 Hz
+mix = np.tanh(1.8 * mix / np.abs(mix).max()) / np.tanh(1.8) * 0.95    # saturation de bus : ça pousse
 fa, fb = reel["fadeOut"]; x = tt(N)
 mix *= np.clip((fb + .25 - x) / (fb + .25 - fa), 0, 1)[:, None]
 
