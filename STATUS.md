@@ -1,6 +1,6 @@
 # Tableau de bord — agent Superteam Earn
 
-_Mis à jour : 2026-10-18 11:12 UTC — état : **ok** — ingest run #65 ok_
+_Mis à jour : 2026-10-18 12:12 UTC — état : **ok** — ingest run #68 ok_
 
 ## Agent
 
@@ -32,6 +32,9 @@ _Mis à jour : 2026-10-18 11:12 UTC — état : **ok** — ingest run #65 ok_
 
 | # | Type | Début | OK | Détail |
 |---|---|---|---|---|
+| 68 | ingest | 2026-10-18 12:12 UTC | ✅ |  |
+| 67 | tick | 2026-10-18 12:00 UTC | ✅ | 0 annonces, 0 candidates |
+| 66 | tick | 2026-10-18 11:30 UTC | ✅ | 0 annonces, 0 candidates |
 | 65 | ingest | 2026-10-18 11:12 UTC | ✅ |  |
 | 64 | tick | 2026-10-18 11:00 UTC | ✅ | 0 annonces, 0 candidates |
 | 63 | tick | 2026-10-18 10:30 UTC | ✅ | 0 annonces, 0 candidates |
@@ -39,6 +42,3 @@ _Mis à jour : 2026-10-18 11:12 UTC — état : **ok** — ingest run #65 ok_
 | 61 | tick | 2026-10-18 10:00 UTC | ✅ | 0 annonces, 0 candidates |
 | 60 | tick | 2026-10-18 09:30 UTC | ✅ | 0 annonces, 0 candidates |
 | 59 | ingest | 2026-10-18 09:11 UTC | ✅ |  |
-| 58 | tick | 2026-10-18 09:00 UTC | ✅ | 0 annonces, 0 candidates |
-| 57 | tick | 2026-10-18 08:30 UTC | ✅ | 0 annonces, 0 candidates |
-| 56 | ingest | 2026-10-18 08:12 UTC | ✅ |  |
