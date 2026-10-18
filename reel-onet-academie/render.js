@@ -12,13 +12,13 @@ const path = require("path");
   const [W, H] = reel.formats[fmt];
   const html = fs.readFileSync(path.join(R, "comp.html"), "utf8")
     .replace("/*REEL*/null", JSON.stringify(reel)).replace("/*FMT*/null", JSON.stringify(fmt));
-  fs.writeFileSync(path.join(R, "_comp.html"), html);
+  fs.writeFileSync(path.join(R, `_comp-${fmt}.html`), html);
 
   const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--allow-file-access-from-files"] });
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   page.on("pageerror", e => console.error("PAGE", e.message));
   page.on("console", m => { if (m.type() === "error") console.error("CONSOLE", m.text()); });
-  await page.goto("file://" + path.join(R, "_comp.html"));
+  await page.goto("file://" + path.join(R, `_comp-${fmt}.html`));
   console.log(await page.evaluate(() => window.ready));
 
   if (flag === "--stills") {
