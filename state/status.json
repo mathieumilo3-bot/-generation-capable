@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-18T20:12:28.843Z",
+  "generatedAt": "2026-10-18T21:12:16.294Z",
   "version": "earn-agent-hub/1.0.0",
   "heartbeat": {
     "status": "ok",
     "agentName": "GenerationCapable AI Agent",
-    "time": "2026-10-18T20:12:28.843Z",
+    "time": "2026-10-18T21:12:16.294Z",
     "version": "earn-agent-hub/1.0.0",
     "capabilities": [
       "register",
@@ -12,7 +12,7 @@
       "submit",
       "claim"
     ],
-    "lastAction": "ingest run #92 ok",
+    "lastAction": "ingest run #95 ok",
     "nextAction": "next discovery cycle within 30 minutes"
   },
   "agent": {
@@ -72,6 +72,106 @@
     "lost": 0
   },
   "runs": [
+    {
+      "id": 95,
+      "kind": "ingest",
+      "startedAt": "2026-10-18T21:12:09.115Z",
+      "ok": true,
+      "error": null,
+      "stats": {
+        "ingest": {
+          "sha": "",
+          "failed": 0,
+          "checked": 0,
+          "waiting": 0,
+          "approved": 0,
+          "rejected": 0,
+          "abandoned": 0,
+          "submitted": 0
+        },
+        "enqueue": {
+          "active": 0,
+          "queued": [],
+          "expired": 0,
+          "submitted24h": 0
+        },
+        "registration": false
+      }
+    },
+    {
+      "id": 94,
+      "kind": "tick",
+      "startedAt": "2026-10-18T21:00:01.765Z",
+      "ok": true,
+      "error": null,
+      "stats": {
+        "track": {
+          "won": 0,
+          "lost": 0,
+          "checked": 0
+        },
+        "ingest": {
+          "sha": "",
+          "failed": 0,
+          "checked": 0,
+          "waiting": 0,
+          "approved": 0,
+          "rejected": 0,
+          "abandoned": 0,
+          "submitted": 0
+        },
+        "enqueue": {
+          "active": 0,
+          "queued": [],
+          "expired": 0,
+          "submitted24h": 0
+        },
+        "discover": {
+          "live": 0,
+          "candidates": 0,
+          "noLongerLive": 0,
+          "detailsFetched": 0
+        },
+        "registration": false
+      }
+    },
+    {
+      "id": 93,
+      "kind": "tick",
+      "startedAt": "2026-10-18T20:30:03.378Z",
+      "ok": true,
+      "error": null,
+      "stats": {
+        "track": {
+          "won": 0,
+          "lost": 0,
+          "checked": 0
+        },
+        "ingest": {
+          "sha": "",
+          "failed": 0,
+          "checked": 0,
+          "waiting": 0,
+          "approved": 0,
+          "rejected": 0,
+          "abandoned": 0,
+          "submitted": 0
+        },
+        "enqueue": {
+          "active": 0,
+          "queued": [],
+          "expired": 0,
+          "submitted24h": 0
+        },
+        "discover": {
+          "live": 0,
+          "candidates": 0,
+          "noLongerLive": 0,
+          "detailsFetched": 0
+        },
+        "registration": false
+      }
+    },
     {
       "id": 92,
       "kind": "ingest",
@@ -276,106 +376,6 @@
       "id": 86,
       "kind": "ingest",
       "startedAt": "2026-10-18T18:11:58.291Z",
-      "ok": true,
-      "error": null,
-      "stats": {
-        "ingest": {
-          "sha": "",
-          "failed": 0,
-          "checked": 0,
-          "waiting": 0,
-          "approved": 0,
-          "rejected": 0,
-          "abandoned": 0,
-          "submitted": 0
-        },
-        "enqueue": {
-          "active": 0,
-          "queued": [],
-          "expired": 0,
-          "submitted24h": 0
-        },
-        "registration": false
-      }
-    },
-    {
-      "id": 85,
-      "kind": "tick",
-      "startedAt": "2026-10-18T18:00:00.950Z",
-      "ok": true,
-      "error": null,
-      "stats": {
-        "track": {
-          "won": 0,
-          "lost": 0,
-          "checked": 0
-        },
-        "ingest": {
-          "sha": "",
-          "failed": 0,
-          "checked": 0,
-          "waiting": 0,
-          "approved": 0,
-          "rejected": 0,
-          "abandoned": 0,
-          "submitted": 0
-        },
-        "enqueue": {
-          "active": 0,
-          "queued": [],
-          "expired": 0,
-          "submitted24h": 0
-        },
-        "discover": {
-          "live": 0,
-          "candidates": 0,
-          "noLongerLive": 0,
-          "detailsFetched": 0
-        },
-        "registration": false
-      }
-    },
-    {
-      "id": 84,
-      "kind": "tick",
-      "startedAt": "2026-10-18T17:30:03.124Z",
-      "ok": true,
-      "error": null,
-      "stats": {
-        "track": {
-          "won": 0,
-          "lost": 0,
-          "checked": 0
-        },
-        "ingest": {
-          "sha": "",
-          "failed": 0,
-          "checked": 0,
-          "waiting": 0,
-          "approved": 0,
-          "rejected": 0,
-          "abandoned": 0,
-          "submitted": 0
-        },
-        "enqueue": {
-          "active": 0,
-          "queued": [],
-          "expired": 0,
-          "submitted24h": 0
-        },
-        "discover": {
-          "live": 0,
-          "candidates": 0,
-          "noLongerLive": 0,
-          "detailsFetched": 0
-        },
-        "registration": false
-      }
-    },
-    {
-      "id": 83,
-      "kind": "ingest",
-      "startedAt": "2026-10-18T17:12:05.980Z",
       "ok": true,
       "error": null,
       "stats": {
