@@ -1,0 +1,388 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"Anton";src:url(fonts/fontsource-anton-5.3.0/files/anton-latin-400-normal.woff2)}
+@font-face{font-family:"Open Sans";font-weight:400;src:url(fonts/fontsource-open-sans-5.3.0/files/open-sans-latin-400-normal.woff2)}
+@font-face{font-family:"Open Sans";font-weight:700;src:url(fonts/fontsource-open-sans-5.3.0/files/open-sans-latin-700-normal.woff2)}
+@font-face{font-family:"Open Sans";font-weight:800;src:url(fonts/fontsource-open-sans-5.3.0/files/open-sans-latin-800-normal.woff2)}
+html,body{margin:0;background:#000;overflow:hidden}
+canvas{display:block}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const REEL = /*REEL*/null, FMT = /*FMT*/null;
+const [W, H] = REEL.formats[FMT], V = H > W, A = "assets/", T = REEL.T, FPS = REEL.fps;
+const cv = document.getElementById("c"); cv.width = W; cv.height = H;
+const g = cv.getContext("2d");
+
+/* ---------- charte O NET (couleurs relevées sur la couverture du support) ---------- */
+const C = { cream: "#EDE8DE", paper: "#F6F2EA", brown: "#5A4214", navy: "#0E1F3D", ink: "#081120",
+  blue: "#2F8FE6", sky: "#8FD0FF", orange: "#F2683A", white: "#FFFFFF" };
+
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const easeOut = x => 1 - Math.pow(1 - clamp(x), 3);
+const easeOutExpo = x => { x = clamp(x); return x === 1 ? 1 : 1 - Math.pow(2, -10 * x); };
+const easeOutBack = x => { x = clamp(x); const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const easeIn = x => Math.pow(clamp(x), 3);
+const fadeIO = (t, a, b, fi = .2, fo = .2) => smooth((t - a) / fi) * (1 - smooth((t - (b - fo)) / fo));
+function rnd(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ---------- ressources ---------- */
+const IMG = {};
+const load = src => new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(src); i.src = src; });
+const CLIPS = { coupe: 314, filasse: 104 }, cache = new Map();
+async function frame(name, time) {
+  const i = clamp(Math.round(time * FPS) + 1, 1, CLIPS[name]), key = name + i;
+  if (!cache.has(key)) {
+    cache.set(key, await load(`shots/${name}/f${String(i).padStart(4, "0")}.jpg`));
+    if (cache.size > 12) cache.delete(cache.keys().next().value);
+  }
+  return cache.get(key);
+}
+
+/* ---------- dessin ---------- */
+function cover(img, x, y, w, h, zoom = 1, fx = .5, fy = .5) {
+  const s = Math.max(w / img.width, h / img.height) * zoom, dw = img.width * s, dh = img.height * s;
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  g.drawImage(img, x + (w - dw) * fx, y + (h - dh) * fy, dw, dh);
+  g.restore();
+}
+function rrect(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }
+function font(size, f = "Anton", w = 400) { return `${w} ${size}px "${f}"`; }
+function fit(s, size, maxW, f = "Anton", w = 400, ls = 0) {
+  g.font = font(size, f, w); g.letterSpacing = ls + "px";
+  const m = g.measureText(s).width; g.letterSpacing = "0px";
+  return m > maxW ? size * maxW / m : size;
+}
+// texte : o = {f, w, c, al, a, ls, sh}
+function txt(s, x, y, size, o = {}) {
+  g.save();
+  g.font = font(size, o.f || "Anton", o.w || 400);
+  g.textAlign = o.al || "center"; g.textBaseline = "alphabetic"; g.letterSpacing = (o.ls || 0) + "px";
+  g.globalAlpha *= o.a ?? 1;
+  if (o.sh) { g.shadowColor = o.sh; g.shadowBlur = size * .35; g.shadowOffsetY = size * .05; }
+  g.fillStyle = o.c || C.white;
+  g.fillText(s, x, y);
+  g.restore();
+}
+// texte qui claque : grossit puis se pose, avec un léger flou de mouvement
+function slam(s, x, y, size, t, t0, o = {}) {
+  if (t < t0) return;
+  const p = (t - t0) / .32, k = 1 + .45 * (1 - easeOutExpo(p)), a = clamp((t - t0) / .06);
+  const ax = o.al === "left" ? x : x, ay = y - size * .35;
+  g.save(); g.translate(ax, ay); g.scale(k, k); g.translate(-ax, -ay);
+  txt(s, x, y, size, { ...o, a: a * (o.a ?? 1) });
+  g.restore();
+}
+// texte qui monte derrière un cache
+function rise(s, x, y, size, t, t0, o = {}) {
+  if (t < t0) return;
+  const p = easeOutExpo((t - t0) / .55);
+  g.save(); g.beginPath(); g.rect(0, y - size * 1.15, W, size * 1.4); g.clip();
+  txt(s, x, y + (1 - p) * size * 1.2, size, o);
+  g.restore();
+}
+
+/* ---------- eau : fond profond, gouttes, ondes, éclaboussures ---------- */
+function water(t, a = 1) {
+  g.save(); g.globalAlpha = a;
+  g.fillStyle = C.ink; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 5; i++) {
+    const x = W * (.5 + .42 * Math.sin(t * .35 + i * 1.7)), y = H * (.5 + .38 * Math.cos(t * .27 + i * 2.3)), r = Math.max(W, H) * (.38 + .1 * i % .3);
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(30,95,180,${.22 - i * .025})`); gr.addColorStop(1, "rgba(30,95,180,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  }
+  g.restore();
+}
+function drop(x, y, r, a = 1) {
+  g.save(); g.globalAlpha = a; g.translate(x, y);
+  g.beginPath(); g.moveTo(0, -r * 2.1);
+  g.bezierCurveTo(r * .35, -r * 1.2, r, -r * .55, r, 0); g.arc(0, 0, r, 0, Math.PI); g.bezierCurveTo(-r, -r * .55, -r * .35, -r * 1.2, 0, -r * 2.1);
+  const gr = g.createLinearGradient(-r, -r * 2, r, r); gr.addColorStop(0, C.sky); gr.addColorStop(1, C.blue);
+  g.fillStyle = gr; g.shadowColor = "rgba(47,143,230,.6)"; g.shadowBlur = r * .8; g.fill();
+  g.shadowBlur = 0; g.fillStyle = "rgba(255,255,255,.75)";
+  g.beginPath(); g.ellipse(-r * .38, -r * .2, r * .16, r * .32, -.35, 0, Math.PI * 2); g.fill();
+  g.restore();
+}
+function ripples(x, y, t, t0, col = "47,143,230", n = 3, maxR = Math.max(W, H) * .55) {
+  const age = t - t0; if (age < 0) return;
+  g.save();
+  for (let i = 0; i < n; i++) {
+    const a = age - i * .16; if (a < 0) continue;
+    const p = easeOut(a / 1.6), r = maxR * p;
+    g.strokeStyle = `rgba(${col},${(1 - p) * .55})`; g.lineWidth = 2 + 10 * (1 - p);
+    g.beginPath(); g.ellipse(x, y, r, r * (V ? 1 : .9), 0, 0, Math.PI * 2); g.stroke();
+  }
+  g.restore();
+}
+function splash(x, y, t, t0, seed, n = 46, power = 1) {
+  const age = t - t0; if (age < 0 || age > 1.4) return;
+  const R = rnd(seed), s = Math.min(W, H) / 1080;
+  for (let i = 0; i < n; i++) {
+    const ang = -Math.PI / 2 + (R() - .5) * Math.PI * 1.5, v = (500 + R() * 1300) * s * power, r = (4 + R() * 11) * s;
+    const px = x + Math.cos(ang) * v * age, py = y + Math.sin(ang) * v * age + .5 * 2600 * s * age * age;
+    const a = (1 - age / 1.4) * (.6 + .4 * R());
+    g.save(); g.globalAlpha = a; g.fillStyle = R() < .25 ? C.white : C.sky;
+    g.beginPath(); g.ellipse(px, py, r, r * 1.25, 0, 0, Math.PI * 2); g.fill(); g.restore();
+  }
+}
+
+/* ---------- impacts : tremblement, flash ---------- */
+function shake(t) {
+  let x = 0, y = 0;
+  for (const [h, s] of REEL.hits) {
+    const a = t - h; if (a < 0 || a > .45) continue;
+    const amp = { big: 22, mid: 7, small: 3 }[s] * Math.exp(-a * 9) * Math.min(W, H) / 1080;
+    x += Math.sin(a * 83 + h) * amp; y += Math.cos(a * 71 + h * 2) * amp;
+  }
+  return [x, y];
+}
+function flash(t) {
+  let f = 0;
+  for (const [h, s] of REEL.hits) { const a = t - h; if (a >= 0 && a < .3) f = Math.max(f, { big: .85, mid: .22, small: .1 }[s] * Math.exp(-a * 14)); }
+  return f;
+}
+
+/* ---------- mise en page : 16:9 (projection) ou 9:16 (réseaux) ---------- */
+// photo ou extrait vidéo : plein cadre en 9:16 ; en 16:9, carte verticale à droite sur fond flouté
+function media(img, t, t0, dur, o = {}) {
+  const p = clamp((t - t0) / dur), punch = 1 + .07 * (1 - easeOutExpo((t - t0) / .4));
+  const z = (o.z0 ?? 1.04) + ((o.z1 ?? 1.12) - (o.z0 ?? 1.04)) * p;
+  const dim = o.dim ?? .2;
+  if (V || o.full) {
+    cover(img, 0, 0, W, H, z * punch, o.fx ?? .5, o.fy ?? .5);
+    const gr = g.createLinearGradient(0, H * (V ? .38 : .2), 0, H);
+    gr.addColorStop(0, "rgba(8,17,32,0)"); gr.addColorStop(1, `rgba(8,17,32,${o.grad ?? .92})`);
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    if (!V) { const gl = g.createLinearGradient(0, 0, W * .65, 0); gl.addColorStop(0, "rgba(8,17,32,.85)"); gl.addColorStop(1, "rgba(8,17,32,0)"); g.fillStyle = gl; g.fillRect(0, 0, W, H); }
+  } else {
+    g.save(); g.filter = "blur(36px) brightness(.38) saturate(1.2)"; cover(img, -60, -60, W + 120, H + 120, 1.1); g.restore();
+    const ch = H * .84, cw = ch * .75, cx = W * .7 - cw / 2, cy = (H - ch) / 2 + (1 - easeOutExpo((t - t0) / .45)) * 40;
+    g.save(); g.translate(W * .7, H / 2); g.rotate((o.rot ?? 1.2) * Math.PI / 180); g.translate(-W * .7, -H / 2);
+    g.shadowColor = "rgba(0,0,0,.6)"; g.shadowBlur = 60; g.shadowOffsetY = 25;
+    rrect(cx, cy, cw, ch, 26); g.fillStyle = "#000"; g.fill(); g.shadowColor = "transparent";
+    g.save(); rrect(cx, cy, cw, ch, 26); g.clip(); cover(img, cx, cy, cw, ch, z * punch, o.fx ?? .5, o.fy ?? .5); g.restore();
+    rrect(cx, cy, cw, ch, 26); g.strokeStyle = "rgba(143,208,255,.35)"; g.lineWidth = 2; g.stroke();
+    g.restore();
+  }
+  if (dim) { g.fillStyle = `rgba(8,17,32,${dim})`; g.fillRect(0, 0, W, H); }
+}
+// bloc de légende : sur-titre, titre, sous-titre (centré en bas en 9:16, à gauche en 16:9)
+function caption(t, c) {
+  const x = V ? W / 2 : W * .075, al = V ? "center" : "left", maxW = V ? W * .88 : W * .46;
+  const big = fit(c.big, c.size || (V ? 200 : 190), maxW, "Anton", 400, 2);
+  const base = V ? (c.y ?? 1430) : H * .5 + big * .38;
+  if (c.kick) {
+    const ky = base - big - (V ? 34 : 30);
+    if (c.num) {
+      g.save(); g.font = font(V ? 40 : 36, "Open Sans", 800); g.letterSpacing = "6px";
+      const kw = g.measureText(c.kick).width; g.restore();
+      const gap = V ? 100 : 80, nx = V ? W / 2 - (kw + gap) / 2 : x;
+      rise(c.num, nx, ky, V ? 40 : 36, t, c.kt ?? c.t, { f: "Open Sans", w: 800, c: C.orange, al: "left", ls: 2 });
+      rise(c.kick, nx + gap, ky, V ? 40 : 36, t, c.kt ?? c.t, { f: "Open Sans", w: 800, c: C.sky, al: "left", ls: 6 });
+    } else rise(c.kick, x, ky, V ? 40 : 36, t, c.kt ?? c.t, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
+  }
+  (c.rise ? rise : slam)(c.big, x, base, big, t, c.t, { c: c.col || C.white, al, ls: 2, sh: "rgba(0,0,0,.45)" });
+  if (c.sub) {
+    const lines = Array.isArray(c.sub) ? c.sub : [c.sub], ss = V ? 46 : 40;
+    lines.forEach((l, i) => rise(l, x, base + (V ? 78 : 70) + i * ss * 1.3, ss, t, (c.st ?? c.t + .25) + i * .08, { f: "Open Sans", w: 700, c: "rgba(255,255,255,.92)", al, sh: "rgba(0,0,0,.6)" }));
+  }
+  // trait orange sous le titre (rappel du tuyau)
+  const lp = easeOutExpo((t - c.t - .1) / .5), lw = (V ? 160 : 140) * lp;
+  if (lp > 0) { g.fillStyle = C.orange; g.fillRect(V ? W / 2 - lw / 2 : x, base + 18, lw, 8); }
+}
+function brandBug(t, a = 1) {
+  const x = V ? W / 2 : W * .075, y = V ? 250 : 96, al = V ? "center" : "left";
+  g.save(); g.globalAlpha = a * .95;
+  txt("O NET ACADÉMIE", x + (V ? 0 : 34), y, V ? 38 : 34, { f: "Open Sans", w: 800, al, ls: 4, c: C.white });
+  g.restore();
+  if (!V) drop(x + 10, y - 6, 9, a);
+}
+
+/* ---------- scènes ---------- */
+async function renderFrame(t) {
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.filter = "none"; g.globalCompositeOperation = "source-over";
+  g.fillStyle = C.ink; g.fillRect(0, 0, W, H);
+  const [sx, sy] = shake(t); g.translate(sx, sy);
+  const big = V ? 210 : 230;
+
+  if (t < T.hook2) {                                   // « Une fuite ? »
+    media(await frame("filasse", .9 + (t - T.hook1) * .9), t, T.hook1, 2, { dim: .32, z0: 1.1, z1: 1.18, fy: .55 });
+    const s = fit("UNE FUITE ?", big * 1.25, V ? W * .86 : W * .4);
+    slam("UNE FUITE ?", V ? W / 2 : W * .075, V ? 1300 : H * .58, s, t, .12, { al: V ? "center" : "left", sh: "rgba(0,0,0,.5)" });
+  } else if (t < T.learn) {                            // « Plus de pression ? » « Un chauffe-eau qui goutte ? »
+    const img = t < T.hook3 ? IMG.reducteur : IMG.securite;
+    media(img, t, t < T.hook3 ? T.hook2 : T.hook3, 1, { dim: .3, z0: 1.05, z1: 1.12, fy: t < T.hook3 ? .45 : .4 });
+    const L = t < T.hook3 ? ["PLUS DE", "PRESSION ?"] : ["UN CHAUFFE-EAU", "QUI GOUTTE ?"], t0 = t < T.hook3 ? T.hook2 : T.hook3;
+    const s = Math.min(fit(L[0], big, V ? W * .86 : W * .4), fit(L[1], big, V ? W * .86 : W * .4));
+    const x = V ? W / 2 : W * .075, y0 = V ? 1180 : H * .5;
+    slam(L[0], x, y0, s, t, t0 + .04, { al: V ? "center" : "left", sh: "rgba(0,0,0,.5)" });
+    slam(L[1], x, y0 + s * 1.02, s, t, t0 + .16, { al: V ? "center" : "left", c: C.sky, sh: "rgba(0,0,0,.5)" });
+  } else if (t < T.logo) {                             // « Le dépannage, ça s'apprend. » puis la goutte tombe
+    water(t);
+    const s = fit("ÇA S'APPREND.", V ? 190 : 210, W * .8);
+    const cy = H * .47;
+    rise("LE DÉPANNAGE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - 5.55) / .3) });
+    rise("ÇA S'APPREND.", W / 2, cy + s * 1.08, s, t, T.learn2, { c: C.sky, a: 1 - smooth((t - 5.55) / .3) });
+    const p = clamp((t - 5.5) / .5);
+    if (p > 0) drop(W / 2, -60 + easeIn(p) * (H / 2 + 60), Math.min(W, H) * .035);
+  } else if (t < T.title) {                            // logo O NET sur le crème du support de cours
+    const r = Math.hypot(W, H) * easeOutExpo((t - T.logo) / .55);
+    water(t);
+    g.save(); g.beginPath(); g.arc(W / 2, H / 2, r, 0, Math.PI * 2); g.clip();
+    g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
+    ripples(W / 2, H / 2, t, T.logo + .05, "47,143,230", 4);
+    const lw = (V ? W * .72 : W * .34) * (.86 + .14 * easeOutBack((t - T.logo - .05) / .6)), lh = lw * IMG.logo.height / IMG.logo.width;
+    const ly = H / 2 - lh * (V ? .72 : .66);
+    g.globalAlpha = clamp((t - T.logo - .03) / .12);
+    g.drawImage(IMG.logo, W / 2 - lw / 2, ly, lw, lh);
+    g.globalAlpha = 1;
+    rise("ACADÉMIE", W / 2, ly + lh + (V ? 150 : 128), V ? 132 : 112, t, T.logo + .5, { c: C.brown, ls: V ? 26 : 30 });
+    const lp = easeOutExpo((t - T.logo - .75) / .6);
+    g.fillStyle = C.orange; g.fillRect(W / 2 - 120 * lp, ly + lh + (V ? 190 : 162), 240 * lp, 7);
+    g.restore();
+    splash(W / 2, H / 2, t, T.logo, 7, 60, 1.1);
+  } else if (t < T.coupe) {                            // titre de la formation, ligne par ligne sur les temps
+    g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
+    const L = V ? ["LES BASES", "ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"] : ["LES BASES ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"];
+    const ts = V ? [8, 8.5, 9, 9.5] : [8, 9, 9.5];
+    const s = Math.min(...L.map(l => fit(l, V ? 170 : 175, W * .86)));
+    const y0 = H / 2 - (L.length - 1) * s * 1.06 / 2 + s * .36;
+    L.forEach((l, i) => slam(l, W / 2, y0 + i * s * 1.06, s, t, ts[i], { c: i === L.length - 1 ? C.orange : C.brown }));
+    const lw = V ? W * .5 : W * .22, ly = V ? 230 : 120;
+    g.globalAlpha = .9; g.drawImage(IMG.logo, W / 2 - lw * .22, ly - lw * .44 * .5, lw * .44, lw * .44 * IMG.logo.height / IMG.logo.width); g.globalAlpha = 1;
+    txt("SUPPORT THÉORIQUE  ·  APPROCHE TERRAIN", W / 2, V ? 1640 : H - 90, V ? 34 : 34, { f: "Open Sans", w: 800, c: C.brown, ls: 4, a: smooth((t - 9.6) / .3) });
+  } else if (t < T.theorie) {                          // approche terrain : un geste par coupe
+    const S = [
+      [T.coupe, T.sertir, "01", "COUPER", () => frame("coupe", 1.4 + (t - T.coupe) * 1.2), { fy: .45 }],
+      [T.sertir, T.racc, "02", "SERTIR", () => IMG.sertisseuse, { fy: .55, fx: .35 }],
+      [T.racc, T.etanch, "03", "RACCORDER", () => IMG.raccords, { fy: .55 }],
+      [T.etanch, T.monter, "04", "ÉTANCHER", () => frame("filasse", 1.9 + (t - T.etanch) * .9), { fy: .55 }],
+      [T.monter, T.theorie, "05", "MONTER", () => IMG.etau, { fy: .5, fx: .4 }],
+    ];
+    const [a, b, num, word, src, o] = S.find(s => t < s[1]);
+    media(await src(), t, a, b - a, { ...o, dim: .12 });
+    caption(t, { t: a + .02, kt: T.coupe, num, kick: "APPROCHE TERRAIN", big: word,
+      sub: word === "MONTER" ? (V ? ["Les vrais gestes,", "sur du vrai matériel."] : ["Les vrais gestes, sur du vrai matériel."]) : null, st: T.monter + .45 });
+    brandBug(t);
+  } else if (t < T.diag) {                             // support théorique
+    media(IMG.salle, t, T.theorie, 2, { full: true, dim: .1, z0: 1.02, z1: 1.1, fx: V ? .42 : .5 });
+    caption(t, { t: T.theorie + .02, kick: "EN SALLE", big: "SUPPORT THÉORIQUE", sub: "Comprendre avant d'intervenir.", rise: true });
+    brandBug(t);
+  } else if (t < T.pratique) {                         // la méthode : extrait du support de cours
+    g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
+    const p = easeOutExpo((t - T.diag) / .6);
+    const cw = V ? W * .9 : W * .52, chh = cw * IMG.debit.height / IMG.debit.width;
+    const cx = V ? W / 2 - cw / 2 : W * .43, cy = V ? 470 + (1 - p) * 80 : H / 2 - chh / 2 + (1 - p) * 60;
+    g.save(); g.globalAlpha = clamp((t - T.diag) / .15);
+    g.shadowColor = "rgba(40,30,10,.28)"; g.shadowBlur = 50; g.shadowOffsetY = 18;
+    rrect(cx, cy, cw, chh, 18); g.fillStyle = "#fff"; g.fill(); g.shadowColor = "transparent";
+    g.save(); rrect(cx, cy, cw, chh, 18); g.clip(); g.drawImage(IMG.debit, cx, cy, cw, chh); g.restore();
+    g.restore();
+    const x = V ? W / 2 : W * .075, al = V ? "center" : "left";
+    const y = V ? cy + chh + 290 : H * .42;
+    rise("MÉTHODE", x, y - (V ? 190 : 180), V ? 40 : 36, t, T.diag + .05, { f: "Open Sans", w: 800, c: C.orange, al, ls: 6 });
+    const s = fit("DIAGNOSTIQUER", V ? 170 : 150, V ? W * .86 : W * .33);
+    slam("DIAGNOSTIQUER", x, y, s, t, T.diag + .08, { c: C.brown, al });
+    ["Trouver la vraie cause,", "du plus simple", "au plus technique."].forEach((l, i) =>
+      rise(l, x, y + (V ? 80 : 72) + i * (V ? 58 : 52), V ? 44 : 40, t, T.diag + .5 + i * .12, { f: "Open Sans", w: 700, c: C.brown, al }));
+    // les trois pistes du support s'allument une à une
+    [0, 1, 2].forEach(i => {
+      const tt = T.diag + .9 + i * .3, q = easeOutBack((t - tt) / .4);
+      if (q <= 0) return;
+      const ix = cx + cw * (.07 + i * .31), iy = cy + chh * .3;
+      g.save(); g.translate(ix, iy); g.scale(q, q); g.fillStyle = C.orange; g.beginPath(); g.arc(0, 0, cw * .03, 0, Math.PI * 2); g.fill();
+      txt(String(i + 1), 0, cw * .012, cw * .034, { f: "Open Sans", w: 800 }); g.restore();
+    });
+  } else if (t < T.auteur) {                           // comprendre l'essentiel pour mieux passer à la pratique
+    media(IMG.explique, t, T.pratique, 2, { dim: .18, fy: .62, fx: .45, z0: 1.06, z1: 1.14 });
+    const L = V ? ["COMPRENDRE", "L'ESSENTIEL"] : ["COMPRENDRE", "L'ESSENTIEL"];
+    const x = V ? W / 2 : W * .075, al = V ? "center" : "left";
+    const s = Math.min(...L.map(l => fit(l, V ? 190 : 170, V ? W * .86 : W * .46)));
+    const y0 = V ? 1200 : H * .42;
+    L.forEach((l, i) => rise(l, x, y0 + i * s * 1.04, s, t, T.pratique + .05 + i * .12, { al, c: i ? C.sky : C.white, sh: "rgba(0,0,0,.5)" }));
+    (V ? ["pour mieux passer", "à la pratique."] : ["pour mieux passer à la pratique."]).forEach((l, i) =>
+      rise(l, x, y0 + s * 1.04 + (V ? 90 : 84) + i * 62, V ? 50 : 46, t, T.pratique + .55 + i * .1, { f: "Open Sans", w: 700, al, sh: "rgba(0,0,0,.6)" }));
+    brandBug(t);
+  } else if (t < T.build) {                            // le formateur
+    water(t);
+    g.save(); g.globalAlpha = .28; g.filter = "blur(4px) grayscale(.4)"; cover(IMG.sertisseuse, 0, 0, W, H, 1.1 + (t - T.auteur) * .03, .5, .5); g.restore();
+    g.fillStyle = "rgba(8,17,32,.45)"; g.fillRect(0, 0, W, H);
+    const s = fit("TAHERE ILIÈS", V ? 190 : 230, W * .86);
+    rise("UNE FORMATION CONÇUE PAR", W / 2, H / 2 - s * .78, V ? 40 : 40, t, T.auteur + .05, { f: "Open Sans", w: 800, c: C.sky, ls: 6 });
+    slam("TAHERE ILIÈS", W / 2, H / 2 + s * .36, s, t, T.auteur + .25, { sh: "rgba(0,0,0,.5)" });
+    const lp = easeOutExpo((t - T.auteur - .5) / .6);
+    g.fillStyle = C.orange; g.fillRect(W / 2 - 130 * lp, H / 2 + s * .36 + 38, 260 * lp, 8);
+    rise("O NET ACADÉMIE", W / 2, H / 2 + s * .36 + 120, V ? 40 : 40, t, T.auteur + .7, { f: "Open Sans", w: 800, ls: 5 });
+  } else if (t < T.date) {                             // montée : quatre mots sur les temps
+    const k = Math.min(3, Math.floor((t - T.build) / .5)), t0 = T.build + k * .5;
+    const imgs = [IMG.coupeTube, IMG.raccords, IMG.sertisseuse, null];
+    if (imgs[k]) media(imgs[k], t, t0, .5, { dim: .45, full: true, z0: 1.12, z1: 1.2 }); else water(t);
+    const w = ["L'ACADÉMIE.", "LA FORMATION.", "LE PROGRAMME.", "PRÉSENTÉS LE"][k];
+    const s = fit(w, V ? 170 : 200, W * .84);
+    slam(w, W / 2, H / 2 + s * .36, s, t, t0, { c: k === 3 ? C.sky : C.white, sh: "rgba(0,0,0,.5)" });
+  } else if (t < T.end) {                              // 21 novembre
+    water(t);
+    ripples(W / 2, H / 2, t, T.date, "143,208,255", 4, Math.max(W, H) * .7);
+    const n = V ? 620 : 560, p = easeOutExpo((t - T.date) / .45), k = 1 + .5 * (1 - p);
+    g.save(); g.translate(W / 2, H * (V ? .44 : .5)); g.scale(k, k);
+    g.font = font(n); g.textAlign = "center"; g.textBaseline = "alphabetic";
+    const gr = g.createLinearGradient(0, -n * .75, 0, 0); gr.addColorStop(0, C.white); gr.addColorStop(1, C.sky);
+    g.fillStyle = gr; g.globalAlpha = clamp((t - T.date) / .05); g.shadowColor = "rgba(47,143,230,.7)"; g.shadowBlur = 80;
+    g.fillText("21", V ? 0 : -W * .2, V ? n * .3 : n * .36);
+    g.restore();
+    const x = V ? W / 2 : W * .5, al = V ? "center" : "left";
+    const ny = V ? H * .44 + 420 : H * .5 - 10, ns = V ? 210 : 190;
+    slam("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)" });
+    rise("SAMEDI  ·  2026", x, ny + (V ? 100 : 96), V ? 56 : 52, t, T.date + .55, { f: "Open Sans", w: 800, c: C.orange, al, ls: 8 });
+    rise("PRÉSENTATION OFFICIELLE", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
+    splash(W / 2, H / 2, t, T.date, 21, 70, 1.4);
+  } else {                                             // carte de fin
+    g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
+    ripples(W / 2, V ? 560 : 300, t, T.end, "47,143,230", 3, Math.max(W, H) * .5);
+    const lw = V ? W * .58 : W * .27, lh = lw * IMG.logo.height / IMG.logo.width, ly = V ? 330 : 70;
+    g.globalAlpha = clamp((t - T.end) / .2); g.drawImage(IMG.logo, W / 2 - lw / 2, ly + (1 - easeOutExpo((t - T.end) / .6)) * 30, lw, lh); g.globalAlpha = 1;
+    let y = ly + lh + (V ? 120 : 110);
+    rise("ACADÉMIE", W / 2, y, V ? 96 : 92, t, T.end + .15, { c: C.brown, ls: V ? 22 : 24 });
+    y += V ? 130 : 110;
+    const L = V ? ["LES BASES ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"] : ["LES BASES ESSENTIELLES DE LA PLOMBERIE ET DU DÉPANNAGE"];
+    const s = Math.min(...L.map(l => fit(l, V ? 82 : 74, W * .84)));
+    L.forEach((l, i) => rise(l, W / 2, y + i * s * 1.1, s, t, T.end + .3 + i * .08, { c: C.brown }));
+    y += (L.length - 1) * s * 1.1 + (V ? 80 : 70);
+    rise("Support théorique  ·  Approche terrain", W / 2, y, V ? 42 : 38, t, T.end + .55, { f: "Open Sans", w: 700, c: C.brown });
+    // pastille date
+    const q = easeOutBack((t - T.end - .8) / .5);
+    if (q > 0) {
+      const pw = V ? 760 : 760, ph = V ? 120 : 112, py = y + (V ? 70 : 52);
+      g.save(); g.translate(W / 2, py + ph / 2); g.scale(q, q);
+      rrect(-pw / 2, -ph / 2, pw, ph, ph / 2); g.fillStyle = C.navy; g.fill();
+      txt("SAMEDI 21 NOVEMBRE 2026", 0, ph * .2, V ? 58 : 56, { c: C.white, ls: 3 });
+      g.restore();
+    }
+    rise("Conçu par Tahere Iliès  ·  © 2026 O NET ACADÉMIE", W / 2, H - (V ? 330 : 50), V ? 30 : 26, t, T.end + 1.1, { f: "Open Sans", w: 700, c: "rgba(90,66,20,.75)" });
+    const dp = clamp((t - (T.end - .5)) / .5);
+    if (t < T.end + .02) drop(W / 2, -60 + easeIn(dp) * 400, 20);
+  }
+
+  // finitions : flash d'impact, vignette, fondu final
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const f = flash(t); if (f > 0) { g.fillStyle = `rgba(255,255,255,${f})`; g.fillRect(0, 0, W, H); }
+  const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .45, W / 2, H / 2, Math.hypot(W, H) * .62);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.28)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  const [fa, fb] = REEL.fadeOut, fo = clamp((t - fa) / (fb - fa)); if (fo > 0) { g.fillStyle = `rgba(0,0,0,${fo})`; g.fillRect(0, 0, W, H); }
+}
+
+window.ready = (async () => {
+  const files = { logo: "logo.png", reducteur: "etau.jpg", securite: "securite.jpg", sertisseuse: "sertisseuse.jpg", raccords: "raccords.jpg",
+    etau: "etau.jpg", salle: "salle.jpg", debit: "debit.jpg", explique: "coupe-tube.jpg", coupeTube: "coupe-tube.jpg" };
+  for (const [k, f] of Object.entries(files)) IMG[k] = await load(A + f);
+  await Promise.all(["400 10px Anton", "400 10px 'Open Sans'", "700 10px 'Open Sans'", "800 10px 'Open Sans'"].map(f => document.fonts.load(f, "AÉ")));
+  return `prêt ${W}×${H}`;
+})();
+window.renderFrame = renderFrame;
+</script>
+</body></html>
