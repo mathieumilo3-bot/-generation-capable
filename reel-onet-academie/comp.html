@@ -210,23 +210,20 @@ async function renderFrame(t) {
   const [sx, sy] = shake(t); g.translate(sx, sy);
   const big = V ? 210 : 230;
 
-  if (t < T.hook2) {                                   // « Une fuite ? »
-    media(await frame("filasse", .9 + (t - T.hook1) * .9), t, T.hook1, 2, { dim: .32, z0: 1.1, z1: 1.18, fy: .55 });
-    const s = fit("UNE FUITE ?", big * 1.25, V ? W * .86 : W * .4);
-    slam("UNE FUITE ?", V ? W / 2 : W * .075, V ? 1300 : H * .58, s, t, .12, { al: V ? "center" : "left", sh: "rgba(0,0,0,.5)" });
-  } else if (t < T.learn) {                            // « Plus de pression ? » « Un chauffe-eau qui goutte ? »
-    const img = t < T.hook3 ? IMG.reducteur : IMG.securite;
-    media(img, t, t < T.hook3 ? T.hook2 : T.hook3, 1, { dim: .3, z0: 1.05, z1: 1.12, fy: t < T.hook3 ? .45 : .4 });
-    const L = t < T.hook3 ? ["PLUS DE", "PRESSION ?"] : ["UN CHAUFFE-EAU", "QUI GOUTTE ?"], t0 = t < T.hook3 ? T.hook2 : T.hook3;
+  if (t < T.learn) {                                   // accroche : on parle à ceux qui veulent apprendre le métier
+    const k = t < T.hook2 ? 0 : t < T.hook3 ? 1 : 2, t0 = [T.hook1, T.hook2, T.hook3][k];
+    if (k === 0) media(await frame("filasse", .9 + (t - T.hook1) * .9), t, T.hook1, 2, { dim: .32, z0: 1.1, z1: 1.18, fy: .55 });
+    else media(k === 1 ? IMG.sertisseuse : IMG.securite, t, t0, 1, { dim: .3, z0: 1.05, z1: 1.12, fy: k === 1 ? .55 : .4, fx: k === 1 ? .35 : .5 });
+    const L = [["TU VEUX DEVENIR", "PLOMBIER ?"], ["UN MÉTIER", "QUI RECRUTE."], ["ON COMMENCE", "PAR LES BASES."]][k];
     const s = Math.min(fit(L[0], big, V ? W * .86 : W * .4), fit(L[1], big, V ? W * .86 : W * .4));
     const x = V ? W / 2 : W * .075, y0 = V ? 1180 : H * .5;
     slam(L[0], x, y0, s, t, t0 + .04, { al: V ? "center" : "left", sh: "rgba(0,0,0,.5)" });
     slam(L[1], x, y0 + s * 1.02, s, t, t0 + .16, { al: V ? "center" : "left", c: C.sky, sh: "rgba(0,0,0,.5)" });
-  } else if (t < T.logo) {                             // « Le dépannage, ça s'apprend. » puis la goutte tombe
+  } else if (t < T.logo) {                             // « La plomberie, ça s'apprend. » puis la goutte tombe
     water(t);
     const s = fit("ÇA S'APPREND.", V ? 190 : 210, W * .8);
     const cy = H * .47;
-    rise("LE DÉPANNAGE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - 5.55) / .3) });
+    rise("LA PLOMBERIE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - 5.55) / .3) });
     rise("ÇA S'APPREND.", W / 2, cy + s * 1.08, s, t, T.learn2, { c: C.sky, a: 1 - smooth((t - 5.55) / .3) });
     const p = clamp((t - 5.5) / .5);
     if (p > 0) drop(W / 2, -60 + easeIn(p) * (H / 2 + 60), Math.min(W, H) * .035);
@@ -266,8 +263,8 @@ async function renderFrame(t) {
     ];
     const [a, b, num, word, src, o] = S.find(s => t < s[1]);
     media(await src(), t, a, b - a, { ...o, dim: .12 });
-    caption(t, { t: a + .02, kt: T.coupe, num, kick: "APPROCHE TERRAIN", big: word,
-      sub: word === "MONTER" ? (V ? ["Les vrais gestes,", "sur du vrai matériel."] : ["Les vrais gestes, sur du vrai matériel."]) : null, st: T.monter + .45 });
+    caption(t, { t: a + .02, kt: T.coupe, num, kick: "TU APPRENDS À", big: word,
+      sub: word === "MONTER" ? (V ? ["Les gestes du métier,", "sur du vrai matériel."] : ["Les gestes du métier, sur du vrai matériel."]) : null, st: T.monter + .45 });
     brandBug(t);
   } else if (t < T.diag) {                             // support théorique
     media(IMG.salle, t, T.theorie, 2, { full: true, dim: .1, z0: 1.02, z1: 1.1, fx: V ? .42 : .5 });
@@ -285,10 +282,10 @@ async function renderFrame(t) {
     g.restore();
     const x = V ? W / 2 : W * .075, al = V ? "center" : "left";
     const y = V ? cy + chh + 290 : H * .42;
-    rise("MÉTHODE", x, y - (V ? 190 : 180), V ? 40 : 36, t, T.diag + .05, { f: "Open Sans", w: 800, c: C.orange, al, ls: 6 });
+    rise("TU APPRENDS À", x, y - (V ? 190 : 180), V ? 40 : 36, t, T.diag + .05, { f: "Open Sans", w: 800, c: C.orange, al, ls: 6 });
     const s = fit("DIAGNOSTIQUER", V ? 170 : 150, V ? W * .86 : W * .33);
     slam("DIAGNOSTIQUER", x, y, s, t, T.diag + .08, { c: C.brown, al });
-    ["Trouver la vraie cause,", "du plus simple", "au plus technique."].forEach((l, i) =>
+    ["Trouver la vraie cause", "d'une panne, du plus simple", "au plus technique."].forEach((l, i) =>
       rise(l, x, y + (V ? 80 : 72) + i * (V ? 58 : 52), V ? 44 : 40, t, T.diag + .5 + i * .12, { f: "Open Sans", w: 700, c: C.brown, al }));
     // les trois pistes du support s'allument une à une
     [0, 1, 2].forEach(i => {
@@ -322,7 +319,7 @@ async function renderFrame(t) {
     const k = Math.min(3, Math.floor((t - T.build) / .5)), t0 = T.build + k * .5;
     const imgs = [IMG.coupeTube, IMG.raccords, IMG.sertisseuse, null];
     if (imgs[k]) media(imgs[k], t, t0, .5, { dim: .45, full: true, z0: 1.12, z1: 1.2 }); else water(t);
-    const w = ["L'ACADÉMIE.", "LA FORMATION.", "LE PROGRAMME.", "PRÉSENTÉS LE"][k];
+    const w = ["TON MÉTIER.", "TA FORMATION.", "TON ACADÉMIE.", "RENDEZ-VOUS LE"][k];
     const s = fit(w, V ? 170 : 200, W * .84);
     slam(w, W / 2, H / 2 + s * .36, s, t, t0, { c: k === 3 ? C.sky : C.white, sh: "rgba(0,0,0,.5)" });
   } else if (t < T.end) {                              // 21 novembre
@@ -339,7 +336,7 @@ async function renderFrame(t) {
     const ny = V ? H * .44 + 420 : H * .5 - 10, ns = V ? 210 : 190;
     slam("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)" });
     rise("SAMEDI  ·  2026", x, ny + (V ? 100 : 96), V ? 56 : 52, t, T.date + .55, { f: "Open Sans", w: 800, c: C.orange, al, ls: 8 });
-    rise("PRÉSENTATION OFFICIELLE", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
+    rise("PRÉSENTATION DE LA FORMATION", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
     splash(W / 2, H / 2, t, T.date, 21, 70, 1.4);
   } else {                                             // carte de fin
     g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
@@ -353,7 +350,7 @@ async function renderFrame(t) {
     const s = Math.min(...L.map(l => fit(l, V ? 82 : 74, W * .84)));
     L.forEach((l, i) => rise(l, W / 2, y + i * s * 1.1, s, t, T.end + .3 + i * .08, { c: C.brown }));
     y += (L.length - 1) * s * 1.1 + (V ? 80 : 70);
-    rise("Support théorique  ·  Approche terrain", W / 2, y, V ? 42 : 38, t, T.end + .55, { f: "Open Sans", w: 700, c: C.brown });
+    rise("Formation de plombier  ·  Théorie + terrain", W / 2, y, V ? 42 : 38, t, T.end + .55, { f: "Open Sans", w: 700, c: C.brown });
     // pastille date
     const q = easeOutBack((t - T.end - .8) / .5);
     if (q > 0) {
