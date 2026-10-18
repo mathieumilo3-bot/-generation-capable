@@ -1,6 +1,6 @@
 # Vidéo de présentation « O NET ACADÉMIE »
 
-Vidéo de 28,6 s qui présente l'académie et la formation « Les bases essentielles de la plomberie et du dépannage » (Tahere Iliès), le samedi 21 novembre 2026. Elle s'adresse aux futurs plombiers, c'est-à-dire aux personnes qui veulent apprendre le métier. Elle existe en deux formats, rendus à partir du même montage :
+Vidéo de 51 s qui présente l'académie et la formation « Les bases essentielles de la plomberie et du dépannage » (Tahere Iliès), le samedi 21 novembre 2026. Elle s'adresse aux futurs plombiers, c'est-à-dire aux personnes qui veulent apprendre le métier. Elle existe en deux formats, rendus à partir du même montage :
 
 - `ONET-Academie-16x9.mp4` : 1920×1080, pour la projection en salle ou YouTube ;
 - `ONET-Academie-9x16.mp4` : 1080×1920, pour Instagram, TikTok, WhatsApp et les stories.
@@ -28,7 +28,7 @@ node render.js ONET-Academie-9x16.mp4 9x16
 
 ## Effets
 
-- **Chasse d'eau** : une vague bleue, avec mousse, rayons de lumière et bulles, monte, couvre l'écran sur la coupe puis repart vers le haut, aux passages 8,6 s, 13,7 s et 18,9 s. On l'entend avec un souffle d'eau et des bulles.
+- **Chasse d'eau** : une vague bleue, avec mousse, rayons de lumière et bulles, monte, couvre l'écran sur la coupe puis repart vers le haut, aux passages 17,1 s, 25,7 s et 36 s. On l'entend avec un souffle d'eau et des bulles.
 - **Tuyau de cuivre** : il se pose autour du titre, avec ses manchons de raccord, puis une impulsion d'eau lumineuse circule dedans.
 - **« 21 » rempli d'eau** : l'eau monte dans les chiffres, avec des vagues, des bulles et un reflet quand c'est plein. On entend des bulles pendant le remplissage.
 - **Lettres qui tombent** : une par une, avec rebond, sur « La plomberie, ça s'apprend. », « Tahere Iliès » et « Novembre ».
@@ -37,18 +37,20 @@ node render.js ONET-Academie-9x16.mp4 9x16
 
 ## Structure (140 bpm, 1 mesure = 1,71 s)
 
+Chaque texte reste à l'écran au moins une mesure (1,7 s), et les messages clés deux mesures (3,4 s), pour qu'on ait le temps de lire.
+
 | Mesures | Temps | Musique | Image et texte |
 |---|---|---|---|
-| 0–1 | 0 – 3,4 s | BRAAAM d'entrée, 808, cloche, charleys | « Tu veux devenir plombier ? », « Un métier qui recrute. », « On commence par les bases. » |
-| 2 | 3,4 – 5,1 s | Chœur, roulement, 808 qui monte, cymbale inversée | « La plomberie, ça s'apprend. » Une goutte tombe |
-| 3 | 5,1 – 6,9 s | Drop : BRAAAM, sub drop | La goutte ouvre le crème du support : logo O NET, « ACADÉMIE » |
-| 4 | 6,9 – 8,6 s | Drop | Titre de la formation dans un tuyau de cuivre, puis chasse d'eau |
-| 5–7 | 8,6 – 13,7 s | Drop, coup de tuyau à chaque geste | « Tu apprends à » : 01 Couper, 02 Sertir, 03 Raccorder, 04 Étancher, 05 Monter |
-| 8 | 13,7 – 15,4 s | Coupure : chœur, 808 tenue | Chasse d'eau, puis la salle : « Support théorique » |
-| 9–10 | 15,4 – 18,9 s | Groove | « Tu apprends à diagnostiquer », puis « Comprendre l'essentiel… » |
-| 11 | 18,9 – 20,6 s | Groove, cloche doublée | Chasse d'eau, puis « Une formation conçue par Tahere Iliès » |
-| 12 | 20,6 – 22,3 s | Montée : kick à la croche, roulement serré, 808 qui glisse | « Ton métier. Ta formation. Ton académie. Rendez-vous le… » |
-| 13–14 | 22,3 – 24,9 s | Drop final : BRAAAM, chœur, crash | « 21 » qui se remplit d'eau, « Novembre », samedi 2026 |
-| 15+ | 24,9 – 28,6 s | BRAAAM final, chœur, dernière phrase de cloche | Carte de fin : logo, titre, « Samedi 21 novembre 2026 », crédits |
+| 0–3 | 0 – 6,9 s | BRAAAM d'entrée, 808, cloche ; la caisse claire arrive à la mesure 2 | « Tu veux devenir plombier ? » (2 mesures), « Un métier qui recrute. », « On commence par les bases. » |
+| 4–5 | 6,9 – 10,3 s | Chœur, roulement, 808 qui monte, cymbale inversée | « La plomberie, ça s'apprend. » Une goutte tombe |
+| 6–7 | 10,3 – 13,7 s | Drop : BRAAAM, sub drop | La goutte ouvre le crème du support : logo O NET, « ACADÉMIE » |
+| 8–9 | 13,7 – 17,1 s | Drop | Titre de la formation dans un tuyau de cuivre, puis chasse d'eau |
+| 10–14 | 17,1 – 25,7 s | Drop, coup de tuyau à chaque geste | « Tu apprends à » : Couper, Sertir, Raccorder, Étancher, Monter (1 mesure chacun) |
+| 15–16 | 25,7 – 29,1 s | Coupure : chœur, 808 tenue | Chasse d'eau, puis la salle : « Support théorique » |
+| 17–20 | 29,1 – 36 s | Groove | « Tu apprends à diagnostiquer », puis « Comprendre l'essentiel… » |
+| 21–22 | 36 – 39,4 s | Groove, BRAAAM | Chasse d'eau, puis « Une formation conçue par Tahere Iliès » |
+| 23–24 | 39,4 – 42,9 s | Montée : kick aux temps puis à la croche, roulement serré | « Ton métier. Ta formation. Ton académie. Rendez-vous le… » (2 temps chacun) |
+| 25–26 | 42,9 – 46,3 s | Drop final : BRAAAM, chœur, crash | « 21 » qui se remplit d'eau, « Novembre », samedi 2026 |
+| 27+ | 46,3 – 50,9 s | BRAAAM final, chœur, dernière phrase de cloche | Carte de fin : logo, titre, « Samedi 21 novembre 2026 », crédits |
 
 En 9:16, les textes restent entre 200 px et 1 640 px de hauteur, pour ne pas passer sous l'interface des réseaux.

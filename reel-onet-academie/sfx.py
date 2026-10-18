@@ -2,7 +2,7 @@
 # Trap/phonk épique à 140 bpm en fa mineur (Fm – Ab – Bbm – C) : 808 saturée avec glissés, cloche phonk en mélodie,
 # caisse claire lourde au demi-temps, charleys en roulements, « BRAAAM » de bande-annonce et chœurs sur les impacts.
 # Signature plomberie : coups de tuyau sur les gestes, gouttes, chasses d'eau, bulles quand le « 21 » se remplit.
-# Structure (mesures) : accroche 0-1, montée 2, drop 3-7, coupure 8, groove 9-11, montée 12, drop final 13-14, fin.
+# Structure (mesures) : accroche 0-3, montée 4-5, drop 6-14, coupure 15-16, groove 17-22, montée 23-24, drop final 25-26, fin.
 import json, sys, wave
 import numpy as np
 
@@ -222,48 +222,56 @@ def snare_roll(t0, d, gain=.5):
         add("drums", t, SNARE, 0.08 + gain * p ** 1.6, pan=.1, rev=.15)
         t += S16 if p < .5 else (S16 / 2 if p < .8 else S16 / 3)
 
-# --- accroche (mesures 0-1) : ça cogne dès la première seconde ---
+# --- accroche (mesures 0-3) : ça cogne dès la première seconde, la caisse claire arrive à la mesure 2 ---
 add("music", 0, braam(BRAAM, 1.6), 0.5, rev=.3)
-for n in (0, 1): bar(n, snare_=n == 1, rolls=False)
+for n in range(4): bar(n, snare_=n >= 2, rolls=n >= 2)
 
-# --- montée (mesure 2) : roulement, chœur, 808 qui monte, silence avant le drop ---
-add("music", 2 * BAR, choir(("F4", "Ab4", "C5"), BAR + .3), 0.35, rev=.5)
-for s, nm in BELL[2]: add("music", 2 * BAR + s * S16, cowbell(nm), 0.14, rev=.4)
-snare_roll(2 * BAR, BAR - 2 * S16)
-add("bass", 2 * BAR, b808(freq("F1"), BAR - 2 * S16, freq("F2")), 0.6)
+# --- montée (mesures 4-5) : chœur, roulement sur deux mesures, 808 qui monte, silence avant le drop ---
+add("music", 4 * BAR, choir(("F4", "Ab4", "C5"), 2 * BAR + .3), 0.35, rev=.5)
+for n in (4, 5):
+    for s_, nm in BELL[n % 4]: add("music", n * BAR + s_ * S16, cowbell(nm), 0.12 + .04 * (n - 4), rev=.4)
+bar(4, drums=False, bass=False, bell=False)
+snare_roll(4 * BAR, 2 * BAR - 2 * S16)
+add("bass", 5 * BAR, b808(freq("F1"), BAR - 2 * S16, freq("F2")), 0.6)
 
-# --- drop (mesures 3-7) ---
+# --- drop (mesures 6-14) : logo, titre, les gestes ---
 add("music", T["logo"], braam(BRAAM), 0.6, rev=.35)
-for n in range(3, 8):
-    bar(n)
-    add("music", n * BAR, stab(CHORD[n % 4]), 0.32, rev=.25)
+for n in range(6, 15):
+    bar(n, big=n >= 12)
+    if n % 2 == 0: add("music", n * BAR, stab(CHORD[n % 4]), 0.32, rev=.25)
 
-# --- coupure (mesure 8) : la salle, chœur et 808 tenue ---
-add("music", 8 * BAR, choir(("F4", "Ab4", "C5", "F5"), BAR + .4), 0.4, rev=.5)
-add("bass", 8 * BAR, b808(freq("F1"), BAR * .9), 0.75)
-bar(8, drums=False, bass=False, snare_=False, dark=True)
-for k in range(8): add("drums", 8 * BAR + k * b / 2, HAT, 0.08, pan=.3)
+# --- coupure (mesures 15-16) : la salle, chœur et 808 tenue ---
+add("music", 15 * BAR, choir(("F4", "Ab4", "C5", "F5"), 2 * BAR + .4), 0.4, rev=.5)
+for n in (15, 16):
+    add("bass", n * BAR, b808(freq(ROOT[n % 4]), BAR * .9), 0.7)
+    bar(n, drums=False, bass=False, snare_=False, dark=True)
+    for k in range(8): add("drums", n * BAR + k * b / 2, HAT, 0.08, pan=.3)
 
-# --- groove (mesures 9-11) ---
-for n in (9, 10, 11): bar(n, big=n == 11)
+# --- groove (mesures 17-22) : diagnostic, pratique, formateur ---
+for n in range(17, 23): bar(n, big=n >= 21)
+add("music", T["auteur"], braam(BRAAM, 2.0), 0.4, rev=.4)
 
-# --- montée (mesure 12) : kick à chaque temps puis à la croche, roulement serré, 808 qui glisse ---
+# --- montée (mesures 23-24) : kick aux temps puis à la croche, roulement serré, 808 qui glisse ---
+for k in range(4):
+    tk = 23 * BAR + k * b; add("drums", tk, KICK, 0.45); kick_times.append(tk)
 for k in range(7):
-    tk = 12 * BAR + k * b / 2; add("drums", tk, KICK, 0.45 + .06 * k); kick_times.append(tk)
-snare_roll(12 * BAR, BAR - 2 * S16, .6)
-add("bass", 12 * BAR, b808(freq("C2"), BAR - 2 * S16, freq("C3")), 0.6)
-add("music", 12 * BAR, choir(("E4", "G4", "C5"), BAR), 0.3, rev=.5)
+    tk = 24 * BAR + k * b / 2; add("drums", tk, KICK, 0.5 + .06 * k); kick_times.append(tk)
+snare_roll(23 * BAR, 2 * BAR - 2 * S16, .6)
+add("bass", 23 * BAR, b808(freq("C2"), BAR), 0.55)
+add("bass", 24 * BAR, b808(freq("C2"), BAR - 2 * S16, freq("C3")), 0.6)
+add("music", 23 * BAR, choir(("E4", "G4", "C5"), 2 * BAR), 0.3, rev=.5)
+for s_, nm in BELL[3]: add("music", 23 * BAR + s_ * S16, cowbell(nm), 0.16, rev=.4)
 
-# --- drop final (mesures 13-14) ---
+# --- drop final (mesures 25-26) ---
 add("music", T["date"], braam(BRAAM, 3.0), 0.7, rev=.4)
 add("music", T["date"], choir(("F4", "Ab4", "C5", "F5"), 2 * BAR), 0.25, rev=.5)
 add("drums", T["date"], crash(), 0.32, rev=.3)
-for n in (13, 14):
+for n in (25, 26):
     bar(n, big=True)
     add("music", n * BAR, stab(CHORD[n % 4]), 0.36, rev=.25)
 
 # --- fin : braam, chœur, 808 tenue, dernière phrase de cloche en écho ---
-t15 = 15 * BAR
+t15 = 27 * BAR
 add("music", t15, braam(BRAAM, 3.2), 0.5, rev=.5)
 add("music", t15, choir(("F4", "Ab4", "C5", "F5"), DUR - t15), 0.3, rev=.6)
 add("bass", t15, b808(freq("F1"), 2.2), 0.8)

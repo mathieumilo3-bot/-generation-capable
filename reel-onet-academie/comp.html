@@ -344,7 +344,7 @@ async function renderFrame(t) {
 
   if (t < T.learn) {                                   // accroche : on parle à ceux qui veulent apprendre le métier
     const k = t < T.hook2 ? 0 : t < T.hook3 ? 1 : 2, t0 = [T.hook1, T.hook2, T.hook3][k];
-    if (k === 0) media(await frame("filasse", .9 + (t - T.hook1) * .9), t, T.hook1, 2, { dim: .32, z0: 1.1, z1: 1.18, fy: .55 });
+    if (k === 0) media(await frame("filasse", .5 + (t - T.hook1) * .75), t, T.hook1, T.hook2 - T.hook1, { dim: .32, z0: 1.1, z1: 1.18, fy: .55 });
     else media(k === 1 ? IMG.sertisseuse : IMG.securite, t, t0, 1, { dim: .3, z0: 1.05, z1: 1.12, fy: k === 1 ? .55 : .4, fx: k === 1 ? .35 : .5 });
     const L = [["TU VEUX DEVENIR", "PLOMBIER ?"], ["UN MÉTIER", "QUI RECRUTE."], ["ON COMMENCE", "PAR LES BASES."]][k];
     const s = Math.min(fit(L[0], big, V ? W * .86 : W * .4), fit(L[1], big, V ? W * .86 : W * .4));
@@ -379,21 +379,21 @@ async function renderFrame(t) {
   } else if (t < T.coupe) {                            // titre de la formation, ligne par ligne sur les temps
     g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
     const L = V ? ["LES BASES", "ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"] : ["LES BASES ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"];
-    const ts = (V ? [0, 1, 2, 3] : [0, 2, 3]).map(k => T.title + k * B);
+    const ts = (V ? [0, 2, 4, 6] : [0, 3, 6]).map(k => T.title + k * B);
     const s = Math.min(...L.map(l => fit(l, V ? 170 : 175, W * .76)));
     const y0 = H / 2 - (L.length - 1) * s * 1.06 / 2 + s * .36;
     const fx = V ? 56 : W * .07, ft = y0 - s - (V ? 70 : 55), fb = y0 + (L.length - 1) * s * 1.06 + (V ? 80 : 65);
-    pipe(fx, ft, W - 2 * fx, fb - ft, V ? 60 : 50, easeInOut((t - T.title) / (3.2 * B)), t);
+    pipe(fx, ft, W - 2 * fx, fb - ft, V ? 60 : 50, easeInOut((t - T.title) / (5 * B)), t);
     L.forEach((l, i) => slam(l, W / 2, y0 + i * s * 1.06, s, t, ts[i], { c: i === L.length - 1 ? C.orange : C.brown }));
     const lw = V ? W * .5 : W * .2, ly = V ? 230 : 92;
     g.globalAlpha = .9; g.drawImage(IMG.logo, W / 2 - lw * .22, ly - lw * .44 * .5, lw * .44, lw * .44 * IMG.logo.height / IMG.logo.width); g.globalAlpha = 1;
-    txt("SUPPORT THÉORIQUE  ·  APPROCHE TERRAIN", W / 2, V ? 1640 : H - 90, V ? 34 : 34, { f: "Open Sans", w: 800, c: C.brown, ls: 4, a: smooth((t - T.title - 3.2 * B) / .3) });
+    txt("SUPPORT THÉORIQUE  ·  APPROCHE TERRAIN", W / 2, V ? 1640 : H - 90, V ? 34 : 34, { f: "Open Sans", w: 800, c: C.brown, ls: 4, a: smooth((t - T.title - 6.4 * B) / .3) });
   } else if (t < T.theorie) {                          // approche terrain : un geste par coupe
     const S = [
       [T.coupe, T.sertir, "01", "COUPER", () => frame("coupe", 1.4 + (t - T.coupe) * 1.2), { fy: .45 }],
       [T.sertir, T.racc, "02", "SERTIR", () => IMG.sertisseuse, { fy: .55, fx: .35 }],
       [T.racc, T.etanch, "03", "RACCORDER", () => IMG.raccords, { fy: .55 }],
-      [T.etanch, T.monter, "04", "ÉTANCHER", () => frame("filasse", 1.9 + (t - T.etanch) * .9), { fy: .55 }],
+      [T.etanch, T.monter, "04", "ÉTANCHER", () => frame("filasse", 1.6 + (t - T.etanch) * .9), { fy: .55 }],
       [T.monter, T.theorie, "05", "MONTER", () => IMG.etau, { fy: .5, fx: .4 }],
     ];
     const [a, b, num, word, src, o] = S.find(s => t < s[1]);
@@ -402,7 +402,7 @@ async function renderFrame(t) {
       sub: word === "MONTER" ? (V ? ["Les gestes du métier,", "sur du vrai matériel."] : ["Les gestes du métier, sur du vrai matériel."]) : null, st: T.monter + .45 });
     brandBug(t);
   } else if (t < T.diag) {                             // support théorique
-    media(IMG.salle, t, T.theorie, 2, { full: true, dim: .1, z0: 1.02, z1: 1.1, fx: V ? .42 : .5 });
+    media(IMG.salle, t, T.theorie, T.diag - T.theorie, { full: true, dim: .1, z0: 1.02, z1: 1.1, fx: V ? .42 : .5 });
     caption(t, { t: T.theorie + .02, kick: "EN SALLE", big: "SUPPORT THÉORIQUE", sub: "Comprendre avant d'intervenir.", rise: true });
     brandBug(t);
   } else if (t < T.pratique) {                         // la méthode : extrait du support de cours
@@ -424,14 +424,14 @@ async function renderFrame(t) {
       rise(l, x, y + (V ? 80 : 72) + i * (V ? 58 : 52), V ? 44 : 40, t, T.diag + .5 + i * .12, { f: "Open Sans", w: 700, c: C.brown, al }));
     // les trois pistes du support s'allument une à une
     [0, 1, 2].forEach(i => {
-      const tt = T.diag + .9 + i * .3, q = easeOutBack((t - tt) / .4);
+      const tt = T.diag + 1 + i * .5, q = easeOutBack((t - tt) / .4);
       if (q <= 0) return;
       const ix = cx + cw * (.07 + i * .31), iy = cy + chh * .3;
       g.save(); g.translate(ix, iy); g.scale(q, q); g.fillStyle = C.orange; g.beginPath(); g.arc(0, 0, cw * .03, 0, Math.PI * 2); g.fill();
       txt(String(i + 1), 0, cw * .012, cw * .034, { f: "Open Sans", w: 800 }); g.restore();
     });
   } else if (t < T.auteur) {                           // comprendre l'essentiel pour mieux passer à la pratique
-    media(IMG.explique, t, T.pratique, 2, { dim: .18, fy: .62, fx: .45, z0: 1.06, z1: 1.14 });
+    media(IMG.explique, t, T.pratique, T.auteur - T.pratique, { dim: .18, fy: .62, fx: .45, z0: 1.06, z1: 1.14 });
     const L = V ? ["COMPRENDRE", "L'ESSENTIEL"] : ["COMPRENDRE", "L'ESSENTIEL"];
     const x = V ? W / 2 : W * .075, al = V ? "center" : "left";
     const s = Math.min(...L.map(l => fit(l, V ? 190 : 170, V ? W * .86 : W * .46)));
@@ -446,14 +446,14 @@ async function renderFrame(t) {
     g.fillStyle = "rgba(8,17,32,.45)"; g.fillRect(0, 0, W, H);
     const s = fit("TAHERE ILIÈS", V ? 190 : 230, W * .86);
     rise("UNE FORMATION CONÇUE PAR", W / 2, H / 2 - s * .78, V ? 40 : 40, t, T.auteur + .05, { f: "Open Sans", w: 800, c: C.sky, ls: 6 });
-    stagger("TAHERE ILIÈS", W / 2, H / 2 + s * .36, s, t, T.auteur + .25, { sh: "rgba(0,0,0,.5)", step: .03 });
+    stagger("TAHERE ILIÈS", W / 2, H / 2 + s * .36, s, t, T.auteur + .25, { sh: "rgba(0,0,0,.5)", step: .045 });
     const lp = easeOutExpo((t - T.auteur - .5) / .6);
     g.fillStyle = C.orange; g.fillRect(W / 2 - 130 * lp, H / 2 + s * .36 + 38, 260 * lp, 8);
     rise("O NET ACADÉMIE", W / 2, H / 2 + s * .36 + 120, V ? 40 : 40, t, T.auteur + .7, { f: "Open Sans", w: 800, ls: 5 });
   } else if (t < T.date) {                             // montée : quatre mots sur les temps
-    const k = Math.min(3, Math.floor((t - T.build) / B)), t0 = T.build + k * B;
+    const k = Math.min(3, Math.floor((t - T.build) / (2 * B))), t0 = T.build + k * 2 * B;
     const imgs = [IMG.coupeTube, IMG.raccords, IMG.sertisseuse, null];
-    if (imgs[k]) media(imgs[k], t, t0, .5, { dim: .45, full: true, z0: 1.12, z1: 1.2 }); else water(t);
+    if (imgs[k]) media(imgs[k], t, t0, 2 * B, { dim: .45, full: true, z0: 1.12, z1: 1.2 }); else water(t);
     const w = ["TON MÉTIER.", "TA FORMATION.", "TON ACADÉMIE.", "RENDEZ-VOUS LE"][k];
     const s = fit(w, V ? 170 : 200, W * .84);
     slam(w, W / 2, H / 2 + s * .36, s, t, t0, { c: k === 3 ? C.sky : C.white, sh: "rgba(0,0,0,.5)" });
@@ -493,7 +493,7 @@ async function renderFrame(t) {
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.shadowColor = "rgba(47,143,230,.75)"; g.shadowBlur = 60; g.drawImage(wc, 0, 0); g.restore();
     const x = V ? W / 2 : W * .5, al = V ? "center" : "left";
     const ny = V ? H * .44 + 420 : H * .5 - 10, ns = V ? 210 : 190;
-    stagger("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)", step: .035 });
+    stagger("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)", step: .05 });
     rise("SAMEDI  ·  2026", x, ny + (V ? 100 : 96), V ? 56 : 52, t, T.date + .55, { f: "Open Sans", w: 800, c: C.orange, al, ls: 8 });
     rise("PRÉSENTATION DE LA FORMATION", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
     splash(W / 2, H / 2, t, T.date, 21, 70, 1.4);
