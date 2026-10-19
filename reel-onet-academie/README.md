@@ -1,12 +1,12 @@
 # Vidéo de présentation « O NET ACADÉMIE »
 
-Vidéo de 50 s qui présente l'académie et la formation « Les bases essentielles de la plomberie et du dépannage », le samedi 21 novembre 2026. Elle s'adresse aux futurs plombiers, c'est-à-dire aux personnes qui veulent apprendre le métier. Elle existe en deux formats, rendus à partir du même montage :
+Vidéo de 43 s qui présente l'académie et la formation « Les bases essentielles de la plomberie et du dépannage », le samedi 21 novembre 2026. Elle s'adresse aux futurs plombiers, c'est-à-dire aux personnes qui veulent apprendre le métier. Elle existe en deux formats, rendus à partir du même montage :
 
 - `ONET-Academie-16x9.mp4` : 1920×1080, pour la projection en salle ou YouTube ;
 - `ONET-Academie-9x16.mp4` : 1080×1920, pour Instagram, TikTok, WhatsApp et les stories ;
 - `*-envoi.mp4` : copies légères des deux formats, pour l'envoi.
 
-Le montage est rendu image par image dans Chromium (Playwright), encodé en H.264 par ffmpeg, puis mixé avec une bande-son originale (bruitages et musique de bande-annonce, grille à 140 bpm), normalisée vers −12 LUFS puis limitée pour que les crêtes restent sous −1,5 dBFS après l'encodage AAC (environ −13,4 LUFS au final). Toutes les coupes tombent sur un temps.
+Le montage est rendu image par image dans Chromium (Playwright), encodé en H.264 par ffmpeg, puis mixé avec une bande-son originale (bruitages et musique de bande-annonce, grille à 140 bpm), normalisée vers −12 LUFS puis limitée pour que les crêtes restent sous −1,5 dBFS après l'encodage AAC (environ −13 LUFS au final). Toutes les coupes tombent sur un temps.
 
 - `assets/` : photos de l'atelier, slides du support de cours, logo détouré depuis la couverture, et les deux rushs (coupe du cuivre, filasse). Le bon de commande client n'est pas utilisé, car il contient des données personnelles.
 - `reel.json` : tempo, temps de début de chaque scène (`T`), impacts visuels (`hits`), chasses d'eau (`wipes`), remplissage du « 21 », et repères sonores (`cues`) : un par apparition de texte, avec son type de bruitage. On y trouve aussi les nappes, les montées, les cymbales inversées, les coups de tuyau et le fondu final. L'image et le son lisent tous les deux ce fichier.
@@ -49,17 +49,26 @@ node render.js ONET-Academie-9x16.mp4 9x16
 
 ## Structure (grille à 140 bpm, 1 mesure = 1,71 s)
 
-Chaque texte reste à l'écran au moins une mesure (1,7 s), et les messages clés deux mesures (3,4 s). Aucun plan n'est utilisé deux fois.
+Le rythme ne retombe jamais : il y a toujours un texte qui arrive ou une image qui change, au moins tous les deux temps (0,86 s). Chaque texte reste pourtant à l'écran assez longtemps pour être lu.
+- Dans l'accroche, les mots arrivent un par un, et un nouveau gros plan apparaît dessous tous les deux temps.
+- Chaque geste a une deuxième ligne qui arrive à mi-mesure.
+- La caméra pousse en continu sur chaque photo.
 
-| Mesures | Temps | Musique | Image et texte |
+Aucun plan n'est utilisé deux fois à l'identique.
+
+| Mesures | Temps | Son | Image et texte |
 |---|---|---|---|
-| 0–1 | 0 – 3,4 s | Silence tendu : horloge, cœur, nappe grave, piano, montée de Shepard | « Rendez-vous le… » |
-| 2–3 | 3,4 – 6,9 s | Premier impact : BRAAAM, chœur, cordes | « 21 » qui se remplit d'eau, « Novembre », samedi 2026, présentation de la formation |
-| 4–9 | 6,9 – 17,1 s | Acte I : l'ostinato de cordes entre au loin et se rapproche, piano descendant, taikos, caisse claire qui serre | « Tu veux devenir plombier ? », « Un métier qui recrute. », « On commence par les bases. », « La plomberie, ça s'apprend. » |
-| 10–16 | 17,1 – 29,1 s | Acte II : BRAAAM, taikos pleins, cuivres qui montent à chaque geste, coups de tuyau | Titre dans le tuyau de cuivre, puis Couper, Sertir, Raccorder, Étancher, Monter |
-| 17–18 | 29,1 – 32,6 s | Respiration : cordes tenues, chœur, piano, cœur | La salle : « Support théorique » |
-| 19–22 | 32,6 – 39,4 s | Acte III : la basse monte d'un ton par mesure, tout se resserre, Shepard, silence | « Diagnostiquer », puis « Comprendre l'essentiel… » |
-| 23–25 | 39,4 – 44,6 s | Les trois coups : BRAAAM, chœur et crash, chacun plus haut | « Ton métier. », « Ta formation. », « Ton académie. » |
-| 26+ | 44,6 – 50,2 s | Résolution en fa majeur, cordes aiguës, dernières notes de piano | La goutte ouvre la carte : logo, titre, « Samedi 21 novembre 2026 » |
+| 0–1 | 0 – 3,4 s | Horloge, cœur, nappe, allumage de sabre, zaps | « Rendez-vous le… » lettre par lettre |
+| 2–3 | 3,4 – 6,9 s | Explosion, flash, BRAAAM, chœur, bulles | « 21 » qui se remplit d'eau, « Novembre », samedi 2026, présentation de la formation |
+| 4–5 | 6,9 – 10,3 s | Avion de chasse, sabre et flash sur chaque mot, explosion sur « plombier » | « Tu veux » / « devenir » / « plombier ? », un gros plan tous les deux temps |
+| 6–7 | 10,3 – 13,7 s | Sabre, coup de poing, flashs | « Un métier qui recrute. », « On commence par les bases. » |
+| 8 | 13,7 – 15,4 s | Zaps, roulement, sifflement de bombe | « La plomberie, ça s'apprend. » La goutte tombe |
+| 9–10 | 15,4 – 18,9 s | Explosion d'eau, raclement de métal, sabres | Titre de la formation dans un tuyau de cuivre |
+| 11–15 | 18,9 – 27,4 s | Avion, puis flash, sabre et coup de tuyau à chaque geste | « Tu apprends à » : Couper, Sertir, Raccorder, Étancher, Monter, chacun avec sa deuxième ligne |
+| 16 | 27,4 – 29,1 s | Avion, respiration | La salle : « Support théorique » |
+| 17–18 | 29,1 – 32,6 s | Acte III qui monte, pops sur les pastilles | « Tu apprends à diagnostiquer » |
+| 19 | 32,6 – 34,3 s | Montée | « Comprendre l'essentiel pour mieux passer à la pratique. » |
+| 20–21 | 34,3 – 37,7 s | Trois explosions, une tous les deux temps, puis sifflement de bombe | « Ton métier. », « Ta formation. », « Ton académie. » |
+| 22+ | 37,7 – 43,4 s | Explosion d'eau, résolution en fa majeur, « shing » | La goutte ouvre la carte : logo, titre, « Samedi 21 novembre 2026 » |
 
 En 9:16, les textes restent entre 200 px et 1 640 px de hauteur, pour ne pas passer sous l'interface des réseaux.

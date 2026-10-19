@@ -8,9 +8,9 @@
 #    mot (stab de cuivres et cordes sur chaque coup de sabre) et s'efface un instant sous chaque bruitage.
 # Les sons de plomberie restent : coups de tuyau sur les gestes, gouttes, eau, bulles.
 #
-# Mesures (140 bpm, 1 mesure = 1,71 s) : 0-1 ouverture « Rendez-vous le », 2-3 impact du 21 novembre, 4-9 acte I
-# (accroche, la plomberie s'apprend), 10-16 acte II (titre, gestes), 17-18 respiration (la salle), 19-22 acte III
-# (montée), 23-25 les trois coups, 26+ final.
+# Mesures (140 bpm, 1 mesure = 1,71 s) : 0-1 ouverture « Rendez-vous le », 2-3 impact du 21 novembre, 4-8 acte I
+# (accroche mot par mot, la plomberie s'apprend), 9-15 acte II (titre, gestes), 16 respiration (la salle), 17-19 acte
+# III (montée), 20-21 les trois coups (tous les deux temps), 22+ final.
 import json, sys, wave
 import numpy as np
 
@@ -60,12 +60,12 @@ def sweep(n, f0, f1, width=0.5):
 # ---------------- harmonie : un accord par mesure, jamais la même boucle ----------------
 CHORDS = {"Fm": ("F", "Ab", "C"), "Db": ("Db", "F", "Ab"), "Ab": ("Ab", "C", "Eb"), "Eb": ("Eb", "G", "Bb"),
           "Bbm": ("Bb", "Db", "F"), "C": ("C", "E", "G"), "F": ("F", "A", "C")}
-PLAN = ["Fm"] * 6 + ["Db", "Db", "Bbm", "C",              # 0-9 : ouverture, impact, acte I
-        "Fm", "Fm", "Db", "Ab", "Eb", "Bbm", "C",          # 10-16 : acte II
-        "Db", "C",                                         # 17-18 : respiration
-        "Bbm", "C", "Db", "Eb",                            # 19-22 : acte III, la basse monte
-        "Fm", "Db", "Eb",                                  # 23-25 : les trois coups
-        "F", "F", "F", "F"]                                # 26+ : résolution en fa majeur
+PLAN = ["Fm"] * 4 + ["Fm", "Db", "Ab", "Bbm", "C",        # 0-3 : ouverture, 21 novembre ; 4-8 : acte I
+        "Fm", "Fm", "Db", "Ab", "Eb", "Bbm", "C",          # 9-15 : acte II
+        "Db",                                              # 16 : respiration
+        "Bbm", "C", "Db",                                  # 17-19 : acte III, la basse monte
+        "Fm", "Eb",                                        # 20-21 : les trois coups
+        "F", "F", "F", "F"]                                # 22+ : résolution en fa majeur
 def tones(ch, octv):
     # notes de l'accord en midi, empilées au-dessus de la fondamentale
     root = SEMI[CHORDS[ch][0]] + 12 * (octv + 1); out = []
@@ -348,81 +348,80 @@ strings_hold(2, 2, 3, 1600, 0.12)
 hit(T["date"], "big", .9)
 for k in (2, 4, 6): add("bass", T["date"] + k * b, heartbeat(), 0.45)
 
-# --- acte I (mesures 4-9) : l'ostinato entre au loin et se rapproche ---
-for i in bars(4, 9):
-    fc = 500 + 380 * (i - 4)
-    ostinato(i, 2, fc, .1 + .025 * (i - 4), density=8 if i < 6 else 16, pan=-.15)
-    if i >= 7: ostinato(i, 3, fc * 1.3, .05 + .02 * (i - 7), density=16, pan=.25)
-    strings_hold(i, 1, 3, 900, .05)
-    add("bass", i * BAR, heartbeat(), .45); add("bass", i * BAR + 2 * b, heartbeat(), .38)
-for i, nm in zip(bars(4, 9), ["C6", "Ab5", "G5", "F5", "Eb5", "E5"]):   # phrase de piano descendante, sans redite
-    add("music", i * BAR, piano(nm, 2.4), .16, rev=.7)
-hit(5 * BAR, "mid", .35)
-for i in (6, 7): hit(i * BAR, "mid", .45); hit(i * BAR + 2.5 * b, "small", .3)
-for i in (8, 9):
-    for s_ in (0, 3, 6, 8, 10, 12, 14): hit(i * BAR + s_ * S16, "mid" if s_ in (0, 8) else "small", .5 + .1 * (i - 8))
-snare_build(8 * BAR, 10 * BAR, .3)
-add("music", 8 * BAR, shepard(2 * BAR - 2 * S16), 0.13, rev=.3)
-add("music", 8 * BAR, choir("Bbm", BAR), .18, rev=.5); add("music", 9 * BAR, choir("C", BAR - 2 * S16), .22, rev=.5)
+# --- acte I (mesures 4-8) : l'accroche avance mot par mot — taiko sur chaque coupe, ostinato qui se rapproche ---
+for i in bars(4, 7):
+    fc = 900 + 450 * (i - 4)
+    ostinato(i, 2, fc, .17 + .02 * (i - 4), pan=-.15)
+    ostinato(i, 3, fc * 1.3, .08 + .02 * (i - 4), pan=.25)
+    strings_hold(i, 1, 3, 1000, .06)
+    for s_, sz in ((0, "big"), (8, "mid"), (6, "small"), (11, "small"), (14, "mid")): hit(i * BAR + s_ * S16, sz, .62 + .04 * (i - 4))
+    add("bass", i * BAR, heartbeat(), .4)
+for i, nm in zip(bars(4, 7), ["C6", "Ab5", "Ab5", "F5"]):            # phrase de piano descendante
+    add("music", i * BAR, piano(nm, 2.4), .15, rev=.7)
+for s_ in (0, 3, 6, 8, 10, 12, 14): hit(8 * BAR + s_ * S16, "mid" if s_ in (0, 8) else "small", .6)
+snare_build(8 * BAR, 9 * BAR, .35)
+ostinato(8, 3, 2600, .1, pan=.25)
+add("music", 8 * BAR, shepard(BAR - 2 * S16), 0.14, rev=.3)
+add("music", 8 * BAR, choir("C", BAR - 2 * S16), .22, rev=.5)
 
-# --- acte II (mesures 10-16) : le titre, puis les gestes — percussions pleines, mélodie de cuivres qui monte ---
+# --- acte II (mesures 9-15) : le titre, puis les gestes — percussions pleines, mélodie de cuivres qui monte ---
 add("music", T["title"], braam("Fm", 3.0), 0.6, rev=.4)
 add("music", T["title"], choir("Fm", 2 * BAR), .25, rev=.5)
 TPAT = [[(0, "big"), (6, "mid"), (8, "mid"), (11, "small"), (14, "mid")],
         [(0, "big"), (3, "small"), (8, "mid"), (10, "small"), (12, "mid"), (14, "small")],
         [(0, "big"), (6, "mid"), (10, "mid"), (12, "small"), (13, "small"), (14, "mid"), (15, "small")]]
-for i in bars(10, 16):
+for i in bars(9, 15):
     ostinato(i, 2, 2600, .14); ostinato(i, 3, 3200, .1, pan=.3)
-    for s_, sz in TPAT[(i - 10) % 3]: hit(i * BAR + s_ * S16, sz, .65)
-    if i >= 13:
+    for s_, sz in TPAT[(i - 9) % 3]: hit(i * BAR + s_ * S16, sz, .65)
+    if i >= 12:
         for s_ in range(0, 16, 2): add("drums", i * BAR + s_ * S16, SN, .08 + .04 * (s_ % 4 == 0), pan=.2, rev=.15)
     strings_hold(i, 1, 3, 1800, .06)
     tremolo(tones(PLAN[i], 5)[1], BAR, .045, i * BAR)            # cordes aiguës en trémolo : l'air au-dessus
-for i, m in zip(bars(12, 16), [53, 56, 58, 60, 61]):            # fa, la bémol, si bémol, do, ré bémol : ça grimpe
+for i, m in zip(bars(11, 15), [53, 56, 58, 60, 61]):            # fa, la bémol, si bémol, do, ré bémol : ça grimpe
     add("music", i * BAR, brass(m, BAR + .2), .2, rev=.35)
-add("drums", 17 * BAR - .6, crash()[::-1][-int(.6 * SR):], .2)
+add("drums", 16 * BAR - .6, crash()[::-1][-int(.6 * SR):], .2)
 
-# --- respiration (mesures 17-18) : la salle — cordes tenues, chœur, piano, cœur ---
-add("drums", 17 * BAR, crash(), .2, rev=.4); hit(17 * BAR, "big", .6)
-strings_hold(17, 1, 3, 1400, .14); strings_hold(18, 1, 3, 1400, .14)
-add("music", 17 * BAR, choir("Db", BAR + .3), .25, rev=.6); add("music", 18 * BAR, choir("C", BAR), .25, rev=.6)
-for i, nm in ((17, "F5"), (17.5, "Ab5"), (18, "G5"), (18.5, "E5")): add("music", i * BAR, piano(nm, 2.0), .16, rev=.7)
-for k in range(4): add("bass", 17 * BAR + k * 2 * b, heartbeat(), .42)
+# --- respiration (mesure 16) : la salle — cordes tenues, chœur, piano, cœur, l'ostinato continue en sourdine ---
+add("drums", 16 * BAR, crash(), .2, rev=.4); hit(16 * BAR, "big", .6)
+strings_hold(16, 1, 3, 1400, .14)
+add("music", 16 * BAR, choir("Db", BAR + .3), .25, rev=.6)
+ostinato(16, 2, 900, .08, pan=-.2)
+for i, nm in ((16, "F5"), (16.5, "Ab5")): add("music", i * BAR, piano(nm, 2.0), .16, rev=.7)
+for k in range(2): add("bass", 16 * BAR + k * 2 * b, heartbeat(), .42)
 
-# --- acte III (mesures 19-22) : la basse monte d'un ton par mesure, tout se resserre ---
-for i in bars(19, 22):
-    j = i - 19
-    ostinato(i, 2, 1200 + 600 * j, .1 + .02 * j, pan=-.15); ostinato(i, 3, 1600 + 800 * j, .06 + .025 * j, pan=.25)
-    if j >= 2: ostinato(i, 4, 2800 + 600 * j, .05)
+# --- acte III (mesures 17-19) : la basse monte d'un ton par mesure, tout se resserre ---
+for i in bars(17, 19):
+    j = i - 17
+    ostinato(i, 2, 1400 + 700 * j, .15 + .02 * j, pan=-.15); ostinato(i, 3, 1800 + 900 * j, .1 + .025 * j, pan=.25)
+    if j >= 1: ostinato(i, 4, 3000 + 600 * j, .05)
     strings_hold(i, 1, 2, 1200, .08)
-    tremolo(tones(PLAN[i], 5)[2], BAR, .03 + .015 * j, i * BAR)
-    add("music", i * BAR, brass(tones(PLAN[i], 2)[0], BAR + .2, 1400 + 500 * j), .14 + .03 * j, rev=.3)
-    pat = (0, 8) if j == 0 else (0, 6, 8, 14) if j == 1 else (0, 3, 6, 8, 10, 12, 14) if j == 2 else range(0, 16, 2)
-    for s_ in pat: hit(i * BAR + s_ * S16, "mid" if s_ in (0, 8) else "small", .45 + .08 * j)
-snare_build(21 * BAR, 23 * BAR)
-add("music", 21 * BAR, shepard(2 * BAR - 2 * S16), 0.16, rev=.3)
-add("music", 21 * BAR, choir("Db", BAR), .2, rev=.5); add("music", 22 * BAR, choir("Eb", BAR - 2 * S16), .26, rev=.5)
+    tremolo(tones(PLAN[i], 5)[2], BAR, .035 + .015 * j, i * BAR)
+    add("music", i * BAR, brass(tones(PLAN[i], 2)[0], BAR + .2, 1500 + 600 * j), .15 + .03 * j, rev=.3)
+    pat = (0, 6, 8, 14) if j == 0 else (0, 3, 6, 8, 10, 12, 14) if j == 1 else range(0, 16, 2)
+    for s_ in pat: hit(i * BAR + s_ * S16, "big" if s_ == 0 else "mid" if s_ == 8 else "small", .62 + .08 * j)
+snare_build(18 * BAR, 20 * BAR)
+add("music", 19 * BAR, shepard(BAR - 2 * S16), 0.16, rev=.3)
+add("music", 18 * BAR, choir("C", BAR), .2, rev=.5); add("music", 19 * BAR, choir("Db", BAR - 2 * S16), .26, rev=.5)
 
-# --- les trois coups (mesures 23-25) : un mot par coup, chacun plus haut que le précédent ---
-for i, ch in zip(bars(23, 25), ("Fm", "Db", "Eb")):
-    k = i - 23
-    add("music", i * BAR, braam(ch, BAR + .6), .55 + .07 * k, rev=.45)
-    add("music", i * BAR, choir(ch, BAR + .2), .22 + .04 * k, rev=.5)
-    hit(i * BAR, "big", .9); add("drums", i * BAR, crash(), .22 + .05 * k, rev=.3)
-    ostinato(i, 3, 3600, .1 + .02 * k)
-    tremolo(tones(ch, 5)[0], BAR, .06, i * BAR); tremolo(tones(ch, 5)[2], BAR, .05, i * BAR)
-    for s_, sz in ((6, "mid"), (8, "mid"), (11, "small"), (12, "mid"), (14, "small")): hit(i * BAR + s_ * S16, sz, .5 + .1 * k)
-    if k == 2:
-        for s_ in range(8, 14): add("drums", i * BAR + s_ * S16, SN, .12 + .04 * s_, pan=.2, rev=.2)
+# --- les trois coups (mesures 20-21) : un mot tous les deux temps, chacun plus haut que le précédent ---
+for k, ch in enumerate(("Fm", "Db", "Eb")):
+    t0 = T["build"] + k * 2 * b
+    add("music", t0, braam(ch, 2 * b + .8), .55 + .07 * k, rev=.45)
+    add("music", t0, choir(ch, 2 * b + .4), .22 + .04 * k, rev=.5)
+    hit(t0, "big", .9); add("drums", t0, crash(), .22 + .05 * k, rev=.3)
+    tremolo(tones(ch, 5)[0], 2 * b, .06, t0); tremolo(tones(ch, 5)[2], 2 * b, .05, t0)
+    for s_, sz in ((3, "small"), (4, "mid"), (6, "small"), (7, "small")): hit(t0 + s_ * S16, sz, .5 + .1 * k)
+for s_ in range(8):                                               # la goutte tombe : roulement qui serre jusqu'au final
+    add("drums", T["end"] + s_ * S16 / 2 * 1.0, SN, .1 + .05 * s_, pan=.2, rev=.2)
 
-# --- final (mesure 26+) : la goutte, résolution en fa majeur, longue traîne ---
+# --- final (mesure 22+) : la goutte, résolution en fa majeur, longue traîne ---
 R0 = T["reveal"]
 add("music", R0, braam("F", 4.0), .7, rev=.55)
 add("music", R0, choir("F", DUR - R0), .32, rev=.6)
-strings_hold(26, 3, 3, 2400, .14, rev=.6)
+strings_hold(22, 3, 3, 2400, .14, rev=.6)
 tremolo(tones("F", 5)[1], DUR - R0 - .3, .06, R0)
 hit(R0, "big", 1.0)
-for i, nm in ((26.75, "C6"), (27.25, "A5"), (27.75, "F5")): add("music", i * BAR, piano(nm, 3.0), .18, rev=.75)
+for i, nm in ((22.75, "C6"), (23.25, "A5"), (23.75, "F5")): add("music", i * BAR, piano(nm, 3.0), .18, rev=.75)
 
 # --- bruitages calés sur le texte ---
 sfx_times = []
