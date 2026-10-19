@@ -6,6 +6,16 @@ Vidéo de 43 s qui présente l'académie et la formation « Les bases essentiell
 - `ONET-Academie-9x16.mp4` : 1080×1920, pour Instagram, TikTok, WhatsApp et les stories ;
 - `*-envoi.mp4` : copies légères des deux formats, pour l'envoi.
 
+Trois habillages sonores existent sur la même image et la même musique, pour laisser le client choisir :
+
+| Fichiers | Habillage |
+|---|---|
+| `ONET-Academie-<format>-envoi.mp4` | **Épuré** (par défaut) : souffles doux, « tink » de tuyau accordé sur chaque geste, eau, goutte, boom propre sur les moments clés |
+| `ONET-Academie-<format>-cinema-envoi.mp4` | **Cinéma épuré** : les bruitages demandés par le client (sabre feutré, flash, voiture qui passe, demi-explosion), seulement sur les débuts de scène, les gestes et les moments clés |
+| `ONET-Academie-<format>-cinema-plus-envoi.mp4` | **Cinéma dynamique** : les mêmes bruitages sur chaque mot et chaque coupe, toujours adoucis |
+
+`variantes.py` les fabrique à partir de la vidéo rendue, sans refaire les images. Il baisse le plafond du limiteur jusqu'à ce que les crêtes restent sous −1,5 dBFS.
+
 Direction artistique : classe, dynamique, épuré (voir `../CLAUDE.md`, valable pour toutes les vidéos du dépôt).
 
 Le montage est rendu image par image dans Chromium (Playwright), encodé en H.264 par ffmpeg, puis mixé avec une bande-son originale (bruitages et musique de bande-annonce, grille à 140 bpm), normalisée vers −12 LUFS puis limitée pour que les crêtes restent sous −1,5 dBFS après l'encodage AAC (environ −13,6 LUFS au final). Toutes les coupes tombent sur un temps.
@@ -40,6 +50,9 @@ python3 -I extract.py .
 node render.js stills 16x9 --stills 0.6,4.5,13.9,23,41   # images de contrôle dans stills/
 node render.js ONET-Academie-16x9.mp4 16x9
 node render.js ONET-Academie-9x16.mp4 9x16
+# copies légères, puis les deux autres habillages sonores
+for f in 16x9 9x16; do ffmpeg -i ONET-Academie-$f.mp4 -c:v libx264 -crf 25 -maxrate 3.5M -bufsize 7M -c:a aac -b:a 192k -movflags +faststart ONET-Academie-$f-envoi.mp4; done
+python3 -I variantes.py .
 ```
 
 ## Effets

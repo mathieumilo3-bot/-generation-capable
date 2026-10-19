@@ -7,6 +7,12 @@
 #    accordé sur chaque geste (une note de plus à chaque geste), clics accordés sur le diagnostic, eau sur les transitions,
 #    une goutte, et un boom grave et propre réservé aux trois moments clés (21 novembre, titre, carte finale).
 #
+# Trois habillages possibles sur la même musique (3e argument) :
+#  - « epure » (par défaut) : bruitages musicaux décrits ci-dessus ;
+#  - « cinema » : les bruitages de cinéma demandés par le client (sabre, flash, voiture qui passe, demi-explosion),
+#    dosés et adoucis, seulement sur les moments clés, les débuts d'accroche et les gestes ;
+#  - « cinema-plus » : les mêmes, sur chaque mot et chaque coupe, toujours adoucis.
+#
 # Mesures (140 bpm, 1 mesure = 1,71 s) : 0-1 ouverture « Rendez-vous le », 2-3 le 21 novembre, 4-8 accroche,
 # 9-15 titre et gestes, 16 la salle, 17-19 montée, 20-21 les trois mots, 22+ carte finale.
 import json, sys, wave
@@ -21,6 +27,8 @@ N = int(DUR * SR)
 BUS = {k: np.zeros((N, 2)) for k in ("drums", "bass", "music", "fx")}
 send = np.zeros((N, 2))
 rng = np.random.default_rng(2111)
+VAR = sys.argv[3] if len(sys.argv) > 3 else "epure"
+assert VAR in ("epure", "cinema", "cinema-plus"), VAR
 
 NAMES = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"]
 SEMI = {"C": 0, "C#": 1, "Db": 1, "D": 2, "Eb": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "Ab": 8, "A": 9, "Bb": 10, "B": 11}
@@ -207,6 +215,52 @@ def shine():
     s = sum(a * np.sin(2 * np.pi * f * x + rng.uniform(0, 6)) * np.exp(-x / d) for f, a, d in ((2093, 1, .8), (3136, .6, .6), (4186, .4, .5)))
     return norm(s * np.minimum(x / .02, 1))
 
+# ---------------- bruitages de cinéma, version adoucie ----------------
+def pan_sweep(sig, a=-1.0, z=1.0):
+    p = np.linspace(a, z, len(sig))
+    return np.stack([sig * np.cos((p + 1) * np.pi / 4) * 1.414, sig * np.sin((p + 1) * np.pi / 4) * 1.414], 1)
+
+def saber(direction=1, d=.42):
+    # coup de sabre feutré : surtout le souffle de la lame, un bourdonnement léger qui monte et redescend
+    n = int(d * SR); x = tt(n); e = np.sin(np.pi * x / d) ** 1.4
+    ph = np.cumsum(110 * (1 + .45 * np.sin(np.pi * x / d))) / SR
+    hum_ = np.tanh(1.4 * (np.sin(2 * np.pi * ph) + .5 * np.sin(2 * np.pi * 2.02 * ph)))
+    s_ = norm(hum_ * e * .45 + sweep(n, 1000, 4200, .5) * e ** 2)
+    return pan_sweep(s_, -.7 * direction, .7 * direction)
+
+def flash():
+    # flash d'appareil photo : petite recharge aiguë puis le déclic ; le déclic tombe à .1 s
+    n = int(.45 * SR); x = tt(n); y = np.maximum(x - .1, 0); on = x >= .1
+    whine = np.sin(2 * np.pi * np.cumsum(3000 + 5000 * np.minimum(x / .1, 1)) / SR) * (x < .1) * .12 * np.minimum(x / .03, 1)
+    pop = (band(rng.standard_normal(n), 2500, 11000) * np.exp(-y * 140) + np.sin(2 * np.pi * 4200 * x) * np.exp(-y * 50) * .2) * on
+    return norm(whine + pop)
+
+def car(d=1.6, c=.55):
+    # voiture qui passe : moteur (harmoniques), roulement des pneus et air, effet Doppler au passage, de gauche à droite
+    n = int(d * SR); x = tt(n); tc = d * c; u = (x - tc) / .22
+    dop = 1 + .14 * np.tanh(-u)
+    f0 = 78 * dop * (1 + .05 * x / d)
+    ph = np.cumsum(f0) / SR
+    eng = sum(np.sin(2 * np.pi * h * ph + h) / h ** .9 * (1.3 if h % 2 else .8) for h in range(1, 12))
+    tyre = norm(sweep(n, 1600, 500, .9))
+    env = np.exp(-0.5 * ((x - tc) / .3) ** 2) * .9 + np.exp(-0.5 * ((x - tc) / .65) ** 2) * .3
+    s_ = norm(.8 * norm(lowpass(eng, 2500)) + .6 * tyre) * env
+    p = np.tanh(u * .7)
+    return np.stack([s_ * np.cos((p + 1) * np.pi / 4) * 1.414, s_ * np.sin((p + 1) * np.pi / 4) * 1.414], 1)
+
+def half_explosion(size="big"):
+    # demi-explosion propre : déclic, souffle sombre, sub qui plonge, quelques débris seulement
+    d = {"big": 2.2, "mid": 1.3}[size]; n = int(d * SR); x = tt(n); noise = rng.standard_normal(n)
+    crack = band(noise, 900, 7000) * np.exp(-x * 80)
+    body = lowpass(noise, 1200) * np.exp(-x * 7) * .5 + lowpass(noise, 220) * np.exp(-x * (2.0 if size == "big" else 3.2))
+    sub_ = np.sin(2 * np.pi * np.cumsum(54 * (30 / 54) ** np.minimum(x / .8, 1)) / SR) * np.exp(-x * 2.2)
+    deb = np.zeros(n)
+    for _ in range(12 if size == "big" else 6):
+        at = rng.exponential(.3); i = int(at * SR); m = int(rng.uniform(.004, .015) * SR)
+        if i + m < n: deb[i:i + m] += rng.standard_normal(m) * rng.uniform(.1, .4) * np.exp(-at * 3)
+    s_ = .7 * crack + norm(body) + 1.2 * sub_ + .3 * norm(band(deb, 1500, 7000) + 1e-9)
+    return norm(np.tanh(1.4 * norm(s_)) * np.minimum(x / .001, 1))
+
 # =============== MUSIQUE ===============
 kicks = []
 def kick_at(t, g=.8):
@@ -290,18 +344,46 @@ add("bass", R0, sub("F1", 3.0), .5)
 air_k = 0
 TINKS = ["F5", "Ab5", "Bb5", "C6", "Db6"]                       # une note de plus à chaque geste
 CLICKS = ["C6", "Eb6", "F6"]
+STARTS = [T["hook1"], T["hook2"], T["hook3"], T["title"], T["diag"], T["pratique"]]   # mots qui ouvrent une scène
+is_start = lambda t: any(abs(t - s0) < .12 for s0 in STARTS)
 for cue in reel["cues"]:
     t, kind = cue[0], cue[1]
-    if kind == "air": add("fx", t - .2, air(air_k), .16, rev=.3); air_k += 1
-    elif kind == "boom": add("fx", t, boom(), .85, rev=.5)
-    elif kind == "tink": add("fx", t, tink(TINKS[cue[2]]), .2, pan=-.3 + .15 * cue[2], rev=.45)
-    elif kind == "click": add("fx", t, tink(CLICKS[cue[2]]), .12, pan=-.3 + .3 * cue[2], rev=.35)
-    elif kind == "thud": add("fx", t, boom(), .3 + .12 * cue[2], rev=.4)
-    elif kind == "water": add("fx", t - .4, water(), .3, rev=.35)
-    elif kind == "plip": add("fx", t, plip(), .22, rev=.5)
-    elif kind == "fill": add("fx", t, bubbles(cue[2] + .4, 30), .1, rev=.4)
-    elif kind == "shimmer": add("music", t, shimmer(cue[2]), .07, rev=.5)
-    elif kind == "shine": add("fx", t, shine(), .1, rev=.6)
+    if VAR == "epure" or kind in ("plip", "fill", "shimmer", "shine"):
+        if kind == "air": add("fx", t - .2, air(air_k), .16, rev=.3)
+        elif kind == "boom": add("fx", t, boom(), .85, rev=.5)
+        elif kind == "tink": add("fx", t, tink(TINKS[cue[2]]), .2, pan=-.3 + .15 * cue[2], rev=.45)
+        elif kind == "click": add("fx", t, tink(CLICKS[cue[2]]), .12, pan=-.3 + .3 * cue[2], rev=.35)
+        elif kind == "thud": add("fx", t, boom(), .3 + .12 * cue[2], rev=.4)
+        elif kind == "water": add("fx", t - .4, water(), .3, rev=.35)
+        elif kind == "plip": add("fx", t, plip(), .22, rev=.5)
+        elif kind == "fill": add("fx", t, bubbles(cue[2] + .4, 30), .1, rev=.4)
+        elif kind == "shimmer": add("music", t, shimmer(cue[2]), .07, rev=.5)
+        elif kind == "shine": add("fx", t, shine(), .1, rev=.6)
+    elif VAR == "cinema":                                        # dosé : sabre sur les mots qui ouvrent une scène, flash sur les gestes
+        if kind == "air":
+            if is_start(t): add("fx", t - .21, saber(1 if air_k % 2 else -1), .3, rev=.3)
+            else: add("fx", t - .2, air(air_k), .14, rev=.3)
+        elif kind == "boom": add("fx", t, half_explosion("big"), .7, rev=.45); add("fx", t, boom(), .35, rev=.4)
+        elif kind == "tink": add("fx", t - .1, flash(), .28, rev=.2); add("fx", t, tink(TINKS[cue[2]]), .12, rev=.45)
+        elif kind == "click": add("fx", t, tink(CLICKS[cue[2]]), .12, pan=-.3 + .3 * cue[2], rev=.35)
+        elif kind == "thud":
+            add("fx", t - .21, saber(1 if cue[2] % 2 else -1), .3, rev=.3)
+            add("fx", t, half_explosion("big" if cue[2] == 2 else "mid"), .32 + .1 * cue[2], rev=.4)
+        elif kind == "water": add("fx", t - 1.6 * .55, car(), .45, rev=.3); add("fx", t - .4, water(), .12, rev=.35)
+    else:                                                        # cinema-plus : sur chaque mot et chaque coupe, toujours adouci
+        if kind == "air":
+            if air_k % 2 == 0: add("fx", t - .21, saber(1 if air_k % 4 else -1), .3, rev=.3)
+            else: add("fx", t - .1, flash(), .24, pan=rng.uniform(-.3, .3), rev=.2); add("fx", t - .2, air(air_k), .1, rev=.3)
+        elif kind == "boom": add("fx", t, half_explosion("big"), .85, rev=.45); add("fx", t, boom(), .3, rev=.4)
+        elif kind == "tink":
+            add("fx", t - .1, flash(), .3, rev=.2); add("fx", t - .21, saber(1 if cue[2] % 2 else -1), .26, rev=.3)
+            add("fx", t, tink(TINKS[cue[2]]), .1, rev=.45)
+        elif kind == "click": add("fx", t - .1, flash(), .14, pan=-.3 + .3 * cue[2], rev=.2)
+        elif kind == "thud":
+            add("fx", t - .1, flash(), .3, rev=.2)
+            add("fx", t, half_explosion("big" if cue[2] == 2 else "mid"), .45 + .1 * cue[2], rev=.4)
+        elif kind == "water": add("fx", t - 1.6 * .55, car(), .6, rev=.3); add("fx", t - .4, water(), .15, rev=.35)
+    if kind == "air": air_k += 1
 for t in reel["swells"]: add("fx", t - 1.2, swell(), .18, rev=.3)
 for a_, z_ in reel["risers"]:                                   # montée douce, coupée deux doubles croches avant l'impact
     n_ = int((z_ - a_ - 2 * S16) * SR)
