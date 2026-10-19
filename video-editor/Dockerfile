@@ -46,4 +46,6 @@ ENV VIDEO_EDITOR_STORAGE_ROOT=/data
 EXPOSE 3000
 
 WORKDIR /app/apps/web
-CMD ["node", "node_modules/.bin/next", "start", "-p", "3000"]
+# Point d'entrée JS de Next (node_modules/.bin/next est un script shell
+# sous pnpm : `node` ne peut pas l'exécuter).
+CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "3000"]

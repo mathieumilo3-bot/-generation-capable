@@ -78,6 +78,10 @@ export default function HomePage() {
           {submitting ? "Envoi…" : "Créer ma vidéo"}
         </button>
       </form>
+
+      <a className="home-link" href="/library">
+        Ton client t'a envoyé un lien iCloud ou Google Drive ? Importer directement dans le cloud →
+      </a>
     </main>
   );
 }

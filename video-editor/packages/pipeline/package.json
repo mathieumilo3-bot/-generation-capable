@@ -26,7 +26,8 @@
     "@video-editor/model-router": "workspace:*",
     "@video-editor/cost-ledger": "workspace:*",
     "@video-editor/render": "workspace:*",
-    "@video-editor/agents": "workspace:*"
+    "@video-editor/agents": "workspace:*",
+    "@video-editor/ingest": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

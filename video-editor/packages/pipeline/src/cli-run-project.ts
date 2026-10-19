@@ -74,6 +74,18 @@ async function main(): Promise<void> {
   }
 
   try {
+    // Projet créé depuis la bibliothèque cloud : rapatrier d'abord les
+    // originaux depuis R2 (cache partagé entre montages). Sans effet — et
+    // sans même charger @video-editor/ingest — pour un projet uploadé.
+    if (db.listLibraryRushesForProject(input.projectId).length > 0) {
+      if (jobId) db.updateRenderJobProgress(jobId, { status: "preparing", currentStage: "Récupération des fichiers depuis le cloud" });
+      const { materializeLibraryRushes, createObjectStoreFromEnv } = await import("@video-editor/ingest");
+      const n = await materializeLibraryRushes(db, createObjectStoreFromEnv(storageRoot), input.projectId, storageRoot, (m) =>
+        console.log(`[${input.projectId}] ${m}`)
+      );
+      console.log(`[${input.projectId}] ${n} rush(s) préparé(s) depuis la bibliothèque`);
+    }
+
     const result = await runPipeline(db, router, input, (stage, status) => {
       console.log(`[${input.projectId}] ${stage}: ${status}`);
       if (status === "start") reportProgress(stage as PipelineStage, "start");

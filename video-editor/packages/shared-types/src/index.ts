@@ -13,3 +13,4 @@ export * from "./creative-criticism.js";
 export * from "./creative-learning.js";
 export * from "./render-queue.js";
 export * from "./stage-progress.js";
+export * from "./media-library.js";

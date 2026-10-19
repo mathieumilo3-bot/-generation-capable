@@ -116,6 +116,76 @@ l'ordre de quelques dollars à ~15 $/mois selon la région. Pour couper les
 coûts entre deux sessions d'usage : `fly scale count 0 --app ton-nom-unique`
 (puis `fly scale count 1` pour la relancer).
 
+## Bibliothèque client : liens iCloud / Google Drive → Cloudflare R2
+
+Page `/library` : on colle le lien envoyé par le client, le **serveur**
+télécharge les fichiers et les range dans R2 (jamais sur ton Mac), puis on
+lance autant de montages que voulu à partir des mêmes fichiers.
+
+| Lien du client | Accès | Qualité |
+|---|---|---|
+| `share.icloud.com/photos/…` (Photos → Partager → **Copier le lien iCloud**) | API web CloudKit non documentée | **Originaux** — lien valable 30 jours |
+| `www.icloud.com/sharedalbum/#…` (album partagé, « Site web public » activé) | API web sharedstreams non documentée | **Réduits par Apple** : ~2048 px, vidéos 720p/1080p |
+| `photos.icloud.com/shared/album/…` (albums partagés récents) | API web CloudKit non documentée | selon l'album |
+| `drive.google.com/drive/folders/…` (« Tous les utilisateurs disposant du lien ») | **API Drive v3 officielle** (`GOOGLE_DRIVE_API_KEY`) | **Originaux** |
+
+**Honnêteté sur iCloud** : Apple ne publie aucune API pour ces liens. Le
+module utilise les mêmes appels que la page icloud.com (et que les outils
+open source depuis des années) ; Apple peut les changer sans préavis. Si
+un lien exige une connexion Apple ou si le format change, l'import échoue
+avec un message explicite → demander au client un dossier Google Drive.
+
+Déroulé d'un import (`packages/ingest`) :
+
+1. **Test d'abord** (défaut) : le lien est lu (nombre de vidéos/photos,
+   volume annoncé) et seuls N fichiers (2/3 vidéos, ≥ 1 photo) sont
+   importés. Bouton « importer les X fichiers » ensuite — les fichiers
+   déjà importés ne sont pas retéléchargés.
+2. Par fichier : URL fraîche (les URLs iCloud expirent) → téléchargement
+   avec reprise `Range` → SHA-256 → type/durée/format **mesurés par
+   ffprobe** → miniature JPEG → pré-analyse ffmpeg (exposition, mouvement,
+   voix, passages utiles) → envoi multipart vers R2 → fichier temporaire
+   supprimé.
+3. Reprise : 3 essais immédiats par fichier, puis jusqu'à 5 passages ;
+   un import partiel est repris automatiquement (backoff 5 min → 2 h) ;
+   un worker mort (redémarrage, OOM) est détecté par heartbeat et repris.
+   404 / lien privé = échec définitif sans insister.
+4. Montage : sélection automatique (meilleur score, vidéos sombres
+   écartées, vidéos > 45 s réduites à leurs passages utiles, ordre de
+   l'album) ou cases cochées. Ça crée un **projet ordinaire** dans la file
+   de rendu existante ; le worker rapatrie les originaux depuis R2 dans un
+   cache partagé (`storage/media-cache/`, une seule fois par fichier) avant
+   de lancer le pipeline inchangé.
+
+Rangement R2 : `clients/<client>/<import>/originals/<asset>/<nom d'origine>`
+et `…/thumbs/<asset>.jpg`. Les miniatures/originaux sont servis par URL
+signée temporaire (les octets ne passent pas par le serveur).
+
+Configuration (secrets Fly) :
+
+```bash
+fly secrets set R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... R2_BUCKET=clients-medias GOOGLE_DRIVE_API_KEY=... --app ton-nom-unique
+```
+
+Sur le serveur (`fly ssh console`), sans passer par l'interface :
+
+```bash
+cd /app/packages/ingest
+node dist/cli.js check "<lien>"                          # accès automatisé possible ? (aucun téléchargement)
+node dist/cli.js import "<lien>" --client "Nom" --sample 3
+node dist/cli.js full <importId>                         # import complet après le test
+node dist/cli.js retry <importId>                        # relancer les échecs
+```
+
+Disque : seuls les fichiers en transit (≈ `VIDEO_EDITOR_IMPORT_CONCURRENCY`
+× taille d'une vidéo) et le cache des montages occupent le volume ; prévoir
+un volume Fly de 20 Go+ pour des rushs 4K. Le cache `media-cache/` peut être
+vidé sans risque : il se reconstitue depuis R2.
+
+Tests : `pnpm --filter @video-editor/ingest test` (unitaires) et
+`pnpm --filter @video-editor/ingest run test:e2e` (bout-en-bout sur serveurs locaux simulant iCloud/Drive/R2 avec de vrais fichiers ffmpeg :
+coupure réseau, 503, 404, redirection de partition, pagination, multipart).
+
 ## Structure
 
 ```
@@ -123,6 +193,7 @@ apps/
   web/                    # Next.js — upload, progression réelle, résultat, édition conversationnelle
 packages/
   shared-types/            # Contrats de données + schémas zod (validation stricte, anti-hallucination)
+  ingest/                    # Import de liens iCloud / Google Drive → Cloudflare R2, bibliothèque client, pont vers le montage
   db/                        # SQLite locale (node:sqlite, zéro dépendance externe) + schéma Postgres cible (db-migrations/)
   model-router/                # Couche d'abstraction multi-fournisseur — jamais de SDK fournisseur importé ailleurs
   cost-ledger/                   # Traçage du coût réel par appel (§10 du brief)

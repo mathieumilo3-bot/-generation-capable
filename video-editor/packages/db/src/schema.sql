@@ -220,3 +220,75 @@ CREATE TABLE IF NOT EXISTS cost_ledger (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_cost_ledger_project ON cost_ledger(project_id);
+
+-- Bibliothèque média cloud (import depuis liens iCloud / Google Drive vers
+-- le stockage objet R2). Indépendante des projets : un même import sert à
+-- autant de montages que voulu, sans ré-importer. Tables ajoutées en
+-- CREATE IF NOT EXISTS : une base existante les reçoit au démarrage sans
+-- toucher aux tables du pipeline.
+CREATE TABLE IF NOT EXISTS media_imports (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  source_url TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  source_title TEXT,
+  mode TEXT NOT NULL DEFAULT 'probe',
+  sample_size INTEGER NOT NULL DEFAULT 3,
+  status TEXT NOT NULL DEFAULT 'queued',
+  total_items INTEGER NOT NULL DEFAULT 0,
+  total_bytes INTEGER NOT NULL DEFAULT 0,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  worker_id TEXT,
+  worker_pid INTEGER,
+  heartbeat_at TEXT,
+  next_retry_at TEXT,
+  error TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_media_imports_user ON media_imports(user_id);
+CREATE INDEX IF NOT EXISTS idx_media_imports_status ON media_imports(status);
+
+CREATE TABLE IF NOT EXISTS media_assets (
+  id TEXT PRIMARY KEY,
+  import_id TEXT NOT NULL REFERENCES media_imports(id),
+  external_id TEXT NOT NULL,
+  original_filename TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  mime_type TEXT,
+  size_bytes INTEGER,
+  sha256 TEXT,
+  width INTEGER,
+  height INTEGER,
+  duration_sec REAL,
+  video_codec TEXT,
+  container TEXT,
+  has_audio INTEGER,
+  taken_at TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  attempts INTEGER NOT NULL DEFAULT 0,
+  object_key TEXT,
+  thumb_key TEXT,
+  analysis_json TEXT,
+  position INTEGER NOT NULL DEFAULT 0,
+  error TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (import_id, external_id)
+);
+CREATE INDEX IF NOT EXISTS idx_media_assets_import ON media_assets(import_id, position);
+
+-- Lien rush ↔ asset de bibliothèque : un rush d'un projet créé depuis la
+-- bibliothèque est une copie locale (cache) d'un original stocké dans R2.
+CREATE TABLE IF NOT EXISTS rush_library_links (
+  rush_id TEXT PRIMARY KEY REFERENCES rushes(id),
+  asset_id TEXT NOT NULL REFERENCES media_assets(id),
+  project_id TEXT NOT NULL REFERENCES projects(id),
+  -- Extrait retenu (highlight) d'une longue vidéo ; NULL = fichier entier.
+  start_sec REAL,
+  end_sec REAL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_rush_library_links_asset ON rush_library_links(asset_id);
+CREATE INDEX IF NOT EXISTS idx_rush_library_links_project ON rush_library_links(project_id);
