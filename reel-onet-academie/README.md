@@ -25,13 +25,17 @@ Le montage est rendu image par image dans Chromium (Playwright), encodé en H.26
 - `extract.py` : extrait les deux rushs en images à 30 i/s, redressées (`shots/`).
 - `comp.html` : compositeur canvas. Il gère les deux mises en page : plein cadre en 9:16, carte verticale sur fond flouté en 16:9.
 - `sfx.py` : bande-son épurée générée avec numpy.
-  - **Musique minimale** en fa mineur, sans boucle :
-    - une pulsation de synthé en croches qui respire avec le kick ;
-    - un kick doux sur chaque coupe ;
-    - un sub, une nappe de cordes et du piano en notes isolées ;
-    - une mélodie au pluck qui change de phrase à chaque section.
+  - **Musique : piano et beat hip-hop cinématique** en fa mineur, sans aucun élément qui tourne du début à la fin. Chaque section a sa texture :
+    - piano seul à l'ouverture ;
+    - grand accord sur le 21 novembre ;
+    - un beat lourd (grosse caisse et caisse claire calées sur les coupes) qui entre avec l'accroche ;
+    - un groove complet avec basse syncopée sur les gestes ;
+    - un break piano seul sur la salle ;
+    - une montée par couches ;
+    - un grand accord sur chacun des trois mots ;
+    - un final en fa majeur.
 
-    Elle respire sur la salle, se resserre dans la montée et résout en fa majeur sur la carte finale.
+    Les accords sont enrichis (9e, 7e majeures), et le motif du piano change d'une mesure à l'autre.
   - **Peu de bruitages, mais variés et musicaux** :
     - un souffle doux sur les textes, d'une hauteur différente à chaque fois ;
     - un « tink » de tuyau accordé sur chaque geste, une note plus haute à chaque fois ;

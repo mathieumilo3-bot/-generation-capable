@@ -1,12 +1,14 @@
 # Bande-son originale, synthétisée à partir de reel.json : python3 -I sfx.py reel.json sortie.wav
 # Direction : classe, dynamique, épuré (voir ../CLAUDE.md).
-#  - Musique minimale en fa mineur, sans boucle : pulsation de synthé en croches qui respire avec le kick, kick doux
-#    sur chaque coupe (tous les deux temps), sub, pluck en mélodie qui change de phrase à chaque section, piano en notes
-#    isolées, cordes en nappe. Elle s'ouvre et se resserre par section, et laisse un silence avant chaque moment fort.
-#  - Peu de bruitages, mais variés et musicaux, un par repère (« cues ») : souffle doux sur les textes, « tink » de tuyau
-#    accordé sur chaque geste (une note de plus à chaque geste), clics accordés sur le diagnostic, eau sur les transitions,
-#    une goutte, et un boom grave et propre réservé aux trois moments clés (21 novembre, titre, carte finale).
-#
+#  - Musique : piano et beat hip-hop cinématique, en fa mineur, sans aucun élément qui tourne du début à la fin.
+#    Chaque section a sa texture : piano seul à l'ouverture ; le beat lourd (grosse caisse et caisse claire au
+#    demi-temps, calées sur les coupes) entre avec l'accroche ; groove complet avec basse syncopée sur les gestes ;
+#    break piano seul sur la salle ; montée ; trois grands accords pour les trois mots ; final en fa majeur.
+#    Les accords sont enrichis (9e, 7e majeures), le piano change de motif d'accompagnement à chaque mesure, les cordes
+#    n'arrivent qu'aux passages.
+#  - Bruitages : peu, variés et musicaux, un par repère (« cues ») : souffle doux sur les textes, « tink » de tuyau
+#    accordé sur chaque geste, clics accordés sur le diagnostic, eau sur les transitions, une goutte, et un boom grave
+#    et propre réservé aux moments clés (21 novembre, titre, carte finale).
 # Trois habillages possibles sur la même musique (3e argument) :
 #  - « epure » (par défaut) : bruitages musicaux décrits ci-dessus ;
 #  - « cinema » : les bruitages de cinéma demandés par le client (sabre, flash, voiture qui passe, demi-explosion),
@@ -105,55 +107,63 @@ def pad(ch, d, octv=3, fc=1400):
         return s / (np.abs(s).max() + 1e-9) * env[:, None]
     return cached(("pad", ch, round(d, 2), octv, fc), make)
 
-def pulse_note(m, fc):
-    # pulsation de synthé : note courte, filtrée, légèrement creuse
+def piano(name, d=3.0, vel=.8):
+    # piano : trois cordes légèrement désaccordées par note, partiels inharmoniques, plus brillant quand on tape fort
     def make():
-        n = int(b / 2 * SR); x = tt(n); f = mfreq(m)
-        s = saw(f, n) * .7 + saw(f * 1.004, n, .3) * .5 + np.sign(np.sin(2 * np.pi * f / 2 * x)) * .25
-        return norm(lowpass(s, fc, 2)) * np.minimum(x / .003, 1) * np.exp(-x * 9)
-    return cached(("pulse", m, int(fc / 50)), make)
+        n = int(d * SR); x = tt(n); f0 = freq(name); v = np.zeros(n)
+        k_dec = (f0 / 260) ** .35
+        for h in range(1, 13):
+            fh = f0 * h * np.sqrt(1 + .0003 * h * h)
+            a = 1 / h ** (1.5 - .6 * vel)
+            for det in (-.6, 0, .6):
+                v += a * np.sin(2 * np.pi * fh * 2 ** (det / 1200) * x + h) * np.exp(-x * (.8 + .55 * h) * k_dec)
+        v = norm(v) + band(rng.standard_normal(n), 900, 4000) * np.exp(-x * 90) * .05 * vel   # marteau
+        return norm(v) * np.minimum(x / .002, 1) * np.clip((d - x) / .25, 0, 1)
+    return cached(("piano", name, round(d, 2), vel), make)
 
-def pulse(i, fc, gain, octv=3):
-    tn = tones(PLAN[i], octv)
-    seq = [tn[0], tn[0] + 12, tn[2], tn[0] + 12, tn[1], tn[0] + 12, tn[2], tn[1]]
-    for k in range(8):
-        add("music", i * BAR + k * b / 2, pulse_note(seq[k], fc), gain * (1 if k % 2 == 0 else .75), pan=(-.25 if k % 2 else .25), rev=.2)
+VOI = {"Fm": ("Ab3", "C4", "Eb4", "G4"), "Db": ("F3", "Ab3", "C4", "F4"), "Ab": ("C4", "Eb4", "G4", "Bb4"),
+       "Eb": ("G3", "Bb3", "D4", "F4"), "Bbm": ("Db4", "F4", "Ab4", "C5"), "C": ("E3", "G3", "Bb3", "D4"),
+       "F": ("A3", "C4", "E4", "G4")}                       # accords enrichis : Fm9, Db maj7, Ab add9, Eb maj9, Bbm9, C9, F maj9
+BASS = {"Fm": "F1", "Db": "Db2", "Ab": "Ab1", "Eb": "Eb2", "Bbm": "Bb1", "C": "C2", "F": "F1"}
 
-def ks(f, d=1.4, k=0.996, bright=.55):
-    # corde pincée (Karplus-Strong) : le « pluck » de la mélodie
-    def make():
-        n = int(d * SR); P = int(round(SR / f)); buf = rng.uniform(-1, 1, P).tolist(); out = np.empty(n)
-        for i in range(n):
-            j = i % P; v = buf[j]; out[i] = v; buf[j] = k * (bright * v + (1 - bright) * buf[(j + 1) % P])
-        return norm(out)
-    return cached(("ks", round(f, 2), d), make)
-def pluck(name): return ks(freq(name))
-
-def piano(name, d=3.0):
-    def make():
-        n = int(d * SR); x = tt(n); f0 = freq(name)
-        v = sum(np.sin(2 * np.pi * f0 * h * (1 + .0004 * h * h) * x) * np.exp(-x * (1.2 + h * .9)) / h ** 1.1 for h in range(1, 9))
-        return norm(v) * np.minimum(x / .003, 1) * np.clip((d - x) / .3, 0, 1)
-    return cached(("piano", name, d), make)
+def chord(t, ch, d=1.6, vel=.6, gain=.12, spread=.012):
+    # accord plaqué, très légèrement égrené de bas en haut
+    for k, nm in enumerate(VOI[ch]):
+        add("music", t + k * spread, piano(nm, d, vel), gain, pan=-.3 + .2 * k, rev=.4)
 
 def kick():
     def make():
-        n = int(.35 * SR); x = tt(n)
-        s = np.sin(2 * np.pi * np.cumsum(46 + 90 * np.exp(-x * 38)) / SR) * np.exp(-x * 9)
-        return norm(s + band(rng.standard_normal(n), 1500, 6000) * np.exp(-x * 400) * .15)
+        n = int(.45 * SR); x = tt(n)
+        s_ = np.sin(2 * np.pi * np.cumsum(50 + 110 * np.exp(-x * 30)) / SR) * np.exp(-x * 6.5)
+        return norm(np.tanh(1.6 * (s_ + band(rng.standard_normal(n), 2000, 7000) * np.exp(-x * 350) * .25)))
     return cached("kick", make)
 
-def snap():
+def snare():
+    # caisse claire hip-hop : corps chaud, peau, un peu de pièce
     def make():
-        n = int(.25 * SR); x = tt(n)
-        return norm(band(rng.standard_normal(n), 1200, 7000) * (np.exp(-x * 45) + .3 * np.exp(-x * 12)))
-    return cached("snap", make)
+        n = int(.4 * SR); x = tt(n)
+        body = np.sin(2 * np.pi * np.cumsum(185 + 40 * np.exp(-x * 50)) / SR) * np.exp(-x * 22)
+        skin = band(rng.standard_normal(n), 1200, 9000) * (np.exp(-x * 20) + .25 * np.exp(-x * 7))
+        return norm(np.tanh(1.3 * (body * .7 + skin)))
+    return cached("snare", make)
 
-def hat(open_=False):
+def rim():
     def make():
-        n = int((.18 if open_ else .04) * SR); x = tt(n)
-        return norm(band(rng.standard_normal(n), 8000, 16000) * np.exp(-x / (.05 if open_ else .008)))
-    return cached(("hat", open_), make)
+        n = int(.08 * SR); x = tt(n)
+        return norm(band(rng.standard_normal(n), 1500, 5000) * np.exp(-x * 120) + np.sin(2 * np.pi * 1700 * x) * np.exp(-x * 90) * .5)
+    return cached("rim", make)
+
+def shaker():
+    def make():
+        n = int(.06 * SR); x = tt(n)
+        return norm(band(rng.standard_normal(n), 6000, 14000) * np.sin(np.pi * np.minimum(x / .06, 1)) ** 2)
+    return cached("shaker", make)
+
+def bass(name, d):
+    # basse chaude : fondamentale et un peu d'octave pour qu'on l'entende sur un téléphone
+    n = int(d * SR); x = tt(n); f = freq(name)
+    s_ = np.sin(2 * np.pi * f * x) + .25 * np.sin(2 * np.pi * 2 * f * x) + .08 * np.sin(2 * np.pi * 3 * f * x)
+    return np.tanh(1.2 * s_) * np.minimum(x / .008, 1) * np.exp(-x * .8) * np.clip((d - x) / .04, 0, 1)
 
 def sub(name, d):
     n = int(d * SR); x = tt(n)
@@ -263,82 +273,83 @@ def half_explosion(size="big"):
 
 # =============== MUSIQUE ===============
 kicks = []
-def kick_at(t, g=.8):
-    add("drums", t, kick(), g); kicks.append(t)
-def groove(i, kick_=True, hats=True, snap_=True, extra=False):
-    t0 = i * BAR
-    if kick_:
-        for s_ in ((0, 8, 11) if extra else (0, 8)): kick_at(t0 + s_ * S16, .5 if s_ == 11 else .8)
-        add("bass", t0, sub(bass_root(PLAN[i]), BAR - .05), .5)
-    if snap_: add("drums", t0 + 12 * S16, snap(), .35, rev=.25)
-    if hats:
-        for k in range(8): add("drums", t0 + k * b / 2, hat(), .1 + .05 * (k % 2 == 0), pan=.3)
-        add("drums", t0 + 14 * S16, hat(True), .08, pan=-.3)
+def k_(t, g=.85): add("drums", t, kick(), g); kicks.append(t)
+def sn(t, g=.55): add("drums", t, snare(), g, rev=.22)
+def at16(i, s_): return i * BAR + s_ * S16
 
-# mélodies de pluck : une phrase par section, jamais la même
-MEL = {
-    4: [(0, "C5"), (6, "Ab4"), (8, "F4")], 5: [(0, "Db5"), (6, "F5"), (8, "Ab4")],
-    6: [(0, "C5"), (6, "Eb5"), (8, "Ab4")], 7: [(0, "Db5"), (6, "F5"), (8, "Bb4"), (12, "Db5")],
-    9: [(0, "F5"), (3, "Ab5"), (6, "C6"), (10, "Ab5")], 10: [(0, "G5"), (3, "F5"), (6, "Eb5"), (10, "C5")],
-    11: [(0, "F5"), (3, "Ab5"), (6, "Db6"), (10, "C6")], 12: [(0, "Eb6"), (3, "C6"), (6, "Ab5"), (10, "Eb5")],
-    13: [(0, "Bb5"), (3, "G5"), (6, "Eb5"), (10, "G5")], 14: [(0, "F5"), (3, "Bb5"), (6, "Db6"), (10, "F6")],
-    15: [(0, "E6"), (3, "C6"), (6, "G5"), (10, "E5")],
-    17: [(0, "F5"), (6, "Db5"), (8, "Bb4")], 18: [(0, "G5"), (6, "E5"), (8, "C5"), (12, "E5")],
-    19: [(0, "Ab5"), (3, "F5"), (6, "Db5"), (8, "Ab5"), (11, "F5"), (14, "Db6")],
-}
-for i, notes in MEL.items():
-    for s_, nm in notes:
-        add("music", i * BAR + s_ * S16, pluck(nm), .22, pan=-.15, rev=.35)
-        add("music", i * BAR + (s_ + 3) * S16, pluck(nm), .06, pan=.45, rev=.4)          # écho
+# motifs d'accompagnement du piano (position en doubles croches, durée, nuance) : ils tournent sans se répéter à l'identique
+COMP = [[(0, 1.2, .7), (6, .4, .5), (10, .9, .6)], [(0, .5, .65), (3, .5, .5), (8, 1.0, .6), (14, .3, .45)],
+        [(0, 1.6, .6), (11, .5, .55)], [(2, .4, .5), (6, .9, .65), (12, .6, .5)], [(0, .8, .7), (8, .4, .5), (10, .4, .5), (13, .8, .6)]]
 
-# ouverture (0-1) : piano en notes isolées, nappe grave qui monte
-for at, nm in ((0, "F5"), (2 * b, "C5"), (4 * b, "Ab4"), (BAR + 2 * b, "Db5")): add("music", at, piano(nm, 2.6), .2, rev=.65)
-add("music", 0, pad("Fm", 2 * BAR, 2, 700), .16, rev=.4)
+# ouverture (0-1) : piano seul, un accord tenu puis une note qui reste en l'air ; cordes qui montent vers le 21
+chord(0, "Fm", 3.4, .5, .13, .05)
+add("music", BAR + 2 * b, piano("C6", 2.0, .45), .12, rev=.7)
+add("music", BAR, pad("Fm", BAR + .2, 3, 1600), .12, rev=.5)
 
-# le 21 novembre (2-3) : nappe, piano, la pulsation entre filtrée
-add("music", T["date"], pad("Fm", 2 * BAR + .3, 3, 1500), .22, rev=.45)
-add("music", T["date"] + .1, piano("C6", 3.0), .16, rev=.7)
-pulse(3, 700, .12)
+# le 21 novembre (2-3) : grand accord, basse, cordes ; trois notes de piano pour relancer
+chord(T["date"], "Fm", 3.0, .85, .17, .02)
+add("bass", T["date"], sub("F1", 2.5), .45)
+add("music", T["date"], pad("Fm", 2 * BAR, 3, 1800), .16, rev=.5)
+for k, nm in enumerate(("Ab5", "G5", "Eb5")): add("music", 3 * BAR + (k * 3 + 4) * S16, piano(nm, 1.2, .55), .11, rev=.6)
 
-# accroche (4-8) : kick sur chaque coupe, la pulsation s'ouvre, le pluck chante
+# accroche (4-7) : le beat lourd arrive — grosse caisse et caisse claire tombent sur les coupes
 for i in bars(4, 7):
-    pulse(i, 900 + 350 * (i - 4), .16)
-    groove(i, hats=i >= 6, snap_=i >= 6)
-    add("music", i * BAR, pad(PLAN[i], BAR + .3, 3, 1200), .12, rev=.4)
-pulse(8, 2200, .18); add("music", 8 * BAR, pad("C", BAR, 3, 2000), .16, rev=.4)
-for k in range(8): add("drums", 8 * BAR + k * b / 2, hat(), .06 + .02 * k, pan=.3)
+    k_(at16(i, 0)); sn(at16(i, 8))
+    if i % 2: k_(at16(i, 14), .55)
+    for s_, d_, v_ in COMP[i % 5]: chord(at16(i, s_), PLAN[i], d_ + .3, v_, .11)
+    add("bass", at16(i, 0), bass(BASS[PLAN[i]], 5 * S16), .38); add("bass", at16(i, 10), bass(BASS[PLAN[i]], 4 * S16), .3)
+    if i >= 6:
+        for s_ in range(0, 16, 2): add("drums", at16(i, s_), shaker(), .08 + .04 * (s_ % 4 == 0), pan=.35)
 
-# titre et gestes (9-15) : tout le groove, la mélodie monte d'un geste à l'autre
+# la plomberie s'apprend (8) : le beat s'arrête, le piano monte en arpège, silence avant le titre
+for k, m in enumerate([60, 63, 67, 72, 75, 79, 84]):
+    add("music", at16(8, 2 * k), piano(mname(m), 1.0, .5 + .05 * k), .1, pan=-.4 + .12 * k, rev=.5)
+add("music", 8 * BAR, pad("C", BAR - 2 * S16, 3, 2400), .15, rev=.4)
+
+# titre et gestes (9-15) : groove complet, chaque mesure varie (ghosts, relances), les cordes entrent à mi-chemin
 for i in bars(9, 15):
-    pulse(i, 3000, .17)
-    groove(i, extra=i >= 12)
-    add("music", i * BAR, pad(PLAN[i], BAR + .3, 3, 1800), .13, rev=.4)
-add("music", T["title"], piano("F6", 2.5), .14, rev=.7)
+    j = i - 9
+    k_(at16(i, 0)); k_(at16(i, 10), .7); sn(at16(i, 8))
+    if j % 2: k_(at16(i, 3), .5)
+    if j % 3 == 2: add("drums", at16(i, 13), rim(), .25, pan=-.3)
+    for s_ in range(16): add("drums", at16(i, s_), shaker(), .05 + .05 * (s_ % 4 == 2), pan=.35)
+    add("drums", at16(i, 6), snare(), .12, pan=.2)              # caisse claire fantôme
+    for s_, d_, v_ in COMP[(i * 3) % 5]: chord(at16(i, s_), PLAN[i], d_ + .3, v_, .1)
+    for s_, d_ in ((0, 6), (7, 3), (10, 6)): add("bass", at16(i, s_), bass(BASS[PLAN[i]], d_ * S16), .4)
+    if i >= 12: add("music", i * BAR, pad(PLAN[i], BAR + .3, 3, 1500 + 300 * (i - 12)), .1 + .02 * (i - 12), rev=.45)
+for s_ in (12, 13, 14, 15): sn(at16(15, s_), .2 + .08 * (s_ - 12))   # relance avant la salle
+add("music", T["title"], piano("F6", 2.5, .6), .12, rev=.7)
 
-# la salle (16) : respiration — pas de batterie, piano et nappe
-pulse(16, 1100, .12)
-add("music", 16 * BAR, pad("Db", BAR + .4, 3, 1300), .2, rev=.55)
-for at, nm in ((0, "F5"), (2 * b, "Ab5")): add("music", 16 * BAR + at, piano(nm, 2.2), .16, rev=.7)
+# la salle (16) : break, piano seul en phrase descendante, basse tenue
+for s_, nm in ((0, "C6"), (3, "Ab5"), (6, "G5"), (8, "F5"), (11, "Eb5"), (14, "C5")): add("music", at16(16, s_), piano(nm, 1.6, .55), .13, rev=.65)
+chord(16 * BAR, "Db", 1.8, .45, .08)
+add("bass", 16 * BAR, sub("Db2", BAR), .35)
 
-# montée (17-19) : le kick revient, la pulsation s'éclaircit, les charleys se resserrent
+# montée (17-19) : le beat revient par couches, les cordes gonflent, silence avant les trois mots
 for i in bars(17, 19):
     j = i - 17
-    pulse(i, 1800 + 900 * j, .16 + .02 * j)
-    groove(i, extra=j == 2)
-    add("music", i * BAR, pad(PLAN[i], BAR + .3, 3, 1500 + 500 * j), .13 + .03 * j, rev=.4)
-for k in range(16): add("drums", 19 * BAR + k * S16, hat(), .05 + .006 * k, pan=-.2)
+    k_(at16(i, 0)); sn(at16(i, 8))
+    if j >= 1:
+        k_(at16(i, 10), .65)
+        for s_ in range(0, 16, 2 if j == 1 else 1): add("drums", at16(i, s_), shaker(), .06 + .03 * j, pan=.35)
+    for s_, d_, v_ in COMP[(i * 2) % 5]: chord(at16(i, s_), PLAN[i], d_ + .3, v_ + .05 * j, .1 + .015 * j)
+    add("bass", at16(i, 0), bass(BASS[PLAN[i]], 8 * S16), .4); add("bass", at16(i, 10), bass(BASS[PLAN[i]], 4 * S16), .32)
+    add("music", i * BAR, pad(PLAN[i], BAR + .3, 3, 1600 + 600 * j), .12 + .04 * j, rev=.45)
+for s_ in range(8, 14): sn(at16(19, s_), .12 + .06 * (s_ - 8))
 
-# les trois mots (20-21) : la musique se pose sous chaque mot
+# les trois mots (20-21) : un grand accord par mot — piano, cordes, basse, grosse caisse et caisse claire ensemble
 for k, ch in enumerate(("Fm", "Db", "Eb")):
     t0 = T["build"] + k * 2 * b
-    add("music", t0, pad(ch, 2 * b + .4, 3, 1600 + 400 * k), .2, rev=.5)
-    for m in tones(ch, 4): add("music", t0, piano(mname(m), 1.6), .1, rev=.6)
+    chord(t0, ch, 1.2, .9, .16 + .02 * k, .006)
+    add("music", t0, pad(ch, 2 * b + .4, 3, 2000 + 400 * k), .18, rev=.5)
+    add("bass", t0, bass(BASS[ch], 2 * b), .45); k_(t0, .9); sn(t0, .45)
 
-# carte finale (22+) : fa majeur, piano en arpège, nappe longue
+# carte finale (22+) : fa majeur, accord large puis arpège qui s'éteint, cordes longues
 R0 = T["reveal"]
-add("music", R0, pad("F", DUR - R0, 3, 1800), .24, rev=.6)
-for k, nm in enumerate(("F4", "A4", "C5", "F5", "A5")): add("music", R0 + .2 + k * b, piano(nm, 3.0), .15, rev=.7)
-add("bass", R0, sub("F1", 3.0), .5)
+chord(R0, "F", 4.0, .75, .16, .03)
+add("music", R0, pad("F", DUR - R0, 3, 2000), .2, rev=.6)
+for k, nm in enumerate(("F4", "A4", "C5", "E5", "G5", "C6")): add("music", R0 + .9 + k * b / 2, piano(nm, 2.4, .5), .1, rev=.7)
+add("bass", R0, sub("F1", 3.0), .45)
 
 # =============== BRUITAGES ===============
 air_k = 0
@@ -390,11 +401,11 @@ for a_, z_ in reel["risers"]:                                   # montée douce,
     add("fx", a_, sweep(n_, 300, 4000, .5) * np.linspace(0, 1, n_) ** 2.5, .12, rev=.3)
 
 # =============== MIXAGE ===============
-kenv = np.zeros(N)                                              # la pulsation respire avec le kick
+kenv = np.zeros(N)                                              # la musique se pousse un peu sous la grosse caisse
 for kt in kicks:
     i = int(kt * SR); m = min(N - i, int(.3 * SR))
     if m > 0: kenv[i:i + m] = np.maximum(kenv[i:i + m], np.exp(-np.arange(m) / (.09 * SR)))
-duck = (1 - .4 * kenv)[:, None]
+duck = (1 - .25 * kenv)[:, None]
 
 L = int(2.6 * SR); xi = tt(L)
 ir = rng.standard_normal((L, 2)) * np.exp(-xi / .6)[:, None]; ir[: int(.02 * SR)] = 0
@@ -404,7 +415,7 @@ ir /= np.abs(ir).sum(0).max() / 16
 M = 1 << int(np.ceil(np.log2(N + L)))
 wet = np.stack([np.fft.irfft(np.fft.rfft(send[:, c], M) * np.fft.rfft(ir[:, c], M), M)[:N] for c in range(2)], 1)
 
-G = {"drums": 1.0, "bass": .28, "music": 2.8, "fx": 1.0}
+G = {"drums": 1.0, "bass": .5, "music": 2.8, "fx": 1.0}
 for k, v in BUS.items():
     seg = v[int(T["title"] * SR):int(T["theorie"] * SR)]
     print(f"  {k:6s} RMS gestes : {20 * np.log10(G[k] * np.sqrt((seg ** 2).mean()) + 1e-9):6.1f} dB")
