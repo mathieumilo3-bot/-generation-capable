@@ -335,6 +335,41 @@ function brandBug(t, a = 1) {
   if (!V) drop(x + 10, y - 6, 9, a);
 }
 
+/* ---------- ouverture : la carte de l'académie (logo, titre, date) ---------- */
+// une goutte tombe sur le fond d'eau, touche le centre au temps T.reveal et ouvre le crème du support
+function card(t) {
+  const T0 = T.reveal;
+  water(t);
+  if (t < T0) { drop(W / 2, -60 + easeIn(t / T0) * (H / 2 + 60), Math.min(W, H) * .035); return; }
+  g.save(); g.beginPath(); g.arc(W / 2, H / 2, Math.hypot(W, H) * easeOutExpo((t - T0) / .55), 0, Math.PI * 2); g.clip();
+  g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
+  ripples(W / 2, V ? 560 : 300, t, T0, "47,143,230", 3, Math.max(W, H) * .5);
+  const lw = V ? W * .58 : W * .27, lh = lw * IMG.logo.height / IMG.logo.width, ly = V ? 330 : 70;
+  const lyy = ly + (1 - easeOutExpo((t - T0) / .6)) * 30;
+  g.globalAlpha = clamp((t - T0) / .2); g.drawImage(IMG.logo, W / 2 - lw / 2, lyy, lw, lh); g.globalAlpha = 1;
+  shine(IMG.logo, W / 2 - lw / 2, lyy, lw, lh, (t - T0 - 1.2) / .8);
+  let y = ly + lh + (V ? 120 : 110);
+  rise("ACADÉMIE", W / 2, y, V ? 96 : 92, t, T0 + .15, { c: C.brown, ls: V ? 22 : 24 });
+  y += V ? 130 : 110;
+  const L = V ? ["LES BASES ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"] : ["LES BASES ESSENTIELLES DE LA PLOMBERIE ET DU DÉPANNAGE"];
+  const s = Math.min(...L.map(l => fit(l, V ? 82 : 74, W * .84)));
+  L.forEach((l, i) => rise(l, W / 2, y + i * s * 1.1, s, t, T0 + .3 + i * .08, { c: C.brown }));
+  y += (L.length - 1) * s * 1.1 + (V ? 80 : 70);
+  rise("Formation de plombier  ·  Théorie + terrain", W / 2, y, V ? 42 : 38, t, T0 + .55, { f: "Open Sans", w: 700, c: C.brown });
+  // pastille date
+  const q = easeOutBack((t - T0 - .8) / .5);
+  if (q > 0) {
+    const pw = V ? 760 : 760, ph = V ? 120 : 112, py = y + (V ? 70 : 52);
+    g.save(); g.translate(W / 2, py + ph / 2); g.scale(q, q);
+    rrect(-pw / 2, -ph / 2, pw, ph, ph / 2); g.fillStyle = C.navy; g.fill();
+    txt("SAMEDI 21 NOVEMBRE 2026", 0, ph * .2, V ? 58 : 56, { c: C.white, ls: 3 });
+    g.restore();
+  }
+  rise("© 2026 O NET ACADÉMIE  ·  Toute reproduction interdite", W / 2, H - (V ? 330 : 50), V ? 30 : 26, t, T0 + 1.1, { f: "Open Sans", w: 700, c: "rgba(90,66,20,.75)" });
+  g.restore();
+  splash(W / 2, H / 2, t, T0, 7, 60, 1.1);
+}
+
 /* ---------- scènes ---------- */
 async function renderFrame(t) {
   g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.filter = "none"; g.globalCompositeOperation = "source-over";
@@ -342,42 +377,29 @@ async function renderFrame(t) {
   const [sx, sy] = shake(t); g.translate(sx, sy);
   const big = V ? 210 : 230;
 
-  if (t < T.learn) {                                   // accroche : on parle à ceux qui veulent apprendre le métier
+  if (t < T.hook1) card(t);                            // ouverture
+  else if (t < T.learn) {                              // accroche : on parle à ceux qui veulent apprendre le métier
     const k = t < T.hook2 ? 0 : t < T.hook3 ? 1 : 2, t0 = [T.hook1, T.hook2, T.hook3][k];
-    if (k === 0) media(await frame("filasse", .5 + (t - T.hook1) * .75), t, T.hook1, T.hook2 - T.hook1, { dim: .32, z0: 1.1, z1: 1.18, fy: .55 });
+    if (k === 0) media(await frame("coupe", 7.4 + (t - T.hook1) * .85), t, T.hook1, T.hook2 - T.hook1, { dim: .32, z0: 1.1, z1: 1.18, fy: .55 });
     else media(k === 1 ? IMG.sertisseuse : IMG.securite, t, t0, 1, { dim: .3, z0: 1.05, z1: 1.12, fy: k === 1 ? .55 : .4, fx: k === 1 ? .35 : .5 });
     const L = [["TU VEUX DEVENIR", "PLOMBIER ?"], ["UN MÉTIER", "QUI RECRUTE."], ["ON COMMENCE", "PAR LES BASES."]][k];
     const s = Math.min(fit(L[0], big, V ? W * .86 : W * .4), fit(L[1], big, V ? W * .86 : W * .4));
     const x = V ? W / 2 : W * .075, y0 = V ? 1180 : H * .5;
     slam(L[0], x, y0, s, t, t0 + .04, { al: V ? "center" : "left", sh: "rgba(0,0,0,.5)" });
     slam(L[1], x, y0 + s * 1.02, s, t, t0 + .16, { al: V ? "center" : "left", c: C.sky, sh: "rgba(0,0,0,.5)" });
-  } else if (t < T.logo) {                             // « La plomberie, ça s'apprend. » puis la goutte tombe
+  } else if (t < T.title) {                             // « La plomberie, ça s'apprend. » puis la goutte tombe
     water(t);
     const s = fit("ÇA S'APPREND.", V ? 190 : 210, W * .8);
     const cy = H * .47;
-    stagger("LA PLOMBERIE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - T.logo + .45) / .3), sh: "rgba(0,0,0,.5)" });
-    stagger("ÇA S'APPREND.", W / 2, cy + s * 1.08, s, t, T.learn2, { c: C.sky, a: 1 - smooth((t - T.logo + .45) / .3), sh: "rgba(0,0,0,.5)" });
-    const p = clamp((t - T.logo + B) / B);
+    stagger("LA PLOMBERIE,", W / 2, cy, s, t, T.learn + .05, { a: 1 - smooth((t - T.title + .45) / .3), sh: "rgba(0,0,0,.5)" });
+    stagger("ÇA S'APPREND.", W / 2, cy + s * 1.08, s, t, T.learn2, { c: C.sky, a: 1 - smooth((t - T.title + .45) / .3), sh: "rgba(0,0,0,.5)" });
+    const p = clamp((t - T.title + B) / B);
     if (p > 0) drop(W / 2, -60 + easeIn(p) * (H / 2 + 60), Math.min(W, H) * .035);
-  } else if (t < T.title) {                            // logo O NET sur le crème du support de cours
-    const r = Math.hypot(W, H) * easeOutExpo((t - T.logo) / .55);
-    water(t);
-    g.save(); g.beginPath(); g.arc(W / 2, H / 2, r, 0, Math.PI * 2); g.clip();
-    g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
-    ripples(W / 2, H / 2, t, T.logo + .05, "47,143,230", 4);
-    const lw = (V ? W * .72 : W * .34) * (.86 + .14 * easeOutBack((t - T.logo - .05) / .6)), lh = lw * IMG.logo.height / IMG.logo.width;
-    const ly = H / 2 - lh * (V ? .72 : .66);
-    g.globalAlpha = clamp((t - T.logo - .03) / .12);
-    g.drawImage(IMG.logo, W / 2 - lw / 2, ly, lw, lh);
-    g.globalAlpha = 1;
-    shine(IMG.logo, W / 2 - lw / 2, ly, lw, lh, (t - T.logo - .9) / .7);
-    rise("ACADÉMIE", W / 2, ly + lh + (V ? 150 : 128), V ? 132 : 112, t, T.logo + .5, { c: C.brown, ls: V ? 26 : 30 });
-    const lp = easeOutExpo((t - T.logo - .75) / .6);
-    g.fillStyle = C.orange; g.fillRect(W / 2 - 120 * lp, ly + lh + (V ? 190 : 162), 240 * lp, 7);
-    g.restore();
-    splash(W / 2, H / 2, t, T.logo, 7, 60, 1.1);
   } else if (t < T.coupe) {                            // titre de la formation, ligne par ligne sur les temps
+    water(t);
+    g.save(); g.beginPath(); g.arc(W / 2, H / 2, Math.hypot(W, H) * easeOutExpo((t - T.title) / .55), 0, Math.PI * 2); g.clip();
     g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
+    ripples(W / 2, H / 2, t, T.title + .05, "47,143,230", 4);
     const L = V ? ["LES BASES", "ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"] : ["LES BASES ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"];
     const ts = (V ? [0, 2, 4, 6] : [0, 3, 6]).map(k => T.title + k * B);
     const s = Math.min(...L.map(l => fit(l, V ? 170 : 175, W * .76)));
@@ -388,12 +410,14 @@ async function renderFrame(t) {
     const lw = V ? W * .5 : W * .2, ly = V ? 230 : 92;
     g.globalAlpha = .9; g.drawImage(IMG.logo, W / 2 - lw * .22, ly - lw * .44 * .5, lw * .44, lw * .44 * IMG.logo.height / IMG.logo.width); g.globalAlpha = 1;
     txt("SUPPORT THÉORIQUE  ·  APPROCHE TERRAIN", W / 2, V ? 1640 : H - 90, V ? 34 : 34, { f: "Open Sans", w: 800, c: C.brown, ls: 4, a: smooth((t - T.title - 6.4 * B) / .3) });
+    g.restore();
+    splash(W / 2, H / 2, t, T.title, 7, 60, 1.1);
   } else if (t < T.theorie) {                          // approche terrain : un geste par coupe
     const S = [
       [T.coupe, T.sertir, "01", "COUPER", () => frame("coupe", 1.4 + (t - T.coupe) * 1.2), { fy: .45 }],
       [T.sertir, T.racc, "02", "SERTIR", () => IMG.sertisseuse, { fy: .55, fx: .35 }],
       [T.racc, T.etanch, "03", "RACCORDER", () => IMG.raccords, { fy: .55 }],
-      [T.etanch, T.monter, "04", "ÉTANCHER", () => frame("filasse", 1.6 + (t - T.etanch) * .9), { fy: .55 }],
+      [T.etanch, T.monter, "04", "ÉTANCHER", () => frame("filasse", 2.55 + (t - T.etanch) * .5), { fy: .55 }],
       [T.monter, T.theorie, "05", "MONTER", () => IMG.etau, { fy: .5, fx: .4 }],
     ];
     const [a, b, num, word, src, o] = S.find(s => t < s[1]);
@@ -430,8 +454,8 @@ async function renderFrame(t) {
       g.save(); g.translate(ix, iy); g.scale(q, q); g.fillStyle = C.orange; g.beginPath(); g.arc(0, 0, cw * .03, 0, Math.PI * 2); g.fill();
       txt(String(i + 1), 0, cw * .012, cw * .034, { f: "Open Sans", w: 800 }); g.restore();
     });
-  } else if (t < T.auteur) {                           // comprendre l'essentiel pour mieux passer à la pratique
-    media(IMG.explique, t, T.pratique, T.auteur - T.pratique, { dim: .18, fy: .62, fx: .45, z0: 1.06, z1: 1.14 });
+  } else if (t < T.build) {                            // comprendre l'essentiel pour mieux passer à la pratique
+    media(IMG.explique, t, T.pratique, T.build - T.pratique, { dim: .18, fy: .62, fx: .45, z0: 1.06, z1: 1.14 });
     const L = V ? ["COMPRENDRE", "L'ESSENTIEL"] : ["COMPRENDRE", "L'ESSENTIEL"];
     const x = V ? W / 2 : W * .075, al = V ? "center" : "left";
     const s = Math.min(...L.map(l => fit(l, V ? 190 : 170, V ? W * .86 : W * .46)));
@@ -440,16 +464,6 @@ async function renderFrame(t) {
     (V ? ["pour mieux passer", "à la pratique."] : ["pour mieux passer à la pratique."]).forEach((l, i) =>
       rise(l, x, y0 + s * 1.04 + (V ? 90 : 84) + i * 62, V ? 50 : 46, t, T.pratique + .55 + i * .1, { f: "Open Sans", w: 700, al, sh: "rgba(0,0,0,.6)" }));
     brandBug(t);
-  } else if (t < T.build) {                            // le formateur
-    water(t);
-    g.save(); g.globalAlpha = .28; g.filter = "blur(4px) grayscale(.4)"; cover(IMG.sertisseuse, 0, 0, W, H, 1.1 + (t - T.auteur) * .03, .5, .5); g.restore();
-    g.fillStyle = "rgba(8,17,32,.45)"; g.fillRect(0, 0, W, H);
-    const s = fit("TAHERE ILIÈS", V ? 190 : 230, W * .86);
-    rise("UNE FORMATION CONÇUE PAR", W / 2, H / 2 - s * .78, V ? 40 : 40, t, T.auteur + .05, { f: "Open Sans", w: 800, c: C.sky, ls: 6 });
-    stagger("TAHERE ILIÈS", W / 2, H / 2 + s * .36, s, t, T.auteur + .25, { sh: "rgba(0,0,0,.5)", step: .045 });
-    const lp = easeOutExpo((t - T.auteur - .5) / .6);
-    g.fillStyle = C.orange; g.fillRect(W / 2 - 130 * lp, H / 2 + s * .36 + 38, 260 * lp, 8);
-    rise("O NET ACADÉMIE", W / 2, H / 2 + s * .36 + 120, V ? 40 : 40, t, T.auteur + .7, { f: "Open Sans", w: 800, ls: 5 });
   } else if (t < T.date) {                             // montée : quatre mots sur les temps
     const k = Math.min(3, Math.floor((t - T.build) / (2 * B))), t0 = T.build + k * 2 * B;
     const imgs = [IMG.coupeTube, IMG.raccords, IMG.sertisseuse, null];
@@ -457,7 +471,7 @@ async function renderFrame(t) {
     const w = ["TON MÉTIER.", "TA FORMATION.", "TON ACADÉMIE.", "RENDEZ-VOUS LE"][k];
     const s = fit(w, V ? 170 : 200, W * .84);
     slam(w, W / 2, H / 2 + s * .36, s, t, t0, { c: k === 3 ? C.sky : C.white, sh: "rgba(0,0,0,.5)" });
-  } else if (t < T.end) {                              // 21 novembre
+  } else {                                             // 21 novembre, puis la marque
     water(t);
     ripples(W / 2, H / 2, t, T.date, "143,208,255", 4, Math.max(W, H) * .7);
     const n = V ? 620 : 560, p = easeOutExpo((t - T.date) / .45), k = 1 + .5 * (1 - p);
@@ -496,34 +510,8 @@ async function renderFrame(t) {
     stagger("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)", step: .05 });
     rise("SAMEDI  ·  2026", x, ny + (V ? 100 : 96), V ? 56 : 52, t, T.date + .55, { f: "Open Sans", w: 800, c: C.orange, al, ls: 8 });
     rise("PRÉSENTATION DE LA FORMATION", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
+    rise("O NET ACADÉMIE", x, ny + (V ? 280 : 262), V ? 44 : 36, t, T.brand + .1, { f: "Open Sans", w: 800, al, ls: 5 });
     splash(W / 2, H / 2, t, T.date, 21, 70, 1.4);
-  } else {                                             // carte de fin
-    g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
-    ripples(W / 2, V ? 560 : 300, t, T.end, "47,143,230", 3, Math.max(W, H) * .5);
-    const lw = V ? W * .58 : W * .27, lh = lw * IMG.logo.height / IMG.logo.width, ly = V ? 330 : 70;
-    const lyy = ly + (1 - easeOutExpo((t - T.end) / .6)) * 30;
-    g.globalAlpha = clamp((t - T.end) / .2); g.drawImage(IMG.logo, W / 2 - lw / 2, lyy, lw, lh); g.globalAlpha = 1;
-    shine(IMG.logo, W / 2 - lw / 2, lyy, lw, lh, (t - T.end - 1.2) / .8);
-    let y = ly + lh + (V ? 120 : 110);
-    rise("ACADÉMIE", W / 2, y, V ? 96 : 92, t, T.end + .15, { c: C.brown, ls: V ? 22 : 24 });
-    y += V ? 130 : 110;
-    const L = V ? ["LES BASES ESSENTIELLES", "DE LA PLOMBERIE", "ET DU DÉPANNAGE"] : ["LES BASES ESSENTIELLES DE LA PLOMBERIE ET DU DÉPANNAGE"];
-    const s = Math.min(...L.map(l => fit(l, V ? 82 : 74, W * .84)));
-    L.forEach((l, i) => rise(l, W / 2, y + i * s * 1.1, s, t, T.end + .3 + i * .08, { c: C.brown }));
-    y += (L.length - 1) * s * 1.1 + (V ? 80 : 70);
-    rise("Formation de plombier  ·  Théorie + terrain", W / 2, y, V ? 42 : 38, t, T.end + .55, { f: "Open Sans", w: 700, c: C.brown });
-    // pastille date
-    const q = easeOutBack((t - T.end - .8) / .5);
-    if (q > 0) {
-      const pw = V ? 760 : 760, ph = V ? 120 : 112, py = y + (V ? 70 : 52);
-      g.save(); g.translate(W / 2, py + ph / 2); g.scale(q, q);
-      rrect(-pw / 2, -ph / 2, pw, ph, ph / 2); g.fillStyle = C.navy; g.fill();
-      txt("SAMEDI 21 NOVEMBRE 2026", 0, ph * .2, V ? 58 : 56, { c: C.white, ls: 3 });
-      g.restore();
-    }
-    rise("Conçu par Tahere Iliès  ·  © 2026 O NET ACADÉMIE", W / 2, H - (V ? 330 : 50), V ? 30 : 26, t, T.end + 1.1, { f: "Open Sans", w: 700, c: "rgba(90,66,20,.75)" });
-    const dp = clamp((t - (T.end - B)) / B);
-    if (t < T.end + .02) drop(W / 2, -60 + easeIn(dp) * 400, 20);
   }
 
   // finitions : flash d'impact, vignette, fondu final
