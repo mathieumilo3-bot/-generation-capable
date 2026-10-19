@@ -49,7 +49,7 @@ const path = require("path");
   console.log("vidéo, code", await done);
   await browser.close();
   execFileSync("ffmpeg", ["-v", "error", "-y", "-i", vid, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",
-    "-af", "loudnorm=I=-12:TP=-1.5:LRA=9,aresample=48000,alimiter=limit=0.6:attack=5:release=50:level=false", "-c:a", "aac", "-b:a", "256k", "-ar", "48000", "-shortest", "-movflags", "+faststart", out], { stdio: "inherit" });
+    "-af", "loudnorm=I=-12:TP=-1.5:LRA=9,aresample=48000,alimiter=limit=0.5:attack=5:release=50:level=false", "-c:a", "aac", "-b:a", "256k", "-ar", "48000", "-shortest", "-movflags", "+faststart", out], { stdio: "inherit" });
   fs.unlinkSync(wav); fs.unlinkSync(vid);
   console.log("terminé :", out);
 })();
