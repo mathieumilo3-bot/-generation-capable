@@ -6,15 +6,6 @@ Vidéo de 43 s qui présente l'académie et la formation « Les bases essentiell
 - `ONET-Academie-9x16.mp4` : 1080×1920, pour Instagram, TikTok, WhatsApp et les stories ;
 - `*-envoi.mp4` : copies légères des deux formats, pour l'envoi.
 
-Trois habillages sonores existent sur la même image et la même musique, pour laisser le client choisir :
-
-| Fichiers | Habillage |
-|---|---|
-| `ONET-Academie-<format>-envoi.mp4` | **Épuré** (par défaut) : souffles doux, « tink » de tuyau accordé sur chaque geste, eau, goutte, boom propre sur les moments clés |
-| `ONET-Academie-<format>-cinema-envoi.mp4` | **Cinéma épuré** : les bruitages demandés par le client (sabre feutré, flash, voiture qui passe, demi-explosion), seulement sur les débuts de scène, les gestes et les moments clés |
-| `ONET-Academie-<format>-cinema-plus-envoi.mp4` | **Cinéma dynamique** : les mêmes bruitages sur chaque mot et chaque coupe, toujours adoucis |
-
-`variantes.py` les fabrique à partir de la vidéo rendue, sans refaire les images. Il baisse le plafond du limiteur jusqu'à ce que les crêtes restent sous −1,5 dBFS.
 
 Direction artistique : classe, dynamique, épuré (voir `../CLAUDE.md`, valable pour toutes les vidéos du dépôt).
 
@@ -24,24 +15,20 @@ Le montage est rendu image par image dans Chromium (Playwright), encodé en H.26
 - `reel.json` : tempo, temps de début de chaque scène (`T`), impacts visuels réservés aux moments clés (`hits`), chasses d'eau (`wipes`), remplissage du « 21 », repères sonores (`cues`), souffles inversés avant les booms (`swells`), montées et fondu final. L'image et le son lisent tous les deux ce fichier.
 - `extract.py` : extrait les deux rushs en images à 30 i/s, redressées (`shots/`).
 - `comp.html` : compositeur canvas. Il gère les deux mises en page : plein cadre en 9:16, carte verticale sur fond flouté en 16:9.
-- `sfx.py` : bande-son épurée générée avec numpy.
-  - **Musique : piano et beat hip-hop cinématique** en fa mineur, sans aucun élément qui tourne du début à la fin. Chaque section a sa texture :
-    - piano seul à l'ouverture ;
-    - grand accord sur le 21 novembre ;
-    - un beat lourd (grosse caisse et caisse claire calées sur les coupes) qui entre avec l'accroche ;
-    - un groove complet avec basse syncopée sur les gestes ;
-    - un break piano seul sur la salle ;
-    - une montée par couches ;
-    - un grand accord sur chacun des trois mots ;
-    - un final en fa majeur.
-
-    Les accords sont enrichis (9e, 7e majeures), et le motif du piano change d'une mesure à l'autre.
-  - **Peu de bruitages, mais variés et musicaux** :
-    - un souffle doux sur les textes, d'une hauteur différente à chaque fois ;
-    - un « tink » de tuyau accordé sur chaque geste, une note plus haute à chaque fois ;
-    - des clics accordés sur le diagnostic ;
-    - de l'eau sur les transitions et une goutte ;
-    - un boom grave et propre, réservé aux moments clés (21 novembre, titre, carte finale, plus trois coups plus légers sur « Ton métier / Ta formation / Ton académie »).
+- `sfx.py` : bande-son en version tension et graves, générée avec numpy. Règle : un seul son à la fois par-dessus un lit grave.
+  - **Lit de tension** :
+    - une nappe grave qui change d'accord à chaque scène, et qui s'efface sur la salle au profit de cordes aiguës ;
+    - un « dum » grave sur chaque coupe ;
+    - une horloge à l'ouverture ;
+    - des montées coupées net avant chaque impact, avec un son de Shepard dans la dernière ;
+    - des cuivres graves (BRAAAM) sur le 21 novembre, le titre et les trois mots ;
+    - un fa majeur au final.
+  - **Bruitages propres et espacés** :
+    - un souffle de sabre sur les mots ;
+    - un avion qui passe sur les trois transitions d'eau, seul, sans rien par-dessus ;
+    - un coup de tuyau grave et accordé sur chaque geste, une note plus haute à chaque fois ;
+    - un impact grave et propre sur les moments clés ;
+    - une goutte avant le titre et avant la carte finale.
 - `render.js` : rendu des images, de l'audio et du mixage final.
 
 ## Rendu
@@ -54,9 +41,8 @@ python3 -I extract.py .
 node render.js stills 16x9 --stills 0.6,4.5,13.9,23,41   # images de contrôle dans stills/
 node render.js ONET-Academie-16x9.mp4 16x9
 node render.js ONET-Academie-9x16.mp4 9x16
-# copies légères, puis les deux autres habillages sonores
+# copies légères pour l'envoi
 for f in 16x9 9x16; do ffmpeg -i ONET-Academie-$f.mp4 -c:v libx264 -crf 25 -maxrate 3.5M -bufsize 7M -c:a aac -b:a 192k -movflags +faststart ONET-Academie-$f-envoi.mp4; done
-python3 -I variantes.py .
 ```
 
 ## Effets
@@ -79,17 +65,17 @@ Aucun plan n'est utilisé deux fois à l'identique.
 
 | Mesures | Temps | Son | Image et texte |
 |---|---|---|---|
-| 0–1 | 0 – 3,4 s | Piano en notes isolées, nappe grave, cordes aiguës qui s'ouvrent | « Rendez-vous le… » lettre par lettre |
-| 2–3 | 3,4 – 6,9 s | Boom, nappe, bulles, la pulsation entre | « 21 » qui se remplit d'eau, « Novembre », samedi 2026, présentation de la formation |
-| 4–5 | 6,9 – 10,3 s | Eau, puis kick sur chaque coupe et souffle sur chaque mot, le pluck chante | « Tu veux » / « devenir » / « plombier ? », un gros plan tous les deux temps |
-| 6–7 | 10,3 – 13,7 s | Les charleys entrent, souffles | « Un métier qui recrute. », « On commence par les bases. » |
-| 8 | 13,7 – 15,4 s | La pulsation s'ouvre, montée douce, goutte | « La plomberie, ça s'apprend. » La goutte tombe |
-| 9–10 | 15,4 – 18,9 s | Boom, tout le groove, souffle sur chaque ligne | Titre de la formation dans un tuyau de cuivre |
-| 11–15 | 18,9 – 27,4 s | Eau, puis « tink » accordé sur chaque geste (une note plus haute à chaque fois) | « Tu apprends à » : Couper, Sertir, Raccorder, Étancher, Monter, chacun avec sa deuxième ligne |
-| 16 | 27,4 – 29,1 s | Eau, respiration : nappe et piano, sans batterie | La salle : « Support théorique » |
-| 17–18 | 29,1 – 32,6 s | Le kick revient, clics accordés sur les pastilles | « Tu apprends à diagnostiquer » |
-| 19 | 32,6 – 34,3 s | Montée, charleys qui se resserrent | « Comprendre l'essentiel pour mieux passer à la pratique. » |
-| 20–21 | 34,3 – 37,7 s | Trois coups graves et un accord de piano sous chaque mot, puis une goutte | « Ton métier. », « Ta formation. », « Ton académie. » |
-| 22+ | 37,7 – 43,4 s | Boom, fa majeur, piano en arpège, reflet discret | La goutte ouvre la carte : logo, titre, « Samedi 21 novembre 2026 » |
+| 0–1 | 0 – 3,4 s | Nappe grave qui monte, horloge, montée coupée net | « Rendez-vous le… » lettre par lettre |
+| 2–3 | 3,4 – 6,9 s | Impact grave, cuivres graves, deux « dum » comme un cœur, bulles | « 21 » qui se remplit d'eau, « Novembre », samedi 2026, présentation de la formation |
+| 4–5 | 6,9 – 10,3 s | Avion qui passe, puis « dum » sur chaque coupe et sabre sur chaque mot | « Tu veux » / « devenir » / « plombier ? », un gros plan tous les deux temps |
+| 6–7 | 10,3 – 13,7 s | La nappe change d'accord, sabres | « Un métier qui recrute. », « On commence par les bases. » |
+| 8 | 13,7 – 15,4 s | Nappe qui s'ouvre, horloge qui accélère, silence, goutte | « La plomberie, ça s'apprend. » La goutte tombe |
+| 9–10 | 15,4 – 18,9 s | Impact, cuivres graves, sabre sur chaque ligne | Titre de la formation dans un tuyau de cuivre |
+| 11–15 | 18,9 – 27,4 s | Avion, puis coup de tuyau grave sur chaque geste (une note plus haute à chaque fois) et sabre sur la deuxième ligne | « Tu apprends à » : Couper, Sertir, Raccorder, Étancher, Monter, chacun avec sa deuxième ligne |
+| 16 | 27,4 – 29,1 s | Avion, puis respiration : la nappe grave s'efface, cordes aiguës | La salle : « Support théorique » |
+| 17–18 | 29,1 – 32,6 s | Montée : « dum » qui s'accélèrent, son de Shepard, petits coups de métal sur les pastilles | « Tu apprends à diagnostiquer » |
+| 19 | 32,6 – 34,3 s | « Dum » en croches, silence avant les trois mots | « Comprendre l'essentiel pour mieux passer à la pratique. » |
+| 20–21 | 34,3 – 37,7 s | Trois impacts graves avec cuivres et sabre, de plus en plus forts, puis une goutte | « Ton métier. », « Ta formation. », « Ton académie. » |
+| 22+ | 37,7 – 43,4 s | Impact, fa majeur aux cuivres graves, cordes aiguës, longue traîne | La goutte ouvre la carte : logo, titre, « Samedi 21 novembre 2026 » |
 
 En 9:16, les textes restent entre 200 px et 1 640 px de hauteur, pour ne pas passer sous l'interface des réseaux.

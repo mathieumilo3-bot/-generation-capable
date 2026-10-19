@@ -16,7 +16,8 @@ C'est la règle pour **toutes** les vidéos et tous les montages de ce dépôt (
 - On n'utilise jamais deux fois le même plan à l'identique.
 
 ### Épuré, surtout pour le son
-- Peu de bruitages, mais des bruitages variés et musicaux : souffles doux, petites notes accordées à la musique, une goutte, un boom grave et propre sur les moments forts.
+- La tension et les graves portent la vidéo : nappe grave qui change avec les scènes, « dum » grave sur les coupes, montées coupées net avant l'impact.
+- Les bruitages de cinéma (souffle de sabre, avion qui passe, coup de métal, impact grave) sont bienvenus, mais propres et espacés : **un seul son à la fois** par-dessus le lit grave, jamais d'embouteillage. Rien ne se pose sur un avion, et on ne met pas deux bruitages sur le même mot.
 - Pas d'avalanche de sabres, d'explosions ou d'avions à chaque coupe. Ça fatigue et ça fait cheap.
 - La musique suit le texte : elle respire, puis elle frappe quand un mot important arrive. Elle doit être dynamique sans être chargée. Les montées vont vers un silence, puis l'impact.
 - Aucun élément de musique ne tourne du début à la fin (pulsation, boucle, nappe identique) : on finit par n'entendre que lui. Chaque section a sa texture, et les instruments entrent et sortent.
