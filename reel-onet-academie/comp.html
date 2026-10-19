@@ -335,12 +335,55 @@ function brandBug(t, a = 1) {
   if (!V) drop(x + 10, y - 6, 9, a);
 }
 
-/* ---------- ouverture : la carte de l'académie (logo, titre, date) ---------- */
+/* ---------- le 21 novembre : les chiffres se remplissent d'eau ---------- */
+function dateScene(t) {
+  water(t);
+  ripples(W / 2, H / 2, t, T.date, "143,208,255", 4, Math.max(W, H) * .7);
+  const n = V ? 620 : 560, p = easeOutExpo((t - T.date) / .45), k = 1 + .5 * (1 - p);
+  g.save(); g.translate(W / 2, H * (V ? .44 : .5)); g.scale(k, k);
+  g.font = font(n); g.textAlign = "center"; g.textBaseline = "alphabetic"; g.globalAlpha = clamp((t - T.date) / .05);
+  const gx = V ? 0 : -W * .2, gy = V ? n * .3 : n * .36, m = g.measureText("21");
+  const top = gy - m.actualBoundingBoxAscent, bot = gy + m.actualBoundingBoxDescent, lft = gx - m.width / 2 - 20, rgt = gx + m.width / 2 + 20;
+  g.lineWidth = 5; g.strokeStyle = "rgba(143,208,255,.6)"; g.shadowColor = "rgba(47,143,230,.8)"; g.shadowBlur = 30; g.strokeText("21", gx, gy); g.shadowBlur = 0;
+  // l'eau monte dans les chiffres
+  const [fa, fz] = REEL.fill, lvl = easeOut((t - fa) / (fz - fa)), surf = bot + 30 - (bot - top + 90) * lvl, amp = 22 * (1 - .6 * lvl) + 6;
+  const wv = x => amp * (.6 * Math.sin(x / 90 + t * 8) + .4 * Math.sin(x / 41 - t * 11));
+  wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = "source-over"; wg.clearRect(0, 0, W, H); wg.setTransform(g.getTransform());
+  wg.beginPath(); wg.moveTo(lft, surf + wv(lft));
+  for (let x = lft; x <= rgt; x += 10) wg.lineTo(x, surf + wv(x));
+  wg.lineTo(rgt, bot + 40); wg.lineTo(lft, bot + 40); wg.closePath();
+  const wgr = wg.createLinearGradient(0, top, 0, bot); wgr.addColorStop(0, "#d9f1ff"); wgr.addColorStop(.35, C.sky); wgr.addColorStop(1, C.blue);
+  wg.fillStyle = wgr; wg.fill();
+  wg.lineWidth = 8; wg.strokeStyle = "rgba(255,255,255,.95)"; wg.beginPath();
+  for (let x = lft; x <= rgt; x += 10) x === lft ? wg.moveTo(x, surf + wv(x)) : wg.lineTo(x, surf + wv(x)); wg.stroke();
+  const BR = rnd(42);
+  for (let i = 0; i < 40; i++) {
+    const bx = lft + BR() * (rgt - lft), v = .3 + BR() * .5, ph = BR(), by = bot - ((t * v + ph) % 1) * (bot - surf), br = 4 + BR() * 10;
+    if (by > surf + 10) { wg.fillStyle = "rgba(255,255,255,.55)"; wg.beginPath(); wg.arc(bx, by, br, 0, Math.PI * 2); wg.fill(); }
+  }
+  const sp = (t - fz - .2) / .8;                          // reflet une fois plein
+  if (sp > 0 && sp < 1) {
+    const bx = lft + (rgt - lft + 400) * easeInOut(sp) - 200, sgr = wg.createLinearGradient(bx - 90, top, bx + 90, top + 160);
+    sgr.addColorStop(0, "rgba(255,255,255,0)"); sgr.addColorStop(.5, "rgba(255,255,255,.85)"); sgr.addColorStop(1, "rgba(255,255,255,0)");
+    wg.fillStyle = sgr; wg.fillRect(lft, top - 50, rgt - lft, bot - top + 100);
+  }
+  wg.globalCompositeOperation = "destination-in"; wg.fillStyle = "#000"; wg.font = font(n); wg.textAlign = "center"; wg.fillText("21", gx, gy);
+  g.restore();
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.shadowColor = "rgba(47,143,230,.75)"; g.shadowBlur = 60; g.drawImage(wc, 0, 0); g.restore();
+  const x = V ? W / 2 : W * .5, al = V ? "center" : "left";
+  const ny = V ? H * .44 + 420 : H * .5 - 10, ns = V ? 210 : 190;
+  stagger("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)", step: .05 });
+  rise("SAMEDI  ·  2026", x, ny + (V ? 100 : 96), V ? 56 : 52, t, T.date + .55, { f: "Open Sans", w: 800, c: C.orange, al, ls: 8 });
+  rise("PRÉSENTATION DE LA FORMATION", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
+  splash(W / 2, H / 2, t, T.date, 21, 70, 1.4);
+}
+
+/* ---------- carte de fin : la carte de l'académie (logo, titre, date) ---------- */
 // une goutte tombe sur le fond d'eau, touche le centre au temps T.reveal et ouvre le crème du support
 function card(t) {
   const T0 = T.reveal;
   water(t);
-  if (t < T0) { drop(W / 2, -60 + easeIn(t / T0) * (H / 2 + 60), Math.min(W, H) * .035); return; }
+  if (t < T0) { drop(W / 2, -60 + easeIn((t - T.end) / (T0 - T.end)) * (H / 2 + 60), Math.min(W, H) * .035); return; }
   g.save(); g.beginPath(); g.arc(W / 2, H / 2, Math.hypot(W, H) * easeOutExpo((t - T0) / .55), 0, Math.PI * 2); g.clip();
   g.fillStyle = C.cream; g.fillRect(-50, -50, W + 100, H + 100);
   ripples(W / 2, V ? 560 : 300, t, T0, "47,143,230", 3, Math.max(W, H) * .5);
@@ -377,7 +420,11 @@ async function renderFrame(t) {
   const [sx, sy] = shake(t); g.translate(sx, sy);
   const big = V ? 210 : 230;
 
-  if (t < T.hook1) card(t);                            // ouverture
+  if (t < T.date) {                                    // ouverture : « Rendez-vous le… », la tension monte
+    water(t);
+    const s = fit("RENDEZ-VOUS LE", V ? 170 : 220, W * .84);
+    stagger("RENDEZ-VOUS LE", W / 2, H / 2 + s * .36, s, t, T.rdv + .6, { c: C.sky, sh: "rgba(0,0,0,.5)", step: .07 });
+  } else if (t < T.hook1) dateScene(t);                 // 21 novembre
   else if (t < T.learn) {                              // accroche : on parle à ceux qui veulent apprendre le métier
     const k = t < T.hook2 ? 0 : t < T.hook3 ? 1 : 2, t0 = [T.hook1, T.hook2, T.hook3][k];
     if (k === 0) media(await frame("coupe", 7.4 + (t - T.hook1) * .85), t, T.hook1, T.hook2 - T.hook1, { dim: .32, z0: 1.1, z1: 1.18, fy: .55 });
@@ -464,55 +511,13 @@ async function renderFrame(t) {
     (V ? ["pour mieux passer", "à la pratique."] : ["pour mieux passer à la pratique."]).forEach((l, i) =>
       rise(l, x, y0 + s * 1.04 + (V ? 90 : 84) + i * 62, V ? 50 : 46, t, T.pratique + .55 + i * .1, { f: "Open Sans", w: 700, al, sh: "rgba(0,0,0,.6)" }));
     brandBug(t);
-  } else if (t < T.date) {                             // montée : quatre mots sur les temps
-    const k = Math.min(3, Math.floor((t - T.build) / (2 * B))), t0 = T.build + k * 2 * B;
-    const imgs = [IMG.coupeTube, IMG.raccords, IMG.sertisseuse, null];
-    if (imgs[k]) media(imgs[k], t, t0, 2 * B, { dim: .45, full: true, z0: 1.12, z1: 1.2 }); else water(t);
-    const w = ["TON MÉTIER.", "TA FORMATION.", "TON ACADÉMIE.", "RENDEZ-VOUS LE"][k];
+  } else if (t < T.end) {                              // les trois coups : un mot par mesure
+    const k = Math.min(2, Math.floor((t - T.build) / (4 * B))), t0 = T.build + k * 4 * B;
+    media([IMG.coupeTube, IMG.raccords, IMG.sertisseuse][k], t, t0, 4 * B, { dim: .45, full: true, z0: 1.12, z1: 1.2 });
+    const w = ["TON MÉTIER.", "TA FORMATION.", "TON ACADÉMIE."][k];
     const s = fit(w, V ? 170 : 200, W * .84);
-    slam(w, W / 2, H / 2 + s * .36, s, t, t0, { c: k === 3 ? C.sky : C.white, sh: "rgba(0,0,0,.5)" });
-  } else {                                             // 21 novembre, puis la marque
-    water(t);
-    ripples(W / 2, H / 2, t, T.date, "143,208,255", 4, Math.max(W, H) * .7);
-    const n = V ? 620 : 560, p = easeOutExpo((t - T.date) / .45), k = 1 + .5 * (1 - p);
-    g.save(); g.translate(W / 2, H * (V ? .44 : .5)); g.scale(k, k);
-    g.font = font(n); g.textAlign = "center"; g.textBaseline = "alphabetic"; g.globalAlpha = clamp((t - T.date) / .05);
-    const gx = V ? 0 : -W * .2, gy = V ? n * .3 : n * .36, m = g.measureText("21");
-    const top = gy - m.actualBoundingBoxAscent, bot = gy + m.actualBoundingBoxDescent, lft = gx - m.width / 2 - 20, rgt = gx + m.width / 2 + 20;
-    g.lineWidth = 5; g.strokeStyle = "rgba(143,208,255,.6)"; g.shadowColor = "rgba(47,143,230,.8)"; g.shadowBlur = 30; g.strokeText("21", gx, gy); g.shadowBlur = 0;
-    // l'eau monte dans les chiffres
-    const [fa, fz] = REEL.fill, lvl = easeOut((t - fa) / (fz - fa)), surf = bot + 30 - (bot - top + 90) * lvl, amp = 22 * (1 - .6 * lvl) + 6;
-    const wv = x => amp * (.6 * Math.sin(x / 90 + t * 8) + .4 * Math.sin(x / 41 - t * 11));
-    wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = "source-over"; wg.clearRect(0, 0, W, H); wg.setTransform(g.getTransform());
-    wg.beginPath(); wg.moveTo(lft, surf + wv(lft));
-    for (let x = lft; x <= rgt; x += 10) wg.lineTo(x, surf + wv(x));
-    wg.lineTo(rgt, bot + 40); wg.lineTo(lft, bot + 40); wg.closePath();
-    const wgr = wg.createLinearGradient(0, top, 0, bot); wgr.addColorStop(0, "#d9f1ff"); wgr.addColorStop(.35, C.sky); wgr.addColorStop(1, C.blue);
-    wg.fillStyle = wgr; wg.fill();
-    wg.lineWidth = 8; wg.strokeStyle = "rgba(255,255,255,.95)"; wg.beginPath();
-    for (let x = lft; x <= rgt; x += 10) x === lft ? wg.moveTo(x, surf + wv(x)) : wg.lineTo(x, surf + wv(x)); wg.stroke();
-    const BR = rnd(42);
-    for (let i = 0; i < 40; i++) {
-      const bx = lft + BR() * (rgt - lft), v = .3 + BR() * .5, ph = BR(), by = bot - ((t * v + ph) % 1) * (bot - surf), br = 4 + BR() * 10;
-      if (by > surf + 10) { wg.fillStyle = "rgba(255,255,255,.55)"; wg.beginPath(); wg.arc(bx, by, br, 0, Math.PI * 2); wg.fill(); }
-    }
-    const sp = (t - fz - .2) / .8;                          // reflet une fois plein
-    if (sp > 0 && sp < 1) {
-      const bx = lft + (rgt - lft + 400) * easeInOut(sp) - 200, sgr = wg.createLinearGradient(bx - 90, top, bx + 90, top + 160);
-      sgr.addColorStop(0, "rgba(255,255,255,0)"); sgr.addColorStop(.5, "rgba(255,255,255,.85)"); sgr.addColorStop(1, "rgba(255,255,255,0)");
-      wg.fillStyle = sgr; wg.fillRect(lft, top - 50, rgt - lft, bot - top + 100);
-    }
-    wg.globalCompositeOperation = "destination-in"; wg.fillStyle = "#000"; wg.font = font(n); wg.textAlign = "center"; wg.fillText("21", gx, gy);
-    g.restore();
-    g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.shadowColor = "rgba(47,143,230,.75)"; g.shadowBlur = 60; g.drawImage(wc, 0, 0); g.restore();
-    const x = V ? W / 2 : W * .5, al = V ? "center" : "left";
-    const ny = V ? H * .44 + 420 : H * .5 - 10, ns = V ? 210 : 190;
-    stagger("NOVEMBRE", x, ny, fit("NOVEMBRE", ns, V ? W * .86 : W * .44), t, T.date + .25, { al, sh: "rgba(0,0,0,.5)", step: .05 });
-    rise("SAMEDI  ·  2026", x, ny + (V ? 100 : 96), V ? 56 : 52, t, T.date + .55, { f: "Open Sans", w: 800, c: C.orange, al, ls: 8 });
-    rise("PRÉSENTATION DE LA FORMATION", x, ny + (V ? 180 : 168), V ? 40 : 38, t, T.date + .75, { f: "Open Sans", w: 800, c: C.sky, al, ls: 6 });
-    rise("O NET ACADÉMIE", x, ny + (V ? 280 : 262), V ? 44 : 36, t, T.brand + .1, { f: "Open Sans", w: 800, al, ls: 5 });
-    splash(W / 2, H / 2, t, T.date, 21, 70, 1.4);
-  }
+    slam(w, W / 2, H / 2 + s * .36, s, t, t0, { c: k === 2 ? C.sky : C.white, sh: "rgba(0,0,0,.5)" });
+  } else card(t);                                      // carte de fin
 
   // finitions : flash d'impact, vignette, fondu final
   g.setTransform(1, 0, 0, 1, 0, 0);

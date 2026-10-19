@@ -1,9 +1,14 @@
 # Musique originale + bruitages, synthétisés à partir de reel.json : python3 -I sfx.py reel.json sortie.wav
-# Trap/phonk épique à 140 bpm en fa mineur (Fm – Ab – Bbm – C) : 808 saturée avec glissés, cloche phonk en mélodie,
-# caisse claire lourde au demi-temps, charleys en roulements, « BRAAAM » de bande-annonce et chœurs sur les impacts.
-# Signature plomberie : coups de tuyau sur les gestes, gouttes, chasses d'eau, bulles quand le « 21 » se remplit.
-# Structure (mesures) : ouverture 0-1, accroche 2-5, montée 6-7, drop 8-14, coupure 15-16, groove 17-20, montée 21-22,
-# drop final 23-24, fin 25. Par-dessus, un habillage sonore de cinéma : impacts, souffles sur chaque texte, tics, nappes.
+# Musique de bande-annonce cinématique en fa mineur, construite en actes et sans boucle : chaque mesure a son accord,
+# l'ostinato de cordes monte en registre et en densité, les percussions changent de motif, la tension grimpe jusqu'aux
+# trois coups finaux et à la résolution en fa majeur. Instruments : nappe grave, horloge, battement de cœur, piano,
+# cordes (ostinato, tenues, trémolo), cuivres (BRAAAM, mélodie héroïque), chœurs, taikos, caisse claire militaire,
+# son de Shepard (montée sans fin). Par-dessus : habillage cinéma (impacts, souffles sur chaque texte, tics) et sons
+# de plomberie (coups de tuyau, gouttes, chasses d'eau, bulles).
+#
+# Mesures (140 bpm, 1 mesure = 1,71 s) : 0-1 ouverture « Rendez-vous le », 2-3 impact du 21 novembre, 4-9 acte I
+# (accroche, la plomberie s'apprend), 10-16 acte II (titre, gestes), 17-18 respiration (la salle), 19-22 acte III
+# (montée), 23-25 les trois coups, 26+ final.
 import json, sys, wave
 import numpy as np
 
@@ -15,13 +20,11 @@ DUR = reel["duration"] + 0.3
 N = int(DUR * SR)
 BUS = {k: np.zeros((N, 2)) for k in ("drums", "bass", "music", "fx")}
 send = np.zeros((N, 2))
-rng = np.random.default_rng(140)
+rng = np.random.default_rng(2611)
 
-def freq(name):
-    names = {"C": 0, "C#": 1, "Db": 1, "D": 2, "Eb": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "Ab": 8, "A": 9, "Bb": 10, "B": 11}
-    n, o = name[:-1], int(name[-1])
-    return 440 * 2 ** ((names[n] + 12 * (o + 1) - 69) / 12)
-
+SEMI = {"C": 0, "C#": 1, "Db": 1, "D": 2, "Eb": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "Ab": 8, "A": 9, "Bb": 10, "B": 11}
+def freq(name): return 440 * 2 ** ((SEMI[name[:-1]] + 12 * (int(name[-1]) + 1) - 69) / 12)
+def mfreq(m): return 440 * 2 ** ((m - 69) / 12)
 def tt(n): return np.arange(n) / SR
 
 def add(bus, at, sig, gain=1.0, pan=0.0, rev=0.0):
@@ -42,7 +45,6 @@ def band(sig, lo, hi): return filt(sig, lambda f: ((f >= lo) & (f <= hi)).astype
 def lowpass(sig, fc, o=4): return filt(sig, lambda f: 1 / np.sqrt(1 + (f / fc) ** o))
 def norm(s): return s / (np.abs(s).max() + 1e-9)
 def saw(f, n, ph=0.0): return 2 * ((np.cumsum(np.broadcast_to(f, (n,))) / SR + ph) % 1) - 1
-def square(f, n): return np.sign(np.sin(2 * np.pi * f * tt(n)))
 
 def sweep(n, f0, f1, width=0.5):
     win, hop = 2048, 512
@@ -53,84 +55,164 @@ def sweep(n, f0, f1, width=0.5):
         out[i:i + win] += np.fft.irfft(np.fft.rfft(noise[i:i + win] * w) * np.exp(-0.5 * (np.log(fr / fc) / width) ** 2), win) * w
     return norm(out[:n])
 
-# ---------------- batterie ----------------
-def kick():
-    n = int(0.3 * SR); x = tt(n)
-    f = 52 + 180 * np.exp(-x * 55)
-    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-x * 11) + band(rng.standard_normal(n), 2500, 9000) * np.exp(-x * 400) * 0.6
-    return norm(np.tanh(3.0 * s))
-KICK = kick()
+# ---------------- harmonie : un accord par mesure, jamais la même boucle ----------------
+CHORDS = {"Fm": ("F", "Ab", "C"), "Db": ("Db", "F", "Ab"), "Ab": ("Ab", "C", "Eb"), "Eb": ("Eb", "G", "Bb"),
+          "Bbm": ("Bb", "Db", "F"), "C": ("C", "E", "G"), "F": ("F", "A", "C")}
+PLAN = ["Fm"] * 6 + ["Db", "Db", "Bbm", "C",              # 0-9 : ouverture, impact, acte I
+        "Fm", "Fm", "Db", "Ab", "Eb", "Bbm", "C",          # 10-16 : acte II
+        "Db", "C",                                         # 17-18 : respiration
+        "Bbm", "C", "Db", "Eb",                            # 19-22 : acte III, la basse monte
+        "Fm", "Db", "Eb",                                  # 23-25 : les trois coups
+        "F", "F", "F", "F"]                                # 26+ : résolution en fa majeur
+def tones(ch, octv):
+    # notes de l'accord en midi, empilées au-dessus de la fondamentale
+    root = SEMI[CHORDS[ch][0]] + 12 * (octv + 1); out = []
+    for nm in CHORDS[ch]:
+        m = SEMI[nm] + 12 * (octv + 1)
+        while m < root: m += 12
+        out.append(m)
+    return out
 
-def snare():
-    # caisse claire trap lourde : corps + bruit + clap superposés
-    n = int(0.5 * SR); x = tt(n)
-    body = np.sin(2 * np.pi * np.cumsum(190 + 60 * np.exp(-x * 40)) / SR) * np.exp(-x * 22)
-    nz = band(rng.standard_normal(n), 1200, 11000) * np.exp(-x * 13)
-    cl = band(rng.standard_normal(n), 900, 5000) * sum(np.exp(-np.maximum(x - d, 0) / 0.006) * (x >= d) for d in (0, .009, .018))
-    return norm(np.tanh(1.8 * (body * .8 + nz * .9 + cl * .7)))
-SNARE = snare()
+# ---------------- cordes ----------------
+_str = {}
+def string_note(m, d, fc, spic=True):
+    key = (m, round(d, 3), int(fc / 50), spic)
+    if key not in _str:
+        n = int(d * SR); x = tt(n); f = mfreq(m)
+        s = sum(saw(f * 2 ** (det / 1200) * (1 + .003 * np.sin(2 * np.pi * 5.5 * x + k)), n, rng.uniform()) for k, det in enumerate((-9, 0, 9)))
+        s = lowpass(s, fc, 2)
+        env = np.minimum(x / .004, 1) * np.exp(-x * 13) if spic else np.minimum(x / .3, 1) * np.clip((d - x) / .35, 0, 1)
+        _str[key] = norm(s) * env
+    return _str[key]
 
-def hat(open_=False):
-    n = int((0.25 if open_ else 0.04) * SR); x = tt(n)
-    return norm(band(rng.standard_normal(n), 7500, 18000) * np.exp(-x / (0.07 if open_ else 0.008)))
-HAT, OHAT = hat(), hat(True)
+def ostinato(bar_i, octv, fc, gain, density=16, pan=0.0):
+    # doubles croches en notes de l'accord, accent sur les temps ; motif qui change d'une mesure à l'autre
+    tn = tones(PLAN[bar_i], octv); tn = tn + [tn[0] + 12]
+    pats = [[0, 0, 2, 0, 3, 0, 2, 0, 1, 0, 2, 0, 3, 2, 1, 2], [0, 2, 1, 2, 0, 2, 3, 2, 0, 2, 1, 2, 3, 1, 2, 3],
+            [0, 0, 1, 0, 2, 0, 1, 0, 3, 0, 2, 0, 1, 2, 3, 2], [0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 3, 2, 1, 0]]
+    pat = pats[bar_i % 4]; step = 16 // density
+    for s in range(0, 16, step):
+        add("music", bar_i * BAR + s * S16, string_note(tn[pat[s]], S16 * step + .05, fc), gain * (1 if s % 4 == 0 else .7), pan=pan, rev=.25)
+
+def strings_hold(bar_i, nbars, octv, fc, gain, rev=.45):
+    for m in tones(PLAN[bar_i], octv):
+        add("music", bar_i * BAR, string_note(m, nbars * BAR + .3, fc, spic=False), gain, pan=rng.uniform(-.4, .4), rev=rev)
+
+def tremolo(m, d, gain, at):
+    n = int(d * SR); x = tt(n)
+    add("music", at, string_note(m, d, 4000, spic=False)[:n] * (.6 + .4 * np.sin(2 * np.pi * 12 * x)), gain, pan=rng.uniform(-.5, .5), rev=.5)
+
+# ---------------- cuivres, chœurs, piano ----------------
+def brass(m, d, bright=2200):
+    n = int(d * SR); x = tt(n); f = mfreq(m); s = np.zeros(n)
+    for det in (-7, 0, 7): s += saw(f * 2 ** (det / 1200), n, rng.uniform())
+    s += .6 * saw(f / 2, n, rng.uniform())
+    e = np.minimum(x / .45, 1)
+    out = lowpass(s, 380) * (1 - e) + lowpass(s, bright) * e
+    return norm(np.tanh(1.6 * norm(out))) * np.minimum(x / .05, 1) * np.clip((d - x) / .4, 0, 1)
+
+def braam(ch, d=2.8, octv=1):
+    # « BRAAAM » : pile de dents de scie graves, filtre qui s'ouvre d'un coup puis se referme, saturation
+    n = int(d * SR); x = tt(n); s = np.zeros(n)
+    tn = tones(ch, octv)
+    for m in tn + [tn[0] + 12, tn[0] - 12]:
+        for det in (-11, -4, 4, 11): s += saw(mfreq(m) * 2 ** (det / 1200), n, rng.uniform())
+    e = np.minimum(x / 0.06, 1) * np.exp(-np.maximum(x - .06, 0) * 2.2)
+    out = lowpass(s, 260) * (1 - e) + lowpass(s, 2600) * e
+    return norm(np.tanh(2.2 * norm(out)) * np.minimum(x / 0.02, 1) * np.clip((d - x) / 0.6, 0, 1))
+
+def choir(ch, d, octv=4):
+    n = int(d * SR); x = tt(n); s = np.zeros((n, 2)); tn = tones(ch, octv)
+    for k, m in enumerate(tn + [tn[0] + 12]):
+        for c, det in ((0, -6), (1, 6)):
+            s[:, c] += saw(mfreq(m) * 2 ** (det / 1200) * (1 + .005 * np.sin(2 * np.pi * (5 + k * .3) * x)), n, rng.uniform())
+    form = lambda f: sum(a * np.exp(-0.5 * ((f - c) / w) ** 2) for c, w, a in ((800, 110, 1), (1150, 130, .6), (2900, 250, .25)))
+    s = filt(s, form)
+    env = np.minimum(x / 0.5, 1) * np.clip((d - x) / 0.6, 0, 1)
+    return s / (np.abs(s).max() + 1e-9) * env[:, None]
+
+def piano(name, d=3.0):
+    n = int(d * SR); x = tt(n); f0 = freq(name)
+    v = sum(np.sin(2 * np.pi * f0 * h * (1 + .0004 * h * h) * x) * np.exp(-x * (1.2 + h * .9)) / h ** 1.1 for h in range(1, 9))
+    return norm(v) * np.minimum(x / .003, 1) * np.clip((d - x) / .3, 0, 1)
+
+# ---------------- percussions de bande-annonce ----------------
+def taiko(size):
+    d = {"big": 2.0, "mid": 1.0, "small": .5}[size]; n = int(d * SR); x = tt(n)
+    base = {"big": 48, "mid": 70, "small": 110}[size]
+    s = np.sin(2 * np.pi * np.cumsum(base + 40 * np.exp(-x * 10)) / SR) * np.exp(-x * {"big": 2.2, "mid": 4.5, "small": 9}[size])
+    s += band(rng.standard_normal(n), 120, 1600) * np.exp(-x * 30) * .7
+    return norm(np.tanh(1.5 * s) * np.minimum(x / .0015, 1))
+TK = {k: taiko(k) for k in ("big", "mid", "small")}
+
+def msnare():
+    n = int(.25 * SR); x = tt(n)
+    return norm(band(rng.standard_normal(n), 1500, 10000) * np.exp(-x * 30) + np.sin(2 * np.pi * 220 * x) * np.exp(-x * 45) * .6)
+SN = msnare()
 
 def crash():
     n = int(2.4 * SR); x = tt(n)
     return norm(band(rng.standard_normal(n), 3500, 16000) * np.exp(-x / 0.7) * np.minimum(x / 0.002, 1))
 
-# ---------------- 808 saturée ----------------
-def b808(f, d, glide_to=None):
+def heartbeat():
+    n = int(.6 * SR); x = tt(n)
+    def thump(d, a):
+        y = np.maximum(x - d, 0)
+        return np.sin(2 * np.pi * np.cumsum(55 + 30 * np.exp(-y * 30)) / SR) * np.exp(-y * 16) * (x >= d) * a
+    return norm(thump(0, 1) + thump(.19, .7))
+
+def clock(hi=True):
+    n = int(.05 * SR); x = tt(n)
+    return norm(band(rng.standard_normal(n), 2000 if hi else 900, 7000 if hi else 3500) * np.exp(-x * 260)
+                + np.sin(2 * np.pi * (2400 if hi else 1300) * x) * np.exp(-x * 150) * .4)
+
+def shepard(d):
+    # montée de Shepard : glissandos d'octaves superposés, l'oreille croit que ça monte sans fin
+    n = int(d * SR); x = tt(n); out = np.zeros(n)
+    for k in range(7):
+        pos = (k + 2.0 * x / d) % 7
+        out += np.exp(-0.5 * ((pos - 3.5) / 1.3) ** 2) * np.sin(2 * np.pi * np.cumsum(35 * 2 ** pos) / SR)
+    return norm(out) * np.minimum(x / (d * .4), 1)
+
+# ---------------- bruitages cinéma ----------------
+def impact(size):
+    d = {"big": 3.0, "mid": 1.6, "small": .8}[size]; n = int(d * SR); x = tt(n)
+    sub = np.sin(2 * np.pi * np.cumsum(62 * (28 / 62) ** np.minimum(x / 1.2, 1)) / SR) * np.exp(-x * {"big": 1.2, "mid": 2.6, "small": 5.5}[size])
+    body = np.sin(2 * np.pi * np.cumsum(105 + 95 * np.exp(-x * 25)) / SR) * np.exp(-x * 9)
+    crack = band(rng.standard_normal(n), 1500, 9000) * np.exp(-x * 70)
+    ring = sum(a * np.sin(2 * np.pi * f * x + rng.uniform(0, 6)) * np.exp(-x / dd) for f, a, dd in ((311, .5, .9), (743, .35, .6), (1290, .25, .4)))
+    s_ = 1.1 * sub + .8 * body + .7 * crack + (.1 if size == "small" else .25) * ring
+    return norm(np.tanh(1.6 * s_) * np.minimum(x / 0.001, 1))
+
+def swish(d=.3):
     n = int(d * SR); x = tt(n)
-    fr = f * (1 + 1.2 * np.exp(-x * 50))
-    if glide_to: fr = fr * np.where(x < d * .55, 1, (glide_to / f) ** np.clip((x - d * .55) / (d * .3), 0, 1))
-    s = np.sin(2 * np.pi * np.cumsum(fr) / SR)
-    env = np.minimum(x / 0.002, 1) * np.clip((d - x) / 0.025, 0, 1) * (0.75 + 0.25 * np.exp(-x * 4))
-    return np.tanh(4.0 * s * env) / np.tanh(4.0)
+    s_ = norm(sweep(n, 1500, 7000, .5) * (x / d) ** 1.5 * np.exp(-np.maximum(x - d * .8, 0) * 40))
+    return np.stack([s_ * np.linspace(1.3, .3, n), s_ * np.linspace(.3, 1.3, n)], 1)
 
-# ---------------- cloche phonk ----------------
-_cb = {}
-def cowbell(name):
-    if name in _cb: return _cb[name]
-    f = freq(name); n = int(0.5 * SR); x = tt(n)
-    s = square(f, n) + 0.8 * square(f * 1.483, n)
-    s = band(s, 350, 6000) * (np.exp(-x * 22) + 0.22 * np.exp(-x * 5))
-    _cb[name] = norm(np.tanh(2.5 * norm(s)) * np.minimum(x / 0.001, 1))
-    return _cb[name]
+def tick():
+    n = int(.04 * SR); x = tt(n)
+    return norm(band(rng.standard_normal(n), 2500, 9000) * np.exp(-x * 300) + np.sin(2 * np.pi * 1800 * x) * np.exp(-x * 120) * .5)
 
-# ---------------- cuivres et chœurs de bande-annonce ----------------
-def braam(notes, d=2.6):
-    # « BRAAAM » : pile de dents de scie désaccordées, filtre qui s'ouvre d'un coup puis se referme, saturation
-    n = int(d * SR); x = tt(n); s = np.zeros(n)
-    for nm in notes:
-        f = freq(nm)
-        for det in (-11, -4, 4, 11): s += saw(f * 2 ** (det / 1200), n, rng.uniform())
-    dark, bright = lowpass(s, 260), lowpass(s, 2600)
-    e = np.minimum(x / 0.06, 1) * np.exp(-np.maximum(x - .06, 0) * 2.2)
-    out = dark * (1 - e) + bright * e
-    out = np.tanh(2.2 * norm(out)) * np.minimum(x / 0.02, 1) * np.clip((d - x) / 0.6, 0, 1)
-    return norm(out)
+def drone(d):
+    n = int(d * SR); x = tt(n)
+    rum = norm(lowpass(rng.standard_normal(n), 90))
+    saws = sum(saw(freq(nm) * (1 + .002 * np.sin(2 * np.pi * .3 * x + k)), n, rng.uniform()) for k, nm in enumerate(("F1", "C2", "F2")))
+    out = .8 * norm(lowpass(saws, 220)) + .6 * rum
+    return norm(out) * np.minimum(x / .8, 1) * np.clip((d - x) / .3, 0, 1) * (1 + .15 * np.sin(2 * np.pi * .5 * x))
 
-def stab(notes, d=0.32):
-    n = int(d * SR); x = tt(n); s = np.zeros(n)
-    for nm in notes:
-        for det in (-9, 9): s += saw(freq(nm) * 2 ** (det / 1200), n, rng.uniform())
-    out = lowpass(s, 3200) * np.exp(-x * 9) + band(rng.standard_normal(n), 300, 5000) * np.exp(-x * 60) * 2
-    return norm(np.tanh(1.8 * norm(out)))
+def subdrop(d=1.6):
+    n = int(d * SR); x = tt(n)
+    return norm(np.tanh(2 * np.sin(2 * np.pi * np.cumsum(75 * (28 / 75) ** (x / d)) / SR)) * np.exp(-x * 1.5) * np.minimum(x / .005, 1))
 
-def choir(notes, d):
-    # chœur « ah » : dents de scie avec vibrato, passées dans trois formants
-    n = int(d * SR); x = tt(n); s = np.zeros((n, 2))
-    for k, nm in enumerate(notes):
-        for c, det in ((0, -6), (1, 6)):
-            f = freq(nm) * 2 ** (det / 1200) * (1 + .005 * np.sin(2 * np.pi * (5 + k * .3) * x))
-            s[:, c] += saw(f, n, rng.uniform())
-    form = lambda f: sum(a * np.exp(-0.5 * ((f - c) / w) ** 2) for c, w, a in ((800, 110, 1), (1150, 130, .6), (2900, 250, .25)))
-    s = filt(s, form)
-    env = np.minimum(x / 0.5, 1) * np.clip((d - x) / 0.5, 0, 1)
-    return s / (np.abs(s).max() + 1e-9) * env[:, None]
+def riser(d):
+    n = int(d * SR); x = tt(n); p = x / d
+    return norm(sweep(n, 200, 10000, .45) * p ** 2 + np.sin(2 * np.pi * np.cumsum(110 * 2 ** (3 * p)) / SR) * p ** 2.5 * .35)
 
-# ---------------- signature : tuyau, goutte, eau ----------------
+def whoosh(d=0.5):
+    n = int(d * SR); x = tt(n); s = sweep(n, 300, 5000, .55) * np.sin(np.pi * x / d) ** 2.2
+    return np.stack([s * np.linspace(1.2, .5, n), s * np.linspace(.5, 1.2, n)], 1)
+
+# ---------------- plomberie : tuyau, goutte, eau ----------------
 def clang():
     n = int(1.6 * SR); x = tt(n); s = np.zeros(n)
     for f, a, d in ((523, 1, .9), (1187, .7, .55), (1873, .55, .4), (2741, .4, .3), (3698, .3, .2), (4420, .2, .14)):
@@ -140,8 +222,7 @@ def clang():
 
 def bloop():
     n = int(0.35 * SR); x = tt(n)
-    f = 650 + 1500 * (1 - np.exp(-x * 60))
-    return norm(np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-x * 22) * np.minimum(x / 0.001, 1))
+    return norm(np.sin(2 * np.pi * np.cumsum(650 + 1500 * (1 - np.exp(-x * 60))) / SR) * np.exp(-x * 22) * np.minimum(x / 0.001, 1))
 
 def bubbles(d, n, f_lo=350, f_hi=1200, grow=False):
     out = np.zeros(int(d * SR))
@@ -157,199 +238,155 @@ def flush(d=0.8):
     s = norm(sweep(n, 220, 2200, .7) * env + bubbles(d, 45) * .45 * env)
     return np.stack([s * np.linspace(.6, 1.2, n), s * np.linspace(1.2, .6, n)], 1)
 
-def whoosh(d=0.5):
-    n = int(d * SR); x = tt(n); s = sweep(n, 300, 5000, .55) * np.sin(np.pi * x / d) ** 2.2
-    return np.stack([s * np.linspace(1.2, .5, n), s * np.linspace(.5, 1.2, n)], 1)
-
-def riser(d):
-    n = int(d * SR); x = tt(n); p = x / d
-    s = sweep(n, 200, 10000, .45) * p ** 2 + np.sin(2 * np.pi * np.cumsum(110 * 2 ** (3 * p)) / SR) * p ** 2.5 * .35
-    return norm(s)
-
-def subdrop(d=1.6):
-    n = int(d * SR); x = tt(n)
-    return norm(np.tanh(2 * np.sin(2 * np.pi * np.cumsum(75 * (28 / 75) ** (x / d)) / SR)) * np.exp(-x * 1.5) * np.minimum(x / .005, 1))
-
-# ---------------- bruitages cinéma ----------------
-def impact(size):
-    # impact de bande-annonce : sub qui plonge, corps grave, craquement, résonance métallique, queue longue
-    d = {"big": 3.0, "mid": 1.6, "small": .8}[size]; n = int(d * SR); x = tt(n)
-    sub = np.sin(2 * np.pi * np.cumsum(62 * (28 / 62) ** np.minimum(x / 1.2, 1)) / SR) * np.exp(-x * {"big": 1.2, "mid": 2.6, "small": 5.5}[size])
-    body = np.sin(2 * np.pi * np.cumsum(105 + 95 * np.exp(-x * 25)) / SR) * np.exp(-x * 9)
-    crack = band(rng.standard_normal(n), 1500, 9000) * np.exp(-x * 70)
-    ring = sum(a * np.sin(2 * np.pi * f * x + rng.uniform(0, 6)) * np.exp(-x / dd) for f, a, dd in ((311, .5, .9), (743, .35, .6), (1290, .25, .4)))
-    s_ = 1.1 * sub + .8 * body + .7 * crack + (.1 if size == "small" else .25) * ring
-    return norm(np.tanh(1.6 * s_) * np.minimum(x / 0.001, 1))
-
-def swish(d=.3):
-    # « fuuut » d'apparition de texte : souffle aigu qui file de gauche à droite
-    n = int(d * SR); x = tt(n)
-    s_ = norm(sweep(n, 1500, 7000, .5) * (x / d) ** 1.5 * np.exp(-np.maximum(x - d * .8, 0) * 40))
-    return np.stack([s_ * np.linspace(1.3, .3, n), s_ * np.linspace(.3, 1.3, n)], 1)
-
-def tick():
-    n = int(.04 * SR); x = tt(n)
-    return norm(band(rng.standard_normal(n), 2500, 9000) * np.exp(-x * 300) + np.sin(2 * np.pi * 1800 * x) * np.exp(-x * 120) * .5)
-
-def drone(d):
-    # nappe grave de tension : grondement filtré et dents de scie très graves qui respirent
-    n = int(d * SR); x = tt(n)
-    rum = norm(lowpass(rng.standard_normal(n), 90))
-    saws = sum(saw(freq(nm) * (1 + .002 * np.sin(2 * np.pi * .3 * x + k)), n, rng.uniform()) for k, nm in enumerate(("F1", "C2", "F2")))
-    out = .8 * norm(lowpass(saws, 220)) + .6 * rum
-    return norm(out) * np.minimum(x / .8, 1) * np.clip((d - x) / .3, 0, 1) * (1 + .15 * np.sin(2 * np.pi * .5 * x))
-
 # =============== ARRANGEMENT ===============
-ROOT = ["F1", "Ab1", "Bb1", "C2"]
-CHORD = [("F3", "Ab3", "C4"), ("Eb3", "Ab3", "C4"), ("F3", "Bb3", "Db4"), ("E3", "G3", "C4")]
-BELL = [[(0, "F5"), (3, "C5"), (6, "F5"), (8, "Ab5"), (10, "G5"), (11, "F5"), (14, "C5")],
-        [(0, "Eb5"), (3, "C5"), (6, "Eb5"), (8, "Ab5"), (10, "G5"), (11, "Eb5"), (14, "C5")],
-        [(0, "Db5"), (3, "Bb4"), (6, "Db5"), (8, "F5"), (10, "Eb5"), (11, "Db5"), (14, "Bb4")],
-        [(0, "E5"), (3, "C5"), (6, "E5"), (8, "G5"), (10, "F5"), (11, "E5"), (13, "Db5"), (14, "C5")]]
-BRAAM = ("F1", "F2", "C3", "F3", "Ab3")
-kick_times = []
+drum_times = []
+def hit(at, size, gain):
+    add("drums", at, TK[size], gain, pan=rng.uniform(-.2, .2), rev=.3)
+    if size != "small": drum_times.append(at)
+def bars(a, z): return range(a, z + 1)
 
-def bar(n, drums=True, bass=True, bell=True, snare_=True, rolls=True, big=False, dark=False):
-    t0 = n * BAR; c = n % 4
-    if drums:
-        for s in ((0, 10) if n % 2 == 0 else (0, 6, 10)):
-            add("drums", t0 + s * S16, KICK, 0.85); kick_times.append(t0 + s * S16)
-        # charleys : doubles croches, roulements en triolets ou en triples croches sur la fin de mesure
-        hs = [s * S16 for s in range(16)]
-        if rolls:
-            if n % 2 == 1: hs = [h for h in hs if h < 12 * S16] + [12 * S16 + k * S16 / 2 for k in range(8)]
-            else: hs = [h for h in hs if not (4 * S16 <= h < 8 * S16)] + [4 * S16 + k * b / 6 for k in range(6)]
-        for k, h in enumerate(sorted(hs)):
-            add("drums", t0 + h, HAT, 0.22 + 0.08 * (k % 2 == 0), pan=.22)
-        add("drums", t0 + 6 * S16, OHAT, 0.14, pan=-.25)
-    if snare_:
-        add("drums", t0 + 8 * S16, SNARE, 0.75, rev=.22)
-        if big: add("drums", t0 + 15 * S16, SNARE, 0.25, pan=.15, rev=.2)
-    if bass:
-        pat = [0, 3, 6, 10, 13]
-        for i, s in enumerate(pat):
-            nxt = pat[i + 1] if i + 1 < len(pat) else 16
-            f = freq(ROOT[c]); gl = f * 2 if (s == 13 and n % 2 == 1) else None
-            add("bass", t0 + s * S16, b808(f, (nxt - s) * S16 + .015, gl), 0.9)
-    if bell:
-        for s, nm in BELL[c]:
-            g = 0.3 if not dark else 0.16
-            add("music", t0 + s * S16, cowbell(nm), g, pan=-.1, rev=.2)
-            add("music", t0 + s * S16 + 3 * S16, cowbell(nm), g * .28, pan=.45, rev=.3)   # écho
-            if big: add("music", t0 + s * S16, cowbell(nm[:-1] + str(int(nm[-1]) + 1)), g * .45, pan=.2, rev=.2)
+def snare_build(a, z, top=.35):
+    # caisse claire militaire qui serre : doubles croches, puis triples, puis sextolets
+    t_ = a
+    while t_ < z - 2 * S16 - 1e-6:
+        p_ = (t_ - a) / (z - a)
+        add("drums", t_, SN, .06 + top * p_ ** 1.5, pan=.15, rev=.2)
+        t_ += S16 if p_ < .5 else (S16 / 2 if p_ < .85 else S16 / 3)
 
-def snare_roll(t0, d, gain=.5):
-    t = t0
-    while t < t0 + d - 1e-6:
-        p = (t - t0) / d
-        add("drums", t, SNARE, 0.08 + gain * p ** 1.6, pan=.1, rev=.15)
-        t += S16 if p < .5 else (S16 / 2 if p < .8 else S16 / 3)
+# --- ouverture (mesures 0-1) : « Rendez-vous le… » — horloge, cœur, nappe, piano, la tension monte ---
+for k in range(8):
+    add("fx", k * b, clock(k % 2 == 0), 0.16 - .01 * (k % 2), pan=.3 if k % 2 else -.3, rev=.2)
+for k in (0, 2, 4, 6): add("bass", k * b, heartbeat(), 0.5 + .06 * k)
+add("music", 0, piano("F5", 3.4), 0.22, rev=.7)
+add("music", BAR, piano("Db5", 2.0), 0.2, rev=.7)
+tremolo(tones("Fm", 5)[2], 2 * BAR, 0.05, 0)
+add("music", BAR, shepard(BAR - 2 * S16), 0.12, rev=.3)
 
-# --- ouverture (mesures 0-1) : la goutte touche le fond, BRAAAM, chœur, 808 tenue ; la cloche annonce le thème ---
+# --- impact du 21 novembre (mesures 2-3) ---
+add("music", T["date"], braam("Fm", 3.4), 0.65, rev=.45)
+add("music", T["date"], choir("Fm", 2 * BAR + .4), 0.32, rev=.5)
+strings_hold(2, 2, 3, 1600, 0.12)
+hit(T["date"], "big", .9)
+for k in (2, 4, 6): add("bass", T["date"] + k * b, heartbeat(), 0.45)
+
+# --- acte I (mesures 4-9) : l'ostinato entre au loin et se rapproche ---
+for i in bars(4, 9):
+    fc = 500 + 380 * (i - 4)
+    ostinato(i, 2, fc, .1 + .025 * (i - 4), density=8 if i < 6 else 16, pan=-.15)
+    if i >= 7: ostinato(i, 3, fc * 1.3, .05 + .02 * (i - 7), density=16, pan=.25)
+    strings_hold(i, 1, 3, 900, .05)
+    add("bass", i * BAR, heartbeat(), .45); add("bass", i * BAR + 2 * b, heartbeat(), .38)
+for i, nm in zip(bars(4, 9), ["C6", "Ab5", "G5", "F5", "Eb5", "E5"]):   # phrase de piano descendante, sans redite
+    add("music", i * BAR, piano(nm, 2.4), .16, rev=.7)
+hit(5 * BAR, "mid", .35)
+for i in (6, 7): hit(i * BAR, "mid", .45); hit(i * BAR + 2.5 * b, "small", .3)
+for i in (8, 9):
+    for s_ in (0, 3, 6, 8, 10, 12, 14): hit(i * BAR + s_ * S16, "mid" if s_ in (0, 8) else "small", .5 + .1 * (i - 8))
+snare_build(8 * BAR, 10 * BAR, .3)
+add("music", 8 * BAR, shepard(2 * BAR - 2 * S16), 0.13, rev=.3)
+add("music", 8 * BAR, choir("Bbm", BAR), .18, rev=.5); add("music", 9 * BAR, choir("C", BAR - 2 * S16), .22, rev=.5)
+
+# --- acte II (mesures 10-16) : le titre, puis les gestes — percussions pleines, mélodie de cuivres qui monte ---
+add("music", T["title"], braam("Fm", 3.0), 0.6, rev=.4)
+add("music", T["title"], choir("Fm", 2 * BAR), .25, rev=.5)
+TPAT = [[(0, "big"), (6, "mid"), (8, "mid"), (11, "small"), (14, "mid")],
+        [(0, "big"), (3, "small"), (8, "mid"), (10, "small"), (12, "mid"), (14, "small")],
+        [(0, "big"), (6, "mid"), (10, "mid"), (12, "small"), (13, "small"), (14, "mid"), (15, "small")]]
+for i in bars(10, 16):
+    ostinato(i, 2, 2600, .14); ostinato(i, 3, 3200, .1, pan=.3)
+    for s_, sz in TPAT[(i - 10) % 3]: hit(i * BAR + s_ * S16, sz, .65)
+    if i >= 13:
+        for s_ in range(0, 16, 2): add("drums", i * BAR + s_ * S16, SN, .08 + .04 * (s_ % 4 == 0), pan=.2, rev=.15)
+    strings_hold(i, 1, 3, 1800, .06)
+    tremolo(tones(PLAN[i], 5)[1], BAR, .045, i * BAR)            # cordes aiguës en trémolo : l'air au-dessus
+for i, m in zip(bars(12, 16), [53, 56, 58, 60, 61]):            # fa, la bémol, si bémol, do, ré bémol : ça grimpe
+    add("music", i * BAR, brass(m, BAR + .2), .2, rev=.35)
+add("drums", 17 * BAR - .6, crash()[::-1][-int(.6 * SR):], .2)
+
+# --- respiration (mesures 17-18) : la salle — cordes tenues, chœur, piano, cœur ---
+add("drums", 17 * BAR, crash(), .2, rev=.4); hit(17 * BAR, "big", .6)
+strings_hold(17, 1, 3, 1400, .14); strings_hold(18, 1, 3, 1400, .14)
+add("music", 17 * BAR, choir("Db", BAR + .3), .25, rev=.6); add("music", 18 * BAR, choir("C", BAR), .25, rev=.6)
+for i, nm in ((17, "F5"), (17.5, "Ab5"), (18, "G5"), (18.5, "E5")): add("music", i * BAR, piano(nm, 2.0), .16, rev=.7)
+for k in range(4): add("bass", 17 * BAR + k * 2 * b, heartbeat(), .42)
+
+# --- acte III (mesures 19-22) : la basse monte d'un ton par mesure, tout se resserre ---
+for i in bars(19, 22):
+    j = i - 19
+    ostinato(i, 2, 1200 + 600 * j, .1 + .02 * j, pan=-.15); ostinato(i, 3, 1600 + 800 * j, .06 + .025 * j, pan=.25)
+    if j >= 2: ostinato(i, 4, 2800 + 600 * j, .05)
+    strings_hold(i, 1, 2, 1200, .08)
+    tremolo(tones(PLAN[i], 5)[2], BAR, .03 + .015 * j, i * BAR)
+    add("music", i * BAR, brass(tones(PLAN[i], 2)[0], BAR + .2, 1400 + 500 * j), .14 + .03 * j, rev=.3)
+    pat = (0, 8) if j == 0 else (0, 6, 8, 14) if j == 1 else (0, 3, 6, 8, 10, 12, 14) if j == 2 else range(0, 16, 2)
+    for s_ in pat: hit(i * BAR + s_ * S16, "mid" if s_ in (0, 8) else "small", .45 + .08 * j)
+snare_build(21 * BAR, 23 * BAR)
+add("music", 21 * BAR, shepard(2 * BAR - 2 * S16), 0.16, rev=.3)
+add("music", 21 * BAR, choir("Db", BAR), .2, rev=.5); add("music", 22 * BAR, choir("Eb", BAR - 2 * S16), .26, rev=.5)
+
+# --- les trois coups (mesures 23-25) : un mot par coup, chacun plus haut que le précédent ---
+for i, ch in zip(bars(23, 25), ("Fm", "Db", "Eb")):
+    k = i - 23
+    add("music", i * BAR, braam(ch, BAR + .6), .55 + .07 * k, rev=.45)
+    add("music", i * BAR, choir(ch, BAR + .2), .22 + .04 * k, rev=.5)
+    hit(i * BAR, "big", .9); add("drums", i * BAR, crash(), .22 + .05 * k, rev=.3)
+    ostinato(i, 3, 3600, .1 + .02 * k)
+    tremolo(tones(ch, 5)[0], BAR, .06, i * BAR); tremolo(tones(ch, 5)[2], BAR, .05, i * BAR)
+    for s_, sz in ((6, "mid"), (8, "mid"), (11, "small"), (12, "mid"), (14, "small")): hit(i * BAR + s_ * S16, sz, .5 + .1 * k)
+    if k == 2:
+        for s_ in range(8, 14): add("drums", i * BAR + s_ * S16, SN, .12 + .04 * s_, pan=.2, rev=.2)
+
+# --- final (mesure 26+) : la goutte, résolution en fa majeur, longue traîne ---
 R0 = T["reveal"]
-add("music", R0, braam(BRAAM, 3.0), 0.6, rev=.4)
-add("music", R0, choir(("F4", "Ab4", "C5", "F5"), 2 * BAR - R0 + .3), 0.3, rev=.5)
-add("bass", R0, b808(freq("F1"), 2 * BAR - R0 - .05), 0.7)
-for s_, nm in BELL[0]: add("music", BAR + s_ * S16, cowbell(nm), 0.16, rev=.45)
-snare_roll(BAR + 2 * b, 2 * b - 2 * S16, .4)
+add("music", R0, braam("F", 4.0), .7, rev=.55)
+add("music", R0, choir("F", DUR - R0), .32, rev=.6)
+strings_hold(26, 3, 3, 2400, .14, rev=.6)
+tremolo(tones("F", 5)[1], DUR - R0 - .3, .06, R0)
+hit(R0, "big", 1.0)
+for i, nm in ((26.75, "C6"), (27.25, "A5"), (27.75, "F5")): add("music", i * BAR, piano(nm, 3.0), .18, rev=.75)
 
-# --- accroche (mesures 2-5) : le beat tombe sur « Tu veux devenir plombier ? » ---
-for n in range(2, 6): bar(n, rolls=n >= 3)
-
-# --- montée (mesures 6-7) : chœur, roulement sur deux mesures, 808 qui monte, silence avant le drop ---
-add("music", 6 * BAR, choir(("F4", "Ab4", "C5"), 2 * BAR + .3), 0.35, rev=.5)
-for n in (6, 7):
-    for s_, nm in BELL[n % 4]: add("music", n * BAR + s_ * S16, cowbell(nm), 0.12 + .04 * (n - 6), rev=.4)
-snare_roll(6 * BAR, 2 * BAR - 2 * S16)
-add("bass", 7 * BAR, b808(freq("F1"), BAR - 2 * S16, freq("F2")), 0.6)
-
-# --- drop (mesures 8-14) : le titre, puis les gestes ---
-add("music", T["title"], braam(BRAAM), 0.6, rev=.35)
-for n in range(8, 15):
-    bar(n, big=n >= 12)
-    if n % 2 == 0: add("music", n * BAR, stab(CHORD[n % 4]), 0.32, rev=.25)
-
-# --- coupure (mesures 15-16) : la salle, chœur et 808 tenue ---
-add("music", 15 * BAR, choir(("F4", "Ab4", "C5", "F5"), 2 * BAR + .4), 0.4, rev=.5)
-for n in (15, 16):
-    add("bass", n * BAR, b808(freq(ROOT[n % 4]), BAR * .9), 0.7)
-    bar(n, drums=False, bass=False, snare_=False, dark=True)
-    for k in range(8): add("drums", n * BAR + k * b / 2, HAT, 0.08, pan=.3)
-
-# --- groove (mesures 17-20) : diagnostic, pratique ---
-for n in range(17, 21): bar(n, big=n >= 19)
-
-# --- montée (mesures 21-22) : kick aux temps puis à la croche, roulement serré, 808 qui glisse ---
-for k in range(4):
-    tk = 21 * BAR + k * b; add("drums", tk, KICK, 0.45); kick_times.append(tk)
-for k in range(7):
-    tk = 22 * BAR + k * b / 2; add("drums", tk, KICK, 0.5 + .06 * k); kick_times.append(tk)
-snare_roll(21 * BAR, 2 * BAR - 2 * S16, .6)
-add("bass", 21 * BAR, b808(freq("C2"), BAR), 0.55)
-add("bass", 22 * BAR, b808(freq("C2"), BAR - 2 * S16, freq("C3")), 0.6)
-add("music", 21 * BAR, choir(("E4", "G4", "C5"), 2 * BAR), 0.3, rev=.5)
-for s_, nm in BELL[3]: add("music", 21 * BAR + s_ * S16, cowbell(nm), 0.16, rev=.4)
-
-# --- drop final (mesures 23-24) : le 21 novembre ---
-add("music", T["date"], braam(BRAAM, 3.0), 0.7, rev=.4)
-add("music", T["date"], choir(("F4", "Ab4", "C5", "F5"), 2 * BAR), 0.25, rev=.5)
-add("drums", T["date"], crash(), 0.32, rev=.3)
-for n in (23, 24):
-    bar(n, big=True)
-    add("music", n * BAR, stab(CHORD[n % 4]), 0.36, rev=.25)
-
-# --- fin (mesure 25) : braam, chœur, 808 tenue, dernière phrase de cloche en écho ---
-t15 = 25 * BAR
-add("music", t15, braam(BRAAM, 3.2), 0.5, rev=.5)
-add("music", t15, choir(("F4", "Ab4", "C5", "F5"), DUR - t15), 0.3, rev=.6)
-add("bass", t15, b808(freq("F1"), 2.2), 0.8)
-add("drums", t15, SNARE, 0.5, rev=.4)
-for s_, nm in BELL[0]:
-    add("music", t15 + s_ * S16, cowbell(nm), 0.2, rev=.5); add("music", t15 + (s_ + 3) * S16, cowbell(nm), 0.07, pan=.5, rev=.5)
-
-# --- bruitages cinéma : impacts, apparitions de texte, lettres, nappes de tension ---
+# --- habillage cinéma ---
 for t, size in reel["hits"]:
     add("fx", t, impact(size), {"big": 1.0, "mid": .5, "small": .3}[size], rev=.45)
-    if size == "big": add("bass", t, subdrop(), 0.7); add("drums", t, crash(), 0.25, rev=.25)
+    if size == "big": add("bass", t, subdrop(), 0.7)
 for t in reel["texthits"]:
-    add("fx", t - .2, swish(), 0.22, rev=.25)
-    add("fx", t, impact("small"), 0.18, rev=.35)
+    add("fx", t - .2, swish(), 0.22, rev=.25); add("fx", t, impact("small"), 0.18, rev=.35)
 for t0, n, step in reel["ticks"]:
     for i in range(n): add("fx", t0 + i * step + .1, tick(), 0.12, pan=-.5 + i / max(1, n - 1), rev=.1)
 for a_, z_ in reel["drone"]: add("fx", a_, drone(z_ - a_ + .3), 0.32, rev=.2)
+for a_, z_ in reel["risers"]: add("fx", a_, riser(z_ - a_ - S16 * 2), 0.34, rev=.3)
+for t in reel["reverse"]: add("fx", t - 1.2, crash()[::-1][-int(1.2 * SR):], 0.32, rev=.2)
+for t in reel["whoosh"]: add("fx", t - .22, whoosh(), 0.3, rev=.3)
 
-# --- plomberie : gestes, gouttes, eau, transitions ---
+# --- plomberie ---
 for t in reel["clang"]: add("fx", t, clang(), 0.3, pan=rng.uniform(-.3, .3), rev=.35)
 for t in reel["drops"]: add("fx", t - .02, bloop(), 0.35, rev=.5)
-for t in reel["whoosh"]: add("fx", t - .22, whoosh(), 0.3, rev=.3)
-for a_, z_ in reel["risers"]: add("fx", a_, riser(z_ - a_ - S16 * 2), 0.36, rev=.3)
 for t in reel["wipes"]: add("fx", t - .4, flush(), 0.45, rev=.35)
-for t in reel["reverse"]:
-    add("fx", t - 1.2, crash()[::-1][-int(1.2 * SR):], 0.32, rev=.2)
 a_, z_ = reel["fill"]; add("fx", a_, bubbles(z_ - a_ + .4, 70, 300, 900, grow=True), 0.22, pan=-.1, rev=.4)
 
 # =============== MIXAGE ===============
-kenv = np.zeros(N)
-for kt in kick_times:
+denv = np.zeros(N)
+for kt in drum_times:
     i = int(kt * SR); m = min(N - i, int(.3 * SR))
-    if m > 0: kenv[i:i + m] = np.maximum(kenv[i:i + m], np.exp(-np.arange(m) / (.08 * SR)))
-duck = (1 - .5 * kenv)[:, None]
+    if m > 0: denv[i:i + m] = np.maximum(denv[i:i + m], np.exp(-np.arange(m) / (.1 * SR)))
+duck = (1 - .3 * denv)[:, None]
 
-L = int(2.2 * SR); xi = tt(L)
-ir = rng.standard_normal((L, 2)) * np.exp(-xi / .5)[:, None]; ir[: int(.015 * SR)] = 0
+L = int(3.0 * SR); xi = tt(L)                                   # grande salle : réverbération longue
+ir = rng.standard_normal((L, 2)) * np.exp(-xi / .8)[:, None]; ir[: int(.02 * SR)] = 0
 for c in range(2):
-    S = np.fft.rfft(ir[:, c]); f = np.fft.rfftfreq(L, 1 / SR); ir[:, c] = np.fft.irfft(S / (1 + (f / 5000) ** 2), L)
+    S = np.fft.rfft(ir[:, c]); f = np.fft.rfftfreq(L, 1 / SR); ir[:, c] = np.fft.irfft(S / (1 + (f / 4500) ** 2), L)
 ir /= np.abs(ir).sum(0).max() / 16
 M = 1 << int(np.ceil(np.log2(N + L)))
 wet = np.stack([np.fft.irfft(np.fft.rfft(send[:, c], M) * np.fft.rfft(ir[:, c], M), M)[:N] for c in range(2)], 1)
 
-G = {"drums": 1.0, "bass": 0.36, "music": 1.8, "fx": 1.15}
+G = {"drums": 1.0, "bass": 0.5, "music": 1.6, "fx": 1.0}
 for k, v in BUS.items():
-    seg = v[int(T["coupe"] * SR):int(T["theorie"] * SR)]
-    print(f"  {k:6s} RMS drop : {20 * np.log10(G[k] * np.sqrt((seg ** 2).mean()) + 1e-9):6.1f} dB")
-mix = BUS["drums"] * G["drums"] + BUS["bass"] * G["bass"] + BUS["music"] * G["music"] * duck + BUS["fx"] * G["fx"] + wet * 0.4 * duck
+    seg = v[int(T["title"] * SR):int(T["theorie"] * SR)]
+    print(f"  {k:6s} RMS acte II : {20 * np.log10(G[k] * np.sqrt((seg ** 2).mean()) + 1e-9):6.1f} dB")
+mix = BUS["drums"] * G["drums"] + BUS["bass"] * G["bass"] + BUS["music"] * G["music"] * duck + BUS["fx"] * G["fx"] + wet * 0.5
 mix = filt(mix, lambda f: 1 / np.sqrt(1 + (28 / f) ** 8))            # coupe-bas sous 28 Hz
-mix = np.tanh(1.8 * mix / np.abs(mix).max()) / np.tanh(1.8) * 0.95    # saturation de bus : ça pousse
+mix = filt(mix, lambda f: np.clip((f / 250) ** .4, .45, 2.6))        # égaliseur en pente : moins de sub, plus de médium et d'aigu (téléphones)
+mix = np.tanh(1.5 * mix / np.abs(mix).max()) / np.tanh(1.5) * 0.95    # saturation de bus douce
 fa, fb = reel["fadeOut"]; x = tt(N)
 mix *= np.clip((fb + .25 - x) / (fb + .25 - fa), 0, 1)[:, None]
 
