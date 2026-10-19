@@ -1,10 +1,12 @@
-# Musique originale + bruitages, synthétisés à partir de reel.json : python3 -I sfx.py reel.json sortie.wav
-# Musique de bande-annonce cinématique en fa mineur, construite en actes et sans boucle : chaque mesure a son accord,
-# l'ostinato de cordes monte en registre et en densité, les percussions changent de motif, la tension grimpe jusqu'aux
-# trois coups finaux et à la résolution en fa majeur. Instruments : nappe grave, horloge, battement de cœur, piano,
-# cordes (ostinato, tenues, trémolo), cuivres (BRAAAM, mélodie héroïque), chœurs, taikos, caisse claire militaire,
-# son de Shepard (montée sans fin). Par-dessus : habillage cinéma (impacts, souffles sur chaque texte, tics) et sons
-# de plomberie (coups de tuyau, gouttes, chasses d'eau, bulles).
+# Bande-son originale, synthétisée à partir de reel.json : python3 -I sfx.py reel.json sortie.wav
+# Deux couches calées sur le texte :
+#  - bruitages percutants, un par apparition de texte (repères « cues » de reel.json) : sabre laser sur chaque mot
+#    qui claque, demi-explosions et flash photo sur les grands moments, avion de chasse qui traverse l'écran sur les
+#    chasses d'eau, sifflement de bombe sur les gouttes qui tombent, zaps électriques sur les lettres, souffles qui
+#    montent sur les textes qui glissent, raclement de métal quand le tuyau se pose, « shing » sur le reflet du logo ;
+#  - musique de bande-annonce en fa mineur, construite en actes et sans boucle, qui frappe en même temps que chaque
+#    mot (stab de cuivres et cordes sur chaque coup de sabre) et s'efface un instant sous chaque bruitage.
+# Les sons de plomberie restent : coups de tuyau sur les gestes, gouttes, eau, bulles.
 #
 # Mesures (140 bpm, 1 mesure = 1,71 s) : 0-1 ouverture « Rendez-vous le », 2-3 impact du 21 novembre, 4-9 acte I
 # (accroche, la plomberie s'apprend), 10-16 acte II (titre, gestes), 17-18 respiration (la salle), 19-22 acte III
@@ -131,6 +133,14 @@ def choir(ch, d, octv=4):
     env = np.minimum(x / 0.5, 1) * np.clip((d - x) / 0.6, 0, 1)
     return s / (np.abs(s).max() + 1e-9) * env[:, None]
 
+def stab(ch, d=.45):
+    # coup d'orchestre bref : cuivres et cordes sur l'accord de la mesure, en même temps que le mot
+    n = int(d * SR); x = tt(n); s_ = np.zeros(n); tn = tones(ch, 3)
+    for m in tn + [tn[0] - 12, tn[0] + 12]:
+        for det in (-8, 8): s_ += saw(mfreq(m) * 2 ** (det / 1200), n, rng.uniform())
+    out = lowpass(s_, 3000) * np.exp(-x * 7) + band(rng.standard_normal(n), 300, 4000) * np.exp(-x * 50) * 2
+    return norm(np.tanh(1.8 * norm(out)))
+
 def piano(name, d=3.0):
     n = int(d * SR); x = tt(n); f0 = freq(name)
     v = sum(np.sin(2 * np.pi * f0 * h * (1 + .0004 * h * h) * x) * np.exp(-x * (1.2 + h * .9)) / h ** 1.1 for h in range(1, 9))
@@ -174,24 +184,97 @@ def shepard(d):
         out += np.exp(-0.5 * ((pos - 3.5) / 1.3) ** 2) * np.sin(2 * np.pi * np.cumsum(35 * 2 ** pos) / SR)
     return norm(out) * np.minimum(x / (d * .4), 1)
 
-# ---------------- bruitages cinéma ----------------
-def impact(size):
-    d = {"big": 3.0, "mid": 1.6, "small": .8}[size]; n = int(d * SR); x = tt(n)
-    sub = np.sin(2 * np.pi * np.cumsum(62 * (28 / 62) ** np.minimum(x / 1.2, 1)) / SR) * np.exp(-x * {"big": 1.2, "mid": 2.6, "small": 5.5}[size])
-    body = np.sin(2 * np.pi * np.cumsum(105 + 95 * np.exp(-x * 25)) / SR) * np.exp(-x * 9)
-    crack = band(rng.standard_normal(n), 1500, 9000) * np.exp(-x * 70)
-    ring = sum(a * np.sin(2 * np.pi * f * x + rng.uniform(0, 6)) * np.exp(-x / dd) for f, a, dd in ((311, .5, .9), (743, .35, .6), (1290, .25, .4)))
-    s_ = 1.1 * sub + .8 * body + .7 * crack + (.1 if size == "small" else .25) * ring
-    return norm(np.tanh(1.6 * s_) * np.minimum(x / 0.001, 1))
+# ---------------- bruitages percutants ----------------
+def pan_sweep(sig, a=-1.0, z=1.0):
+    p = np.linspace(a, z, len(sig))
+    return np.stack([sig * np.cos((p + 1) * np.pi / 4) * 1.414, sig * np.sin((p + 1) * np.pi / 4) * 1.414], 1)
 
-def swish(d=.3):
+def hum(f):
+    # bourdonnement de sabre laser : fondamentale, quinte grave saturée, dent de scie
+    ph = np.cumsum(f) / SR
+    return np.tanh(2.5 * (np.sin(2 * np.pi * ph) + .6 * np.sin(2 * np.pi * 2.02 * ph) + .35 * (2 * ((1.5 * ph) % 1) - 1)))
+
+def saber(d=.5, direction=1):
+    # coup de sabre : la lame passe devant, sa hauteur monte puis redescend, le souffle file d'un côté à l'autre
+    n = int(d * SR); x = tt(n); e = np.sin(np.pi * x / d) ** 1.3
+    s_ = hum(105 * (1 + .5 * np.sin(np.pi * x / d))) * .8 + band(rng.standard_normal(n), 150, 900) * .4
+    s_ = norm(s_ * e + sweep(n, 900, 3800, .5) * .7 * e ** 2)
+    return pan_sweep(s_, -.8 * direction, .8 * direction)
+
+def ignite(d=1.2):
+    # allumage du sabre : claquement, puis le bourdonnement monte et se pose
     n = int(d * SR); x = tt(n)
-    s_ = norm(sweep(n, 1500, 7000, .5) * (x / d) ** 1.5 * np.exp(-np.maximum(x - d * .8, 0) * 40))
-    return np.stack([s_ * np.linspace(1.3, .3, n), s_ * np.linspace(.3, 1.3, n)], 1)
+    s_ = hum(60 + 55 * (1 - np.exp(-x * 6))) * np.minimum(x / .02, 1) * np.exp(-np.maximum(x - .45, 0) * 2.5) * .8
+    return norm(s_ + band(rng.standard_normal(n), 1500, 9000) * np.exp(-x * 12) * .9)
 
-def tick():
-    n = int(.04 * SR); x = tt(n)
-    return norm(band(rng.standard_normal(n), 2500, 9000) * np.exp(-x * 300) + np.sin(2 * np.pi * 1800 * x) * np.exp(-x * 120) * .5)
+def zap(k):
+    # petite décharge par lettre, un demi-ton plus haut à chaque lettre
+    n = int(.12 * SR); x = tt(n)
+    s_ = np.tanh(3 * np.sin(2 * np.pi * np.cumsum(300 * 2 ** (k / 12) * (1 + .5 * np.exp(-x * 40))) / SR)) * np.exp(-x * 35)
+    return norm(s_ + band(rng.standard_normal(n), 3000, 10000) * np.exp(-x * 150) * .5)
+
+def explosion(size):
+    # demi-explosion : craquement, souffle qui s'assombrit, sub qui plonge, débris qui retombent — courte et sèche
+    d = {"big": 2.6, "mid": 1.6}[size]; n = int(d * SR); x = tt(n); noise = rng.standard_normal(n)
+    crack = band(noise, 800, 12000) * np.exp(-x * 60)
+    body = lowpass(noise, 1800) * np.exp(-x * 6) * .6 + lowpass(noise, 250) * np.exp(-x * (1.6 if size == "big" else 2.6))
+    sub = np.sin(2 * np.pi * np.cumsum(55 * (30 / 55) ** np.minimum(x / .8, 1)) / SR) * np.exp(-x * 2.2)
+    deb = np.zeros(n)
+    for _ in range(60 if size == "big" else 35):
+        at = rng.exponential(.35); i = int(at * SR); m = int(rng.uniform(.004, .02) * SR)
+        if i + m < n: deb[i:i + m] += rng.standard_normal(m) * rng.uniform(.1, .6) * np.exp(-at * 2.5)
+    s_ = crack + 1.2 * norm(body) + 1.3 * sub + .5 * norm(band(deb, 1500, 9000))
+    return norm(np.tanh(2.0 * norm(s_)) * np.minimum(x / .0008, 1))
+
+def jet(d=1.8, c=.55):
+    # avion de chasse qui traverse : grondement qui grimpe, effet Doppler au passage, puis s'éloigne de l'autre côté
+    n = int(d * SR); x = tt(n); tc = d * c; u = (x - tc) / .25
+    dop = 1 + .35 * np.tanh(-u)
+    env = np.exp(-0.5 * ((x - tc) / .32) ** 2) * .85 + np.exp(-0.5 * ((x - tc) / .7) ** 2) * .35
+    whine = np.sin(2 * np.pi * np.cumsum(1800 * dop) / SR) * .25 + np.sin(2 * np.pi * np.cumsum(3100 * dop) / SR) * .12
+    s_ = norm(sweep(n, 2400, 450, .8) + whine + norm(lowpass(rng.standard_normal(n), 200)) * .5) * env
+    p = np.tanh(u * .8)
+    return np.stack([s_ * np.cos((p + 1) * np.pi / 4) * 1.414, s_ * np.sin((p + 1) * np.pi / 4) * 1.414], 1)
+
+def flash():
+    # flash d'appareil photo : petite recharge aiguë, puis le « pop » ; le pop tombe à .12 s
+    n = int(.6 * SR); x = tt(n); y = np.maximum(x - .12, 0); on = x >= .12
+    whine = np.sin(2 * np.pi * np.cumsum(2500 + 6000 * np.minimum(x / .12, 1)) / SR) * (x < .12) * .15 * np.minimum(x / .03, 1)
+    pop = (band(rng.standard_normal(n), 2000, 12000) * np.exp(-y * 120) + np.sin(2 * np.pi * 4200 * x) * np.exp(-y * 40) * .3
+           + np.sin(2 * np.pi * 120 * x) * np.exp(-y * 25) * .5) * on
+    return norm(whine + pop)
+
+def whistle(d):
+    # sifflement de bombe qui tombe, du plus aigu au plus grave, jusqu'à l'impact
+    n = int(d * SR); x = tt(n)
+    f = 2600 * (650 / 2600) ** (x / d) * (1 + .01 * np.sin(2 * np.pi * 7 * x))
+    return norm(np.sin(2 * np.pi * np.cumsum(f) / SR) * (x / d) ** .8 + band(rng.standard_normal(n), 2000, 6000) * .05) * np.clip((d - x) / .02, 0, 1)
+
+def rise_snd(d=.35):
+    # souffle qui monte : pour les textes qui glissent vers le haut
+    n = int(d * SR); x = tt(n)
+    s_ = norm(sweep(n, 400, 5000, .5) * (x / d) ** 1.4 * np.clip((d - x) / .03, 0, 1))
+    return pan_sweep(s_, -.3, .3)
+
+def punch():
+    n = int(.3 * SR); x = tt(n)
+    return norm(np.sin(2 * np.pi * np.cumsum(90 + 80 * np.exp(-x * 40)) / SR) * np.exp(-x * 14) + band(rng.standard_normal(n), 2000, 8000) * np.exp(-x * 200) * .6)
+
+def pop_snd():
+    n = int(.2 * SR); x = tt(n)
+    return norm(np.sin(2 * np.pi * np.cumsum(900 * (1 + 1.5 * np.exp(-x * 60))) / SR) * np.exp(-x * 30) + band(rng.standard_normal(n), 3000, 9000) * np.exp(-x * 250) * .5)
+
+def shing(d=1.6):
+    n = int(d * SR); x = tt(n)
+    s_ = sum(a * np.sin(2 * np.pi * f * x + rng.uniform(0, 6)) * np.exp(-x / dd) for f, a, dd in ((3150, 1, .7), (4720, .7, .5), (6300, .5, .4), (8100, .3, .3)))
+    return norm(s_ * np.minimum(x / .015, 1) + sweep(n, 3000, 9000, .4) * np.exp(-x * 8) * .4)
+
+def slide(d):
+    # raclement de métal : le tuyau de cuivre se pose
+    n = int(d * SR); x = tt(n)
+    res = lambda f: sum(a * np.exp(-0.5 * ((f - cf) / 120) ** 2) for cf, a in ((1800, 1), (2900, .8), (4200, .6), (5600, .4)))
+    s_ = norm(filt(rng.standard_normal(n), res)) * (.5 + .5 * np.abs(np.sin(2 * np.pi * 9 * x)))
+    return norm(s_ * np.sin(np.pi * x / d) ** .7)
 
 def drone(d):
     n = int(d * SR); x = tt(n)
@@ -207,10 +290,6 @@ def subdrop(d=1.6):
 def riser(d):
     n = int(d * SR); x = tt(n); p = x / d
     return norm(sweep(n, 200, 10000, .45) * p ** 2 + np.sin(2 * np.pi * np.cumsum(110 * 2 ** (3 * p)) / SR) * p ** 2.5 * .35)
-
-def whoosh(d=0.5):
-    n = int(d * SR); x = tt(n); s = sweep(n, 300, 5000, .55) * np.sin(np.pi * x / d) ** 2.2
-    return np.stack([s * np.linspace(1.2, .5, n), s * np.linspace(.5, 1.2, n)], 1)
 
 # ---------------- plomberie : tuyau, goutte, eau ----------------
 def clang():
@@ -345,31 +424,49 @@ tremolo(tones("F", 5)[1], DUR - R0 - .3, .06, R0)
 hit(R0, "big", 1.0)
 for i, nm in ((26.75, "C6"), (27.25, "A5"), (27.75, "F5")): add("music", i * BAR, piano(nm, 3.0), .18, rev=.75)
 
-# --- habillage cinéma ---
-for t, size in reel["hits"]:
-    add("fx", t, impact(size), {"big": 1.0, "mid": .5, "small": .3}[size], rev=.45)
-    if size == "big": add("bass", t, subdrop(), 0.7)
-for t in reel["texthits"]:
-    add("fx", t - .2, swish(), 0.22, rev=.25); add("fx", t, impact("small"), 0.18, rev=.35)
-for t0, n, step in reel["ticks"]:
-    for i in range(n): add("fx", t0 + i * step + .1, tick(), 0.12, pan=-.5 + i / max(1, n - 1), rev=.1)
-for a_, z_ in reel["drone"]: add("fx", a_, drone(z_ - a_ + .3), 0.32, rev=.2)
-for a_, z_ in reel["risers"]: add("fx", a_, riser(z_ - a_ - S16 * 2), 0.34, rev=.3)
-for t in reel["reverse"]: add("fx", t - 1.2, crash()[::-1][-int(1.2 * SR):], 0.32, rev=.2)
-for t in reel["whoosh"]: add("fx", t - .22, whoosh(), 0.3, rev=.3)
+# --- bruitages calés sur le texte ---
+sfx_times = []
+def chord_at(t): return PLAN[min(len(PLAN) - 1, int(t / BAR))]
+for k, cue in enumerate(reel["cues"]):
+    t, kind = cue[0], cue[1]
+    if kind == "saber":
+        add("fx", t - .25, saber(.5, 1 if k % 2 else -1), .55, rev=.3); sfx_times.append(t)
+        add("music", t, stab(chord_at(t)), .3, rev=.3)                               # la musique frappe avec le mot
+    elif kind == "explo":
+        add("fx", t, explosion(cue[2]), 1.0 if cue[2] == "big" else .75, rev=.45); sfx_times.append(t)
+        add("bass", t, subdrop(), .7 if cue[2] == "big" else .45)
+    elif kind == "flash": add("fx", t - .12, flash(), .38, pan=rng.uniform(-.3, .3), rev=.2)
+    elif kind == "jet": add("fx", t - 1.8 * .55, jet(), .75, rev=.35); add("fx", t - .4, flush(), .3, rev=.35); sfx_times.append(t)
+    elif kind == "whistle": add("fx", t, whistle(cue[2]), .3, rev=.3)
+    elif kind == "ignite": add("fx", t, ignite(), .5, rev=.35)
+    elif kind == "letters":
+        for i_ in range(cue[2]): add("fx", t + i_ * cue[3] + .1, zap(i_), .14, pan=-.6 + 1.2 * i_ / max(1, cue[2] - 1), rev=.15)
+    elif kind == "rise": add("fx", t - .3, rise_snd(), .3, rev=.25)
+    elif kind == "punch": add("fx", t, punch(), .4, rev=.25); add("music", t, stab(chord_at(t), .3), .18, rev=.3)
+    elif kind == "pop": add("fx", t, pop_snd(), .3, pan=-.4 + .4 * (k % 3), rev=.25)
+    elif kind == "shing": add("fx", t, shing(), .3, rev=.5)
+    elif kind == "slide": add("fx", t, slide(cue[2]), .16, pan=.2, rev=.3)
+    elif kind == "splash": add("fx", t - .02, bloop(), .35, rev=.5); add("fx", t, flush(.6), .35, rev=.4)
+    elif kind == "fill": add("fx", t, bubbles(cue[2] + .4, 70, 300, 900, grow=True), .22, pan=-.1, rev=.4)
 
-# --- plomberie ---
-for t in reel["clang"]: add("fx", t, clang(), 0.3, pan=rng.uniform(-.3, .3), rev=.35)
-for t in reel["drops"]: add("fx", t - .02, bloop(), 0.35, rev=.5)
-for t in reel["wipes"]: add("fx", t - .4, flush(), 0.45, rev=.35)
-a_, z_ = reel["fill"]; add("fx", a_, bubbles(z_ - a_ + .4, 70, 300, 900, grow=True), 0.22, pan=-.1, rev=.4)
+# --- nappes de tension, montées, cymbales inversées ---
+for a_, z_ in reel["drone"]: add("fx", a_, drone(z_ - a_ + .3), 0.3, rev=.2)
+for a_, z_ in reel["risers"]: add("fx", a_, riser(z_ - a_ - S16 * 2), 0.3, rev=.3)
+for t in reel["reverse"]: add("fx", t - 1.2, crash()[::-1][-int(1.2 * SR):], 0.3, rev=.2)
+
+# --- plomberie : un coup de tuyau sur chaque geste ---
+for t in reel["clang"]: add("fx", t, clang(), 0.28, pan=rng.uniform(-.3, .3), rev=.35)
 
 # =============== MIXAGE ===============
 denv = np.zeros(N)
 for kt in drum_times:
     i = int(kt * SR); m = min(N - i, int(.3 * SR))
     if m > 0: denv[i:i + m] = np.maximum(denv[i:i + m], np.exp(-np.arange(m) / (.1 * SR)))
-duck = (1 - .3 * denv)[:, None]
+senv = np.zeros(N)
+for st in sfx_times:
+    i = int(st * SR); m = min(N - i, int(.5 * SR))
+    if m > 0: senv[i:i + m] = np.maximum(senv[i:i + m], np.exp(-np.arange(m) / (.18 * SR)))
+duck = (1 - .3 * denv - .35 * senv)[:, None]
 
 L = int(3.0 * SR); xi = tt(L)                                   # grande salle : réverbération longue
 ir = rng.standard_normal((L, 2)) * np.exp(-xi / .8)[:, None]; ir[: int(.02 * SR)] = 0
@@ -379,7 +476,7 @@ ir /= np.abs(ir).sum(0).max() / 16
 M = 1 << int(np.ceil(np.log2(N + L)))
 wet = np.stack([np.fft.irfft(np.fft.rfft(send[:, c], M) * np.fft.rfft(ir[:, c], M), M)[:N] for c in range(2)], 1)
 
-G = {"drums": 1.0, "bass": 0.5, "music": 1.6, "fx": 1.0}
+G = {"drums": 0.85, "bass": 0.5, "music": 1.3, "fx": 1.9}
 for k, v in BUS.items():
     seg = v[int(T["title"] * SR):int(T["theorie"] * SR)]
     print(f"  {k:6s} RMS acte II : {20 * np.log10(G[k] * np.sqrt((seg ** 2).mean()) + 1e-9):6.1f} dB")

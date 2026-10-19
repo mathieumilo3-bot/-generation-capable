@@ -6,18 +6,24 @@ Vidéo de 50 s qui présente l'académie et la formation « Les bases essentiell
 - `ONET-Academie-9x16.mp4` : 1080×1920, pour Instagram, TikTok, WhatsApp et les stories ;
 - `*-envoi.mp4` : copies légères des deux formats, pour l'envoi.
 
-Le montage est rendu image par image dans Chromium (Playwright), encodé en H.264 par ffmpeg, puis mixé avec une musique de bande-annonce originale (grille à 140 bpm) et normalisé à −12 LUFS. Toutes les coupes tombent sur un temps.
+Le montage est rendu image par image dans Chromium (Playwright), encodé en H.264 par ffmpeg, puis mixé avec une bande-son originale (bruitages et musique de bande-annonce, grille à 140 bpm), normalisée vers −12 LUFS puis limitée pour que les crêtes restent sous −1,5 dBFS après l'encodage AAC (environ −13,4 LUFS au final). Toutes les coupes tombent sur un temps.
 
 - `assets/` : photos de l'atelier, slides du support de cours, logo détouré depuis la couverture, et les deux rushs (coupe du cuivre, filasse). Le bon de commande client n'est pas utilisé, car il contient des données personnelles.
-- `reel.json` : tempo, temps de début de chaque scène (`T`), impacts, apparitions de texte (`texthits`), tics de lettres, nappes de tension, coups de tuyau, gouttes, chasses d'eau (`wipes`), cymbales inversées, remplissage du « 21 », montées et fondu final. L'image et le son lisent tous les deux ce fichier.
+- `reel.json` : tempo, temps de début de chaque scène (`T`), impacts visuels (`hits`), chasses d'eau (`wipes`), remplissage du « 21 », et repères sonores (`cues`) : un par apparition de texte, avec son type de bruitage. On y trouve aussi les nappes, les montées, les cymbales inversées, les coups de tuyau et le fondu final. L'image et le son lisent tous les deux ce fichier.
 - `extract.py` : extrait les deux rushs en images à 30 i/s, redressées (`shots/`).
 - `comp.html` : compositeur canvas. Il gère les deux mises en page : plein cadre en 9:16, carte verticale sur fond flouté en 16:9.
-- `sfx.py` : bande-son générée avec numpy, en trois couches :
-  - **Musique de bande-annonce cinématique** en fa mineur, construite en actes et sans boucle. Chaque mesure a son accord, et la basse monte d'un ton par mesure dans l'acte III. L'ostinato de cordes entre au loin et monte en registre, en brillance et en densité. Les taikos et la caisse claire militaire changent de motif d'une section à l'autre, et la mélodie de cuivres grimpe à chaque geste. Elle utilise aussi des BRAAAM, des chœurs, un piano en notes isolées, une horloge, un battement de cœur et un son de Shepard (montée sans fin). Le final résout en fa majeur.
-  - **Habillage sonore de cinéma** : impacts, souffle et impact sourd sur chaque texte, tics sur les lettres, nappes graves de tension, cymbales inversées.
-  - **Sons de plomberie** : coups de tuyau, gouttes, chasses d'eau, bulles.
-
-  Un égaliseur en pente sur le master allège le sub et remonte le médium, pour que ça passe aussi sur un téléphone.
+- `sfx.py` : bande-son générée avec numpy, calée sur le texte :
+  - **Bruitages percutants**, un par apparition de texte, au premier plan du mix :
+    - un coup de sabre laser sur chaque mot qui claque ;
+    - des demi-explosions (craquement, souffle, sub, débris) avec flash photo sur les grands moments : le 21 novembre, le titre, les trois coups, la fin ;
+    - un avion de chasse qui traverse l'écran, avec effet Doppler, sur les chasses d'eau ;
+    - un sifflement de bombe sur les gouttes qui tombent ;
+    - un allumage de sabre et des zaps électriques sur les lettres qui tombent ;
+    - des souffles qui montent sur les textes qui glissent ;
+    - un raclement de métal quand le tuyau se pose ;
+    - un « shing » sur le reflet du logo.
+  - **Musique de bande-annonce** en fa mineur, en actes et sans boucle. Elle frappe en même temps que chaque mot (stab de cuivres et cordes sur l'accord de la mesure) et s'efface un instant sous chaque gros bruitage.
+  - **Sons de plomberie** : coups de tuyau sur les gestes, eau, bulles.
 - `render.js` : rendu des images, de l'audio et du mixage final.
 
 ## Rendu
