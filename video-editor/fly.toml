@@ -11,6 +11,10 @@ primary_region = "cdg"
 [mounts]
   source = "video_editor_data"
   destination = "/data"
+  # Volume créé automatiquement au 1er déploiement s'il n'existe pas.
+  # 20 Go : fichiers en transit des imports cloud + cache des montages
+  # (les originaux vivent dans R2). ≈ 3 $/mois. Agrandir : fly volumes extend.
+  initial_size = "20gb"
 
 [http_service]
   internal_port = 3000

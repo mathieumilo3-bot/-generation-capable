@@ -75,7 +75,18 @@ bundler Remotion a un binaire natif lié à glibc), ffmpeg installé,
 Chromium headless-shell de Remotion pré-téléchargé au build. Ce
 répertoire de session n'a pas d'accès réseau sortant vers Fly.io (politique
 réseau de l'environnement) — le déploiement se fait donc depuis ta propre
-machine, en 5 commandes :
+machine.
+
+**Le plus simple — une seule commande, rejouable** (installe flyctl, crée
+l'app et le volume, ouvre les pages Cloudflare/Google où créer les clés,
+les enregistre en secrets Fly sans les afficher, déploie, puis vérifie R2
+et un lien iCloud directement sur le serveur) :
+
+```bash
+cd video-editor && ./scripts/setup-cloud.sh
+```
+
+À la main, en 5 commandes :
 
 ```bash
 # 1. Installer flyctl (une fois) : https://fly.io/docs/flyctl/install/
@@ -89,7 +100,7 @@ cd video-editor
 fly apps create ton-nom-unique
 
 # 4. Créer le volume persistant (stockage des vidéos + base SQLite)
-fly volumes create video_editor_data --app ton-nom-unique --region cdg --size 3
+fly volumes create video_editor_data --app ton-nom-unique --region cdg --size 20
 
 # 5. Éditer fly.toml : remplacer "REMPLACE-MOI" par ton-nom-unique, puis :
 fly deploy --app ton-nom-unique
@@ -107,7 +118,7 @@ plutôt qu'en variables d'environnement en clair :
 fly secrets set ANTHROPIC_API_KEY=... DEEPGRAM_API_KEY=... --app ton-nom-unique
 ```
 
-**Coût** : `shared-cpu-2x` + 2 Go RAM + 3 Go de volume, machine allumée en
+**Coût** : `shared-cpu-2x` + 2 Go RAM + 20 Go de volume (≈ 3 $/mois), machine allumée en
 continu (`auto_stop_machines = false` — nécessaire car le pipeline tourne
 en sous-processus détaché de la requête HTTP ; laisser Fly l'arrêter
 automatiquement risquerait de tuer un montage en cours). À vérifier sur
