@@ -1,0 +1,28 @@
+{
+ "id": "finance-perso",
+ "name": "Finances personnelles",
+ "audience": "25-40 ans",
+ "tone": "budget, épargne, erreurs",
+ "theme": {
+  "yel": "#00C853"
+ },
+ "stockQueries": [
+  "money coins",
+  "calculator budget",
+  "saving"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les tableaux de budget sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

@@ -1,0 +1,28 @@
+{
+ "id": "nutrition",
+ "name": "Nutrition et recettes saines",
+ "audience": "gens qui comptent leurs macros",
+ "tone": "recettes, hacks, mythes",
+ "theme": {
+  "yel": "#F4B400"
+ },
+ "stockQueries": [
+  "healthy food",
+  "cooking meal prep",
+  "salad"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les recettes sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

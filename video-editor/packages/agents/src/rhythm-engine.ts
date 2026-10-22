@@ -1,4 +1,4 @@
-import type { StyleProfile, StoryBeatRole } from "@video-editor/shared-types";
+import type { StyleProfile, StoryBeatRole, EffectSpec } from "@video-editor/shared-types";
 
 /**
  * Couche déterministe de rythme — le cœur stratégique de l'Editor Agent
@@ -25,8 +25,11 @@ export function computeClipOutDuration(args: {
   role: StoryBeatRole;
   segmentDurationSec: number;
   styleProfile: StyleProfile;
+  /** Segment parlé : la phrase entière est gardée, le rythme vient des punch-ins (planSpeechPunchIns). */
+  isSpeech?: boolean;
 }): number {
   const { role, segmentDurationSec, styleProfile } = args;
+  if (args.isSpeech) return segmentDurationSec;
   const target = role === "hook" ? styleProfile.hookDuration : styleProfile.averageCutDuration * ROLE_DURATION_FACTOR[role];
   // jamais plus long que le segment source réellement disponible, jamais en dessous de 0.6s (imperceptible sinon)
   return Math.max(0.6, Math.min(target, segmentDurationSec));
@@ -79,4 +82,113 @@ export function planBrollIndices(
     .slice(0, count)
     .map((s) => s.i)
     .sort((a, b) => a - b);
+}
+
+/**
+ * Génère les effets vidéo pour un clip basé sur son rôle narratif et le style.
+ * Tous les paramètres sont déterministes — même entrée = même sortie.
+ */
+export function planEffectsForClip(args: {
+  role: StoryBeatRole;
+  clipDurationSec: number;
+  styleProfile: StyleProfile;
+}): EffectSpec[] {
+  const { role, clipDurationSec, styleProfile } = args;
+  const effects: EffectSpec[] = [];
+
+  // Color grade : augmente avec l'intensité musicale du profil
+  // Appliqué surtout en tension/proof
+  if (styleProfile.musicIntensity > 0.5 && (role === "tension" || role === "proof")) {
+    effects.push({
+      type: "color_grade",
+      startSec: 0,
+      endSec: clipDurationSec,
+      saturation: 1 + styleProfile.musicIntensity * 0.3,
+      brightness: -0.05,
+    });
+  }
+
+  // Vignette : crée du focus, surtout sur hooks et conclusions
+  if ((role === "hook" || role === "conclusion" || role === "cta") && clipDurationSec > 0.8) {
+    effects.push({
+      type: "vignette",
+      startSec: 0,
+      endSec: clipDurationSec,
+      intensity: 0.3 + styleProfile.musicIntensity * 0.2,
+    });
+  }
+
+  // Blur : transition entre sections, appliquée au début/fin
+  if (role === "context" && clipDurationSec > 1.5) {
+    effects.push({
+      type: "blur",
+      startSec: 0,
+      endSec: 0.3,
+      radius: 3,
+    });
+  }
+
+  // Flash : impact intense sur proof/conclusion, fréquence basée sur sfxDensity
+  if ((role === "proof" || role === "conclusion") && clipDurationSec > 0.6 && styleProfile.sfxDensity > 0.3) {
+    effects.push({
+      type: "flash",
+      startSec: clipDurationSec * 0.7,
+      durationSec: 0.08 + styleProfile.sfxDensity * 0.05,
+      intensity: 0.5 + styleProfile.musicIntensity * 0.4,
+    });
+  }
+
+  // Dip to black : marqueur de transition important (hook → context)
+  // Ne pas appliquer — les transitions hard_cut suffisent normalement
+  // À réserver pour les remises à neuf narratives
+
+  return effects;
+}
+
+/**
+ * Décide quels indices de clips reçoivent des effets supplémentaires
+ * au-delà des zooms — shake, speed effects pour le dynamisme.
+ */
+export function planDynamicEffectIndices(
+  clipCount: number,
+  musicIntensity: number,
+  sfxDensity: number
+): Set<number> {
+  const indices = new Set<number>();
+  if (musicIntensity < 0.4 && sfxDensity < 0.3) return indices;
+
+  // Appliquer des effets dynamiques tous les N clips, basé sur l'intensité
+  const stepDynamic = Math.max(1, Math.round(3 - musicIntensity * 2));
+  for (let i = 2; i < clipCount; i += stepDynamic) {
+    indices.add(i);
+  }
+
+  return indices;
+}
+
+/**
+ * Rythme d'un plan parlé long sans couper la phrase : alternance de cadrage
+ * large / serré (punch-in « jump zoom ») toutes les ~1,2 durées de coupe
+ * moyennes du style. Chaque changement se fait en une image, comme une coupe.
+ * `startScale` = cadrage d'ouverture du plan (1 = large).
+ */
+export function planSpeechPunchIns(args: {
+  clipDurationSec: number;
+  styleProfile: StyleProfile;
+  startScale: number;
+  punchScale?: number;
+}): { atSec: number; scale: number; focusX: number; focusY: number }[] {
+  const { clipDurationSec, styleProfile, startScale } = args;
+  const punch = args.punchScale ?? 1.12;
+  const step = Math.max(1.2, styleProfile.averageCutDuration * 1.2);
+  const frame = 1 / 30;
+  const kfs = [{ atSec: 0, scale: startScale, focusX: 0.5, focusY: 0.5 }];
+  let scale = startScale;
+  // Pas de changement dans la dernière seconde : la coupe suivante arrive déjà.
+  for (let t = step; t < clipDurationSec - 1; t += step) {
+    const next = scale > 1.0001 ? 1 : punch;
+    kfs.push({ atSec: t - frame, scale, focusX: 0.5, focusY: 0.5 }, { atSec: t, scale: next, focusX: 0.5, focusY: 0.5 });
+    scale = next;
+  }
+  return kfs.length > 1 ? kfs : [];
 }

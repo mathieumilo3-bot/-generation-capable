@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:"Bodoni Moda";src:url(fonts/fontsource-variable-bodoni-moda-5.3.0/files/bodoni-moda-latin-opsz-normal.woff2) format("woff2");font-weight:400 900;font-style:normal}
+@font-face{font-family:"Bodoni Moda";src:url(fonts/fontsource-variable-bodoni-moda-5.3.0/files/bodoni-moda-latin-opsz-italic.woff2) format("woff2");font-weight:400 900;font-style:italic}
+@font-face{font-family:"Jost";src:url(fonts/fontsource-jost-5.3.0/files/jost-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal}
+:root{--haze:#F4F7FA;--ink:#1D2536}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:var(--haze)}
+canvas{position:absolute;left:0;top:0}
+.t{position:absolute;left:96px;white-space:nowrap}
+.ink{color:var(--ink)}
+.light{color:#FFFFFF;text-shadow:0 2px 28px rgba(10,12,20,.45),0 0 2px rgba(10,12,20,.25)}
+.big{font-family:"Bodoni Moda",serif;font-style:italic;font-weight:400;font-size:176px;line-height:1;letter-spacing:-.01em;font-variation-settings:"opsz" 96}
+.line{font-family:"Bodoni Moda",serif;font-weight:400;font-size:72px;line-height:1;letter-spacing:.012em;font-variation-settings:"opsz" 48}
+.label{left:0;right:0;text-align:center;font-family:"Jost",sans-serif;font-weight:400;font-size:36px;line-height:1;text-transform:uppercase}
+.w{display:inline-block;transform-origin:50% 70%}
+</style></head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div id="texts"></div>
+<script>
+const EDL = /*EDL*/null;
+const W = 1080, H = 1920, FPS = EDL.fps, HAZE = "#F4F7FA";
+const c = document.getElementById("c"), ctx = c.getContext("2d");
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const easeOut = x => 1 - Math.pow(1 - clamp(x), 3);
+const easeInOut = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const sdur = s => s.dur / (s.slow || 1);
+
+/* courbes à images clés (voile, vignette, tremblement) */
+function kf(k, t) {
+  if (!k || !k.length) return 0;
+  if (t <= k[0][0]) return k[0][1];
+  for (let i = 0; i < k.length - 1; i++) {
+    const [t0, v0] = k[i], [t1, v1] = k[i + 1];
+    if (t <= t1) return t1 === t0 ? v1 : v0 + (v1 - v0) * smooth((t - t0) / (t1 - t0));
+  }
+  return k[k.length - 1][1];
+}
+function bump(t, type) {
+  let m = 0;
+  for (const tr of EDL.transitions) {
+    if (tr.type !== type) continue;
+    if (type === "cloud") { const p = (t - (tr.at - tr.d / 2)) / tr.d; if (p > 0 && p < 1) m = Math.max(m, Math.pow(Math.sin(Math.PI * p), 1.3)); }
+    else { const p = (t - tr.at) / tr.d; if (p > -0.15 && p < 1) m = Math.max(m, p < 0 ? smooth((p + .15) / .15) : Math.pow(1 - p, 2)); }
+  }
+  return m;
+}
+const haze = t => Math.max(kf(EDL.veil, t), bump(t, "cloud"));
+function shotAt(t) { let s = EDL.shots[0]; for (const x of EDL.shots) if (t >= x.start) s = x; return s; }
+
+const cache = new Map();
+function img(src) {
+  if (!cache.has(src)) {
+    cache.set(src, new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("image " + src)); im.src = src; }));
+    if (cache.size > 10) cache.delete(cache.keys().next().value);
+  }
+  return cache.get(src);
+}
+const framePath = (s, i) => `shots/${s.id}/${String(clamp(i, 1, s.frames)).padStart(4, "0")}.jpg`;
+
+function cloudLayer(seed, count, rmin, rmax) {
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H * 2;
+  const g = cv.getContext("2d"); let s = seed;
+  const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < count; i++) {
+    const x = r() * W, y = r() * H * 2, rad = rmin + r() * (rmax - rmin), a = .16 + r() * .22;
+    const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+    gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(.55, `rgba(247,250,252,${a * .55})`); gr.addColorStop(1, "rgba(244,247,250,0)");
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fill();
+  }
+  return cv;
+}
+const cloudA = cloudLayer(7, 70, 180, 520), cloudB = cloudLayer(19, 46, 280, 720);
+
+/* textes : mot à mot ; « fast » = entrée nerveuse (accroche, tension), sinon apparition en brume */
+const texts = EDL.texts.map(tx => {
+  const d = document.createElement("div");
+  d.className = `t ${tx.style} ${tx.color || "ink"}`; d.style.top = tx.top + "px";
+  d.innerHTML = tx.text.split(" ").map(w => `<span class="w">${w}</span>`).join(" ");
+  document.getElementById("texts").appendChild(d);
+  return { tx, d, ws: [...d.querySelectorAll(".w")] };
+});
+function renderText(t) {
+  for (const { tx, d, ws } of texts) {
+    const vis = t >= tx.in - .02 && t <= tx.out + 1.4;
+    d.style.display = vis ? "block" : "none";
+    if (!vis) continue;
+    d.style.transform = `translate3d(0,${(-(t - tx.in) * (tx.fast ? 8 : 5)).toFixed(2)}px,0)`;
+    if (tx.style === "label") d.style.letterSpacing = (.46 + (1 - easeOut((t - tx.in) / 2.2)) * .22).toFixed(4) + "em";
+    ws.forEach((w, i) => {
+      const pin = tx.fast ? easeOut((t - tx.in - i * .08) / .38) : easeOut((t - tx.in - i * .12) / .95);
+      const pout = tx.fast ? smooth((t - tx.out - i * .05) / .32) : smooth((t - tx.out - i * .07) / .65);
+      const bl = (1 - pin) * (tx.fast ? 10 : 16) + pout * 14;
+      const sc = tx.fast ? 1 + (1 - pin) * .14 : 1;
+      w.style.opacity = (pin * (1 - pout)).toFixed(3);
+      w.style.filter = bl > .05 ? `blur(${bl.toFixed(2)}px)` : "none";
+      w.style.transform = `translate3d(0,${((1 - pin) * (tx.fast ? 10 : 20) - pout * 26).toFixed(2)}px,0) scale(${sc.toFixed(4)})`;
+    });
+  }
+}
+
+window.renderFrame = async function (t) {
+  const s = shotAt(t), d = sdur(s), local = clamp(t - s.start, 0, d);
+  const idx = Math.floor(local * FPS) + 1;
+  const im = await img(framePath(s, idx)); img(framePath(s, idx + 1));
+  const h = haze(t), fl = bump(t, "flash"), amp = kf(EDL.shake, t), vg = kf(EDL.vignette, t);
+  const punch = s.punch ? 1 + (s.punch - 1) * (1 - easeOut(local / (s.punchDur || .3))) : 1;
+  const sc = (s.push[0] + (s.push[1] - s.push[0]) * easeInOut(local / d)) * punch * (1 + amp / 400);
+  const blur = h * 26, os = 1 + (blur * 3) / W;
+  const sx = amp * (Math.sin(t * 37.1) + .6 * Math.sin(t * 23.7 + 2)) / 1.6;
+  const sy = amp * (Math.sin(t * 29.3 + 1) + .5 * Math.sin(t * 41.9)) / 1.5;
+
+  ctx.globalAlpha = 1; ctx.filter = "none"; ctx.fillStyle = HAZE; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.filter = blur > .05 ? `blur(${blur.toFixed(2)}px) brightness(${(1 + h * .12).toFixed(3)})` : "none";
+  ctx.translate(W / 2 + sx, H / 2 + sy); ctx.scale(sc * os, sc * os); ctx.translate(-W / 2, -H / 2);
+  ctx.drawImage(im, 0, 0, W, H);
+  ctx.restore(); ctx.filter = "none";
+
+  if (vg > .002) {
+    const gr = ctx.createRadialGradient(W / 2, H * .46, H * .22, W / 2, H * .5, H * .78);
+    gr.addColorStop(0, "rgba(8,10,16,0)"); gr.addColorStop(1, `rgba(8,10,16,${vg.toFixed(3)})`);
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+  }
+  if (h > 0.002) {
+    ctx.globalAlpha = Math.min(1, Math.pow(h, 1.25) * .94); ctx.fillStyle = HAZE; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = Math.min(1, h * .85); ctx.drawImage(cloudA, 0, -t * 38);
+    ctx.globalAlpha = Math.min(1, h * .7); ctx.drawImage(cloudB, 0, -t * 66);
+  }
+  if (fl > .002) { ctx.globalAlpha = .72 * fl; ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, H); }
+  ctx.globalAlpha = 1;
+  renderText(t);
+};
+
+window.ready = (async () => {
+  await Promise.all([
+    document.fonts.load('italic 400 176px "Bodoni Moda"', "Aimer vôtre geste mille"),
+    document.fonts.load('400 72px "Bodoni Moda"', "laisse une trace. mérite une œuvre."),
+    document.fonts.load('400 36px "Jost"', "ŒUVRES SUR-MESURE"),
+  ]);
+  await document.fonts.ready;
+  return [...document.fonts].filter(f => f.status === "loaded").map(f => f.family + " " + f.style).join(", ");
+})();
+</script>
+</body></html>

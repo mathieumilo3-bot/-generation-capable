@@ -24,19 +24,16 @@ primary_region = "cdg"
   auto_start_machines = true
   min_machines_running = 1
 
-# Machine de rendu — CPU performance DÉDIÉ (pas de vCPU partagé), pour que
-# Remotion rende un maximum de frames en parallèle (§ objectif rendu).
-# 16 vCPU performance + 32 Go : la concurrence Remotion s'adapte au runtime
-# au nombre réel de CPU (voir packages/render/src/remotion.ts →
-# resolveRenderConcurrency), donc cette machine sera exploitée à fond sans
-# rien coder en dur. auto_stop_machines reste false (un rendu ne doit
-# jamais être tué à mi-parcours par l'arrêt automatique de Fly).
-#
-# Profils indicatifs (choisir selon le débit voulu / coût) :
-#   DEV     : shared-cpu-2x  / 2gb   (lent, économique)
-#   PROD    : performance-16x / 32gb (cible actuelle — rendu rapide)
-#   Débit + : plusieurs machines performance-* (le scheduler + claim
-#             atomique en base rendent l'ajout de machines sûr, voir FACTORY.md)
+# Machine de rendu. Depuis que l'habillage passe par FFmpeg (et plus par
+# Remotion/Chromium), 4 vCPU suffisent : mesuré ~1 min 40 pour un Reel
+# parlé de 21 s, transcription comprise (≈ 35 Reels/heure).
+# Prix indicatifs Fly (région de référence, machine allumée 24/7, à
+# vérifier sur fly.io/docs/pricing avant de lancer) :
+#   shared-cpu-4x  / 8gb   ≈ 43 $/mois   ← défaut : démarrage
+#   performance-4x / 8gb   ≈ 124 $/mois  (CPU dédié, débit régulier)
+#   performance-16x / 32gb ≈ 500 $/mois  (inutile tant qu'il n'y a pas
+#                                         des centaines de vidéos/jour)
+# 8 Go de RAM : le modèle de transcription local occupe ~1,3 Go.
 [[vm]]
-  size = "performance-16x"
-  memory = "32gb"
+  size = "shared-cpu-4x"
+  memory = "8gb"

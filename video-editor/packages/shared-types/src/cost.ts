@@ -23,6 +23,7 @@ export type CostProvider =
   | "stock_library"
   | "internal_ffmpeg"
   | "internal_remotion"
+  | "internal_stt"
   | "stub";
 
 export type CostAgent =

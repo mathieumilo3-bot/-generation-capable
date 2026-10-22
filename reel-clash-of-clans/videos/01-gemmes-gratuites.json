@@ -1,0 +1,41 @@
+{
+  "fps": 30,
+  "title": "3 façons d'avoir des gemmes GRATUITES",
+  "discord": { "name": "TON_SERVEUR", "line": "Bases, astuces et clan FR", "online": null, "members": null },
+  "voiceover": "Tu penses savoir jouer à Clash of Clans ? Laisse-moi en douter. Voici 3 façons d'avoir des gemmes gratuites. Numéro 1 : les obstacles. Chaque arbre, buisson ou rocher que tu retires peut te donner des gemmes. Et de temps en temps une boîte à gemmes apparaît : 25 gemmes d'un coup. Numéro 2 : la mine de gemmes. Elle est dans la base des ouvriers et elle produit des gemmes tous les jours, même quand tu ne joues pas. Améliore-la en premier. Numéro 3 : les succès. Ouvre l'onglet succès, chaque étoile débloquée te donne des gemmes. Il y en a des milliers qui t'attendent. Et l'astuce numéro 4, la meilleure, elle est sur le Discord. Lien en bio.",
+  "scenes": [
+    { "type": "hook", "dur": 3.4, "captions": [
+      { "t": 0.0, "text": "TU PENSES" },
+      { "t": 0.55, "text": "SAVOIR *JOUER*" },
+      { "t": 1.15, "logo": true },
+      { "t": 2.1, "text": "LAISSE-MOI|en !DOUTER!" }
+    ] },
+    { "type": "teaser", "dur": 2.0, "icons": ["tree", "mine", "star"], "caption": "3 astuces pour des|*GEMMES* gratuites" },
+
+    { "type": "card", "dur": 1.5, "n": 1, "icon": "tree", "title": "LES OBSTACLES" },
+    { "type": "explain", "dur": 5.2, "icon": "tree", "panel": "Obstacle", "clip": null, "captions": [
+      { "t": 0.0, "text": "Chaque *arbre* retiré" },
+      { "t": 1.1, "text": "peut donner des ~GEMMES~" },
+      { "t": 2.3, "text": "et la *BOÎTE À GEMMES*" }
+    ], "big": { "t": 3.3, "text": "1 BOÎTE = 25 {gem}", "icon": "box" } },
+
+    { "type": "card", "dur": 1.5, "n": 2, "icon": "mine", "title": "LA MINE|DE GEMMES" },
+    { "type": "explain", "dur": 5.2, "icon": "mine", "panel": "Base des ouvriers", "clip": null, "captions": [
+      { "t": 0.0, "text": "Dans la *base des ouvriers*" },
+      { "t": 1.2, "text": "elle produit des ~GEMMES~" },
+      { "t": 2.4, "text": "*TOUS LES JOURS*" },
+      { "t": 3.5, "text": "améliore-la !EN PREMIER!" }
+    ] },
+
+    { "type": "card", "dur": 1.5, "n": 3, "icon": "star", "title": "LES SUCCÈS" },
+    { "type": "explain", "dur": 5.0, "icon": "star", "panel": "Succès", "clip": null, "captions": [
+      { "t": 0.0, "text": "Ouvre l'onglet *SUCCÈS*" },
+      { "t": 1.2, "text": "chaque étoile = des ~GEMMES~" }
+    ], "big": { "t": 2.5, "text": "DES *MILLIERS*|À RÉCUPÉRER" } },
+
+    { "type": "cta", "dur": 5.6, "captions": [
+      { "t": 0.0, "text": "L'astuce *#4*|la meilleure..." },
+      { "t": 1.2, "text": "est sur le ~DISCORD~" }
+    ], "cardAt": 1.9, "tapAt": 3.4, "bioAt": 4.1 }
+  ]
+}

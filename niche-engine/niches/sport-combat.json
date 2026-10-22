@@ -1,0 +1,28 @@
+{
+ "id": "sport-combat",
+ "name": "Sports de combat",
+ "audience": "pratiquants",
+ "tone": "techniques, erreurs",
+ "theme": {
+  "yel": "#D32F2F"
+ },
+ "stockQueries": [
+  "boxing training",
+  "martial arts",
+  "mma gym"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les cours sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

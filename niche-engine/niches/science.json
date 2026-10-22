@@ -1,0 +1,29 @@
+{
+ "id": "science",
+ "name": "Science et vulgarisation",
+ "audience": "curieux",
+ "tone": "phénomènes, expériences",
+ "theme": {
+  "yel": "#26C6DA"
+ },
+ "stockQueries": [
+  "laboratory",
+  "space galaxy",
+  "microscope"
+ ],
+ "sourcePriority": [
+  "wikimedia",
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les articles sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

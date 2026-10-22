@@ -155,7 +155,8 @@ function heuristicStoryBeats(
   const picked: Segment[] = [];
   let used = 0;
   for (const s of byScore) {
-    const dur = Math.min(s.end - s.start, styleProfile.averageCutDuration * 1.4);
+    // Un segment parlé est monté en entier (phrase complète) : il compte pour sa vraie durée.
+    const dur = s.transcript.trim() ? s.end - s.start : Math.min(s.end - s.start, styleProfile.averageCutDuration * 1.4);
     if (used + dur > budgetSec && picked.length > 0) continue;
     picked.push(s);
     used += dur;
@@ -184,7 +185,8 @@ function heuristicStoryBeats(
   for (let i = 0; i < n; i++) {
     beats.push({ role: roleFor(i), segmentIds: [selected[i]!.id] });
   }
-  if (brief.cta) {
+  // Réutiliser un plan PARLÉ comme CTA ferait répéter la dernière phrase : jamais.
+  if (brief.cta && !selected[n - 1]!.transcript.trim()) {
     const conclusion = selected[n - 1]!;
     beats.push({ role: "cta", segmentIds: [conclusion.id], note: "Réutilise le dernier plan sélectionné — pas de plan CTA dédié en V1 sans génération de médias." });
   }

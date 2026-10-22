@@ -11,7 +11,9 @@ import {
   type TimelineClip,
 } from "@video-editor/shared-types";
 import type { Db } from "@video-editor/db";
-import { computeClipOutDuration, planZoomIndices, planBrollIndices, transitionForClip, zoomScaleForRole } from "./rhythm-engine.js";
+import { computeClipOutDuration, planZoomIndices, planBrollIndices, transitionForClip, zoomScaleForRole, planEffectsForClip, planDynamicEffectIndices, planSpeechPunchIns } from "./rhythm-engine.js";
+
+const isSpeech = (s: Segment) => s.transcript.trim().length > 0;
 
 /**
  * Agent 04 — Editor. 100% déterministe, jamais un appel LLM (§5 et §22 du
@@ -51,7 +53,7 @@ export function runEditor(
   for (let i = 0; i < ordered.length; i++) {
     const { role, segment } = ordered[i]!;
     const segmentDuration = segment.end - segment.start;
-    const outDuration = computeClipOutDuration({ role, segmentDurationSec: segmentDuration, styleProfile });
+    const outDuration = computeClipOutDuration({ role, segmentDurationSec: segmentDuration, styleProfile, isSpeech: isSpeech(segment) });
     const clip: TimelineClip = {
       id: newId("clip"),
       segmentId: segment.id,
@@ -61,6 +63,7 @@ export function runEditor(
       timelineStart: cursor,
       outDuration,
       zoomKeyframes: [],
+      effects: [],
       transitionIn: transitionForClip(i, styleProfile),
       role,
     };
@@ -88,9 +91,25 @@ export function runEditor(
   }
 
   const zoomIndices = planZoomIndices(clips.length, styleProfile.zoomFrequency);
-  clips = clips.map((clip, i) =>
-    zoomIndices.has(i) ? { ...clip, zoomKeyframes: [{ atSec: 0, scale: zoomScaleForRole(clip.role), focusX: 0.5, focusY: 0.5 }] } : clip
-  );
+  clips = clips.map((clip, i) => {
+    const startScale = zoomIndices.has(i) ? zoomScaleForRole(clip.role) : 1;
+    // Plan parlé long : alternance large/serré pour garder le rythme sans couper la phrase.
+    const punchIns = isSpeech(segmentsById.get(clip.segmentId)!)
+      ? planSpeechPunchIns({ clipDurationSec: clip.outDuration, styleProfile, startScale })
+      : [];
+    if (punchIns.length > 0) return { ...clip, zoomKeyframes: punchIns };
+    return zoomIndices.has(i) ? { ...clip, zoomKeyframes: [{ atSec: 0, scale: startScale, focusX: 0.5, focusY: 0.5 }] } : clip;
+  });
+
+  // Générer les effets vidéo pour chaque clip
+  clips = clips.map((clip) => {
+    const baseEffects = planEffectsForClip({
+      role: clip.role,
+      clipDurationSec: clip.outDuration,
+      styleProfile,
+    });
+    return { ...clip, effects: baseEffects };
+  });
 
   const brollIndices = planBrollIndices(
     clips.map((c) => {
@@ -111,6 +130,8 @@ export function runEditor(
       query: words || `b-roll ${clip.role}`,
       resolvedSource: null,
       resolvedMediaId: null,
+      resolvedPath: null,
+      license: null,
     };
   });
 

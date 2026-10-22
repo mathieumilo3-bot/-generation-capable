@@ -1,0 +1,28 @@
+{
+ "id": "psychologie",
+ "name": "Développement personnel et psycho",
+ "audience": "gens en quête de progression",
+ "tone": "biais, habitudes, méthodes",
+ "theme": {
+  "yel": "#7E57C2"
+ },
+ "stockQueries": [
+  "meditation",
+  "sunrise",
+  "journal writing"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les exercices sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

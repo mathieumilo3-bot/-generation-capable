@@ -1,0 +1,29 @@
+{
+ "id": "gaming-fps",
+ "name": "Jeux de tir (Valorant, CS2, Warzone)",
+ "audience": "joueurs compétitifs",
+ "tone": "settings, placements, utilitaires précis",
+ "theme": {
+  "yel": "#FF4655"
+ },
+ "stockQueries": [
+  "gaming setup",
+  "esports arena",
+  "keyboard rgb"
+ ],
+ "sourcePriority": [
+  "local",
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les configs et lineups sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

@@ -37,6 +37,31 @@ pnpm --filter @video-editor/web run dev
 # -> http://localhost:3000
 ```
 
+### Sous-titres parlés — transcription locale gratuite
+
+La transcription (sous-titres mot-à-mot) tourne **en local, sans clé ni
+coût** : NVIDIA Parakeet TDT 0.6B v3 (25 langues européennes dont le
+français, ponctuation incluse) exécuté sur CPU par `sherpa-onnx`
+(`packages/model-router/src/local-stt.ts`). Le `Dockerfile` télécharge le
+modèle au build ; en local :
+
+```bash
+mkdir -p ~/models && curl -L https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2 | tar -xj -C ~/models
+export VIDEO_EDITOR_STT_MODEL_DIR=~/models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8
+
+# Test bout-en-bout sur une VRAIE voix : rush = images d'une vidéo + fichiers voix.
+# Vérifie que la vidéo finale, re-transcrite, prononce chaque mot sous-titré au bon moment.
+pnpm --filter @video-editor/pipeline run test:e2e-speech -- video.mp4 voix1.wav voix2.wav
+```
+
+Ordre de choix : modèle local s'il est installé, sinon Deepgram si
+`DEEPGRAM_API_KEY` est défini (payant), sinon pas de sous-titres.
+`VIDEO_EDITOR_STT=deepgram|off` force un choix.
+
+Montage d'un rush parlé : l'unité est la **phrase** (blancs et prises
+ratées retirés, aucune phrase coupée), le rythme vient des punch-ins en une
+image ; volume final à -14 LUFS (standard Instagram/TikTok).
+
 Activer les vraies réponses des modèles : copier des clés dans
 l'environnement avant de lancer (`ANTHROPIC_API_KEY`, `GOOGLE_API_KEY` ou
 `GEMINI_API_KEY`, `DEEPGRAM_API_KEY`). Sans clé, tout tourne quand même —

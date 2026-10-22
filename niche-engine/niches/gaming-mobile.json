@@ -1,0 +1,27 @@
+{
+ "id": "gaming-mobile",
+ "name": "Jeux mobile (Brawl Stars, Clash Royale, Pokémon GO)",
+ "audience": "joueurs réguliers",
+ "tone": "tier lists, combos, méta",
+ "theme": {
+  "yel": "#FFB800"
+ },
+ "stockQueries": [
+  "mobile gaming",
+  "smartphone game"
+ ],
+ "sourcePriority": [
+  "local",
+  "pexels"
+ ],
+ "cta": "la méta du mois est sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}

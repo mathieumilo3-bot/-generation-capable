@@ -1,0 +1,27 @@
+{
+ "id": "moto",
+ "name": "Moto",
+ "audience": "motards",
+ "tone": "technique, équipement, entretien",
+ "theme": {
+  "yel": "#FF6D00"
+ },
+ "stockQueries": [
+  "motorcycle ride",
+  "motorbike road"
+ ],
+ "sourcePriority": [
+  "pexels",
+  "pixabay"
+ ],
+ "cta": "les itinéraires sont sur le Discord",
+ "rules": {
+  "hookSeconds": 3,
+  "cutEvery": [
+   0.6,
+   1.2
+  ],
+  "maxTips": 3,
+  "hiddenTipForDiscord": true
+ }
+}
