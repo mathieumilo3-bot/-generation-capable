@@ -1,0 +1,48 @@
+MONTAGE AUTOMATIQUE « LA VERRIÈRE »
+===================================
+
+Ce que ça fabrique (dans le dossier MONTAGE_SORTIE) :
+  • Teaser_Verriere_9x16.mp4   ≈ 45 s, vertical, pour promouvoir le dernier épisode
+  • Verriere_Complet_9x16.mp4  ≈ 3 min, vertical, tout le chantier en une seule vidéo
+  • selection.txt              la liste des plans retenus
+
+Ce que fait le programme tout seul :
+  • il analyse les 159 rushs (exposition, couleurs, mouvement, flou de bougé)
+  • il les remet dans l'ordre de tournage (date de l'iPhone) : l'histoire avance du début à la fin du chantier
+  • il garde le meilleur passage de chaque plan, coupe en rythme et termine sur le résultat final
+  • format vertical 1080x1920 ; les plans filmés à l'horizontale gardent tout le cadre sur un fond flouté
+  • étalonnage (contraste, couleurs, piqué, vignettage) et conversion des vidéos HDR de l'iPhone
+  • titre « LA VERRIÈRE » au début, carton de fin, fondus, son normalisé au niveau d'Instagram
+
+
+MODE D'EMPLOI (sur ordinateur)
+------------------------------
+1. Télécharge « Projet verrière vidéos.zip » depuis le Drive et décompresse-le.
+2. Mets toutes les vidéos dans le dossier RUSHS (à côté de ce fichier).
+   Les sous-dossiers sont acceptés.
+3. Lance le montage :
+     WINDOWS : double-clic sur LANCER_MONTAGE_Windows.bat
+     MAC     : clic droit sur LANCER_MONTAGE_Mac.command > Ouvrir > Ouvrir
+               (si ça ne marche pas : ouvre l'app Terminal, tape  python3  puis un espace,
+                glisse montage_verriere.py dans la fenêtre et appuie sur Entrée)
+4. Attends : compte environ 20 à 45 minutes pour 159 rushs selon l'ordinateur.
+   Les vidéos finies apparaissent dans RUSHS/MONTAGE_SORTIE.
+
+Astuce : tu peux aussi glisser n'importe quel dossier de vidéos directement sur
+LANCER_MONTAGE_Windows.bat, sans rien déplacer.
+
+
+MUSIQUE
+-------
+• Le plus simple pour Instagram : publie la vidéo puis ajoute une musique depuis l'appli Insta
+  (musiques autorisées, pas de son coupé).
+• Ou mets un fichier .mp3 / .m4a dans le dossier RUSHS : il sera mixé automatiquement
+  avec le son du chantier en dessous.
+
+
+PERSONNALISER
+-------------
+Ouvre montage_verriere.py avec un éditeur de texte ; tout en haut :
+  TITRE, SOUS_TITRE, TEXTE_FIN_TEASER, TEXTE_FIN_COMPLET  -> les textes affichés
+  DUREE_TEASER, DUREE_COMPLET                             -> les durées en secondes
+Puis relance : l'analyse est gardée en mémoire, le deuxième passage est beaucoup plus rapide.
